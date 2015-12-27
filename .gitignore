@@ -2,3 +2,11 @@ Source/TinScript/Debug/
 TinQtDemo/Debug/
 TinConsole/Debug/
 TinQtDemo/stringtable.txt
+TinQtConsole/TinQTSourceWinMoc.cpp
+TinQtConsole/TinQTToolsWinMoc.cpp
+TinQtConsole/TinQTWatchWinMoc.cpp
+TinQtConsole/TinScript_Auto_Layout.cfg
+TinQtConsole/mainwindowMOC.cpp
+TinQtConsole/Debug/
+TinQtConsole/TinQtConsole.sdf
+TinQtConsole/TinQtConsole.opensdf

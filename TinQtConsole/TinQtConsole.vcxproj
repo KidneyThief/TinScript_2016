@@ -11,19 +11,23 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{84AE387C-E512-472D-B3BB-0908CC2A868B}</ProjectGuid>
+    <ProjectGuid>{57439431-2340-4C35-8D56-671352625F13}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
+    <RootNamespace>TinQtConsole</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v120</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v120</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -37,53 +41,75 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
+    <OutDir>$(SolutionDir)</OutDir>
+    <TargetName>$(ProjectName)_d</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <LinkIncremental>true</LinkIncremental>
+    <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
-      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>..\Source\TinScript;$(QT_ROOT)\include\QtGui;$(QT_ROOT)\include\QtWidgets;$(QT_ROOT)\include;$(QT_ROOT)\include\QtCore;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <TargetMachine>MachineX86</TargetMachine>
+      <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <SubSystem>NotSet</SubSystem>
-      <AdditionalDependencies>$(QT_ROOT)\lib\Qt5Widgets.lib;$(QT_ROOT)\lib\Qt5Core.lib;$(QT_ROOT)\lib\Qt5Gui.lib;Debug\TinScript.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>..\Source\TinScript;$(QT_ROOT)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>$(QT_ROOT)\lib\Qt5Widgets.lib;$(QT_ROOT)\lib\Qt5Core.lib;$(QT_ROOT)\lib\Qt5Gui.lib;Debug\TinScript.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PreBuildEvent>
       <Command>TinQTMoc.bat</Command>
     </PreBuildEvent>
-    <CustomBuildStep>
-      <Command>TinQtMOC.bat</Command>
-    </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
-      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <SDLCheck>true</SDLCheck>
     </ClCompile>
     <Link>
-      <TargetMachine>MachineX86</TargetMachine>
+      <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="TinQtDemo.cpp" />
+    <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="TinQtDemo.h" />
+    <ClInclude Include="mainwindow.h" />
+    <ClInclude Include="targetver.h" />
+    <ClInclude Include="TinQTBreakpointsWin.h" />
+    <ClInclude Include="TinQTConsole.h" />
+    <ClInclude Include="TinQTFunctionAssistWin.h" />
+    <ClInclude Include="TinQTObjectBrowserWin.h" />
+    <ClInclude Include="TinQTObjectInspectWin.h" />
+    <ClInclude Include="TinQTSchedulesWin.h" />
+    <ClInclude Include="TinQTSourceWin.h" />
+    <ClInclude Include="TinQTToolsWin.h" />
+    <ClInclude Include="TinQTWatchWin.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="mainwindow.cpp" />
+    <ClCompile Include="TinQTBreakpointsWin.cpp" />
+    <ClCompile Include="TinQtConsole.cpp" />
+    <ClCompile Include="TinQTFunctionAssistWin.cpp" />
+    <ClCompile Include="TinQTObjectBrowserWin.cpp" />
+    <ClCompile Include="TinQTObjectInspectWin.cpp" />
+    <ClCompile Include="TinQTSchedulesWin.cpp" />
+    <ClCompile Include="TinQTSourceWin.cpp" />
+    <ClCompile Include="TinQTToolsWin.cpp" />
+    <ClCompile Include="TinQTWatchWin.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
