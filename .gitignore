@@ -24,3 +24,7 @@ TinConsole/TinConsole.v12.suo
 TinConsole/TinConsole.sdf
 TinConsole/stringtable.txt
 TinQtConsole/stringtable.txt
+TinQtDemo/TinQtDemo.opensdf
+TinQtDemo/TinQtDemo.sdf
+TinConsole/TinConsole_d.ilk
+*.pdb
