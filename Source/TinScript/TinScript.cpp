@@ -1882,7 +1882,7 @@ bool8 CScriptContext::EvaluateWatchExpression(const char* expression, bool8 cond
 
     // -- if this is a conditional, then we want to see if the value of it is true/false
     char expr_result[kMaxTokenLength];
-    sprintf_s(expr_result, "return (%s);", expression, temp_func_name);
+    sprintf_s(expr_result, "return (%s);", expression);
 
     // -- now we've got a temporary function with exactly the same set of local variables
     // -- see if we can parse the expression
