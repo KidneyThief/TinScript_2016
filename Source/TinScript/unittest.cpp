@@ -39,7 +39,7 @@
 DECLARE_FILE(unittest_cpp);
 
 // -- constants -----------------------------------------------------------------------------------
-static const char* kUnitTestScriptName = "unittest.ts";
+static const char* kUnitTestScriptName = "../Source/TinScript/unittest.ts";
 
 // --------------------------------------------------------------------------------------------------------------------
 // -- Print function, for use by the unit tests

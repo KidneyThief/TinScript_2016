@@ -20,3 +20,7 @@ TinQtConsole/TinQtConsole_d.pdb
 TinConsole/TinConsole.opensdf
 TinQtConsole/TinQtConsole.v12.suo
 TinConsole/TinConsole.v12.suo
+*.tso
+TinConsole/TinConsole.sdf
+TinConsole/stringtable.txt
+TinQtConsole/stringtable.txt
