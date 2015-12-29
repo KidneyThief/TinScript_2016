@@ -28,3 +28,10 @@ TinQtDemo/TinQtDemo.opensdf
 TinQtDemo/TinQtDemo.sdf
 TinConsole/TinConsole_d.ilk
 *.pdb
+TinQtConsole/Release/
+TinConsole/Release/TinConsole.tlog/CL.read.1.tlog
+TinConsole/Release/TinConsole.tlog/CL.write.1.tlog
+TinConsole/Release/
+Source/TinScript/Release/
+TinQtDemo/Release/
+*.user
