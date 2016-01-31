@@ -337,6 +337,9 @@ CConsoleWindow::CConsoleWindow()
 
     // -- initialize the running members
     mIsConnected = false;
+
+	// -- notify all windows that the application elements have been created
+	mConsoleOutput->ExpandToParentSize();
 }
 
 CConsoleWindow::~CConsoleWindow()

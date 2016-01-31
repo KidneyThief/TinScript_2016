@@ -44,6 +44,9 @@ static const char* kConsoleSendPrefix = ">> ";
 static const char* kConsoleRecvPrefix = "";
 static const char* kLocalSendPrefix = "> ";
 
+const int kFontWidth = 12;
+const int kFontHeight = 28;
+
 // --------------------------------------------------------------------------------------------------------------------
 // -- Forward declarations
 
@@ -227,19 +230,20 @@ class CConsoleInput : public QLineEdit
 
         void ExpandToParentSize()
         {
-            // -- leave room at the start for the input label
+            // -- leave room at the start for the input label: 3x characters '==>'
+			int labelWidth = (kFontWidth * 3);
             QSize parentSize = parentWidget()->size();
-            int newWidth = parentSize.width() - 24;
+            int newWidth = parentSize.width() - labelWidth;
             if (newWidth < 0)
                 newWidth = 0;
-            int newYOffset = parentSize.height() - 24;
+			int newYOffset = parentSize.height() - kFontHeight;
             if (newYOffset < 0)
                 newYOffset = 0;
-            setGeometry(24, newYOffset, newWidth, 24);
+			setGeometry(labelWidth, newYOffset, newWidth, kFontHeight);
             updateGeometry();
 
             // -- update the label as well
-            mInputLabel->setGeometry(0, newYOffset, 24, 24);
+			mInputLabel->setGeometry(0, newYOffset, labelWidth, kFontHeight);
         }
 
         void SetText(const char* text, int cursor_pos);
