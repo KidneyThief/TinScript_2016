@@ -3,6 +3,10 @@
 // ====================================================================================================================
 Print("Welcome to the TinScript Demo!");
 
+// -- globals ---------------------------------------------------------------------------------------------------------
+
+object gCurrentGame;
+
 void ThreadTestCount(int num) {
     Print(num);
     if(num > 0)
@@ -64,10 +68,8 @@ void DefaultGame::OnUpdate()
 
 void CreateGame()
 {
-    if (FindObject("CurrentGame") == 0)
-    {
-        create DefaultGame("CurrentGame");
-    }
+    ResetGame();    
+    gCurrentGame = create DefaultGame("CurrentGame");
 }
 
 void ResetGame()
@@ -75,10 +77,9 @@ void ResetGame()
     // -- cancel all draw requests
     CancelDrawRequests(-1);
 
-    object current_game = FindObject("CurrentGame");
-    if (IsObject(current_game))
+    if (IsObject(gCurrentGame))
     {
-        destroy current_game;
+        destroy gCurrentGame;
     }
 
     //  -- always start Unpaused
@@ -88,10 +89,9 @@ void ResetGame()
 // -- wrapper to handle events
 void NotifyEvent(int keypress)
 {
-    object current_game = FindObject("CurrentGame");
-    if (IsObject(current_game))
+    if (IsObject(gCurrentGame))
     {
-        current_game.OnKeyPress(keypress);
+        gCurrentGame.OnKeyPress(keypress);
     }
 }
 
@@ -126,9 +126,8 @@ object CreateSceneObject(string name, vector3f position, float radius)
     if (scene_object.radius == 0.0f)
         scene_object.radius = radius;
 
-    object current_game = FindObject("CurrentGame");
-    if (IsObject(current_game))
-        current_game.game_objects.AddObject(scene_object);
+    if (IsObject(gCurrentGame))
+        gCurrentGame.game_objects.AddObject(scene_object);
 
     // -- return the object create
     return (scene_object);

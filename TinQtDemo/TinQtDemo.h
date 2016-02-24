@@ -124,6 +124,7 @@ class CDemoWidget : public QWidget
         void OnInputKeyJ();
         void OnInputKeyL();
         void OnInputKeySpace();
+		void OnInputKeyQ();
 
     protected:
         void paintEvent(QPaintEvent *event);

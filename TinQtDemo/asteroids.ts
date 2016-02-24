@@ -3,7 +3,7 @@
 // ====================================================================================================================
 
 // -- this game is built upon the TinScriptDemo
-Exec("TinScriptDemo.ts");
+Include("TinScriptDemo.ts");
 
 // -- global tunables -------------------------------------------------------------------------------------------------
 float gThrust = 12.0f;
@@ -12,6 +12,8 @@ float gBulletSpeed = 150.0f;
 
 int gMaxBullets = 4;
 float gFireCDTime = 0.1f;
+
+object gCurrentGame;
 
 // -- FLTK Colors -----------------------------------------------------------------------------------------------------
 int gCOLOR_BLACK = 0xff000000;
@@ -32,9 +34,8 @@ void Asteroid::OnCreate() : SceneObject
     vector3f self.velocity = '0 0 0';
     
     // -- add ourself to the game's asteroid set
-    object current_game = FindObject("CurrentGame");
-    if (IsObject(current_game))
-        current_game.asteroid_set.AddObject(self);
+    if (IsObject(gCurrentGame))
+        gCurrentGame.asteroid_set.AddObject(self);
 }
 
 void Asteroid::OnUpdate(float deltaTime)
@@ -237,8 +238,7 @@ void Ship::OnFire()
         return;
         
     // -- only 4x bullets at a time
-    object current_game = FindObject("CurrentGame");
-    if (current_game.bullet_set.Used() >= gMaxBullets)
+    if (gCurrentGame.bullet_set.Used() >= gMaxBullets)
         return;
     
     // -- only allow one bullet every X msec
@@ -330,9 +330,8 @@ object SpawnBullet(vector3f position, vector3f direction)
     ApplyImpulse(bullet, direction * gBulletSpeed);
     
     // -- add the bullet to the game's bullet set
-    object current_game = FindObject("CurrentGame");
-    if (IsObject(current_game))
-        current_game.bullet_set.AddObject(bullet);
+    if (IsObject(gCurrentGame))
+        gCurrentGame.bullet_set.AddObject(bullet);
 }
 
 // ====================================================================================================================
@@ -488,10 +487,10 @@ void AsteroidsGame::OnKeyPress(int keypress)
 void StartAsteroids()
 {
     ResetGame();
-    object current_game = create AsteroidsGame("CurrentGame");
+    gCurrentGame = create AsteroidsGame("CurrentGame");
     
     // -- spawn a ship
-    current_game.ship = SpawnShip();
+    gCurrentGame.ship = SpawnShip();
     
     // -- spawn, say, 8 asteroids
     schedule(0, 5000, hash("SpawnAsteroids"));

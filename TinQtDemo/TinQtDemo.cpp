@@ -88,6 +88,9 @@ CDemoWidget::CDemoWidget(QWidget *parent)
 
     QShortcut* input_key_space = new QShortcut(QKeySequence(" "), this);
     QObject::connect(input_key_space, SIGNAL(activated()), this, SLOT(OnInputKeySpace()));
+
+	QShortcut* input_key_q = new QShortcut(QKeySequence("q"), this);
+	QObject::connect(input_key_q, SIGNAL(activated()), this, SLOT(OnInputKeyQ()));
 }
 
 void CDemoWidget::OnUpdate()
@@ -141,6 +144,12 @@ void CDemoWidget::OnInputKeySpace()
 {
     int32 dummy = 0;
     TinScript::ExecFunction(dummy, hash_NotifyEvent, (int32)' ');
+}
+
+void CDemoWidget::OnInputKeyQ()
+{
+	int32 dummy = 0;
+	TinScript::ExecFunction(dummy, hash_NotifyEvent, (int32)'q');
 }
 
 // --------------------------------------------------------------------------------------------------------------------
