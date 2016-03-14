@@ -228,6 +228,8 @@ enum class eTestEnumA
 EnumTuple
 #undef EnumEntry
 
+eTestEnumA g_Test = eTestEnumA::EnumTestA15;
+
 // -- GLOBAL FUNCTIONS ----------------------------------------------------------------------------
 // -- these are registered, and called from script for unit testing
 int32 UnitTest_MultiplyBy2(int32 number) {
