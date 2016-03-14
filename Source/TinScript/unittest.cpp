@@ -228,15 +228,6 @@ enum class eTestEnumA
 EnumTuple
 #undef EnumEntry
 
-/*
-#define eTestEnumB_entries(cond)						\
-	REGISTER_ENUM_ENTRY(cond, EnumTestB_None, -1)		\
-	REGISTER_ENUM_ENTRY(cond, EnumTestB_0, 0)			\
-	REGISTER_ENUM_ENTRY(cond, EnumTestB_1, 1)			\
-	REGISTER_ENUM_ENTRY(cond, EnumTestB_47, 47)
-REGISTER_ENUM(eTestEnumB)
-*/
-
 // -- GLOBAL FUNCTIONS ----------------------------------------------------------------------------
 // -- these are registered, and called from script for unit testing
 int32 UnitTest_MultiplyBy2(int32 number) {
