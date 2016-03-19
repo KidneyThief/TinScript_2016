@@ -59,9 +59,9 @@ const int32 kCompilerVersion = 3;
 // -- only case_sensitive has been extensively tested, however theoretically TinScript should function as a
 // -- insensitive language by affecting just a few functions, such as Hash().
 #if CASE_SENSITIVE
-    #define Strncmp_ strncmp
+#define Strncmp_ strncmp
 #else
-    #define Strncmp_ _strnicmp
+#define Strncmp_ _strnicmp
 #endif
 
 // ====================================================================================================================
@@ -77,7 +77,7 @@ const int32 kCompilerVersion = 3;
         if(addr) {                                                                                \
             classname* obj = static_cast<classname*>(addr);                                       \
             TinFree(obj);                                                                         \
-        }                                                                                         \
+				        }                                                                                         \
     }                                                                                             \
     SCRIPT_DEFAULT_METHODS(classname);                                                            \
     static void Register(::TinScript::CScriptContext* script_context, ::TinScript::CNamespace* _classnamespace);    \
@@ -119,6 +119,35 @@ const int32 kCompilerVersion = 3;
     extern bool8 g_##filename##_registered; \
     g_##filename##_registered = true;
 
+// -- internal macros to register an enum
+#define MAKE_ENUM(table, var, value) var = value,
+#define MAKE_STRING(table, var, value) #var,
+#define REG_ENUM_GLOBAL(table, var, value)	static int32 table##_##var = value; \
+	    REGISTER_GLOBAL_VAR(table##_##var, table##_##var);
+
+// -- individual macros to register just the enum table, the string table, or to register int32 globals with TinScript
+#define CREATE_ENUM_CLASS(enum_name, enum_list)		\
+	enum class enum_name {							\
+		enum_list(enum_name, MAKE_ENUM)				\
+	};
+
+#define CREATE_ENUM_STRINGS(enum_name, enum_list)	\
+	const char* enum_name##Strings[] = {			\
+		enum_list(enum_name, MAKE_STRING)			\
+	};												\
+
+#define REGISTER_ENUM_CLASS(enum_name, enum_list)	\
+	enum_list(enum_name, REG_ENUM_GLOBAL)			\
+
+// -- a single macro to register the entire macro
+#define REGISTER_SCRIPT_ENUM(enum_name, enum_list)	\
+	enum class enum_name {							\
+		enum_list(enum_name, MAKE_ENUM)				\
+	};												\
+	const char* enum_name##Strings[] = {			\
+		enum_list(enum_name, MAKE_STRING)			\
+	};												\
+	enum_list(enum_name, REG_ENUM_GLOBAL)
 
 // ====================================================================================================================
 // -- constants

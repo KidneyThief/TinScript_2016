@@ -208,27 +208,16 @@ REGISTER_GLOBAL_VAR(gUnitTestStringArray, gUnitTestStringArray);
 
 // -- Registered enum -----------------------------------------------------------------------------
 
-#define EnumTuple \
-	EnumEntry(EnumTestA0, 0) \
-	EnumEntry(EnumTestA1, 1) \
-	EnumEntry(EnumTestA15, 15) \
+#define MyEnum(TestEnum, ENUM_ENTRY)	\
+	ENUM_ENTRY(TestEnum, Foo, 0)		\
+	ENUM_ENTRY(TestEnum, Bar, 17)		\
+	ENUM_ENTRY(TestEnum, Count, 49)
 
-// -- declare the enum
-enum class eTestEnumA
-{
-	#define EnumEntry(a, b) a = b,
-	EnumTuple
-	#undef EnumEntry
-};
+CREATE_ENUM_CLASS(TestEnum, MyEnum);
+CREATE_ENUM_STRINGS(TestEnum, MyEnum);
+REGISTER_ENUM_CLASS(TestEnum, MyEnum);
 
-// -- register the enum using the same tuple
-#define EnumEntry(a, b)			\
-	int32 a = b;				\
-	REGISTER_GLOBAL_VAR(a, a);
-EnumTuple
-#undef EnumEntry
-
-eTestEnumA g_Test = eTestEnumA::EnumTestA15;
+//REGISTER_SCRIPT_ENUM(TestEnum, MyEnum);
 
 // -- GLOBAL FUNCTIONS ----------------------------------------------------------------------------
 // -- these are registered, and called from script for unit testing
