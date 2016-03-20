@@ -335,6 +335,8 @@ class CDebuggerFunctionAssistEntry
         uint32 mNamespaceHash;
         uint32 mFunctionHash;
         char mFunctionName[kMaxNameLength];  // we're searching, so we need the actual string
+		uint32 mCodeBlockHash;  // the location the function is implemented
+		int32 mLineNumber;
 
         // -- next is the parameter list, we'll need a type, if it's an array, and the name
         // -- the max number of parameters to send includes the return (+1)

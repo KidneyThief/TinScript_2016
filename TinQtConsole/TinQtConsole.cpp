@@ -1843,6 +1843,10 @@ void CConsoleOutput::HandlePacketFunctionAssist(int32* dataPtr)
     strcpy_s(function_assist_entry.mFunctionName, (const char*)dataPtr);
     dataPtr += (name_length / 4);
 
+	// -- copy the codeblock name hasn, and line number
+	function_assist_entry.mCodeBlockHash = *dataPtr++;
+	function_assist_entry.mLineNumber = *dataPtr++;
+
     // -- parameter count
     function_assist_entry.mParameterCount = *dataPtr++;
 

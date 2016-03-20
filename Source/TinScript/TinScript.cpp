@@ -2718,6 +2718,22 @@ void CScriptContext::DebuggerRequestFunctionAssist(uint32 object_id)
             entry.mFunctionHash = function_entry->GetHash();
             SafeStrcpy(entry.mFunctionName, function_entry->GetName(), kMaxNameLength);
 
+			// -- get the codeblock, and fill in the line number
+			entry.mCodeBlockHash = function_entry->GetCodeBlock()
+								   ? function_entry->GetCodeBlock()->GetFilenameHash()
+								   : 0;
+
+			// -- calculate the line number
+			entry.mLineNumber = 0;
+			if (entry.mCodeBlockHash != 0)
+			{
+				CCodeBlock* codeblock = function_entry->GetCodeBlock();
+				uint32 offset = function_entry->GetCodeBlockOffset(codeblock);
+				const uint32* instrptr = codeblock->GetInstructionPtr();
+				instrptr += offset;
+				entry.mLineNumber = codeblock->CalcLineNumber(instrptr);
+			}
+
             // -- fill in the parameters
             CFunctionContext* function_context = function_entry->GetContext();
             entry.mParameterCount = function_context->GetParameterCount();
@@ -2772,13 +2788,17 @@ void CScriptContext::DebuggerSendFunctionAssistEntry(const CDebuggerFunctionAssi
 	// -- function hash
 	total_size += sizeof(int32);
 
-    // -- send the length of the assert message, including EOL, and 4-byte aligned
+    // -- calculate the length of the function name, including EOL, and 4-byte aligned
     int32 nameLength = (int32)strlen(function_assist_entry.mFunctionName) + 1;
     nameLength += 4 - (nameLength % 4);
 
-    // -- we'll be sending the length of the message, followed by the actual message string
+    // -- add the function name length, followed by the actual string
     total_size += sizeof(int32);
     total_size += nameLength;
+
+	// -- add the codeblock filename hash, and the linenumber for the instruction offset
+	total_size += sizeof(uint32);
+	total_size += sizeof(int32);
 
     // -- parameter count
     total_size += sizeof(int32);
@@ -2826,7 +2846,11 @@ void CScriptContext::DebuggerSendFunctionAssistEntry(const CDebuggerFunctionAssi
     SafeStrcpy((char*)dataPtr, function_assist_entry.mFunctionName, nameLength);
     dataPtr += (nameLength / 4);
 
-    // -- parameter count
+	// -- codeblock filename hash and linenumber
+	*dataPtr++ = function_assist_entry.mCodeBlockHash;
+	*dataPtr++ = function_assist_entry.mLineNumber;
+
+	// -- parameter count
     *dataPtr++ = function_assist_entry.mParameterCount;
 
     // -- loop through, and send each parameter

@@ -91,12 +91,16 @@ class CDebugFunctionAssistWin : public QWidget
         void NotifyFunctionDoubleClicked(TinScript::CDebuggerFunctionAssistEntry* list_entry);
 
     public slots:
-        void OnButtonBrowsePressed();
+	void OnButtonMethodPressed();
+	void OnButtonBrowsePressed();
 
     private:
         CFunctionAssistInput* mFunctionInput;
         QLabel* mObjectIndentifier;
         CFunctionAssistList* mFunctionList;
+
+		// -- for the selected function
+		uint32 mSelectedFunctionHash;
         CFunctionParameterList* mParameterList;
 
         // -- helper function that performs a single pass

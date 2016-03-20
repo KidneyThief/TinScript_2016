@@ -36,6 +36,7 @@
 
 // -- includes
 #include "TinQTConsole.h"
+#include "TinQTSourceWin.h"
 #include "TinQTObjectBrowserWin.h"
 #include "TinQTFunctionAssistWin.h"
 
@@ -67,10 +68,12 @@ CDebugFunctionAssistWin::CDebugFunctionAssistWin(QWidget* parent)
     QHBoxLayout* identifier_layout = new QHBoxLayout(identifier_widget);
     mObjectIndentifier = new QLabel("<global scope>", identifier_widget);
     mObjectIndentifier->setFixedHeight(24);
-    QPushButton* browse_button = new QPushButton("Browse", identifier_widget);
+	QPushButton* method_button = new QPushButton("Method", identifier_widget);
+	QPushButton* browse_button = new QPushButton("Object", identifier_widget);
 
     identifier_layout->addWidget(mObjectIndentifier, 1);
-    identifier_layout->addWidget(browse_button, 0);
+	identifier_layout->addWidget(method_button, 0);
+	identifier_layout->addWidget(browse_button, 0);
 
     // -- create the function list
     mFunctionList = new CFunctionAssistList(this, this);
@@ -88,11 +91,13 @@ CDebugFunctionAssistWin::CDebugFunctionAssistWin(QWidget* parent)
     main_layout->setColumnStretch(1, 1);
 
     // -- ensure we start with a clean search
-    mSearchObjectID = -1;
+	mSelectedFunctionHash = 0;
+	mSearchObjectID = -1;
     mFilterString[0] = '\0';
 
-    // -- hook up the browse button
-    QObject::connect(browse_button, SIGNAL(clicked()), this, SLOT(OnButtonBrowsePressed()));
+    // -- hook up the method and browse button
+	QObject::connect(method_button, SIGNAL(clicked()), this, SLOT(OnButtonMethodPressed()));
+	QObject::connect(browse_button, SIGNAL(clicked()), this, SLOT(OnButtonBrowsePressed()));
 }
 
 // ====================================================================================================================
@@ -121,7 +126,8 @@ void CDebugFunctionAssistWin::NotifyCodeblockLoaded(uint32 codeblock_hash)
 void CDebugFunctionAssistWin::ClearSearch()
 {
     // -- clear the parameter and function list
-    mParameterList->Clear();
+	mSelectedFunctionHash = 0;
+	mParameterList->Clear();
     mFunctionList->Clear();
 
     // -- clear the function entry map
@@ -441,7 +447,10 @@ void CDebugFunctionAssistWin::SetAssistObjectID(uint32 object_id)
     // -- if the object_id is different from the current search object ID, reset the input text
     if (object_id != mSearchObjectID)
     {
-        if (object_id == 0)
+		// -- clear the selected function hash
+		mSelectedFunctionHash = 0;
+
+		if (object_id == 0)
         {
             mFunctionInput->setText("");
             UpdateFilter("");
@@ -461,6 +470,9 @@ void CDebugFunctionAssistWin::SetAssistObjectID(uint32 object_id)
 // ====================================================================================================================
 void CDebugFunctionAssistWin::NotifyFunctionClicked(TinScript::CDebuggerFunctionAssistEntry* list_entry)
 {
+	// -- clear the selected function
+	mSelectedFunctionHash = 0;
+
     // -- clicking on an object does nothing
     if (!list_entry || list_entry->mIsObjectEntry)
         return;
@@ -468,6 +480,8 @@ void CDebugFunctionAssistWin::NotifyFunctionClicked(TinScript::CDebuggerFunction
     if (!mFunctionEntryMap.contains(list_entry->mFunctionHash))
         return;
 
+	// -- cache the selected function hash, and populate the parameter list
+	mSelectedFunctionHash = list_entry->mFunctionHash;
     TinScript::CDebuggerFunctionAssistEntry* assist_entry = mFunctionEntryMap[list_entry->mFunctionHash];
     mParameterList->Populate(assist_entry);
 }
@@ -477,7 +491,10 @@ void CDebugFunctionAssistWin::NotifyFunctionClicked(TinScript::CDebuggerFunction
 // ====================================================================================================================
 void CDebugFunctionAssistWin::NotifyFunctionDoubleClicked(TinScript::CDebuggerFunctionAssistEntry* list_entry)
 {
-    // -- ensure we have a valid search
+	// -- clear the selected function
+	mSelectedFunctionHash = 0;
+
+	// -- ensure we have a valid search
     if (mSearchObjectID == -1)
         return;
 
@@ -494,7 +511,9 @@ void CDebugFunctionAssistWin::NotifyFunctionDoubleClicked(TinScript::CDebuggerFu
         if (!mFunctionEntryMap.contains(list_entry->mFunctionHash))
             return;
 
-        TinScript::CDebuggerFunctionAssistEntry* assist_entry = mFunctionEntryMap[list_entry->mFunctionHash];
+		// -- cache the selected function hash, and populate the parameter list
+		mSelectedFunctionHash = list_entry->mFunctionHash;
+		TinScript::CDebuggerFunctionAssistEntry* assist_entry = mFunctionEntryMap[list_entry->mFunctionHash];
         mParameterList->Populate(assist_entry);
 
         // -- create the command string, and send it to the console input
@@ -533,6 +552,19 @@ void CDebugFunctionAssistWin::NotifyFunctionDoubleClicked(TinScript::CDebuggerFu
         CConsoleWindow::GetInstance()->GetInput()->SetText(buf, cursor_pos);
         CConsoleWindow::GetInstance()->GetInput()->setFocus();
     }
+}
+
+// ====================================================================================================================
+// OnButtonMethodPressed():  FOr the search object ID, find the file/line implementation of the selected method.
+// ====================================================================================================================
+void CDebugFunctionAssistWin::OnButtonMethodPressed()
+{
+	// -- if we have a selected function
+	if (mSelectedFunctionHash != 0 && mFunctionEntryMap.contains(mSelectedFunctionHash))
+	{
+		TinScript::CDebuggerFunctionAssistEntry* entry = mFunctionEntryMap[mSelectedFunctionHash];
+		CConsoleWindow::GetInstance()->GetDebugSourceWin()->SetSourceView(entry->mCodeBlockHash, entry->mLineNumber);
+	}
 }
 
 // ====================================================================================================================
