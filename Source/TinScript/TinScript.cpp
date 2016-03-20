@@ -24,7 +24,6 @@
 // ====================================================================================================================
 
 // -- includes
-#include "stdafx.h"
 #include "stdlib.h"
 #include "stdio.h"
 #include "string.h"
@@ -754,7 +753,7 @@ void LoadStringTable(const char* filename)
 bool8 GetLastWriteTime(const char* filename, FILETIME& writetime)
 {
     if (!filename || !filename[0])
-        return false;
+        return (false);
 
     // -- convert the filename to a wchar_t array
 	/*
@@ -811,7 +810,7 @@ bool8 NeedToCompile(const char* filename, const char* binfilename)
     // -- if fail, then we have nothing to compile
     FILETIME scriptft;
     if (!GetLastWriteTime(filename, scriptft))
-        return false;
+        return (false);
 
     // -- get the filetime for the binary file
     // -- if fail, we need to compile
@@ -1674,7 +1673,7 @@ bool8 CScriptContext::InitWatchExpression(CDebuggerWatchExpression& debugger_wat
     // -- add a funcdecl node, and set its left child to be the statement block
     // -- for fun, use the watch_id as the line number - to find it while debugging
     CFuncDeclNode* funcdeclnode = TinAlloc(ALLOC_TreeNode, CFuncDeclNode, codeblock, root->next,
-                                           watch_id, watch_name, strlen(watch_name), "", 0, 0);
+                                           watch_id, watch_name, (int32)strlen(watch_name), "", 0, 0);
 
     // -- the body of our watch function, is to simply return the given expression
     // -- parsing and returning the expression will also identify the type for us
@@ -1878,7 +1877,7 @@ bool8 CScriptContext::EvaluateWatchExpression(const char* expression, bool8 cond
 
         // -- add a funcdecl node, and set its left child to be the statement block
     CFuncDeclNode* funcdeclnode = TinAlloc(ALLOC_TreeNode, CFuncDeclNode, codeblock, root->next,
-                                           -1, temp_func_name, strlen(temp_func_name), "", 0 , 0);
+                                           -1, temp_func_name, (int32)strlen(temp_func_name), "", 0 , 0);
 
     // -- if this is a conditional, then we want to see if the value of it is true/false
     char expr_result[kMaxTokenLength];
@@ -2001,7 +2000,7 @@ void CScriptContext::DebuggerCurrentWorkingDir(const char* cwd)
     total_size += sizeof(int32);
 
     // -- we're sending the file name as a atring, since the debugger may not be able to unhash it yet
-    int strLength = strlen(cwd) + 1;
+    int strLength = (int32)strlen(cwd) + 1;
     total_size += strLength;
 
     // -- declare a header
@@ -2042,7 +2041,7 @@ void CScriptContext::DebuggerCodeblockLoaded(uint32 codeblock_hash)
 
     // -- we're sending the file name as a atring, since the debugger may not be able to unhash it yet
     const char* filename = UnHash(codeblock_hash);
-    int strLength = strlen(filename) + 1;
+    int32 strLength = (int32)strlen(filename) + 1;
     total_size += strLength;
 
     // -- declare a header
@@ -2328,7 +2327,7 @@ void CScriptContext::DebuggerSendWatchVariable(CDebuggerWatchVarEntry* watch_var
     total_size += sizeof(int32);
 
     // -- the next will be mName - we'll round up to a 4-byte aligned length (including the EOL)
-    int32 nameLength = strlen(watch_var_entry->mVarName) + 1;
+    int32 nameLength = (int32)strlen(watch_var_entry->mVarName) + 1;
     nameLength += 4 - (nameLength % 4);
 
     // -- we send first the string length, then the string
@@ -2336,7 +2335,7 @@ void CScriptContext::DebuggerSendWatchVariable(CDebuggerWatchVarEntry* watch_var
     total_size += nameLength;
 
     // -- finally we add the value - we'll round up to a 4-byte aligned length (including the EOL)
-    int32 valueLength = strlen(watch_var_entry->mValue) + 1;
+    int32 valueLength = (int32)strlen(watch_var_entry->mValue) + 1;
     valueLength += 4 - (valueLength % 4);
 
     // -- we send first the string length, then the string
@@ -2573,7 +2572,7 @@ void CScriptContext::DebuggerSendAssert(const char* assert_msg, uint32 codeblock
     total_size += sizeof(int32);
 
     // -- send the length of the assert message, including EOL, and 4-byte aligned
-    int32 msgLength = strlen(assert_msg) + 1;
+    int32 msgLength = (int32)strlen(assert_msg) + 1;
     msgLength += 4 - (msgLength % 4);
 
     // -- we'll be sending the length of the message, followed by the actual message string
@@ -2644,7 +2643,7 @@ void CScriptContext::DebuggerSendPrint(const char* fmt, ...)
     total_size += sizeof(int32);
 
     // -- send the length of the assert message, including EOL, and 4-byte aligned
-    int32 msgLength = strlen(msg_buf) + 1;
+    int32 msgLength = (int32)strlen(msg_buf) + 1;
     msgLength += 4 - (msgLength % 4);
 
     // -- we'll be sending the length of the message, followed by the actual message string
@@ -2774,7 +2773,7 @@ void CScriptContext::DebuggerSendFunctionAssistEntry(const CDebuggerFunctionAssi
 	total_size += sizeof(int32);
 
     // -- send the length of the assert message, including EOL, and 4-byte aligned
-    int32 nameLength = strlen(function_assist_entry.mFunctionName) + 1;
+    int32 nameLength = (int32)strlen(function_assist_entry.mFunctionName) + 1;
     nameLength += 4 - (nameLength % 4);
 
     // -- we'll be sending the length of the message, followed by the actual message string
@@ -2873,7 +2872,7 @@ void CScriptContext::DebuggerNotifyCreateObject(CObjectEntry* oe)
             sprintf_s(derivation_ptr, remaining, "%s%s", !first ? "-->" : " ", UnHash(ns->GetHash()));
 
         // -- update the pointer
-        int32 length = strlen(derivation_ptr);
+        int32 length = (int32)strlen(derivation_ptr);
         remaining -= length;
         derivation_ptr += length;
 
@@ -3050,7 +3049,7 @@ bool8 CScriptContext::AddThreadCommand(const char* command)
     }
 
     // -- ensure we've got room
-    uint32 cmdLength = strlen(command);
+    uint32 cmdLength = (int32)strlen(command);
     uint32 lengthRemaining = kThreadExecBufferSize - ((uint32)mThreadBufPtr - (uint32)mThreadExecBuffer);
     if (lengthRemaining < cmdLength)
     {
@@ -3089,7 +3088,7 @@ void CScriptContext::ProcessThreadCommands()
     // -- *before* executing the command, or the run/step command will never actually be received.
     // -- this means, we copy current buffer so we can begin filling it again from the socket thread
     char local_exec_buffer[kThreadExecBufferSize];
-    int bytes_to_copy = strlen(mThreadExecBuffer) + 1;
+    int32 bytes_to_copy = (int32)strlen(mThreadExecBuffer) + 1;
     memcpy(local_exec_buffer, mThreadExecBuffer, bytes_to_copy);
 
     // -- unlock the thread

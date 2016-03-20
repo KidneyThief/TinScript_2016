@@ -24,7 +24,6 @@
 // ====================================================================================================================
 
 // -- lib includes
-#include "stdafx.h"
 #include "assert.h"
 #include "string.h"
 #include "stdio.h"
@@ -1728,7 +1727,7 @@ int32 CArrayVarDeclNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 coun
 // ====================================================================================================================
 // Constructor
 // ====================================================================================================================
-CArrayDeclNode::CArrayDeclNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int _linenumber, int32 _size)
+CArrayDeclNode::CArrayDeclNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber, int32 _size)
     : CCompileTreeNode(_codeblock, _link, eArrayDecl, _linenumber)
 {
     mSize = _size;
@@ -1972,7 +1971,7 @@ CSchedFuncNode::CSchedFuncNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link,
 // ====================================================================================================================
 // Eval():  Generates the byte code instruction compiled from this node.
 // ====================================================================================================================
-int CSchedFuncNode::Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const
+int32 CSchedFuncNode::Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const
 {
     DebugEvaluateNode(*this, countonly, instrptr);
     int32 size = 0;

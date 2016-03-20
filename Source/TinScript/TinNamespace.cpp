@@ -24,7 +24,6 @@
 // ====================================================================================================================
 
 // -- lib includes
-#include "stdafx.h"
 #include "stdio.h"
 
 // -- includes
@@ -159,7 +158,7 @@ void CObjectEntry::CallFunctionHierarchy(uint32 function_hash, bool8 ascending)
                 if (!ObjExecNSMethod(GetID(), dummy, obj_ns->GetHash(), function_hash))
                 {
                     ScriptAssert_(GetScriptContext(), 0, "<internal>", -1,
-                                  "Error - [%d] Object method %s::%s() failed: %s, type: %s\n",
+                                  "Error - [%d] Object method %s::%s() failed\n",
                                   GetID(), UnHash(obj_ns->GetHash()), UnHash(function_hash));
                 }
             }
@@ -179,7 +178,7 @@ void CObjectEntry::CallFunctionHierarchy(uint32 function_hash, bool8 ascending)
                 if (!ObjExecNSMethod(GetID(), dummy, obj_ns->GetHash(), function_hash))
                 {
                     ScriptAssert_(GetScriptContext(), 0, "<internal>", -1,
-                                    "Error - [%d] Object method %s::%s() failed: %s, type: %s\n",
+                                    "Error - [%d] Object method %s::%s() failed\n",
                                     GetID(), UnHash(obj_ns->GetHash()), UnHash(function_hash));
                 }
             }
@@ -1072,7 +1071,7 @@ bool8 CScriptContext::ExportObjectTreeCreate(CObjectEntry* oe, FILE* filehandle,
     if (oe->HasNamespace(object_group_hash))
     {
         // -- bump the index
-        int32 indent = strlen(indent_buf);
+        int32 indent = (int32)strlen(indent_buf);
         indent_buf[indent++] = ' ';
         indent_buf[indent++] = ' ';
         indent_buf[indent++] = ' ';
@@ -1157,7 +1156,7 @@ bool8 CScriptContext::ExportObjectTreeHierarchy(CObjectEntry* oe, FILE* filehand
             if (child_oe->HasNamespace(object_set_hash))
             {
                 // -- bump the index
-                int32 indent = strlen(indent_buf);
+                int32 indent = (int32)strlen(indent_buf);
                 indent_buf[indent++] = ' ';
                 indent_buf[indent++] = ' ';
                 indent_buf[indent++] = ' ';
@@ -1205,7 +1204,7 @@ bool8 CScriptContext::SaveObjectTree(uint32 object_id, const char* savefilename)
 
     // -- auto-append the ".ts" to the filename, if needed
     char file_name_buffer[kMaxNameLength];
-    int length = strlen(savefilename);
+    int32 length = (int32)strlen(savefilename);
     if (length < 3 || strcmp(&savefilename[length - 3], ".ts") != 0)
     {
         sprintf_s(file_name_buffer, kMaxNameLength, "%s.ts", savefilename);
@@ -1363,7 +1362,7 @@ bool8 CScriptContext::FileWritef(FILE* filehandle, const char* fmt, ...)
     va_end(args);
 
     // -- length
-    int32 msg_length = strlen(msg_buf);
+    int32 msg_length = (int32)strlen(msg_buf);
 
     // -- auto-appened the \n
     msg_buf[msg_length++] = '\n';

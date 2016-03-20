@@ -24,7 +24,6 @@
 // ====================================================================================================================
 
 // -- lib includes
-#include "stdafx.h"
 #include "stdio.h"
 
 #include "TinScript.h"
@@ -473,7 +472,7 @@ void CVariableEntry::SetValueAddr(void* objaddr, void* value, int32 array_index)
         ((const char**)(valueaddr))[array_index] = string_value;
     } 
 
-    // -- the act of assigning a string value means incrementing the reference int the string dictionary
+    // -- the act of assigning a string value means incrementing the reference in the string dictionary
     GetScriptContext()->GetStringTable()->RefCountIncrement(string_hash_value);
 
     // -- if we've been requested to break on write
@@ -607,7 +606,7 @@ bool8 CFunctionContext::AddParameter(const char* varname, uint32 varhash, eVarTy
 // ====================================================================================================================
 // AddLocalVar():  Local variable declaration for a function definition.
 // ====================================================================================================================
-CVariableEntry* CFunctionContext::AddLocalVar(const char* varname, uint32 varhash, eVarType type, int array_size,
+CVariableEntry* CFunctionContext::AddLocalVar(const char* varname, uint32 varhash, eVarType type, int32 array_size,
                                               bool8 is_param)
 {
 

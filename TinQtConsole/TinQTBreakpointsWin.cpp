@@ -20,7 +20,7 @@
 // ------------------------------------------------------------------------------------------------
 
 // ------------------------------------------------------------------------------------------------
-// TinQTConsole.cpp : Defines the entry point for the console application.
+// TinQTConsole.cpp : Defines the entry point32 for the console application.
 //
 
 #include <QDockWidget>
@@ -116,7 +116,7 @@ void CBreakpointEntry::UpdateLabel(uint32 codeblock_hash, int32 line_number)
 
     char linebuf[256];
     char spaces[6] = "     ";
-    int space_count = line_number >= 1e5 ? 0 :
+    int32 space_count = line_number >= 1e5 ? 0 :
                         line_number >= 1e4 ? 1 :
                         line_number >= 1e3 ? 2 :
                         line_number >= 1e2 ? 3 :
@@ -260,9 +260,9 @@ void CDebugBreakpointsWin::keyPressEvent(QKeyEvent* event)
                                             cur_item->mWatchVarNameHash);
 
                 // -- find and remove the breakpoint
-                int found_index = -1;
+                int32 found_index = -1;
                 CBreakpointEntry* breakpoint = NULL;
-                for(int i = 0; i < mBreakpoints.size(); ++i)
+                for(int32 i = 0; i < mBreakpoints.size(); ++i)
                 {
                     CBreakpointEntry* temp = mBreakpoints.at(i);
                     if (temp->mWatchRequestID == cur_item->mWatchRequestID)
@@ -301,9 +301,9 @@ CDebugBreakpointsWin::~CDebugBreakpointsWin() {
 void CDebugBreakpointsWin::ToggleBreakpoint(uint32 codeblock_hash, int32 line_number, bool addOrRemove)
 {
     // -- see if the breakpoint already exists
-    int found_index = -1;
+    int32 found_index = -1;
     CBreakpointEntry* breakpoint = NULL;
-    for(int i = 0; i < mBreakpoints.size(); ++i)
+    for(int32 i = 0; i < mBreakpoints.size(); ++i)
     {
         CBreakpointEntry* temp = mBreakpoints.at(i);
         if (temp->mWatchRequestID == 0 && temp->mCodeblockHash == codeblock_hash && temp->mLineNumber == line_number)
@@ -362,9 +362,9 @@ void CDebugBreakpointsWin::ToggleBreakpoint(uint32 codeblock_hash, int32 line_nu
 // ====================================================================================================================
 void CDebugBreakpointsWin::SetCurrentBreakpoint(uint32 codeblock_hash, int32 line_number)
 {
-    int found_index = -1;
+    int32 found_index = -1;
     CBreakpointEntry* breakpoint = NULL;
-    for (int i = 0; i < mBreakpoints.size(); ++i)
+    for (int32 i = 0; i < mBreakpoints.size(); ++i)
     {
         CBreakpointEntry* temp = mBreakpoints.at(i);
         if (temp->mWatchRequestID == 0 && temp->mCodeblockHash == codeblock_hash && temp->mLineNumber == line_number)
@@ -384,9 +384,9 @@ void CDebugBreakpointsWin::SetCurrentBreakpoint(uint32 codeblock_hash, int32 lin
 // ====================================================================================================================
 void CDebugBreakpointsWin::SetCurrentVarWatch(int32 watch_request_id)
 {
-    int found_index = -1;
+    int32 found_index = -1;
     CBreakpointEntry* breakpoint = NULL;
-    for (int i = 0; i < mBreakpoints.size(); ++i)
+    for (int32 i = 0; i < mBreakpoints.size(); ++i)
     {
         CBreakpointEntry* temp = mBreakpoints.at(i);
         if (temp->mWatchRequestID == watch_request_id)
@@ -470,7 +470,7 @@ const char* CDebugBreakpointsWin::GetBreakCondition(bool8& enabled)
 }
 
 // ====================================================================================================================
-// SetTraceExpression():  Set/modify/disable a tracepoint on the currently selected break.
+// SetTraceExpression():  Set/modify/disable a tracepoint32 on the currently selected break.
 // ====================================================================================================================
 void CDebugBreakpointsWin::SetTraceExpression(const char* expression, bool8 trace_enabled, bool8 trace_on_condition)
 {
@@ -522,7 +522,7 @@ void CDebugBreakpointsWin::SetTraceExpression(const char* expression, bool8 trac
 }
 
 // ====================================================================================================================
-// GetTraceExpression(): Get the tracepoint expression for the currently selected break
+// GetTraceExpression(): Get the tracepoint32 expression for the currently selected break
 // ====================================================================================================================
 const char* CDebugBreakpointsWin::GetTraceExpression(bool8& trace_enabled, bool8& trace_on_condition)
 {
@@ -542,7 +542,7 @@ void CDebugBreakpointsWin::NotifyCodeblockLoaded(uint32 codeblock_hash)
     const char* filename = TinScript::UnHash(codeblock_hash);
 
     // -- loop through all the existing breakpoints, and set the breakpoints
-    for (int i = 0; i < mBreakpoints.size(); ++i)
+    for (int32 i = 0; i < mBreakpoints.size(); ++i)
     {
         CBreakpointEntry* breakpoint = mBreakpoints.at(i);
         if (breakpoint->mWatchRequestID == 0 && breakpoint->mCodeblockHash == codeblock_hash)
@@ -581,10 +581,10 @@ void CDebugBreakpointsWin::NotifyConfirmBreakpoint(uint32 codeblock_hash, int32 
     if (line_number == actual_line)
         return;
 
-    int foundIndex = -1;
+    int32 foundIndex = -1;
     CBreakpointEntry* found = NULL;
     CBreakpointEntry* alreadyExists = NULL;
-    for (int i = 0; i < mBreakpoints.size(); ++i)
+    for (int32 i = 0; i < mBreakpoints.size(); ++i)
     {
         CBreakpointEntry* breakpoint = mBreakpoints.at(i);
         if (breakpoint->mCodeblockHash == codeblock_hash)
@@ -641,7 +641,7 @@ void CDebugBreakpointsWin::NotifyConfirmVarWatch(int32 watch_request_id, uint32 
 {
     CBreakpointEntry* found = NULL;
     CBreakpointEntry* alreadyExists = NULL;
-    for (int i = 0; i < mBreakpoints.size(); ++i)
+    for (int32 i = 0; i < mBreakpoints.size(); ++i)
     {
         CBreakpointEntry* breakpoint = mBreakpoints.at(i);
         if (breakpoint->mWatchRequestID == watch_request_id && breakpoint->mWatchVarObjectID == watch_object_id &&
@@ -670,7 +670,7 @@ void CDebugBreakpointsWin::NotifyConfirmVarWatch(int32 watch_request_id, uint32 
 void CDebugBreakpointsWin::NotifySourceFile(uint32 filehash)
 {
     // -- loop through all the existing breakpoints, and set the breakpoints
-    for (int i = 0; i < mBreakpoints.size(); ++i)
+    for (int32 i = 0; i < mBreakpoints.size(); ++i)
     {
         CBreakpointEntry* breakpoint = mBreakpoints.at(i);
         if (breakpoint->mCodeblockHash == filehash)
@@ -689,7 +689,7 @@ void CDebugBreakpointsWin::NotifySourceFile(uint32 filehash)
 void CDebugBreakpointsWin::NotifyOnConnect()
 {
     // -- we want to re-broadcast all active breakpoints, upon reconnection
-    for (int i = 0; i < mBreakpoints.size(); ++i)
+    for (int32 i = 0; i < mBreakpoints.size(); ++i)
     {
         CBreakpointEntry* breakpoint = mBreakpoints.at(i);
 
@@ -753,12 +753,12 @@ void CDebugCallstackWin::ClearCallstack() {
 
 void CDebugCallstackWin::NotifyCallstack(uint32* codeblock_array, uint32* objid_array,
                                          uint32* namespace_array, uint32* func_array,
-                                         uint32* linenumber_array, int array_size) {
+                                         uint32* linenumber_array, int32 array_size) {
     // -- clear the callstack
     ClearCallstack();
 
     // -- add each entry in the callstack
-    for(int i = 0; i < array_size; ++i) {
+    for(int32 i = 0; i < array_size; ++i) {
         CCallstackEntry* list_item =
             new CCallstackEntry(codeblock_array[i], linenumber_array[i], objid_array[i],
                                 namespace_array[i], func_array[i]);
@@ -778,7 +778,7 @@ void CDebugCallstackWin::OnDoubleClicked(QListWidgetItem* item)
                                                                       stack_entry->mLineNumber);
 
     // -- find out which stack index this entry is, and notify the watchvar window
-    for (int i = 0; i < mCallstack.size(); ++i)
+    for (int32 i = 0; i < mCallstack.size(); ++i)
     {
         if (mCallstack.at(i) == stack_entry)
         {
@@ -788,13 +788,13 @@ void CDebugCallstackWin::OnDoubleClicked(QListWidgetItem* item)
     }
 }
 
-int CDebugCallstackWin::GetSelectedStackEntry(uint32& func_ns_hash, uint32& func_hash, uint32& func_obj_id)
+int32 CDebugCallstackWin::GetSelectedStackEntry(uint32& func_ns_hash, uint32& func_hash, uint32& func_obj_id)
 {
     if (mCallstack.size() <= 0)
         return (-1);
 
     QListWidgetItem* cur_item = currentItem();
-    int stack_index = 0;
+    int32 stack_index = 0;
     while (stack_index < mCallstack.size() && mCallstack.at(stack_index) != cur_item)
         ++stack_index;
 
@@ -813,7 +813,7 @@ int CDebugCallstackWin::GetSelectedStackEntry(uint32& func_ns_hash, uint32& func
     return (-1);
 }
 
-int CDebugCallstackWin::GetTopStackEntry(uint32& func_ns_hash, uint32& func_hash, uint32& func_obj_id)
+int32 CDebugCallstackWin::GetTopStackEntry(uint32& func_ns_hash, uint32& func_hash, uint32& func_obj_id)
 {
     if (mCallstack.size() <= 0)
         return (-1);
@@ -830,12 +830,12 @@ int CDebugCallstackWin::GetTopStackEntry(uint32& func_ns_hash, uint32& func_hash
 // ====================================================================================================================
 // ValidateStackEntry():  Returns true if there's a current stack entry matching the given function call attributes
 // ====================================================================================================================
-int CDebugCallstackWin::ValidateStackEntry(uint32 func_ns_hash, uint32 func_hash, uint32 func_obj_id)
+int32 CDebugCallstackWin::ValidateStackEntry(uint32 func_ns_hash, uint32 func_hash, uint32 func_obj_id)
 {
     if (mCallstack.size() <= 0)
         return (-1);
 
-    int stack_index = 0;
+    int32 stack_index = 0;
     while (stack_index < mCallstack.size())
     {
         const CCallstackEntry* callstack_entry = mCallstack.at(stack_index);

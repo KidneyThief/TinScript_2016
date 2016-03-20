@@ -220,7 +220,7 @@ int32 StringLen(const char* string)
     if (!string)
         return (0);
 
-    int32 len = strlen(string);
+    int32 len = (int32)strlen(string);
     return (len);
 }
 
@@ -290,7 +290,7 @@ const char* IntToChar(int32 ascii_value)
         return ("");
 
     char* buffer = TinScript::GetContext()->GetScratchBuffer();
-    buffer[0] = ascii_value;
+    buffer[0] = (char)ascii_value;
     buffer[1] = '\0';
     return (buffer);
 }

@@ -44,6 +44,7 @@ namespace TinScript {
 // -- TYPES
 // ------------------------------------------------------------------------------------------------
 
+// NOTE:  if you change typedef int32 from an int (to say, a long), the regeistered types in TinTypes.h will not match
 typedef bool                bool8;
 typedef char                int8;
 typedef unsigned char       uint8;
@@ -115,7 +116,7 @@ enum eAllocType {
     new char[gRegisteredTypeSize[_type]];
 
 #define TinAllocInstrBlock(_size) \
-    new unsigned int[_size];
+    new uint32[_size];
 
 #define TinAllocArray(alloctype, T, size) \
     new T[size];

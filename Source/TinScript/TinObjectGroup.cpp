@@ -23,8 +23,6 @@
 // TinObjectGroup.cpp
 // ====================================================================================================================
 
-#include "stdafx.h"
-
 // -- includes
 #include "assert.h"
 
@@ -42,7 +40,7 @@ namespace TinScript
 // ====================================================================================================================
 // Constructor
 // ====================================================================================================================
-CMasterMembershipList::CMasterMembershipList(CScriptContext* script_context, int _size)
+CMasterMembershipList::CMasterMembershipList(CScriptContext* script_context, int32 _size)
 {
     assert(script_context != NULL && _size > 0);
     mContextOwner = script_context;

@@ -649,7 +649,7 @@ void CDebugWatchWin::NotifyVarWatchResponse(TinScript::CDebuggerWatchVarEntry* w
 // ====================================================================================================================
 // NotifyVarWatchMember():  A member update received from the target in response to a dynamic variable watch.
 // ====================================================================================================================
-void CDebugWatchWin::NotifyVarWatchMember(int parent_entry_index, TinScript::CDebuggerWatchVarEntry* watch_var_entry)
+void CDebugWatchWin::NotifyVarWatchMember(int32 parent_entry_index, TinScript::CDebuggerWatchVarEntry* watch_var_entry)
 {
 	// -- sanity check
     if (!watch_var_entry || watch_var_entry->mWatchRequestID <= 0 || watch_var_entry->mObjectID <= 0 ||

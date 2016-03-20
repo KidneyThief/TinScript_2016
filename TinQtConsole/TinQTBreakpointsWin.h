@@ -43,11 +43,11 @@ class CBreakpointEntry : public QListWidgetItem {
         bool8 mChecked;
         void SetCheckedState(bool8 enabled, bool8 hasCondition);
 
-        // -- breakpoint based on a file/line
+        // -- breakpoint32 based on a file/line
         uint32 mCodeblockHash;
         int32 mLineNumber;
 
-        // -- breakpoint based on a variable watch
+        // -- breakpoint32 based on a variable watch
         int32 mWatchRequestID;
         uint32 mWatchVarObjectID;
         uint32 mWatchVarNameHash;
@@ -83,15 +83,15 @@ class CDebugBreakpointsWin : public QListWidget
         {
             // -- resize to be the parent widget's size, with room for the title
             QSize parentSize = parentWidget()->size();
-            int newWidth = parentSize.width();
-            int newHeight = parentSize.height();
+            int32 newWidth = parentSize.width();
+            int32 newHeight = parentSize.height();
             if (newHeight < 20)
                 newHeight = 20;
             setGeometry(0, 20, newWidth, newHeight);
             updateGeometry();
         }
 
-        // -- Toggle the breakpoint for a file/line
+        // -- Toggle the breakpoint32 for a file/line
         void ToggleBreakpoint(uint32 codeblock_hash, int32 line_number, bool add);
 
         // -- set the current breakpoint, when a file/line break has been triggered
@@ -103,7 +103,7 @@ class CDebugBreakpointsWin : public QListWidget
         // -- set/modify/disable a condition on the the currently selected break
         void SetBreakCondition(const char* expression, bool8 cond_enabled);
 
-        // -- set/modify/disable a tracepoint on the currently selected break
+        // -- set/modify/disable a tracepoint32 on the currently selected break
         void SetTraceExpression(const char* expression, bool8 trace_enabled, bool8 trace_on_condition);
 
         // -- get the break condition for the currently selected break
@@ -136,10 +136,10 @@ class CDebugBreakpointsWin : public QListWidget
 
 class CCallstackEntry : public QListWidgetItem {
     public:
-        CCallstackEntry(uint32 codeblock_hash, int line_number, uint32 object_id,
+        CCallstackEntry(uint32 codeblock_hash, int32 line_number, uint32 object_id,
                         uint32 namespace_hash, uint32 function_hash);
         uint32 mCodeblockHash;
-        int mLineNumber;
+        int32 mLineNumber;
         uint32 mObjectID;
         uint32 mNamespaceHash;
         uint32 mFunctionHash;
@@ -162,8 +162,8 @@ class CDebugCallstackWin : public QListWidget {
         {
             // -- resize to be the parent widget's size, with room for the title
             QSize parentSize = parentWidget()->size();
-            int newWidth = parentSize.width();
-            int newHeight = parentSize.height();
+            int32 newWidth = parentSize.width();
+            int32 newHeight = parentSize.height();
             if (newHeight < 20)
                 newHeight = 20;
             setGeometry(0, 20, newWidth, newHeight);
@@ -171,17 +171,17 @@ class CDebugCallstackWin : public QListWidget {
         }
 
         void NotifyCallstack(uint32* codeblock_array, uint32* objid_array, uint32* namespace_array,
-                             uint32* func_array, uint32* linenumber_array, int array_size);
+                             uint32* func_array, uint32* linenumber_array, int32 array_size);
         void ClearCallstack();
 
         // -- returns the index of the currently selected stack entry, as well as the calling attributes
-        int GetSelectedStackEntry(uint32& funcHash, uint32& objectID, uint32& nsHash);
+        int32 GetSelectedStackEntry(uint32& funcHash, uint32& objectID, uint32& nsHash);
 
         // -- returns the index of the currently selected stack entry, as well as the calling attributes
-        int GetTopStackEntry(uint32& funcHash, uint32& objectID, uint32& nsHash);
+        int32 GetTopStackEntry(uint32& funcHash, uint32& objectID, uint32& nsHash);
 
         // -- returns the stack entry matching the given attributes, or -1 if it doesn't exist
-        int ValidateStackEntry(uint32 func_ns_hash, uint32 func_hash, uint32 func_obj_id);
+        int32 ValidateStackEntry(uint32 func_ns_hash, uint32 func_hash, uint32 func_obj_id);
 
     public slots:
         void OnDoubleClicked(QListWidgetItem*);

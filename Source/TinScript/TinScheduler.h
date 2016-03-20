@@ -59,10 +59,10 @@ class CScheduler
         class CCommand
         {
             public:
-                CCommand(CScriptContext* script_context, int _reqid, uint32 _objectid = 0,
+                CCommand(CScriptContext* script_context, int32 _reqid, uint32 _objectid = 0,
                          uint32 _dispatchtime = 0, uint32 _repeat_time = 0, const char* _command = NULL,
                          bool8 immediate = false);
-                CCommand(CScriptContext* script_context, int _reqid, uint32 _objectid,
+                CCommand(CScriptContext* script_context, int32 _reqid, uint32 _objectid,
                          uint32 _dispatchtime, uint32 _repeat_time, uint32 _funchash, bool8 immediate = false);
 
                 virtual ~CCommand();
@@ -83,10 +83,10 @@ class CScheduler
                 CFunctionContext* mFuncContext;
         };
 
-        int Schedule(uint32 objectid, int delay, bool8 repeat, const char* commandstring);
+        int32 Schedule(uint32 objectid, int32 delay, bool8 repeat, const char* commandstring);
         void CancelObject(uint32 objectid);
-        void CancelRequest(int reqid);
-        void Cancel(uint32 objectid, int reqid);
+        void CancelRequest(int32 reqid);
+        void Cancel(uint32 objectid, int32 reqid);
         void Dump();
 
         // -- debugger hook
@@ -95,7 +95,7 @@ class CScheduler
         void DebuggerRemoveSchedule(int32 request_id);
 
         void InsertCommand(CCommand* curcommand);
-        CCommand* ScheduleCreate(uint32 objectid, int delay, uint32 funchash, bool8 immediate, bool8 repeat);
+        CCommand* ScheduleCreate(uint32 objectid, int32 delay, uint32 funchash, bool8 immediate, bool8 repeat);
         CScheduler::CCommand* mCurrentSchedule;
 
     private:

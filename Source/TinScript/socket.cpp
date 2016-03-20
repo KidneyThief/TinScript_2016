@@ -19,8 +19,6 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ------------------------------------------------------------------------------------------------
 
-#include "stdafx.h"
-
 // -- system includes
 // -- sockets are only implemented in WIN32
 #ifdef WIN32
@@ -597,7 +595,7 @@ bool CSocket::Connect(const char* ipAddress)
     }
 
     // -- see if we can request a conenction
-    int connectResult = connect(mConnectSocket, addressResult->ai_addr, addressResult->ai_addrlen);
+    int32 connectResult = (int32)connect(mConnectSocket, addressResult->ai_addr, (int32)addressResult->ai_addrlen);
     if (connectResult == SOCKET_ERROR)
     {
         ScriptCommand("Print('Error CSocket: connect() failed.\n');");
@@ -986,7 +984,7 @@ bool CSocket::SendScriptCommand(const char* command)
     mThreadLock.Lock();
 
     // -- fill in the packet header
-    int length = strlen(command) + 1;
+    int32 length = (int32)strlen(command) + 1;
 
     // -- ensure we don't exceed the max length
     if (length > k_MaxPacketSize)

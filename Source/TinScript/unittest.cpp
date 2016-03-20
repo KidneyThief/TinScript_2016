@@ -23,8 +23,6 @@
 // unittest.cpp
 // ------------------------------------------------------------------------------------------------
 
-#include "stdafx.h"
-
 // -- lib includes
 #include "stdio.h"
 
@@ -841,8 +839,7 @@ DWORD WINAPI MyThreadFunction(LPVOID lpParam)
 
     // -- note:  Calling GetContext() instead of using thread_context, ensures we're using
     // -- the thread local singleton
-    uint32 altObjectID = TinScript::GetContext()->RegisterObject(altThreadObject,
-                                                                                 "CBase", "AltThreadObject");
+    uint32 altObjectID = TinScript::GetContext()->RegisterObject(altThreadObject, "CBase", "AltThreadObject");
 
     // -- execute a function from a common script, executed from separate threads
     // -- in this case, it's a wrapper for "ListObjects()", but since each thread
@@ -901,8 +898,7 @@ void BeginMultiThreadTest()
     // -- create an object on the main thread
     MTPrint("MAIN THREAD:  Creating a MainThreadObject");
     CBase* mainThreadObject = TinAlloc(ALLOC_Debugger, CBase);
-    uint32 mtObjectID = TinScript::GetContext()->RegisterObject(mainThreadObject,
-                                                                                "CBase", "MainThreadObject");
+    uint32 mtObjectID = TinScript::GetContext()->RegisterObject(mainThreadObject, "CBase", "MainThreadObject");
 
     // -- create the thread
     DWORD threadID;

@@ -24,7 +24,6 @@
 // ====================================================================================================================
 
 // -- includes
-#include "stdafx.h"
 #include "stdlib.h"
 #include "stdio.h"
 #include "string.h"
@@ -3171,7 +3170,7 @@ bool8 TryParseHash(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*
     char hash_value_buf[32];
     sprintf_s(hash_value_buf, 32, "%d", hash_value);
     CValueNode* hash_node = TinAlloc(ALLOC_TreeNode, CValueNode, codeblock, link, filebuf.linenumber, hash_value_buf,
-                                     strlen(hash_value_buf), false, TYPE_int);
+                                     (int32)strlen(hash_value_buf), false, TYPE_int);
 
     // -- success
     return (true);

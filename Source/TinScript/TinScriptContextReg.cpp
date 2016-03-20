@@ -24,7 +24,6 @@
 // ====================================================================================================================
 
 // -- includes
-#include "stdafx.h"
 #include "TinRegistration.h"
 #include "TinScheduler.h"
 #include "TinObjectGroup.h"

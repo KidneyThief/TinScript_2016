@@ -386,7 +386,7 @@ int CDemoWindow::Exec()
 }
 
 // --------------------------------------------------------------------------------------------------------------------
-int32 _tmain(int32 argc, _TCHAR* argv[])
+int32 _tmain(int argc, _TCHAR* argv[])
 {
     // -- required to ensure registered functions from unittest.cpp are linked.
     REGISTER_FILE(unittest_cpp);

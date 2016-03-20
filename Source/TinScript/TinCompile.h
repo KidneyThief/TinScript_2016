@@ -187,19 +187,19 @@ class CCompileTreeNode
 {
 	public:
 		CCompileTreeNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link,
-                         ECompileNodeType nodetype, int _linenumber);
+                         ECompileNodeType nodetype, int32 _linenumber);
 		virtual ~CCompileTreeNode();
 
 		CCompileTreeNode* next;
 		CCompileTreeNode* leftchild;
 		CCompileTreeNode* rightchild;
 
-		virtual int Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
-		virtual void Dump(char*& output, int& length) const;
+		virtual int32 Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
+		virtual void Dump(char*& output, int32& length) const;
 
 		ECompileNodeType GetType() const { return type; }
         CCodeBlock* GetCodeBlock() const { return codeblock; }
-        int GetLineNumber() const { return linenumber; }
+        int32 GetLineNumber() const { return linenumber; }
 
 		static CCompileTreeNode* CreateTreeRoot(CCodeBlock* codeblock);
 
@@ -223,13 +223,13 @@ class CCompileTreeNode
 class CValueNode : public CCompileTreeNode
 {
 	public:
-		CValueNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int _linenumber, const char* _value,
-                   int _valuelength, bool _isvar, eVarType _valtype);
-		CValueNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int _linenumber, int _paramindex,
+		CValueNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber, const char* _value,
+                   int32 _valuelength, bool _isvar, eVarType _valtype);
+		CValueNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber, int32 _paramindex,
                    eVarType _valtype);
 
-		virtual int Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
-		virtual void Dump(char*& output, int& length) const;
+		virtual int32 Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
+		virtual void Dump(char*& output, int32& length) const;
 
 	protected:
 		bool8 isvariable;
@@ -248,17 +248,17 @@ class CValueNode : public CCompileTreeNode
 class CBinaryOpNode : public CCompileTreeNode
 {
 	public:
-		CBinaryOpNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int _linenumber,
+		CBinaryOpNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber,
                       eBinaryOpType _binaryoptype, bool _isassignop, eVarType _resulttype);
 
-		CBinaryOpNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int _linenumber,
+		CBinaryOpNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber,
                       eAssignOpType _assoptype, bool _isassignop, eVarType _resulttype);
 
-		virtual int Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
-		virtual void Dump(char*& output, int& length)const;
+		virtual int32 Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
+		virtual void Dump(char*& output, int32& length)const;
 
         eOpCode GetOpCode() const { return binaryopcode; }
-        int GetBinaryOpPrecedence() const { return binaryopprecedence; }
+        int32 GetBinaryOpPrecedence() const { return binaryopprecedence; }
         void OverrideBinaryOpPrecedence(int32 new_precedence) { binaryopprecedence = new_precedence; }
 
 	protected:
@@ -277,10 +277,10 @@ class CBinaryOpNode : public CCompileTreeNode
 class CUnaryOpNode : public CCompileTreeNode
 {
 	public:
-		CUnaryOpNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int _linenumber,
+		CUnaryOpNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber,
                      eUnaryOpType _unaryoptype);
 
-		virtual int Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
+		virtual int32 Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
 
 	protected:
 		CUnaryOpNode() { }
@@ -293,9 +293,9 @@ class CUnaryOpNode : public CCompileTreeNode
 class CSelfNode : public CCompileTreeNode
 {
 	public:
-		CSelfNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int _linenumber);
+		CSelfNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber);
 
-		virtual int Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
+		virtual int32 Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
 
 	protected:
 		CSelfNode() { }
@@ -307,11 +307,11 @@ class CSelfNode : public CCompileTreeNode
 class CObjMemberNode : public CCompileTreeNode
 {
 	public:
-		CObjMemberNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int _linenumber,
-                       const char* _membername, int _memberlength);
+		CObjMemberNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber,
+                       const char* _membername, int32 _memberlength);
 
-		virtual int Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
-		virtual void Dump(char*& output, int& length) const;
+		virtual int32 Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
+		virtual void Dump(char*& output, int32& length) const;
 
 	protected:
 		char membername[kMaxTokenLength];
@@ -326,11 +326,11 @@ class CObjMemberNode : public CCompileTreeNode
 class CPODMemberNode : public CCompileTreeNode
 {
 	public:
-		CPODMemberNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int _linenumber,
-                       const char* _membername, int _memberlength);
+		CPODMemberNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber,
+                       const char* _membername, int32 _memberlength);
 
-		virtual int Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
-		virtual void Dump(char*& output, int& length) const;
+		virtual int32 Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
+		virtual void Dump(char*& output, int32& length) const;
 
 	protected:
 		char podmembername[kMaxTokenLength];
@@ -345,9 +345,9 @@ class CPODMemberNode : public CCompileTreeNode
 class CIfStatementNode : public CCompileTreeNode
 {
 	public:
-		CIfStatementNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int _linenumber);
+		CIfStatementNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber);
 
-		virtual int Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
+		virtual int32 Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
 
 	protected:
 		CIfStatementNode() { }
@@ -359,9 +359,9 @@ class CIfStatementNode : public CCompileTreeNode
 class CCondBranchNode : public CCompileTreeNode
 {
 	public:
-		CCondBranchNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int _linenumber);
+		CCondBranchNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber);
 
-		virtual int Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
+		virtual int32 Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
 
 	protected:
 		CCondBranchNode() { }
@@ -373,10 +373,10 @@ class CCondBranchNode : public CCompileTreeNode
 class CLoopJumpNode : public CCompileTreeNode
 {
 	public:
-		CLoopJumpNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int _linenumber, CWhileLoopNode* loop_node,
+		CLoopJumpNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber, CWhileLoopNode* loop_node,
                       bool is_break);
 
-		virtual int Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
+		virtual int32 Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
         void NotifyLoopInstr(uint32* continue_instr, uint32* break_instr);
 
 	protected:
@@ -392,9 +392,9 @@ class CLoopJumpNode : public CCompileTreeNode
 class CWhileLoopNode : public CCompileTreeNode
 {
 	public:
-		CWhileLoopNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int _linenumber);
+		CWhileLoopNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber);
 
-		virtual int Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
+		virtual int32 Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
         bool8 AddLoopJumpNode(CLoopJumpNode* jump_node);
 
         void SetEndOfLoopNode(CCompileTreeNode* node)
@@ -429,9 +429,9 @@ class CWhileLoopNode : public CCompileTreeNode
 class CParenOpenNode : public CCompileTreeNode
 {
 	public:
-		CParenOpenNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int _linenumber);
+		CParenOpenNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber);
 
-		virtual int Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
+		virtual int32 Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
 
 	protected:
 		CParenOpenNode() { }
@@ -443,11 +443,11 @@ class CParenOpenNode : public CCompileTreeNode
 class CFuncDeclNode : public CCompileTreeNode
 {
 	public:
-		CFuncDeclNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int _linenumber, const char* _funcname,
-                      int _length, const char* _funcns, int _funcnslength, uint32 derived_ns);
+		CFuncDeclNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber, const char* _funcname,
+                      int32 _length, const char* _funcns, int32 _funcnslength, uint32 derived_ns);
 
-		virtual int Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
-		virtual void Dump(char*& output, int& length)const;
+		virtual int32 Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
+		virtual void Dump(char*& output, int32& length)const;
 
 	protected:
 		CFuncDeclNode() { }
@@ -463,12 +463,12 @@ class CFuncDeclNode : public CCompileTreeNode
 class CFuncCallNode : public CCompileTreeNode
 {
 	public:
-		CFuncCallNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int _linenumber,
-                      const char* _funcname, int _length, const char* _nsname, int _nslength,
+		CFuncCallNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber,
+                      const char* _funcname, int32 _length, const char* _nsname, int32 _nslength,
                       bool _ismethod);
 
-		virtual int Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
-		virtual void Dump(char*& output, int& length)const;
+		virtual int32 Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
+		virtual void Dump(char*& output, int32& length)const;
 
 	protected:
 		char funcname[kMaxNameLength];
@@ -485,9 +485,9 @@ class CFuncCallNode : public CCompileTreeNode
 class CFuncReturnNode : public CCompileTreeNode
 {
 	public:
-		CFuncReturnNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int _linenumber);
+		CFuncReturnNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber);
 
-		virtual int Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
+		virtual int32 Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
 
 	protected:
 		CFuncReturnNode() { }
@@ -500,11 +500,11 @@ class CFuncReturnNode : public CCompileTreeNode
 class CObjMethodNode : public CCompileTreeNode
 {
 	public:
-		CObjMethodNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int _linenumber,
-                       const char* _methodname, int _methodlength);
+		CObjMethodNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber,
+                       const char* _methodname, int32 _methodlength);
 
-		virtual int Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
-		virtual void Dump(char*& output, int& length) const;
+		virtual int32 Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
+		virtual void Dump(char*& output, int32& length) const;
 
 	protected:
 		char methodname[kMaxTokenLength];
@@ -519,9 +519,9 @@ class CObjMethodNode : public CCompileTreeNode
 class CArrayHashNode : public CCompileTreeNode
 {
 	public:
-		CArrayHashNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int _linenumber);
+		CArrayHashNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber);
 
-		virtual int Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
+		virtual int32 Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
 
 	protected:
 		CArrayHashNode() { }
@@ -533,8 +533,8 @@ class CArrayHashNode : public CCompileTreeNode
 class CArrayVarNode : public CCompileTreeNode
 {
 	public:
-		CArrayVarNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int _linenumber);
-		virtual int Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
+		CArrayVarNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber);
+		virtual int32 Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
 
 	protected:
 		CArrayVarNode() { }
@@ -546,10 +546,10 @@ class CArrayVarNode : public CCompileTreeNode
 class CArrayVarDeclNode : public CCompileTreeNode
 {
 	public:
-		CArrayVarDeclNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int _linenumber,
+		CArrayVarDeclNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber,
                           eVarType _type);
 
-		virtual int Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
+		virtual int32 Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
 
 	protected:
 		CArrayVarDeclNode() { }
@@ -562,8 +562,8 @@ class CArrayVarDeclNode : public CCompileTreeNode
 class CArrayDeclNode : public CCompileTreeNode
 {
 	public:
-		CArrayDeclNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int _linenumber, int32 _size);
-		virtual int Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
+		CArrayDeclNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber, int32 _size);
+		virtual int32 Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
 
 	protected:
 		CArrayDeclNode() { }
@@ -576,10 +576,10 @@ class CArrayDeclNode : public CCompileTreeNode
 class CSelfVarDeclNode : public CCompileTreeNode
 {
 	public:
-		CSelfVarDeclNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int _linenumber,
-                         const char* _varname, int _varnamelength, eVarType _type, int32 _array_size);
+		CSelfVarDeclNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber,
+                         const char* _varname, int32 _varnamelength, eVarType _type, int32 _array_size);
 
-		virtual int Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
+		virtual int32 Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
         virtual void Dump(char*& output, int32& length) const;
 
 	protected:
@@ -595,10 +595,10 @@ class CSelfVarDeclNode : public CCompileTreeNode
 class CObjMemberDeclNode : public CCompileTreeNode
 {
 	public:
-		CObjMemberDeclNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int _linenumber,
-                           const char* _varname, int _varnamelength, eVarType _type, int32 _array_size);
+		CObjMemberDeclNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber,
+                           const char* _varname, int32 _varnamelength, eVarType _type, int32 _array_size);
 
-		virtual int Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
+		virtual int32 Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
         virtual void Dump(char*& output, int32& length) const;
 
 	protected:
@@ -614,10 +614,10 @@ class CObjMemberDeclNode : public CCompileTreeNode
 class CScheduleNode : public CCompileTreeNode
 {
 	public:
-		CScheduleNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int _linenumber,
+		CScheduleNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber,
                       int32 _delaytime, bool8 repeat);
 
-		virtual int Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
+		virtual int32 Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
 
 	protected:
 		char funcname[kMaxNameLength];
@@ -634,10 +634,10 @@ class CScheduleNode : public CCompileTreeNode
 class CSchedFuncNode : public CCompileTreeNode
 {
     public:
-        CSchedFuncNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int _linenumber,
+        CSchedFuncNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber,
                        bool8 _immediate);
 
-        virtual int Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
+        virtual int32 Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
 
     protected:
         bool8 mImmediate;
@@ -652,10 +652,10 @@ class CSchedFuncNode : public CCompileTreeNode
 class CSchedParamNode : public CCompileTreeNode
 {
 	public:
-		CSchedParamNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int _linenumber,
-                        int _paramindex);
+		CSchedParamNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber,
+                        int32 _paramindex);
 
-		virtual int Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
+		virtual int32 Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
 
     protected :
         int32 paramindex;
@@ -670,10 +670,10 @@ class CSchedParamNode : public CCompileTreeNode
 class CCreateObjectNode : public CCompileTreeNode
 {
 	public:
-		CCreateObjectNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int _linenumber,
+		CCreateObjectNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber,
                           const char* _classname, uint32 _classlength);
 
-		virtual int Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
+		virtual int32 Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
 
 	protected:
 		CCreateObjectNode() { }
@@ -686,9 +686,9 @@ class CCreateObjectNode : public CCompileTreeNode
 class CDestroyObjectNode : public CCompileTreeNode
 {
 	public:
-		CDestroyObjectNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int _linenumber);
+		CDestroyObjectNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber);
 
-		virtual int Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
+		virtual int32 Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
 
 	protected:
 		CDestroyObjectNode() { }
@@ -706,7 +706,7 @@ class CCodeBlock
 
         CScriptContext* GetScriptContext() { return (mContextOwner); }
 
-        void AllocateInstructionBlock(int _size, int _linecount)
+        void AllocateInstructionBlock(int32 _size, int32 _linecount)
         {
 			mInstrBlock = NULL;
 			mInstrCount = _size;
@@ -720,7 +720,7 @@ class CCodeBlock
 
         uint32 GetFilenameHash() const { return (mFileNameHash); }
 
-        void AddLineNumber(int linenumber, uint32* instrptr)
+        void AddLineNumber(int32 linenumber, uint32* instrptr)
         {
             if (mLineNumbers)
             {
@@ -772,7 +772,7 @@ class CCodeBlock
                         {
                             // -- check the previous valid instruction - see if it's on the same line or not
                             *isNewLine = true;
-                            int testlineindex = lineindex;
+                            int32 testlineindex = lineindex;
                             while (--testlineindex >= 0)
                             {
                                 uint32 testline = mLineNumbers[testlineindex] & 0xffff;
@@ -796,7 +796,7 @@ class CCodeBlock
             return kBytesToWordCount(kPointerDiffUInt32(instrptr, mInstrBlock));
         }
 
-        int CalcInstrCount(const CCompileTreeNode& root);
+        int32 CalcInstrCount(const CCompileTreeNode& root);
         bool CompileTree(const CCompileTreeNode& root);
         bool Execute(uint32 offset, CExecStack& execstack, CFunctionCallStack& funccallstack);
 
@@ -811,7 +811,7 @@ class CCodeBlock
             mFunctionList->RemoveItem(_func->GetHash());
         }
 
-        int IsInUse()
+        int32 IsInUse()
         {
             return (mIsParsing || !mFunctionList->IsEmpty());
         }

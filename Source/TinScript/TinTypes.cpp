@@ -24,7 +24,6 @@
 // ====================================================================================================================
 
 // -- lib includes
-#include "stdafx.h"
 #include "stdio.h"
 #include "string.h"
 #include "stdlib.h"
@@ -886,9 +885,6 @@ bool8 FloatBinaryOp(CScriptContext* script_context, eOpCode op, eVarType& result
         default:
             return false;
     }
-
-    // -- fail
-    return (false);
 }
 
 // --------------------------------------------------------------------------------------------------------------------
@@ -982,9 +978,6 @@ bool8 IntegerBinaryOp(CScriptContext* script_context, eOpCode op, eVarType& resu
         default:
             return false;
     }
-
-    // -- fail
-    return (false);
 }
 
 // --------------------------------------------------------------------------------------------------------------------

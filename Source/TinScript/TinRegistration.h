@@ -72,7 +72,7 @@ class CFunctionContext
         CVariableEntry* AddLocalVar(const char* varname, uint32 varhash, eVarType type, int32 array_size,
                                     bool is_param);
         int32 GetParameterCount();
-        CVariableEntry* GetParameter(int index);
+        CVariableEntry* GetParameter(int32 index);
         CVariableEntry* GetLocalVar(uint32 varhash);
         tVarTable* GetLocalVarTable();
         int32 CalculateLocalVarStackSize();
