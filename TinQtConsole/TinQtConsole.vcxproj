@@ -95,6 +95,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="mainwindow.h" />
+    <ClInclude Include="resource.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="TinQTBreakpointsWin.h" />
     <ClInclude Include="TinQTConsole.h" />
@@ -117,6 +118,15 @@
     <ClCompile Include="TinQTSourceWin.cpp" />
     <ClCompile Include="TinQTToolsWin.cpp" />
     <ClCompile Include="TinQTWatchWin.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="TinQtConsole.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="..\..\Battlemage\PaperScorpion\Company_Icon_4.png" />
+    <Image Include="..\PaperScorpion.ico" />
+    <Image Include="..\PaperScorpion.png" />
+    <Image Include="..\TinQtConsole.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

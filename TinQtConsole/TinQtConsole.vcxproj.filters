@@ -51,6 +51,9 @@
     <ClInclude Include="TinQTWatchWin.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="TinQtConsole.cpp">
@@ -83,5 +86,24 @@
     <ClCompile Include="TinQTWatchWin.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="TinQtConsole.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="..\..\Battlemage\PaperScorpion\Company_Icon_4.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="..\PaperScorpion.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="..\PaperScorpion.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="..\TinQtConsole.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
   </ItemGroup>
 </Project>

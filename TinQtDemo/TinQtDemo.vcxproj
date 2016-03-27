@@ -93,7 +93,14 @@
     <ClCompile Include="TinQtDemo.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="resource.h" />
     <ClInclude Include="TinQtDemo.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="TinQtDemo.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="..\TinQtDemo.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
