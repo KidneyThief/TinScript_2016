@@ -76,7 +76,7 @@ void CObjectInspectEntry::Initialize(const TinScript::CDebuggerWatchVarEntry& de
 
     QSize parentSize = mParent->size();
     int newWidth = parentSize.width();
-    mParent->GetContent()->setGeometry(0, 20, newWidth, (count + 2) * 24);
+	mParent->GetContent()->setGeometry(0, 20, newWidth, (count + 2) * kFontHeight);
 
     mNameLabel = new QLabel(debugger_entry.mVarName);
     TinScript::SafeStrcpy(mName, debugger_entry.mVarName, TinScript::kMaxNameLength);

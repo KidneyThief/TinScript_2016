@@ -97,7 +97,7 @@ class CDebugSchedulesWin : public QWidget
             // -- resize to be the parent widget's size, with room for the title
             QSize parentSize = parentWidget()->size();
             int newWidth = parentSize.width();
-            int newHeight = parentSize.height() - 24;
+            int newHeight = parentSize.height() - kFontHeight;
             if (newHeight < 20)
                 newHeight = 20;
             setGeometry(0, 20, newWidth, newHeight);

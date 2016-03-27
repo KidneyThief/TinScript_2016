@@ -195,13 +195,13 @@ class CDebugToolsWin : public QWidget
             // -- resize to be the parent widget's size, with room for the title
             QSize parentSize = parentWidget()->size();
             int newWidth = parentSize.width();
-            int newHeight = parentSize.height() - 24;
-            if (newHeight < 20)
-                newHeight = 20;
-            setGeometry(0, 20, newWidth, newHeight);
+			int newHeight = parentSize.height() - kFontHeight;
+			if (newHeight < kFontHeight)
+				newHeight = kFontHeight;
+			setGeometry(0, kFontHeight, newWidth, newHeight);
             updateGeometry();
 
-            mScrollArea->setGeometry(0, 20, newWidth, newHeight);
+			mScrollArea->setGeometry(0, kFontHeight, newWidth, newHeight);
             mScrollArea->updateGeometry();
         }
 

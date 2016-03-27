@@ -67,7 +67,7 @@ CDebugFunctionAssistWin::CDebugFunctionAssistWin(QWidget* parent)
     identifier_widget->setMinimumWidth(80);
     QHBoxLayout* identifier_layout = new QHBoxLayout(identifier_widget);
     mObjectIndentifier = new QLabel("<global scope>", identifier_widget);
-    mObjectIndentifier->setFixedHeight(24);
+	mObjectIndentifier->setFixedHeight(kFontHeight);
 	QPushButton* method_button = new QPushButton("Method", identifier_widget);
 	QPushButton* browse_button = new QPushButton("Object", identifier_widget);
 

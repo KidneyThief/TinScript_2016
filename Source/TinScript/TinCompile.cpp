@@ -2172,17 +2172,19 @@ CCodeBlock::~CCodeBlock()
 	if (mInstrBlock)
 		TinFreeArray(mInstrBlock);
 
-    smCurrentGlobalVarTable->DestroyAll();
+	// -- clear out the breakpoints list
+	// -- do this before clearing functions, since conditionals/trace points contain funtion definitions
+	mBreakpoints->DestroyAll();
+	TinFree(mBreakpoints);
+
+	smCurrentGlobalVarTable->DestroyAll();
     TinFree(smCurrentGlobalVarTable);
+
     mFunctionList->DestroyAll();
     TinFree(mFunctionList);
 
     if (mLineNumbers)
         TinFreeArray(mLineNumbers);
-
-    // -- clear out the breakpoints list
-    mBreakpoints->DestroyAll();
-    TinFree(mBreakpoints);
 }
 
 // ====================================================================================================================

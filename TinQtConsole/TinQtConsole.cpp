@@ -97,7 +97,7 @@ CConsoleWindow::CConsoleWindow()
 
     // -- create the consoleinput
     mConsoleInput = new CConsoleInput(outputDockWidget);
-    mConsoleInput->setFixedHeight(24);
+    mConsoleInput->setFixedHeight(kFontHeight);
 
     // -- create the IPConnect
     mStatusLabel = new QLabel("Not Connected");
@@ -108,7 +108,7 @@ CConsoleWindow::CConsoleWindow()
     mConnectIP->setText("127.0.0.1");
     mButtonConnect = new QPushButton();
     mButtonConnect->setText("Connect");
-    mButtonConnect->setGeometry(0, 0, 32, 24); 
+    mButtonConnect->setGeometry(0, 0, 32, kFontHeight); 
 
     // -- color the pushbutton
     mButtonConnect->setAutoFillBackground(true);
@@ -136,13 +136,13 @@ CConsoleWindow::CConsoleWindow()
     spacer_0->setFixedWidth(16);
     mButtonRun = new QPushButton();
     mButtonRun->setText("Run");
-    mButtonRun->setGeometry(0, 0, 32, 24); 
+    mButtonRun->setGeometry(0, 0, 32, kFontHeight); 
     mButtonStep = new QPushButton();
     mButtonStep->setText("Step");
-    mButtonStep->setGeometry(0, 0, 32, 24);
+	mButtonStep->setGeometry(0, 0, 32, kFontHeight);
     mButtonStepIn = new QPushButton();
     mButtonStepIn->setText("Step In");
-    mButtonStepIn->setGeometry(0, 0, 32, 24);
+	mButtonStepIn->setGeometry(0, 0, 32, kFontHeight);
     QWidget* spacer_1 = new QWidget();
     spacer_1->setFixedWidth(16);
     QLabel* find_label = new QLabel("Find:");

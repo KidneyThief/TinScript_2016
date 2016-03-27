@@ -214,8 +214,11 @@ void CScriptContext::Destroy()
 {
     if (gThreadContext)
     {
-        TinFree(gThreadContext);
-        gThreadContext = NULL;
+		// -- we clear the thread context first, so destructors can tell we're
+		// -- shutting down
+		CScriptContext* currentContext = gThreadContext;
+		gThreadContext = NULL;
+		TinFree(currentContext);
     }
 }
 
@@ -3448,7 +3451,10 @@ CDebuggerWatchExpression::~CDebuggerWatchExpression()
 {
     // -- if we had been initialized, we need to destroy the function entry and codeblock
     // -- which will happen, by clearing the expression
-    SetAttributes(false, "", "", false);
+	if (TinScript::GetContext() != nullptr)
+	{
+		SetAttributes(false, "", "", false);
+	}
 }
 
 // ====================================================================================================================
