@@ -281,6 +281,7 @@ class CFunctionCallStack
             funcentrystack[stacktop].funcentry = functionentry;
             funcentrystack[stacktop].stackvaroffset = varoffset;
             funcentrystack[stacktop].isexecuting = false;
+			funcentrystack[stacktop].mLocalObjectCount = 0;
             ++stacktop;
 		}
 
@@ -289,7 +290,35 @@ class CFunctionCallStack
 			assert(stacktop > 0);
             objentry = funcentrystack[stacktop - 1].objentry;
             var_offset = funcentrystack[stacktop - 1].stackvaroffset;
-            return funcentrystack[--stacktop].funcentry;
+
+			// -- any time we pop a function call, we auto-destroy the local objects
+			CFunctionEntry* function_entry = funcentrystack[stacktop - 1].funcentry;
+			uint32* local_object_id_ptr = funcentrystack[stacktop - 1].mLocalObjectIDList;
+			for (int32 i = 0; i < funcentrystack[stacktop - 1].mLocalObjectCount; ++i)
+			{
+				// -- if the object still exists, destroy it
+				CObjectEntry* local_object =
+					function_entry->GetScriptContext()->FindObjectEntry(*local_object_id_ptr++);
+				if (local_object != nullptr)
+				{
+					function_entry->GetScriptContext()->DestroyObject(local_object->GetID());
+				}
+			}
+
+            return (funcentrystack[--stacktop].funcentry);
+		}
+
+		void NotifyLocalObjectID(uint32 local_object_id)
+		{
+			if (funcentrystack[stacktop - 1].mLocalObjectCount >= kExecFuncCallMaxLocalObjects)
+			{
+				ScriptAssert_(TinScript::GetContext(), 0, "<internal>", -1,
+						      "Error - max local vars exceeded (size: %d)\n", kExecFuncCallMaxLocalObjects);
+				return;
+			}
+
+			// -- push the ID into the list of local objects
+			funcentrystack[stacktop - 1].mLocalObjectIDList[funcentrystack[stacktop - 1].mLocalObjectCount++] = local_object_id;
 		}
 
    		CFunctionEntry* GetTop(CObjectEntry*& objentry, int32& varoffset)
@@ -369,6 +398,7 @@ class CFunctionCallStack
                 stackvaroffset = _varoffset;
                 linenumberfunccall = 0;
                 isexecuting = false;
+				mLocalObjectCount = 0;
             }
 
             CFunctionEntry* funcentry;
@@ -376,6 +406,8 @@ class CFunctionCallStack
             int32 stackvaroffset;
             uint32 linenumberfunccall;
             bool8 isexecuting;
+			int32 mLocalObjectCount;
+			uint32 mLocalObjectIDList[kExecFuncCallMaxLocalObjects];
         };
 
         // -- because we can have multiple virtual machines running,

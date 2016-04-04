@@ -169,21 +169,22 @@ enum eUnaryOpType
 // -- tuple defining the reserved keywords
 
 #define ReservedKeywordTuple \
-	ReservedKeywordEntry(NULL)		\
-	ReservedKeywordEntry(if)		\
-	ReservedKeywordEntry(else)		\
-	ReservedKeywordEntry(while)		\
-	ReservedKeywordEntry(break)		\
-	ReservedKeywordEntry(continue)	\
-	ReservedKeywordEntry(for)		\
-	ReservedKeywordEntry(return)	\
-	ReservedKeywordEntry(schedule)	\
-    ReservedKeywordEntry(execute)	\
-	ReservedKeywordEntry(repeat)	\
-    ReservedKeywordEntry(hash)	    \
-	ReservedKeywordEntry(create)   	\
-	ReservedKeywordEntry(destroy) 	\
-	ReservedKeywordEntry(self)   	\
+	ReservedKeywordEntry(NULL)			\
+	ReservedKeywordEntry(if)			\
+	ReservedKeywordEntry(else)			\
+	ReservedKeywordEntry(while)			\
+	ReservedKeywordEntry(break)			\
+	ReservedKeywordEntry(continue)		\
+	ReservedKeywordEntry(for)			\
+	ReservedKeywordEntry(return)		\
+	ReservedKeywordEntry(schedule)		\
+    ReservedKeywordEntry(execute)		\
+	ReservedKeywordEntry(repeat)		\
+    ReservedKeywordEntry(hash)			\
+	ReservedKeywordEntry(create)   		\
+	ReservedKeywordEntry(createlocal)   \
+	ReservedKeywordEntry(destroy) 		\
+	ReservedKeywordEntry(self)   		\
 
 enum eReservedKeyword
 {

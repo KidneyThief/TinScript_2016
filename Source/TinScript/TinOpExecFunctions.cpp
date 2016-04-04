@@ -2623,6 +2623,7 @@ bool8 OpExecCreateObject(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CE
 {
     // -- The next instruction is the class to instantiate
     uint32 classhash = *instrptr++;
+	bool local_object = *instrptr++ != 0;
 
     // -- what will previously have been pushed on the stack, is the object ID
     eVarType contenttype;
@@ -2649,6 +2650,10 @@ bool8 OpExecCreateObject(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CE
     // -- push the objid onto the stack, and update the instrptr
     execstack.Push(&objid, TYPE_object);
     DebugTrace(op, "Obj ID: %d", objid);
+
+	// -- if this is a local object, notify the call stack
+	if (local_object)
+		funccallstack.NotifyLocalObjectID(objid);
 
     return (true);
 }

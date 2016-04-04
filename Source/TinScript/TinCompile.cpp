@@ -2067,10 +2067,11 @@ int32 CSchedParamNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 counto
 // Constructor
 // ====================================================================================================================
 CCreateObjectNode::CCreateObjectNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber,
-                                     const char* _classname, uint32 _classlength)
+                                     const char* _classname, uint32 _classlength, bool create_local)
     : CCompileTreeNode(_codeblock, _link, eCreateObject, _linenumber)
 {
 	SafeStrcpy(classname, _classname, _classlength + 1);
+	mLocalObject = create_local;
 }
 
 // ====================================================================================================================
@@ -2091,6 +2092,7 @@ int32 CCreateObjectNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 coun
 	uint32 classhash = Hash(classname);
 	size += PushInstruction(countonly, instrptr, OP_CreateObject, DBG_instr);
 	size += PushInstruction(countonly, instrptr, classhash, DBG_hash);
+	size += PushInstruction(countonly, instrptr, mLocalObject ? 1 : 0, DBG_value);
 
     // -- if we're not looking to assign the new object ID to anything, pop the stack
     if (pushresult <= TYPE_void)

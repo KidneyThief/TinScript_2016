@@ -53,7 +53,7 @@
 // -- executed through their hash values...
 #define CASE_SENSITIVE 1
 
-const int32 kCompilerVersion = 3;
+const int32 kCompilerVersion = 4;
 
 // --------------------------------------------------------------------------------------------------------------------
 // -- only case_sensitive has been extensively tested, however theoretically TinScript should function as a
@@ -173,6 +173,7 @@ const int32 kLocalVarTableSize = 17;
 
 const int32 kExecStackSize = 4096;
 const int32 kExecFuncCallDepth = 2048;
+const int32 kExecFuncCallMaxLocalObjects = 32;
 
 const int32 kStringTableSize = 1024 * 1024;
 const int32 kStringTableDictionarySize = 577;

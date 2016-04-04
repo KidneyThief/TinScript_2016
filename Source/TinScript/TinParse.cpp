@@ -3362,8 +3362,11 @@ bool8 TryParseCreateObject(CCodeBlock* codeblock, tReadToken& filebuf, CCompileT
         return (false);
 
 	int32 reservedwordtype = GetReservedKeywordType(peektoken.tokenptr, peektoken.length);
-    if (reservedwordtype != KEYWORD_create)
+	if (reservedwordtype != KEYWORD_create && reservedwordtype != KEYWORD_createlocal)
         return (false);
+
+	// -- see if we're creating a local object - one that is destructed as soon as the function context is popped
+	bool local_object = (reservedwordtype == KEYWORD_createlocal);
 
     // -- committed
     filebuf = peektoken;
@@ -3416,14 +3419,14 @@ bool8 TryParseCreateObject(CCodeBlock* codeblock, tReadToken& filebuf, CCompileT
     {
         CCreateObjectNode* newobjnode = TinAlloc(ALLOC_TreeNode, CCreateObjectNode, codeblock,
                                                  link, filebuf.linenumber, classtoken.tokenptr,
-                                                 classtoken.length);
+												 classtoken.length, local_object);
         newobjnode->leftchild = obj_name_expr_root;
     }
     else
     {
         CCreateObjectNode* newobjnode = TinAlloc(ALLOC_TreeNode, CCreateObjectNode, codeblock,
                                                  link, filebuf.linenumber, classtoken.tokenptr,
-                                                 classtoken.length);
+												 classtoken.length, local_object);
         CValueNode* emptyname = TinAlloc(ALLOC_TreeNode, CValueNode, codeblock,
                                          newobjnode->leftchild, filebuf.linenumber, "", 0, false,
                                          TYPE_string);
