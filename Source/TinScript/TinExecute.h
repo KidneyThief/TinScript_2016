@@ -310,6 +310,14 @@ class CFunctionCallStack
 
 		void NotifyLocalObjectID(uint32 local_object_id)
 		{
+			// -- ensure we're actually in a function call
+			if (stacktop <= 0)
+			{
+				ScriptAssert_(TinScript::GetContext(), 0, "<internal>", -1,
+		                      "Error - createlocal called outside a function definition\n");
+				return;
+			}
+
 			if (funcentrystack[stacktop - 1].mLocalObjectCount >= kExecFuncCallMaxLocalObjects)
 			{
 				ScriptAssert_(TinScript::GetContext(), 0, "<internal>", -1,
