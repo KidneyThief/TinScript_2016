@@ -2376,6 +2376,41 @@ bool8 OpExecArrayDecl(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExec
 }
 
 // ====================================================================================================================
+// OpExecArrayCount():  Pops the array variable, and pushes the size of the array back onto the stack.
+// ====================================================================================================================
+bool8 OpExecArrayCount(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExecStack& execstack,
+	CFunctionCallStack& funccallstack)
+{
+	// -- pull the array variable off the stack
+	CVariableEntry* ve = NULL;
+	CObjectEntry* oe = NULL;
+	eVarType valtype;
+	void* val = execstack.Pop(valtype);
+	if (!GetStackValue(cb->GetScriptContext(), execstack, funccallstack, val, valtype, ve, oe))
+	{
+		DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
+					    "Error - ExecStack should contain an array variable\n");
+		return false;
+	}
+
+	// -- ensure we found an array
+	if (!ve || !ve->IsArray())
+	{
+		DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
+			"Error - ExecStack should contain an array variable\n");
+		return false;
+	}
+
+	// -- get and the array count
+	int32 count = ve->GetArraySize();
+	execstack.Push(&count, TYPE_int);
+
+	DebugTrace(op, "Array: %s[%d]", UnHash(ve->GetHash()), count);
+
+	return (true);
+}
+
+// ====================================================================================================================
 // OpExecSelfVarDecl():  Declare a member for the object executing the current method.
 // ====================================================================================================================
 bool8 OpExecSelfVarDecl(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExecStack& execstack,

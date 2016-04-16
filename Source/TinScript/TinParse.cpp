@@ -1704,6 +1704,10 @@ bool8 TryParseExpression(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTre
     if (TryParseHash(codeblock, filebuf, exprlink))
         return (true);
 
+	// -- a count() completes an expression
+	if (TryParseArrayCount(codeblock, filebuf, exprlink))
+		return (true);
+
     // -- after the potential unary op, an expression may start with:
     // -- a 'self'
     // -- a function call (not a method)
@@ -3174,6 +3178,84 @@ bool8 TryParseHash(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*
 
     // -- success
     return (true);
+}
+
+// ====================================================================================================================
+// TryParseArrayCount():  The keyword "count" has a well defined syntax.
+// ====================================================================================================================
+bool8 TryParseArrayCount(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link)
+{
+	// -- ensure the next token is the 'hash' keyword
+	tReadToken peektoken(filebuf);
+	if (!GetToken(peektoken) || peektoken.type != TOKEN_KEYWORD)
+		return (false);
+
+	int32 reservedwordtype = GetReservedKeywordType(peektoken.tokenptr, peektoken.length);
+	if (reservedwordtype != KEYWORD_count)
+		return (false);
+
+	// -- we're committed to a hash expression
+	filebuf = peektoken;
+
+	// -- the complete format is: count(<array var>)
+	// -- read an open parenthesis
+	if (!GetToken(peektoken) || peektoken.type != TOKEN_PAREN_OPEN)
+	{
+		ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
+				      "Error - count() expression, expecting '('\n");
+		return (false);
+	}
+
+	// -- next, we read a non-empty string
+	tReadToken array_var_token(peektoken);
+	if (!GetToken(array_var_token) || array_var_token.type != TOKEN_IDENTIFIER || array_var_token.length == 0)
+	{
+		ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
+			          "Error - count() expression, expecting an array variable identifier\n");
+		return (false);
+	}
+
+	// -- read the closing parenthesis
+	peektoken = array_var_token;
+	if (!GetToken(peektoken) || peektoken.type != TOKEN_PAREN_CLOSE)
+	{
+		ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
+			          "Error - count() expression, expecting ')' following array variable identifier\n");
+		return (false);
+	}
+
+	// -- update the file buf
+	filebuf = peektoken;
+
+	// -- get the variable, and create the 
+	int32 stacktopdummy = 0;
+	CObjectEntry* dummy = NULL;
+	CFunctionEntry* curfunction = codeblock->smFuncDefinitionStack->GetTop(dummy, stacktopdummy);
+	uint32 varhash = Hash(array_var_token.tokenptr, array_var_token.length);
+	uint32 funchash = curfunction ? curfunction->GetHash() : 0;
+	uint32 nshash = curfunction ? curfunction->GetNamespaceHash() : CScriptContext::kGlobalNamespaceHash;
+	CVariableEntry* var = GetVariable(codeblock->GetScriptContext(), codeblock->smCurrentGlobalVarTable, nshash,
+		funchash, varhash, 0);
+	if (!var)
+	{
+		ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
+			          "Error - count() expression, unknown variable ')'\n");
+		return (false);
+	}
+
+	// -- create the ArrayVarNode, leftchild is the hashtable var, right is the hash value
+	CArrayCountNode* array_count_node = TinAlloc(ALLOC_TreeNode, CArrayCountNode, codeblock, link,
+		                                         filebuf.linenumber);
+
+	// -- create the ArrayVarNode, leftchild is the hashtable var, right is the hash value
+	// -- left child is the variable (which is obviously a hashtable)
+	CValueNode* valuenode = TinAlloc(ALLOC_TreeNode, CValueNode, codeblock,
+									 array_count_node->leftchild, filebuf.linenumber,
+									 array_var_token.tokenptr, array_var_token.length, true, TYPE__var);
+	Unused_(valuenode);
+
+	// -- success
+	return (true);
 }
 
 // ====================================================================================================================

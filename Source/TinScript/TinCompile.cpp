@@ -1789,6 +1789,46 @@ int32 CArrayDeclNode::Eval(uint32*& instrptr, eVarType pushresult, bool countonl
     return (size);
 }
 
+// == class CArrayCountNode ===========================================================================================
+
+// ====================================================================================================================
+// Constructor
+// ====================================================================================================================
+CArrayCountNode::CArrayCountNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber)
+	: CCompileTreeNode(_codeblock, _link, eArrayCount, _linenumber)
+{
+}
+
+// ====================================================================================================================
+// Eval():  Generates the byte code instruction compiled from this node.
+// ====================================================================================================================
+int32 CArrayCountNode::Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const
+{
+	DebugEvaluateNode(*this, countonly, instrptr);
+	int32 size = 0;
+
+	if (!leftchild)
+	{
+		ScriptAssert_(codeblock->GetScriptContext(), leftchild != NULL, codeblock->GetFileName(),
+			linenumber,
+			"Error - CArrayDeclNode::Eval() - missing leftchild\n");
+		return (-1);
+	}
+
+
+	// -- left child will have pushed the array variable
+	int32 tree_size = leftchild->Eval(instrptr, TYPE__var, countonly);
+	if (tree_size < 0)
+		return (-1);
+	size += tree_size;
+
+	// -- push the instruction to read the and push the size of the array
+	size += PushInstruction(countonly, instrptr, OP_ArrayCount, DBG_instr);
+
+	// -- success
+	return (size);
+}
+
 // == class CSelfVarDeclNode ==========================================================================================
 
 // ====================================================================================================================
