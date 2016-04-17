@@ -5,8 +5,8 @@
 
 SocketSend("ToolPaletteClear('Asteroids');");
 SocketSend("ToolPaletteAddMessage('Asteroids', 'Demo Buttons');");
-SocketSend("ToolPaletteAddButton('Asteroids', 'Tools', 'Execute fltktools.ts', 'Tools', 'Exec(`fltktools.ts`);');");
-SocketSend("ToolPaletteAddButton('Asteroids', 'Exec', 'Execute asteroids.ts', 'Exec', 'Exec(`asteroids.ts`);');");
+SocketSend("ToolPaletteAddButton('Asteroids', 'Tools', 'Execute demotools.ts', 'Tools', 'Exec(`demotools.ts`);');");
+SocketSend("ToolPaletteAddButton('Asteroids', 'Exec', 'Execute asteroids.ts', 'Exec Asteroids', 'Exec(`asteroids.ts`);');");
 SocketSend("ToolPaletteAddButton('Asteroids', 'Start', 'Start the Asteroids game', 'Start', 'StartAsteroids();');");
 SocketSend("ToolPaletteAddButton('Asteroids', 'Pause', 'Pause the simulation', 'Pause', 'SimPause();');");
 SocketSend("ToolPaletteAddButton('Asteroids', 'Unpause', 'Unpause the simulation', 'Unpause', 'SimUnpause();');");

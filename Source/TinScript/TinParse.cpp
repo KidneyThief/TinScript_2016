@@ -1704,6 +1704,10 @@ bool8 TryParseExpression(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTre
     if (TryParseHash(codeblock, filebuf, exprlink))
         return (true);
 
+	// -- a count() completes an expression
+	if (TryParseArrayCount(codeblock, filebuf, exprlink))
+		return (true);
+
     // -- after the potential unary op, an expression may start with:
     // -- a 'self'
     // -- a function call (not a method)
@@ -3174,6 +3178,56 @@ bool8 TryParseHash(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*
 
     // -- success
     return (true);
+}
+
+// ====================================================================================================================
+// TryParseArrayCount():  The keyword "count" has a well defined syntax.
+// ====================================================================================================================
+bool8 TryParseArrayCount(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link)
+{
+	// -- ensure the next token is the 'hash' keyword
+	tReadToken peektoken(filebuf);
+	if (!GetToken(peektoken) || peektoken.type != TOKEN_KEYWORD)
+		return (false);
+
+	int32 reservedwordtype = GetReservedKeywordType(peektoken.tokenptr, peektoken.length);
+	if (reservedwordtype != KEYWORD_array_count)
+		return (false);
+
+	// -- read the opening parenthesis
+	if (!GetToken(peektoken) || peektoken.type != TOKEN_PAREN_OPEN)
+		return (false);
+
+	// -- we're committed to an array count expression
+	filebuf = peektoken;
+
+	// -- create the ArrayVarNode, leftchild is the hashtable var, right is the hash value
+	CArrayCountNode* array_count_node = TinAlloc(ALLOC_TreeNode, CArrayCountNode, codeblock, link,
+											     filebuf.linenumber);
+
+	// -- ensure we have an expression to fill the right child
+	bool8 result = TryParseExpression(codeblock, filebuf, array_count_node->leftchild);
+	if (!result || !array_count_node->leftchild)
+	{
+		ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
+			          "Error - count() requires an array variable expression\n");
+		return (false);
+	}
+
+	// -- read the closing parenthesis
+	peektoken = filebuf;
+	if (!GetToken(peektoken) || peektoken.type != TOKEN_PAREN_CLOSE)
+	{
+		ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
+			          "Error - count() expression, expecting ')' following array variable\n");
+		return (false);
+	}
+
+	// -- update the file buf
+	filebuf = peektoken;
+
+	// -- success
+	return (true);
 }
 
 // ====================================================================================================================

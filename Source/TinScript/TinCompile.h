@@ -75,6 +75,7 @@ class CWhileLoopNode;
 	CompileNodeTypeEntry(ArrayVar)			    \
 	CompileNodeTypeEntry(ArrayVarDecl)			\
 	CompileNodeTypeEntry(ArrayDecl)			    \
+	CompileNodeTypeEntry(ArrayCount)		    \
 	CompileNodeTypeEntry(SelfVarDecl)			\
 	CompileNodeTypeEntry(ObjMemberDecl)			\
 	CompileNodeTypeEntry(Schedule)			    \
@@ -162,6 +163,7 @@ const char* GetNodeTypeString(ECompileNodeType nodetype);
 	OperationEntry(ArrayHash)			\
 	OperationEntry(ArrayVarDecl)		\
 	OperationEntry(ArrayDecl)		    \
+	OperationEntry(ArrayCount)		    \
 	OperationEntry(SelfVarDecl)		    \
 	OperationEntry(ObjMemberDecl)       \
 	OperationEntry(ScheduleBegin)       \
@@ -568,6 +570,19 @@ class CArrayDeclNode : public CCompileTreeNode
 	protected:
 		CArrayDeclNode() { }
         int32 mSize;
+};
+
+// ====================================================================================================================
+// class CArrayCountNode:  Parse tree node, pushes the array count of the left child array var.
+// ====================================================================================================================
+class CArrayCountNode : public CCompileTreeNode
+{
+	public:
+		CArrayCountNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber);
+		virtual int32 Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
+
+	protected:
+		CArrayCountNode() { }
 };
 
 // ====================================================================================================================
