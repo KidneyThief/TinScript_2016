@@ -185,7 +185,7 @@ enum eUnaryOpType
 	ReservedKeywordEntry(createlocal)   \
 	ReservedKeywordEntry(destroy) 		\
 	ReservedKeywordEntry(self)   		\
-	ReservedKeywordEntry(count)   		\
+	ReservedKeywordEntry(array_count)   \
 
 enum eReservedKeyword
 {
