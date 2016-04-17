@@ -78,7 +78,54 @@ class CHashTable
 
             int32 index;
 			CHashTableEntry* index_next;
-	    };
+	};
+
+	// ====================================================================================================================
+	// class CHashTableIterator:  Hash tables maintain a list of current iterators, so if we're in the middle of a loop
+	// iterating through, and an entry is inserted/deleted, the iterators are automatically updated, allowing the loop
+	// to continue cleanly.
+	// ====================================================================================================================
+	class CHashTableIterator
+	{
+		public:
+			CHashTableIterator(uint32 objectID, CHashTableIterator** head, void* owner)
+			{
+				m_objectID = objectID;
+				m_owner = owner;
+				m_currentEntry = nullptr;
+				m_entryWasRemoved = false;
+
+				// -- link to the iterator list'
+				m_head = head;
+				m_next = *m_head;
+				if (*m_head != nullptr)
+					(*m_head)->m_next = this;
+				m_prev = nullptr;
+				*m_head = this;
+			}
+
+			~CHashTableIterator()
+			{
+				// -- unlink from the iterator list
+				if (m_next != nullptr)
+					m_next->m_prev = m_prev;
+				if (m_prev != nullptr)
+					m_prev->m_next = m_next;
+				else
+					*m_head = m_next;
+			}
+
+			uint32 m_objectID;
+			void* m_owner;
+			CHashTableEntry* m_currentEntry;
+			bool8 m_entryWasRemoved;
+
+		private:
+			CHashTableIterator() { }
+			CHashTableIterator** m_head;
+			CHashTableIterator* m_next;
+			CHashTableIterator* m_prev;
+	};
 
 	// -- constructor / destructor
 	CHashTable(int32 _size = 0)
@@ -92,13 +139,21 @@ class CHashTable
 			index_table[i] = NULL;
         }
 
-        iter = NULL;
         used = 0;
-        iter_was_removed = false;
+
+		// -- we always have one default iterator, create it, which will automatically set the iterator list 
+		m_iteratorList = nullptr;
+		m_defaultIterator = TinAlloc(ALLOC_HashTable, CHashTableIterator, 0, &m_iteratorList, (void*)this);
 	}
 
 	virtual ~CHashTable()
     {
+		// -- notify all objects that the hash table is being destroyed
+
+		// -- destroy all iterators
+		while (m_iteratorList != nullptr)
+			TinFree(m_iteratorList);
+
 		for (int32 i = 0; i < size; ++i)
         {
 			CHashTableEntry* entry = table[i];
@@ -119,8 +174,10 @@ class CHashTable
 		int32 bucket = _hash % size;
 		hte->nextbucket = table[bucket];
 		table[bucket] = hte;
-        iter = NULL;
-        iter_was_removed = false;
+
+		m_defaultIterator->m_currentEntry = NULL;
+		m_defaultIterator->m_entryWasRemoved = false;
+
         ++used;
 
         // -- add to the index table
@@ -157,8 +214,9 @@ class CHashTable
 		int32 bucket = _hash % size;
 		hte->nextbucket = table[bucket];
 		table[bucket] = hte;
-        iter = NULL;
-        iter_was_removed = false;
+
+		m_defaultIterator->m_currentEntry = nullptr;
+		m_defaultIterator->m_entryWasRemoved = false;
 
         // -- we need to insert it into the double-linked list before the entry currently at the given index
         CHashTableEntry* prev_hte = NULL;
@@ -294,12 +352,11 @@ class CHashTable
                 // -- update the iterators
                 // $$$TZA This is reliable if'f the table is being iterated by a single
                 // -- loop - not attempting to share iterators.
-                if (curentry == iter)
+                if (curentry == m_defaultIterator->m_currentEntry)
                 {
                     CHashTableEntry* prev_hte = NULL;
-                    iter = FindRawEntryByIndex(curentry->index + 1, prev_hte);
-
-                    iter_was_removed = true;
+					m_defaultIterator->m_currentEntry = FindRawEntryByIndex(curentry->index + 1, prev_hte);
+					m_defaultIterator->m_entryWasRemoved = true;
                 }
 
                 // -- remove the entry from the index table
@@ -335,11 +392,11 @@ class CHashTable
                 // -- update the iterators
                 // $$$TZA This is reliable if'f the table is being iterated by a single
                 // -- loop - not attempting to share iterators.  Should convert to CTable<>
-                if (curentry == iter)
+				if (curentry == m_defaultIterator->m_currentEntry)
                 {
                     CHashTableEntry* prev_hte = NULL;
-                    iter = FindRawEntryByIndex(curentry->index + 1, prev_hte);
-                    iter_was_removed = true;
+					m_defaultIterator->m_currentEntry = FindRawEntryByIndex(curentry->index + 1, prev_hte);
+					m_defaultIterator->m_entryWasRemoved = true;
                 }
 
                 // -- remove the entry from the index table
@@ -360,14 +417,14 @@ class CHashTable
     T* First(uint32* out_hash = NULL) const
     {
         CHashTableEntry* prev_hte = NULL;
-        iter = FindRawEntryByIndex(0, prev_hte);
-        iter_was_removed = false;
-        if (iter)
+		m_defaultIterator->m_currentEntry = FindRawEntryByIndex(0, prev_hte);
+		m_defaultIterator->m_entryWasRemoved = false;
+		if (m_defaultIterator->m_currentEntry)
         {
             // -- return the hash value, if requested
             if (out_hash)
-                *out_hash = iter->hash;
-            return (iter->item);
+				*out_hash = m_defaultIterator->m_currentEntry->hash;
+			return (m_defaultIterator->m_currentEntry->item);
         }
         else
         {
@@ -379,19 +436,20 @@ class CHashTable
 
     T* Next(uint32* out_hash = NULL) const
     {
-        if (iter && !iter_was_removed)
+		if (m_defaultIterator->m_currentEntry && !m_defaultIterator->m_entryWasRemoved)
         {
             CHashTableEntry* prev_hte = NULL;
-            iter = FindRawEntryByIndex(iter->index + 1, prev_hte);
+			m_defaultIterator->m_currentEntry =
+				FindRawEntryByIndex(m_defaultIterator->m_currentEntry->index + 1, prev_hte);
         }
 
-        iter_was_removed = false;
-        if (iter)
+		m_defaultIterator->m_entryWasRemoved = false;
+		if (m_defaultIterator->m_currentEntry)
         {
             // -- return the hash value, if requested
             if (out_hash)
-                *out_hash = iter->hash;
-            return (iter->item);
+				*out_hash = m_defaultIterator->m_currentEntry->hash;
+			return (m_defaultIterator->m_currentEntry->item);
         }
         else
         {
@@ -406,18 +464,18 @@ class CHashTable
         if (used > 0)
         {
             CHashTableEntry* prev_hte = NULL;
-            iter = FindRawEntryByIndex(used - 1, prev_hte);
-        }
+			m_defaultIterator->m_currentEntry = FindRawEntryByIndex(used - 1, prev_hte);
+		}
         else
-            iter = NULL;
+			m_defaultIterator->m_currentEntry = NULL;
 
-        iter_was_removed = false;
-        if (iter)
+		m_defaultIterator->m_entryWasRemoved = false;
+		if (m_defaultIterator->m_currentEntry)
         {
             // -- return the hash value, if requested
             if (out_hash)
-                *out_hash = iter->hash;
-            return (iter->item);
+				*out_hash = m_defaultIterator->m_currentEntry->hash;
+			return (m_defaultIterator->m_currentEntry->item);
         }
         else
         {
@@ -445,8 +503,8 @@ class CHashTable
     void RemoveAll()
     {
         // -- reset any iterators
-        iter = NULL;
-        iter_was_removed = false;
+		m_defaultIterator->m_currentEntry = NULL;
+		m_defaultIterator->m_entryWasRemoved = false;
 
 		// -- delete all the entries, but do not delete the actual items
         while (used > 0)
@@ -462,9 +520,8 @@ class CHashTable
     void DestroyAll()
     {
         // -- reset any iterators
-        iter = NULL;
-        iter_was_removed = false;
-
+		m_defaultIterator->m_currentEntry = NULL;
+		m_defaultIterator->m_entryWasRemoved = false;
         while (used > 0)
         {
             CHashTableEntry* prev_entry = NULL;
@@ -481,9 +538,9 @@ class CHashTable
 		int32 size;
         int32 used;
 
-		mutable CHashTableEntry* iter;
-        mutable bool8 iter_was_removed;
- };
+		mutable CHashTableIterator* m_defaultIterator;
+		mutable CHashTableIterator* m_iteratorList;
+};
 
 }  // TinScript
 

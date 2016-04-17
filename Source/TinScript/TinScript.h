@@ -182,6 +182,7 @@ const int32 kObjectTableSize = 10007;
 
 const int32 kMasterMembershipTableSize = 97;
 const int32 kObjectGroupTableSize = 17;
+const int32 kHashTableIteratorTableSize = 7;
 
 const int32 kMaxScratchBuffers = 32;
 
