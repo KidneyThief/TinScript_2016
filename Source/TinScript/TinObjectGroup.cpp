@@ -421,6 +421,30 @@ uint32 CObjectSet::Next()
 }
 
 // ====================================================================================================================
+// CreateIterator():  Creates an independent iterator to loop through the set.
+// ====================================================================================================================
+uint32 CObjectSet::CreateIterator()
+{
+    // -- find the object entry
+    CObjectEntry* oe = GetScriptContext()->FindObjectByAddress(this);
+    CHashTable<CObjectEntry>::CHashTableIterator* newIterator = mObjectList->CreateIterator();
+
+    // -- the iterator is a scriptable object
+    uint32 iteratorID = TinScript::GetContext()->CreateObject(TinScript::Hash("CGroupIterator"), 0);
+    if (iteratorID == 0)
+        return (0);
+
+    // -- get the actual iterator
+    CGroupIterator* iteratorObject = (CGroupIterator*)(TinScript::GetContext()->FindObject(iteratorID));
+
+    // -- initialize the iterator for the specific group
+    iteratorObject->Initialize(oe->GetID(), newIterator, iteratorID);
+
+    // -- return the object
+    return (iteratorID);
+}
+
+// ====================================================================================================================
 // Used():  Returns the number of objects contained in tis object set.
 // ====================================================================================================================
 int32 CObjectSet::Used()
@@ -516,6 +540,95 @@ void CObjectGroup::RemoveObject(uint32 objectid)
     oe->SetObjectGroup(NULL);
 }
 
+// == class CGroupIterator =============================================================================================
+
+// ====================================================================================================================
+// Constructor
+// ====================================================================================================================
+CGroupIterator::CGroupIterator()
+{
+    m_groupID = 0;
+    m_iterator = nullptr;
+}
+
+// ====================================================================================================================
+// Initialize():  Cache the members for the group to iterate on, and the actua hash table iterator.
+// ====================================================================================================================
+void CGroupIterator::Initialize(uint32 groupID, CHashTable<CObjectEntry>::CHashTableIterator* iterator,
+                                uint32 iter_object_id)
+{
+    // -- set the members to cache the group being iterated on, and the actual iterator
+    m_groupID = groupID;
+    m_iterator = iterator;
+    iterator->m_objectID = iter_object_id;
+}
+
+// ====================================================================================================================
+// Destructor
+// ====================================================================================================================
+CGroupIterator::~CGroupIterator()
+{
+    // -- remove ourself from the hashtable iterator list
+    if (m_iterator != nullptr)
+        TinFree(m_iterator);
+}
+
+// ====================================================================================================================
+// First():  Initializes the iterator to returns the first object in the set.
+// ====================================================================================================================
+uint32 CGroupIterator::First()
+{
+    if (m_iterator == nullptr)
+    {
+        ScriptAssert_(TinScript::GetContext(), 0, "<internal>", -1,
+                      "Error - [%d] CGroupIterator::First(): this iterator has not been initialized\n"
+                      "Use CObjectSet::CreateIterator() to construct a properly initialized iterator.",
+                      TinScript::GetContext()->FindObjectByAddress(this)->GetID());
+    }
+
+    CObjectEntry* oe = m_iterator->First();
+    if (oe != nullptr)
+        return (oe->GetID());
+    else
+        return (0);
+}
+
+// ====================================================================================================================
+// Next():  Increments the iterator to return the next object in the set.
+// ====================================================================================================================
+uint32 CGroupIterator::Next()
+{
+    if (m_iterator == nullptr)
+    {
+        ScriptAssert_(TinScript::GetContext(), 0, "<internal>", -1,
+                      "Error - [%d] CGroupIterator::First(): this iterator has not been initialized\n"
+                      "Use CObjectSet::CreateIterator() to construct a properly initialized iterator.",
+                      TinScript::GetContext()->FindObjectByAddress(this)->GetID());
+    }
+
+    CObjectEntry* oe = m_iterator->Next();
+    if (oe != nullptr)
+        return (oe->GetID());
+    else
+        return (0);
+}
+
+// ====================================================================================================================
+// GetGroup():  Increments the iterator to return the next object in the set.
+// ====================================================================================================================
+uint32 CGroupIterator::GetGroup()
+{
+    if (m_iterator == nullptr)
+    {
+        ScriptAssert_(TinScript::GetContext(), 0, "<internal>", -1,
+                      "Error - [%d] CGroupIterator::First(): this iterator has not been initialized\n"
+                      "Use CObjectSet::CreateIterator() to construct a properly initialized iterator.",
+                      TinScript::GetContext()->FindObjectByAddress(this)->GetID());
+    }
+
+    return (m_groupID);
+}
+
 // == Registration =====================================================================================================
 
 // =====================================================================================================================
@@ -535,6 +648,8 @@ REGISTER_METHOD_P0(CObjectSet, Next, Next, uint32);
 REGISTER_METHOD_P0(CObjectSet, Used, Used, int32);
 REGISTER_METHOD_P1(CObjectSet, GetObjectByIndex, GetObjectByIndex, uint32, int32);
 
+REGISTER_METHOD_P0(CObjectSet, CreateIterator, CreateIterator, uint32);
+
 // =====================================================================================================================
 // -- CObjectGroup member/method registration
 IMPLEMENT_SCRIPT_CLASS_BEGIN(CObjectGroup, CObjectSet)
@@ -542,6 +657,15 @@ IMPLEMENT_SCRIPT_CLASS_END()
 
 REGISTER_METHOD_P1(CObjectGroup, AddObject, AddObject, void, uint32);
 REGISTER_METHOD_P1(CObjectGroup, RemoveObject, RemoveObject, void, uint32);
+
+// =====================================================================================================================
+// -- CGroupIterator member/method registration
+IMPLEMENT_SCRIPT_CLASS_BEGIN(CGroupIterator, VOID)
+IMPLEMENT_SCRIPT_CLASS_END()
+
+REGISTER_METHOD_P0(CGroupIterator, First, First, uint32);
+REGISTER_METHOD_P0(CGroupIterator, Next, Next, uint32);
+REGISTER_METHOD_P0(CGroupIterator, GetGroup, GetGroup, uint32);
 
 } // TinScript
 

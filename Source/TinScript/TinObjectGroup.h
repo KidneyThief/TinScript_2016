@@ -26,6 +26,10 @@
 #ifndef __TINOBJECTGROUP_H
 #define __TINOBJECTGROUP_H
 
+// -- includes --------------------------------------------------------------------------------------------------------
+
+#include "TinHash.h"
+
 // == namespace TinScript =============================================================================================
 
 namespace TinScript
@@ -84,6 +88,9 @@ class CObjectSet
         uint32 First();
         uint32 Next();
 
+		// -- creates an independent iterator
+		uint32 CreateIterator();
+
         int32 Used();
         uint32 GetObjectByIndex(int32 index);
 
@@ -105,6 +112,28 @@ class CObjectGroup : public CObjectSet
 
         virtual void AddObject(uint32 objectid);
         virtual void RemoveObject(uint32 objectid);
+};
+
+// ====================================================================================================================
+// class CGroupIterator: An iterator for looping through the elements of a group, tolerant of objects being
+// added or removed from the group in the middle of the iteration loop.
+// ====================================================================================================================
+class CGroupIterator
+{
+	public:
+		DECLARE_SCRIPT_CLASS(CGroupIterator, VOID);
+
+        CGroupIterator();
+        void Initialize(uint32 groupID, CHashTable<CObjectEntry>::CHashTableIterator* iterator, uint32 iter_object_id);
+		virtual ~CGroupIterator();
+
+		uint32 First();
+		uint32 Next();
+        uint32 GetGroup();
+
+    private:
+        uint32 m_groupID;
+        CHashTable<CObjectEntry>::CHashTableIterator* m_iterator;
 };
 
 } // TinScript

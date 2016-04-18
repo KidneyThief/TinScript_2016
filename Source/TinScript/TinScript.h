@@ -74,10 +74,10 @@ const int32 kCompilerVersion = 5;
         return newobj;                                                                            \
     }                                                                                             \
     static void Destroy(void* addr) {                                                             \
-        if(addr) {                                                                                \
+        if (addr) {                                                                               \
             classname* obj = static_cast<classname*>(addr);                                       \
             TinFree(obj);                                                                         \
-				        }                                                                                         \
+	    }                                                                                         \
     }                                                                                             \
     SCRIPT_DEFAULT_METHODS(classname);                                                            \
     static void Register(::TinScript::CScriptContext* script_context, ::TinScript::CNamespace* _classnamespace);    \
