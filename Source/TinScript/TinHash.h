@@ -264,8 +264,8 @@ class CHashTable
 		hte->nextbucket = table[bucket];
 		table[bucket] = hte;
 
-        // -- loop through all iterators, and update their current entry and flag members
-        ResetIterators();
+        // -- do we need to modify the iterators in any way?
+        //ResetIterators();
 
         ++used;
 
