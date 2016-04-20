@@ -421,6 +421,68 @@ uint32 CObjectSet::Next()
 }
 
 // ====================================================================================================================
+// Prev():  Returns the prev object added to the set, updating the internal iterator.
+// ====================================================================================================================
+uint32 CObjectSet::Prev()
+{
+    CObjectEntry* oe = mObjectList->Prev();
+    if (oe)
+        return (oe->GetID());
+    else
+        return (0);
+}
+
+// ====================================================================================================================
+// Last():  Returns the last object added to the set, updating the internal iterator.
+// ====================================================================================================================
+uint32 CObjectSet::Last()
+{
+    CObjectEntry* oe = mObjectList->Last();
+    if (oe)
+        return (oe->GetID());
+    else
+        return (0);
+}
+
+// ====================================================================================================================
+// Current():  Returns the current object, the interal iterator is referring to.
+// ====================================================================================================================
+uint32 CObjectSet::Current()
+{
+    CObjectEntry* oe = mObjectList->Current();
+    if (oe)
+        return (oe->GetID());
+    else
+        return (0);
+}
+
+// ====================================================================================================================
+// IsFirst():  Returns true if the given object is the first in the set
+// ====================================================================================================================
+bool8 CObjectSet::IsFirst(uint32 object_id)
+{
+    int32 count = mObjectList->Used();
+    if (count <= 0)
+        return (false);
+
+    CObjectEntry* oe = mObjectList->FindItemByIndex(0);
+    return (oe->GetID() == object_id);
+}
+
+// ====================================================================================================================
+// IsLast():  Returns true if the given object is the last in the set
+// ====================================================================================================================
+bool8 CObjectSet::IsLast(uint32 object_id)
+{
+    int32 count = mObjectList->Used();
+    if (count <= 0)
+        return (false);
+
+    CObjectEntry* oe = mObjectList->FindItemByIndex(count - 1);
+    return (oe->GetID() == object_id);
+}
+
+// ====================================================================================================================
 // CreateIterator():  Creates an independent iterator to loop through the set.
 // ====================================================================================================================
 uint32 CObjectSet::CreateIterator()
@@ -584,6 +646,7 @@ uint32 CGroupIterator::First()
                       "Error - [%d] CGroupIterator::First(): this iterator has not been initialized\n"
                       "Use CObjectSet::CreateIterator() to construct a properly initialized iterator.",
                       TinScript::GetContext()->FindObjectByAddress(this)->GetID());
+        return (0);
     }
 
     CObjectEntry* oe = m_iterator->First();
@@ -601,12 +664,75 @@ uint32 CGroupIterator::Next()
     if (m_iterator == nullptr)
     {
         ScriptAssert_(TinScript::GetContext(), 0, "<internal>", -1,
-                      "Error - [%d] CGroupIterator::First(): this iterator has not been initialized\n"
+                      "Error - [%d] CGroupIterator::Next(): this iterator has not been initialized\n"
+                      "Use CObjectSet::CreateIterator() to construct a properly initialized iterator.",
+                      TinScript::GetContext()->FindObjectByAddress(this)->GetID());
+        return (0);
+    }
+
+    CObjectEntry* oe = m_iterator->Next();
+    if (oe != nullptr)
+        return (oe->GetID());
+    else
+        return (0);
+}
+
+// ====================================================================================================================
+// Prev():  Decrements the iterator to return the prev object in the set.
+// ====================================================================================================================
+uint32 CGroupIterator::Prev()
+{
+    if (m_iterator == nullptr)
+    {
+        ScriptAssert_(TinScript::GetContext(), 0, "<internal>", -1,
+                      "Error - [%d] CGroupIterator::Prev(): this iterator has not been initialized\n"
+                      "Use CObjectSet::CreateIterator() to construct a properly initialized iterator.",
+                      TinScript::GetContext()->FindObjectByAddress(this)->GetID());
+        return (0);
+    }
+
+    CObjectEntry* oe = m_iterator->Prev();
+    if (oe != nullptr)
+        return (oe->GetID());
+    else
+        return (0);
+}
+
+// ====================================================================================================================
+// Last():  Increments the iterator to return the last object in the set.
+// ====================================================================================================================
+uint32 CGroupIterator::Last()
+{
+    if (m_iterator == nullptr)
+    {
+        ScriptAssert_(TinScript::GetContext(), 0, "<internal>", -1,
+                      "Error - [%d] CGroupIterator::Last(): this iterator has not been initialized\n"
+                      "Use CObjectSet::CreateIterator() to construct a properly initialized iterator.",
+                      TinScript::GetContext()->FindObjectByAddress(this)->GetID());
+        return (0);
+    }
+
+    CObjectEntry* oe = m_iterator->Last();
+    if (oe != nullptr)
+        return (oe->GetID());
+    else
+        return (0);
+}
+
+// ====================================================================================================================
+// Current():  Returns the object the iterator is currently referencing.
+// ====================================================================================================================
+uint32 CGroupIterator::Current()
+{
+    if (m_iterator == nullptr)
+    {
+        ScriptAssert_(TinScript::GetContext(), 0, "<internal>", -1,
+                      "Error - [%d] CGroupIterator::Current(): this iterator has not been initialized\n"
                       "Use CObjectSet::CreateIterator() to construct a properly initialized iterator.",
                       TinScript::GetContext()->FindObjectByAddress(this)->GetID());
     }
 
-    CObjectEntry* oe = m_iterator->Next();
+    CObjectEntry* oe = m_iterator->Current();
     if (oe != nullptr)
         return (oe->GetID());
     else
@@ -624,6 +750,7 @@ uint32 CGroupIterator::GetGroup()
                       "Error - [%d] CGroupIterator::First(): this iterator has not been initialized\n"
                       "Use CObjectSet::CreateIterator() to construct a properly initialized iterator.",
                       TinScript::GetContext()->FindObjectByAddress(this)->GetID());
+        return (0);
     }
 
     return (m_groupID);
@@ -645,7 +772,15 @@ REGISTER_METHOD_P0(CObjectSet, RemoveAll, RemoveAll, void);
 
 REGISTER_METHOD_P0(CObjectSet, First, First, uint32);
 REGISTER_METHOD_P0(CObjectSet, Next, Next, uint32);
+REGISTER_METHOD_P0(CObjectSet, Prev, Prev, uint32);
+REGISTER_METHOD_P0(CObjectSet, Last, Last, uint32);
+REGISTER_METHOD_P0(CObjectSet, Current, Current, uint32);
+
+REGISTER_METHOD_P1(CObjectSet, IsFirst, IsFirst, bool8, uint32);
+REGISTER_METHOD_P1(CObjectSet, IsLast, IsLast, bool8, uint32);
+
 REGISTER_METHOD_P0(CObjectSet, Used, Used, int32);
+
 REGISTER_METHOD_P1(CObjectSet, GetObjectByIndex, GetObjectByIndex, uint32, int32);
 
 REGISTER_METHOD_P0(CObjectSet, CreateIterator, CreateIterator, uint32);
@@ -665,6 +800,9 @@ IMPLEMENT_SCRIPT_CLASS_END()
 
 REGISTER_METHOD_P0(CGroupIterator, First, First, uint32);
 REGISTER_METHOD_P0(CGroupIterator, Next, Next, uint32);
+REGISTER_METHOD_P0(CGroupIterator, Prev, Prev, uint32);
+REGISTER_METHOD_P0(CGroupIterator, Last, Last, uint32);
+REGISTER_METHOD_P0(CGroupIterator, Current, Current, uint32);
 REGISTER_METHOD_P0(CGroupIterator, GetGroup, GetGroup, uint32);
 
 } // TinScript

@@ -87,8 +87,14 @@ class CObjectSet
 
         uint32 First();
         uint32 Next();
+        uint32 Prev();
+        uint32 Last();
+        uint32 Current();
 
-		// -- creates an independent iterator
+        bool8 IsFirst(uint32 object_id);
+        bool8 IsLast(uint32 object_id);
+
+        // -- creates an independent iterator
 		uint32 CreateIterator();
 
         int32 Used();
@@ -129,6 +135,10 @@ class CGroupIterator
 
 		uint32 First();
 		uint32 Next();
+        uint32 Prev();
+        uint32 Last();
+        uint32 Current();
+
         uint32 GetGroup();
 
     private:

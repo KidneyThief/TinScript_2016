@@ -126,9 +126,19 @@ class CHashTable
                 return (m_hashTable->Next(*this, nullptr));
             }
 
+            T* Prev()
+            {
+                return (m_hashTable->Prev(*this, nullptr));
+            }
+
             T* Last()
             {
                 return (m_hashTable->Last(*this, nullptr));
+            }
+
+            T* Current()
+            {
+                return (m_hashTable->Current(*this, nullptr));
             }
 
             // -- members for the iterator content
@@ -544,6 +554,36 @@ class CHashTable
         return (Next(*m_defaultIterator, out_hash));
     }
 
+    T* Prev(CHashTableIterator& iterator, uint32* out_hash = NULL) const
+    {
+        if (iterator.m_currentEntry && !iterator.m_entryWasRemoved)
+        {
+            CHashTableEntry* prev_hte = NULL;
+            iterator.m_currentEntry =
+                FindRawEntryByIndex(iterator.m_currentEntry->index - 1, prev_hte);
+        }
+
+        iterator.m_entryWasRemoved = false;
+        if (iterator.m_currentEntry)
+        {
+            // -- return the hash value, if requested
+            if (out_hash)
+                *out_hash = iterator.m_currentEntry->hash;
+            return (iterator.m_currentEntry->item);
+        }
+        else
+        {
+            if (out_hash)
+                *out_hash = 0;
+            return (NULL);
+        }
+    }
+
+    T* Prev(uint32* out_hash = NULL) const
+    {
+        return (Prev(*m_defaultIterator, out_hash));
+    }
+
     T* Last(CHashTableIterator& iterator, uint32* out_hash = NULL) const
     {
         if (used > 0)
@@ -575,7 +615,30 @@ class CHashTable
         return (Last(*m_defaultIterator, out_hash));
     }
 
-	int32 Size() const
+    T* Current(CHashTableIterator& iterator, uint32* out_hash = NULL) const
+    {
+        iterator.m_entryWasRemoved = false;
+        if (iterator.m_currentEntry)
+        {
+            // -- return the hash value, if requested
+            if (out_hash)
+                *out_hash = iterator.m_currentEntry->hash;
+            return (iterator.m_currentEntry->item);
+        }
+        else
+        {
+            if (out_hash)
+                *out_hash = 0;
+            return (NULL);
+        }
+    }
+
+    T* Current(uint32* out_hash = NULL) const
+    {
+        return (Current(*m_defaultIterator, out_hash));
+    }
+
+    int32 Size() const
     {
 		return size;
 	}
