@@ -793,9 +793,15 @@ int32 CBinaryOpNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 countonl
     bool useShortCircuit = (binaryopcode == OP_BooleanAnd || binaryopcode == OP_BooleanOr);
 	if (useShortCircuit)
 	{
-		size += PushInstruction(countonly, instrptr, binaryopcode == OP_BooleanAnd ? OP_ShortCircuitFalse
-																				   : OP_ShortCircuitTrue,
-													 DBG_instr);
+		size += PushInstruction(countonly, instrptr, OP_BranchCond, DBG_instr);
+
+        // -- push the condition value (branch false, or branch true)
+        size += PushInstruction(countonly, instrptr, binaryopcode == OP_BooleanAnd ? 0 : 1,
+                                DBG_value, "condition type for branch");
+
+        // -- this is a "short circuit" conditional branch, so we don't pop the result
+        size += PushInstruction(countonly, instrptr, 1, DBG_value, "short circuit conditional branch");
+
 
 		// -- cache the current intrptr, because we'll need to how far to
 		// -- jump, after we've evaluated the left child
@@ -958,8 +964,11 @@ int32 CCondBranchNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 counto
 	DebugEvaluateNode(*this, countonly, instrptr);
 	int32 size = 0;
 
-	// -- left child is if the stacktop contains a 'true' value
-	size += PushInstruction(countonly, instrptr, OP_BranchFalse, DBG_instr);
+	// -- left child is if the stacktop contains the result of a conditional
+    // -- so we branchm,if the condition is 'false'
+	size += PushInstruction(countonly, instrptr, OP_BranchCond, DBG_instr);
+    size += PushInstruction(countonly, instrptr, 0, DBG_value, "branch false");
+    size += PushInstruction(countonly, instrptr, 0, DBG_value, "not a short_circuit branch");
 
 	// -- cache the current intrptr, because we'll need to how far to
 	// -- jump, after we've evaluated the left child
@@ -1151,7 +1160,10 @@ int32 CWhileLoopNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 counton
     size += tree_size;
 
 	// -- add a BranchFalse here, to skip the body of the while loop
-	size += PushInstruction(countonly, instrptr, OP_BranchFalse, DBG_instr);
+	size += PushInstruction(countonly, instrptr, OP_BranchCond, DBG_instr);
+    size += PushInstruction(countonly, instrptr, 0, DBG_value, "branch false");
+    size += PushInstruction(countonly, instrptr, 0, DBG_value, "not a short_circuit branch");
+
 	uint32* branchwordcount = instrptr;
 	uint32 empty = 0;
 	size += PushInstructionRaw(countonly, instrptr, (void*)&empty, 1, DBG_NULL, "placeholder for branch");

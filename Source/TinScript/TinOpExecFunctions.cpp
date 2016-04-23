@@ -1756,41 +1756,14 @@ bool8 OpExecBranch(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExecSta
 }
 
 // ====================================================================================================================
-// OpExecBranchTrue():  Branch If True operation.
+// OpExecBranchCond():  Branch based on the conditional type (true/false), and if a short-circuit, don't pop the stack
 // ====================================================================================================================
-bool8 OpExecBranchTrue(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExecStack& execstack,
+bool8 OpExecBranchCond(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExecStack& execstack,
                        CFunctionCallStack& funccallstack)
 {
+    bool8 branch_true = (*instrptr++ != 0);
+    bool8 short_circuit = (*instrptr++ != 0);
     int32 jumpcount = *instrptr++;
-
-    // -- top of the stack had better be a bool8
-    eVarType valtype;
-    void* valueraw = execstack.Pop(valtype);
-    bool8* convertAddr = (bool8*)TypeConvert(cb->GetScriptContext(), valtype, valueraw, TYPE_bool);
-    if (! convertAddr)
-    {
-        DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
-                        "Error - expecting a bool\n");
-        return (false);
-    }
-
-    // -- branch
-    if (*convertAddr)
-    {
-        instrptr += jumpcount;
-    }
-    DebugTrace(op, "%s, count: %d", *convertAddr ? "true" : "false", jumpcount);
-
-    return (true);
-}
-
-// ====================================================================================================================
-// OpExecShortCircuitTrue():  Branch If True operation, but do not pop the stack.
-// ====================================================================================================================
-bool8 OpExecShortCircuitTrue(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExecStack& execstack,
-	                         CFunctionCallStack& funccallstack)
-{
-	int32 jumpcount = *instrptr++;
 
 	// -- top of the stack had better be a bool8
 	eVarType valtype;
@@ -1803,76 +1776,20 @@ bool8 OpExecShortCircuitTrue(CCodeBlock* cb, eOpCode op, const uint32*& instrptr
 		return (false);
 	}
 
-    // -- push the result back on the stack, but as a bool
-    bool8 boolresult = *convertAddr;
-    execstack.Push((void*)&boolresult, TYPE_bool);
+    // -- if this is a short-circuit conditional, push the result back on the stack, as a bool
+    if (short_circuit)
+    {
+        bool8 boolresult = *convertAddr;
+        execstack.Push((void*)&boolresult, TYPE_bool);
+    }
 
-	// -- branch
-	if (*convertAddr)
+	// -- branch, if the conditional matches
+    if (*convertAddr == branch_true)
         instrptr += jumpcount;
 
 	DebugTrace(op, "%s, count: %d", *convertAddr ? "true" : "false", jumpcount);
 
 	return (true);
-}
-
-// ====================================================================================================================
-// OpExecShortCircuitFalse():  Branch If False operation, but don't pop the stack.
-// ====================================================================================================================
-bool8 OpExecShortCircuitFalse(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExecStack& execstack,
-							  CFunctionCallStack& funccallstack)
-{
-	int32 jumpcount = *instrptr++;
-
-	// -- top of the stack had better be a bool8
-	eVarType valtype;
-	void* valueraw = execstack.Pop(valtype);
-	bool8* convertAddr = (bool8*)TypeConvert(cb->GetScriptContext(), valtype, valueraw, TYPE_bool);
-	if (!convertAddr)
-	{
-		DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
-						"Error - expecting a bool\n");
-		return (false);
-	}
-
-    // -- push the result back on the stack, but as a bool
-    bool8 boolresult = *convertAddr;
-    execstack.Push((void*)&boolresult, TYPE_bool);
-
-    // -- branch
-	if (!*convertAddr)
-        instrptr += jumpcount;
-
-	DebugTrace(op, "%s, count: %d", *convertAddr ? "true" : "false", jumpcount);
-
-	return (true);
-}
-
-// ====================================================================================================================
-// OpExecBranchFalse():  Branch If False operation.
-// ====================================================================================================================
-bool8 OpExecBranchFalse(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExecStack& execstack,
-                        CFunctionCallStack& funccallstack) {
-    int32 jumpcount = *instrptr++;
-
-    // -- top of the stack had better be a bool8
-    eVarType valtype;
-    void* valueraw = execstack.Pop(valtype);
-    bool8* convertAddr = (bool8*)TypeConvert(cb->GetScriptContext(), valtype, valueraw, TYPE_bool);
-    if (! convertAddr)
-    {
-        ScriptAssert_(cb->GetScriptContext(), 0, cb->GetFileName(), cb->CalcLineNumber(instrptr),
-                      "Error - expecting a bool\n");
-        return (false);
-    }
-
-    // -- branch
-    if (!*convertAddr)
-    {
-        instrptr += jumpcount;
-    }
-    DebugTrace(op, "%s, count: %d", !*convertAddr ? "true" : "false", jumpcount);
-    return (true);
 }
 
 // ====================================================================================================================

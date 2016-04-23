@@ -41,6 +41,7 @@ static const char* kUnitTestScriptName = "../Source/TinScript/unittest.ts";
 
 // --------------------------------------------------------------------------------------------------------------------
 // -- Print function, for use by the unit tests
+
 void MTPrint(const char* fmt, ...) {
     TinScript::CScriptContext* script_context = ::TinScript::GetContext();
     va_list args;

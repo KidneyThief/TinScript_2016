@@ -152,10 +152,7 @@ const char* GetNodeTypeString(ECompileNodeType nodetype);
 	OperationEntry(UnaryNeg)	        \
 	OperationEntry(UnaryPos)	        \
 	OperationEntry(Branch)				\
-	OperationEntry(BranchTrue)			\
-	OperationEntry(BranchFalse)			\
-	OperationEntry(ShortCircuitTrue)	\
-	OperationEntry(ShortCircuitFalse)	\
+	OperationEntry(BranchCond)			\
 	OperationEntry(FuncDecl)    		\
 	OperationEntry(FuncDeclEnd)    		\
 	OperationEntry(FuncCallArgs)		\
