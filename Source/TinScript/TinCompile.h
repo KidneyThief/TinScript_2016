@@ -154,6 +154,8 @@ const char* GetNodeTypeString(ECompileNodeType nodetype);
 	OperationEntry(Branch)				\
 	OperationEntry(BranchTrue)			\
 	OperationEntry(BranchFalse)			\
+	OperationEntry(ShortCircuitTrue)	\
+	OperationEntry(ShortCircuitFalse)	\
 	OperationEntry(FuncDecl)    		\
 	OperationEntry(FuncDeclEnd)    		\
 	OperationEntry(FuncCallArgs)		\

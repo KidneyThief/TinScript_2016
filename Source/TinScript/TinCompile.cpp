@@ -786,6 +786,27 @@ int32 CBinaryOpNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 countonl
         return (-1);
     size += tree_size;
 
+	// -- if the binary op is boolean, we can insert a branch to pre-empt the result:
+	// -- e.g.  if the lhs of an "or" is true, we don't need to evaluate the rhs
+    uint32* branchwordcount = instrptr;
+    uint32 empty = 0;
+    bool useShortCircuit = (binaryopcode == OP_BooleanAnd || binaryopcode == OP_BooleanOr);
+	if (useShortCircuit)
+	{
+		size += PushInstruction(countonly, instrptr, binaryopcode == OP_BooleanAnd ? OP_ShortCircuitFalse
+																				   : OP_ShortCircuitTrue,
+													 DBG_instr);
+
+		// -- cache the current intrptr, because we'll need to how far to
+		// -- jump, after we've evaluated the left child
+		// -- push a placeholder in the meantime
+        branchwordcount = instrptr;
+		size += PushInstructionRaw(countonly, instrptr, (void*)&empty, 1, DBG_NULL, "placeholder for branch");
+	}
+
+    // -- cache the current size, in case we need to branch
+    int32 cursize = size;
+
 	// -- evaluate the right child, pushing the result
     tree_size = rightchild->Eval(instrptr, childresulttype, countonly);
     if (tree_size < 0)
@@ -794,6 +815,21 @@ int32 CBinaryOpNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 countonl
 
 	// -- push the specific operation to be performed
 	size += PushInstruction(countonly, instrptr, binaryopcode, DBG_instr);
+
+    // -- the branch destination is after the evaluation of the binary op code
+    // -- if booleanAnd, and the left child is false, then:
+    // -- 1.  we leave the "false" on the stack by using the "short circuit" branch
+    // -- 2.  we skip evaulating the right child, so there is still only one arg on the stack
+    // -- 3.  we skip evaluating the binary op, since it would pops two, and pushes the same result
+    if (useShortCircuit)
+    {
+        // fill in the jumpcount
+        if (!countonly)
+        {
+            int32 jumpcount = size - cursize;
+            *branchwordcount = jumpcount;
+        }
+    }
 
 	return size;
 }
@@ -924,6 +960,7 @@ int32 CCondBranchNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 counto
 
 	// -- left child is if the stacktop contains a 'true' value
 	size += PushInstruction(countonly, instrptr, OP_BranchFalse, DBG_instr);
+
 	// -- cache the current intrptr, because we'll need to how far to
 	// -- jump, after we've evaluated the left child
 	// -- push a placeholder in the meantime
