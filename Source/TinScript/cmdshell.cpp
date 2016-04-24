@@ -125,6 +125,9 @@ bool8 CmdShellAssertHandler(TinScript::CScriptContext* script_context, const cha
 // ====================================================================================================================
 CCmdShell::CCmdShell()
 {
+    mCurrentLineIsPrompt = false;
+    mRefreshPrompt = false;
+
     // -- initialize the mHistory indicies
     mHistoryFull = false;
     mHistoryIndex = -1;
@@ -150,6 +153,14 @@ CCmdShell::CCmdShell()
 // ====================================================================================================================
 void CCmdShell::RefreshConsoleInput(bool8 display_prompt, const char* new_input_string)
 {
+    // -- if the prompt is to be displayed, but the new_input_string isn't "new", we're done
+    const char* test_input_string = new_input_string != nullptr ? new_input_string : "";
+    bool8 is_new_string = strcmp(mConsoleInputBuf, test_input_string) != 0;
+    if (display_prompt && !is_new_string && mConsoleInputBuf[0] == '\0' && mCurrentLineIsPrompt)
+    {
+        return;
+    }
+
     // -- whatever was on in the buffer needs to be deleted
     int input_len = strlen(mConsoleInputBuf);
     for (int i = 0; i < input_len; ++i)
@@ -166,7 +177,32 @@ void CCmdShell::RefreshConsoleInput(bool8 display_prompt, const char* new_input_
     if (display_prompt)
         printf("\nConsole => ");
 
+    // -- display the input prompt
     printf(mConsoleInputBuf);
+
+    // -- set the bool, so the next printed output is on a new line
+    mCurrentLineIsPrompt = mCurrentLineIsPrompt || display_prompt;
+}
+
+// ====================================================================================================================
+// NotifyPrintStart():  Tracks whether we need to preceed the output with a newline
+// ====================================================================================================================
+void CCmdShell::NotifyPrintStart()
+{
+    if (mCurrentLineIsPrompt)
+    {
+        printf("\n");
+        mCurrentLineIsPrompt = false;
+    }
+}
+
+// ====================================================================================================================
+// NotifyCommandOutput():  Commands reflected to the output handle their own newlines.
+// ====================================================================================================================
+void CCmdShell::NotifyPrintEnd()
+{
+    // -- refresh the prompt next update
+    mRefreshPrompt = true;
 }
 
 // ====================================================================================================================
@@ -174,6 +210,13 @@ void CCmdShell::RefreshConsoleInput(bool8 display_prompt, const char* new_input_
 // ====================================================================================================================
 const char* CCmdShell::Update()
 {
+    // -- see if we should refresh the prompt
+    if (mRefreshPrompt)
+    {
+        RefreshConsoleInput(true);
+        mRefreshPrompt = false;
+    }
+
     // -- initialize the return value
     const char* return_value = NULL;
 
@@ -261,7 +304,8 @@ const char* CCmdShell::Update()
             // -- echo the input and execute it
             *mInputPtr = '\0';
             RefreshConsoleInput(false);
-            printf("\n>> %s\n", mConsoleInputBuf);
+            NotifyPrintStart();
+            printf(">> %s\n", mConsoleInputBuf);
 
             // -- add this to the mHistory buf
             const char* historyptr = (mHistoryLastIndex < 0) ? NULL : mHistory[mHistoryLastIndex];

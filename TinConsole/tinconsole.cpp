@@ -77,6 +77,25 @@ float32 GetSimTime() {
 }
 REGISTER_FUNCTION_P0(GetSimTime, GetSimTime, float32);
 
+int ConsolePrintf(const char* fmt, ...)
+{
+    // -- notify the shell we're about to print
+    gCmdShell->NotifyPrintStart();
+
+    // -- print the message
+    va_list args;
+    va_start(args, fmt);
+    char buffer[1024];
+    vsprintf_s(buffer, 1024, fmt, args);
+    va_end(args);
+    printf(buffer);
+
+    // -- notify the shell we're about to print
+    gCmdShell->NotifyPrintEnd();
+
+    return (0);
+}
+
 int32 _tmain(int32 argc, _TCHAR* argv[])
 {
     // -- required to ensure registered functions from unittest.cpp are linked.
@@ -85,7 +104,7 @@ int32 _tmain(int32 argc, _TCHAR* argv[])
     REGISTER_FILE(socket_cpp);
 
     // -- initialize
-    TinScript::CreateContext(printf, CmdShellAssertHandler, true);
+    TinScript::CreateContext(ConsolePrintf, CmdShellAssertHandler, true);
 
     // -- create a command shell
     gCmdShell = new CCmdShell();
@@ -97,14 +116,6 @@ int32 _tmain(int32 argc, _TCHAR* argv[])
 	char argstring[kMaxArgs][kMaxArgLength];
 	for (int32 i = 0; i < argc; ++i)
 	{
-		/*
-		size_t arglength = 0;
-		if (wcstombs_s(&arglength, argstring[i], kMaxArgLength, argv[i], _TRUNCATE) != 0)
-        {
-			printf("Error - invalid arg# %d\n", i);
-			return 1;
-		}
-		*/
 		strcpy_s(argstring[i], argv[i]);
 	}
 

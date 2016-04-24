@@ -46,6 +46,10 @@ public:
     // -- clears out stale text, and refreshes the prompt
     void RefreshConsoleInput(bool8 display_prompt = false, const char* new_input_string = NULL);
 
+    // -- allows the console to handle a preceeding newline 
+    void NotifyPrintStart();
+    void NotifyPrintEnd();
+
     // -- update should be called every frame - returns the const char* of the current command
     const char* Update();
 
@@ -58,6 +62,9 @@ private:
     int32 mHistoryIndex;
     int32 mHistoryLastIndex;
     char mHistory[TinScript::kMaxTokenLength][kMaxHistory];
+
+    bool8 mCurrentLineIsPrompt;
+    bool8 mRefreshPrompt;
 
     // -- input members
     char mConsoleInputBuf[TinScript::kMaxTokenLength];
