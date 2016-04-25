@@ -730,6 +730,7 @@ uint32 CGroupIterator::Current()
                       "Error - [%d] CGroupIterator::Current(): this iterator has not been initialized\n"
                       "Use CObjectSet::CreateIterator() to construct a properly initialized iterator.",
                       TinScript::GetContext()->FindObjectByAddress(this)->GetID());
+        return (0);
     }
 
     CObjectEntry* oe = m_iterator->Current();
