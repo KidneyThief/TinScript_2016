@@ -516,6 +516,9 @@ class CScriptContext
         void DebuggerRequestFunctionAssist(uint32 object_id);
         void DebuggerSendFunctionAssistEntry(const CDebuggerFunctionAssistEntry& function_assist_entry);
 
+        // -- methods for tab completion
+        CFunctionEntry* TabComplete(const char* partial_input, int32& tab_complete_index);
+
         // -- useful debugging statics
         static bool8 gDebugParseTree;
         static bool8 gDebugCodeBlock;

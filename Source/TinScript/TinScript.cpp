@@ -3054,6 +3054,89 @@ void CScriptContext::DebuggerListSchedules()
 }
 
 // ====================================================================================================================
+// TabComplete():  Return the next available command, given the partial input string
+// ====================================================================================================================
+CFunctionEntry* CScriptContext::TabComplete(const char* partial_input, int32& ref_tab_complete_index)
+{
+    // -- send the function entries through the entire hierarchy (or just the global if requested)
+    tFuncTable* function_table = NULL;
+    CNamespace* current_namespace = NULL;
+
+    // -- set up the pointer to the start of the partial input
+    const char* partial_function_ptr = partial_input;
+    if (partial_function_ptr == nullptr || partial_function_ptr[0] == '\0')
+        return (nullptr);
+
+    size_t partial_length = strlen(partial_function_ptr);
+
+    // -- if we're sending global functions, we need the global namespace only
+    CObjectEntry* oe = nullptr;
+    uint32 object_id = 0;
+    if (object_id == 0)
+    {
+        function_table = GetGlobalNamespace()->GetFuncTable();
+    }
+    else
+    {
+        current_namespace = oe->GetNamespace();
+        function_table = current_namespace->GetFuncTable();
+    }
+
+    // -- send the hierarchy
+    if (function_table == nullptr)
+        return (nullptr);
+
+    // -- populate the list of function names
+    const int32 max_count = 256;
+    int32 function_count = 0;
+    CFunctionEntry* function_list[max_count];
+
+    // -- populate and send a function assist entry
+    CFunctionEntry* function_entry = function_table->First();
+    while (function_entry)
+    {
+        const char* func_name = TinScript::UnHash(function_entry->GetHash());
+        if (func_name != nullptr && !_strnicmp(partial_function_ptr, func_name, partial_length))
+        {
+            function_list[function_count++] = function_entry;
+
+            // -- break if we're full
+            if (function_count >= max_count)
+                break;
+        }
+
+        // -- next function
+        function_entry = function_table->Next();
+    }
+
+    // -- if we didn't find anything, we're done
+    if (function_count == 0)
+        return (nullptr);
+
+    // -- if the number of functions is > 1, sort the list
+    if (function_count > 1)
+    {
+        auto function_sort = [](const void* a, const void* b) -> int
+        {
+            CFunctionEntry* func_a = *(CFunctionEntry**)a;
+            CFunctionEntry* func_b = *(CFunctionEntry**)b;
+            const char* func_name_a = TinScript::UnHash(func_a->GetHash());
+            const char* func_name_b = TinScript::UnHash(func_b->GetHash());
+            int result = _stricmp(func_name_a, func_name_b);
+            return (result);
+        };
+
+        qsort(function_list, function_count, sizeof(CFunctionEntry*), function_sort);
+    }
+
+    // -- update the index
+    ref_tab_complete_index = (++ref_tab_complete_index) % function_count;
+
+    // -- return the next function entry
+    return (function_list[ref_tab_complete_index]);
+}
+
+// ====================================================================================================================
 // AddThreadCommand():  This enqueues a command, to be process during the normal update
 // ====================================================================================================================
 // -- Thread commands are only supported in WIN32

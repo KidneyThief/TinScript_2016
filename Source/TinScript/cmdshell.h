@@ -70,6 +70,10 @@ private:
     char mConsoleInputBuf[TinScript::kMaxTokenLength];
     char* mInputPtr;
 
+    // -- tab completion members
+    int32 mTabCompletionIndex;
+    char mTabCompletionBuf[TinScript::kMaxTokenLength];
+
     // -- command entry buffer
     char mCommandBuf[TinScript::kMaxTokenLength];
 };

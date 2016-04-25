@@ -119,7 +119,6 @@ bool8 CmdShellAssertHandler(TinScript::CScriptContext* script_context, const cha
     return true;
 }
 
-
 // ====================================================================================================================
 // Constructor
 // ====================================================================================================================
@@ -140,6 +139,10 @@ CCmdShell::CCmdShell()
     // -- initialize the input
     mInputPtr = mConsoleInputBuf;
     *mInputPtr = '\0';
+
+    // -- initialize the tab completion members
+    mTabCompletionIndex = -1;
+    mTabCompletionBuf[0] = '\0';
 
     // -- initialize the command buf
     mCommandBuf[0] = '\0';
@@ -321,7 +324,8 @@ const char* CCmdShell::Update()
         // -- read the next key
         bool8 special_key = false;
         char c = _getch();
-        if (c == -32) {
+        if (c == -32)
+        {
             special_key = true;
             c = _getch();
         }
@@ -340,6 +344,38 @@ const char* CCmdShell::Update()
 
             // -- reset the mHistory
             mHistoryIndex = -1;
+
+            // -- clear the tab completion
+            mTabCompletionBuf[0] = '\0';
+        }
+
+        // -- tab (complete)
+        else if (!special_key && c == 9)
+        {
+            // -- see if we should initialize the tab completion buffer
+            if (mTabCompletionBuf[0] == '\0')
+            {
+                TinScript::SafeStrcpy(mTabCompletionBuf, mConsoleInputBuf, TinScript::kMaxTokenLength);
+                mTabCompletionIndex = -1;
+            }
+
+            // -- see if we can find a complete a function
+            TinScript::CFunctionEntry* tab_complete_function =
+                TinScript::GetContext()->TabComplete(mTabCompletionBuf, mTabCompletionIndex);
+            if (tab_complete_function)
+            {
+                // -- update the input buf with the new string
+                const char* function_name = TinScript::UnHash(tab_complete_function->GetHash());
+                int32 function_name_length = strlen(function_name);
+
+                // -- build the function prototype string
+                char prototype_string[TinScript::kMaxTokenLength];
+                sprintf_s(prototype_string, "%s(", function_name);
+                RefreshConsoleInput(false, prototype_string);
+
+                // -- set the "new character" input ptr to the end of the buf
+                mInputPtr = &mConsoleInputBuf[strlen(mConsoleInputBuf)];
+            }
         }
 
         // -- uparrow
@@ -364,6 +400,9 @@ const char* CCmdShell::Update()
 
                 // -- set the "new character" input ptr to the end of the buf
                 mInputPtr = &mConsoleInputBuf[strlen(mConsoleInputBuf)];
+
+                // -- clear the tab completion
+                mTabCompletionBuf[0] = '\0';
             }
         }
 
@@ -389,6 +428,9 @@ const char* CCmdShell::Update()
 
                 // -- set the "new character" input ptr to the end of the buf
                 mInputPtr = &mConsoleInputBuf[strlen(mConsoleInputBuf)];
+
+                // -- clear the tab completion
+                mTabCompletionBuf[0] = '\0';
             }
         }
 
@@ -397,6 +439,9 @@ const char* CCmdShell::Update()
         {
             *--mInputPtr = '\0';
             DeleteLastchar();
+
+            // -- clear the tab completion
+            mTabCompletionBuf[0] = '\0';
         }
 
         // -- return keypress
@@ -404,9 +449,9 @@ const char* CCmdShell::Update()
         {
             // -- echo the input and execute it
             *mInputPtr = '\0';
-            RefreshConsoleInput(false);
             NotifyPrintStart();
             printf(">> %s\n", mConsoleInputBuf);
+            NotifyPrintEnd();
 
             // -- add this to the mHistory buf
             const char* historyptr = (mHistoryLastIndex < 0) ? NULL : mHistory[mHistoryLastIndex];
@@ -424,8 +469,11 @@ const char* CCmdShell::Update()
             return_value = mCommandBuf;
 
             // -- clear the input, and set the input ptr
-            RefreshConsoleInput(false, "");
+            mConsoleInputBuf[0] = '\0';
             mInputPtr = mConsoleInputBuf;
+
+            // -- clear the tab completion
+            mTabCompletionBuf[0] = '\0';
         }
 
         // ignore any other non-printable character
@@ -435,6 +483,9 @@ const char* CCmdShell::Update()
             *mInputPtr++ = c;
             *mInputPtr = '\0';
             printf("%c", c);
+
+            // -- clear the tab completion
+            mTabCompletionBuf[0] = '\0';
         }
     }
 
