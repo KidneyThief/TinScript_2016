@@ -149,6 +149,66 @@ CCmdShell::CCmdShell()
 }
 
 // ====================================================================================================================
+// SubstringLength(): Compares two strings, and returns the number of characters in common.
+// ====================================================================================================================
+int32 SubstringLength(const char* string_a, const char* string_b)
+{
+    // -- if one of the two strings is not specified, they have 0 characters in common
+    if (!string_a || !string_b)
+        return (0);
+
+    int32 substr_count = 0;
+    const char* str_a_ptr = string_a;
+    const char* str_b_ptr = string_b;
+
+    while (*str_a_ptr != '\0' && *str_b_ptr != '\0' && *str_a_ptr == *str_b_ptr)
+    {
+        ++substr_count;
+        ++str_a_ptr;
+        ++str_b_ptr;
+    }
+
+    return (substr_count);
+}
+
+// ====================================================================================================================
+// DeleteLastChar():  Removes the last character from the buffer, and updates the prompt (including word wrap).
+// ====================================================================================================================
+void DeleteLastchar()
+{
+    HANDLE cursor_handle = GetStdHandle(STD_OUTPUT_HANDLE);
+    COORD cursor_pos;
+    COORD cursor_window_size;
+    _CONSOLE_SCREEN_BUFFER_INFO console_info;
+    if (GetConsoleScreenBufferInfo(cursor_handle, &console_info))
+    {
+        cursor_pos = console_info.dwCursorPosition;
+        cursor_window_size = console_info.dwMaximumWindowSize;
+    }
+
+    // -- see if we need to set the cursor to the line above
+    if (--cursor_pos.X < 0)
+    {
+        cursor_pos.X = cursor_window_size.X - 1;
+        if (cursor_pos.Y > 0)
+            --cursor_pos.Y;
+
+        // -- update the cursor poition
+        SetConsoleCursorPosition(cursor_handle, cursor_pos);
+
+        // - print a space to erase the character
+        printf(" ");
+
+        // -- and again, reset the cursor position
+        SetConsoleCursorPosition(cursor_handle, cursor_pos);
+    }
+
+    // -- else simply back up and write a space over the last character
+    else
+        printf("\b \b");
+}
+
+// ====================================================================================================================
 // RefreshConsoleInput():  Clears out any stale text, and refreshes the display.
 // ====================================================================================================================
 void CCmdShell::RefreshConsoleInput(bool8 display_prompt, const char* new_input_string)
@@ -161,24 +221,59 @@ void CCmdShell::RefreshConsoleInput(bool8 display_prompt, const char* new_input_
         return;
     }
 
-    // -- whatever was on in the buffer needs to be deleted
-    int input_len = strlen(mConsoleInputBuf);
-    for (int i = 0; i < input_len; ++i)
+    //SetConsoleCursorPosition()
+    HANDLE cursor_handle = GetStdHandle(STD_OUTPUT_HANDLE);
+    COORD cursor_pos;
+    COORD cursor_window_size;
+    _CONSOLE_SCREEN_BUFFER_INFO console_info;
+    if (GetConsoleScreenBufferInfo(cursor_handle, &console_info))
     {
-        // -- print a space over the "last" character
-        printf("\b \b");
+        cursor_pos = console_info.dwCursorPosition;
+        cursor_window_size = console_info.dwMaximumWindowSize;
+        //printf("TEST: %d, %d out of %d", cursor_pos.X, cursor_pos.Y, cursor_window_size.X);
     }
 
-    // -- if we have a new input string, copy it
-    if (new_input_string)
-        TinScript::SafeStrcpy(mConsoleInputBuf, new_input_string, TinScript::kMaxTokenLength);
-
-    // -- if we're supposed to display the prompt, draw it before the input buf
+    // -- if we're supposed to re-display the entire prompt
     if (display_prompt)
+    {
+        // -- whatever was on in the buffer needs to be deleted, by backing up, printing a space over the last char
+        int input_len = strlen(mConsoleInputBuf);
+        for (int i = 0; i < input_len; ++i)
+            DeleteLastchar();
+
+        // -- print the prompt 
         printf("\nConsole => ");
 
-    // -- display the input prompt
-    printf(mConsoleInputBuf);
+        // -- update the input string, if given
+        if (new_input_string)
+            TinScript::SafeStrcpy(mConsoleInputBuf, new_input_string, TinScript::kMaxTokenLength);
+
+        // -- display the input string
+        printf(mConsoleInputBuf);
+    }
+
+    // -- otherwise, only refresh the difference between the old and new strings
+    else if (new_input_string)
+    {
+        int32 substr_length = SubstringLength(mConsoleInputBuf, new_input_string);
+        int32 length_current = (int32)strlen(mConsoleInputBuf);
+        int32 length_new = (int32)strlen(new_input_string);
+
+        // -- if the new string doesn't add to the existing, remove the trailing characters
+        if (substr_length < length_current)
+        {
+            int32 remove_count = length_current - substr_length;
+            for (int i = 0; i < remove_count; ++i)
+                DeleteLastchar();
+        }
+
+        // -- if there are additional characters to print, print them now
+        if (length_new > substr_length)
+            printf(&new_input_string[substr_length]);
+
+        // -- update the new input string
+        TinScript::SafeStrcpy(mConsoleInputBuf, new_input_string, TinScript::kMaxTokenLength);
+    }
 
     // -- set the bool, so the next printed output is on a new line
     mCurrentLineIsPrompt = mCurrentLineIsPrompt || display_prompt;
@@ -232,13 +327,12 @@ const char* CCmdShell::Update()
         }
 
         // -- esc
-        if (!special_key && c == 27) {
+        if (!special_key && c == 27)
+        {
+            // -- delete al characters from the current promp
             int input_len = strlen(mConsoleInputBuf);
             for (int i = 0; i < input_len; ++i)
-            {
-                // -- print a space over the "last" character
-                printf("\b \b");
-            }
+                DeleteLastchar();
 
             // -- reset the input pointer, and set it to an empty string
             mInputPtr = mConsoleInputBuf;
@@ -249,11 +343,13 @@ const char* CCmdShell::Update()
         }
 
         // -- uparrow
-        else if (special_key && c == 72) {
+        else if (special_key && c == 72)
+        {
             int32 oldhistory = mHistoryIndex;
             if (mHistoryIndex < 0)
                 mHistoryIndex = mHistoryLastIndex;
-            else if (mHistoryLastIndex > 0) {
+            else if (mHistoryLastIndex > 0)
+            {
                 if (mHistoryFull)
                     mHistoryIndex = (mHistoryIndex + kMaxHistory - 1) % kMaxHistory;
                 else
@@ -272,11 +368,13 @@ const char* CCmdShell::Update()
         }
 
         // -- downarrow
-        else if (special_key && c == 80) {
+        else if (special_key && c == 80)
+        {
             int32 oldhistory = mHistoryIndex;
             if (mHistoryIndex < 0)
                 mHistoryIndex = mHistoryLastIndex;
-            else if (mHistoryLastIndex > 0) {
+            else if (mHistoryLastIndex > 0)
+            {
                 if (mHistoryFull)
                     mHistoryIndex = (mHistoryIndex + 1) % kMaxHistory;
                 else
@@ -284,7 +382,8 @@ const char* CCmdShell::Update()
             }
 
             // -- see if we actually changed
-            if (mHistoryIndex != oldhistory && mHistoryIndex >= 0) {
+            if (mHistoryIndex != oldhistory && mHistoryIndex >= 0)
+            {
                 // -- update the input buf with the new string
                 RefreshConsoleInput(false, mHistory[mHistoryIndex]);
 
@@ -294,13 +393,15 @@ const char* CCmdShell::Update()
         }
 
         // -- backspace keypress
-        else if (!special_key && c == 8 && mInputPtr > mConsoleInputBuf) {
+        else if (!special_key && c == 8 && mInputPtr > mConsoleInputBuf)
+        {
             *--mInputPtr = '\0';
-            printf("\b \b");
+            DeleteLastchar();
         }
 
         // -- return keypress
-        else if (!special_key && c == 13) {
+        else if (!special_key && c == 13)
+        {
             // -- echo the input and execute it
             *mInputPtr = '\0';
             RefreshConsoleInput(false);
@@ -310,7 +411,8 @@ const char* CCmdShell::Update()
             // -- add this to the mHistory buf
             const char* historyptr = (mHistoryLastIndex < 0) ? NULL : mHistory[mHistoryLastIndex];
             if (mConsoleInputBuf[0] != '\0' && (!historyptr ||
-                                                strcmp(historyptr, mConsoleInputBuf) != 0)) {
+                                                strcmp(historyptr, mConsoleInputBuf) != 0))
+            {
                 mHistoryFull = mHistoryFull || mHistoryLastIndex == kMaxHistory - 1;
                 mHistoryLastIndex = (mHistoryLastIndex + 1) % kMaxHistory;
                 TinScript::SafeStrcpy(mHistory[mHistoryLastIndex], mConsoleInputBuf, TinScript::kMaxTokenLength);
@@ -327,7 +429,8 @@ const char* CCmdShell::Update()
         }
 
         // ignore any other non-printable character
-        else if (!special_key && (uint32)c >= 0x20) {
+        else if (!special_key && (uint32)c >= 0x20)
+        {
             RefreshConsoleInput();
             *mInputPtr++ = c;
             *mInputPtr = '\0';
