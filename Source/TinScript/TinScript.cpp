@@ -3053,87 +3053,243 @@ void CScriptContext::DebuggerListSchedules()
     script_context->GetScheduler()->DebuggerListSchedules();
 }
 
+// --------------------------------------------------------------------------------------------------------------------
+// struct tTabCompleteEntry:  Helper struct for tab completion, storing either a matching var name, or function name
+// --------------------------------------------------------------------------------------------------------------------
+struct tTabCompleteEntry
+{
+    CFunctionEntry* func_entry;
+    CVariableEntry* var_entry;
+
+    void Set(CFunctionEntry* fe, CVariableEntry* ve)
+    {
+        func_entry = fe;
+        var_entry = ve;
+    }
+};
+
+// --------------------------------------------------------------------------------------------------------------------
+// TabCompleteFunctionTable():  Populate the list of tab completion entries with matching function names
+// --------------------------------------------------------------------------------------------------------------------
+bool8 TabCompleteFunctionTable(const char* partial_function_name, int32 partial_length,
+                               tFuncTable& function_table, tTabCompleteEntry* tab_complete_list, int32& entry_count,
+                               int32 max_count)
+{
+    // -- populate and send a function assist entry
+    bool table_is_full = false;
+    CFunctionEntry* function_entry = function_table.First();
+    while (function_entry && !table_is_full)
+    {
+        const char* func_name = TinScript::UnHash(function_entry->GetHash());
+        if (func_name != nullptr && !_strnicmp(partial_function_name, func_name, partial_length))
+        {
+            // -- add the function
+            tab_complete_list[entry_count++].Set(function_entry, nullptr);
+
+            // -- break if we're full
+            if (entry_count >= max_count)
+            {
+                table_is_full = true;
+                break;
+            }
+        }
+
+        // -- next function
+        function_entry = function_table.Next();
+    }
+
+    // -- return true if the list is full
+    return (table_is_full);
+}
+
+// --------------------------------------------------------------------------------------------------------------------
+// TabCompleteFunctionTable():  Populate the list of tab completion entries with matching variable names
+// --------------------------------------------------------------------------------------------------------------------
+bool8 TabCompleteVarTable(const char* partial_function_name, int32 partial_length,
+                          tVarTable& var_table, tTabCompleteEntry* tab_complete_list, int32& entry_count,
+                          int32 max_count)
+{
+    // -- populate and send a function assist entry
+    bool table_is_full = false;
+    CVariableEntry* var_entry = var_table.First();
+    while (var_entry && !table_is_full)
+    {
+        const char* func_name = TinScript::UnHash(var_entry->GetHash());
+        if (func_name != nullptr && !_strnicmp(partial_function_name, func_name, partial_length))
+        {
+            // -- add the function
+            tab_complete_list[entry_count++].Set(nullptr, var_entry);
+
+            // -- break if we're full
+            if (entry_count >= max_count)
+            {
+                table_is_full = true;
+                break;
+            }
+        }
+
+        // -- next function
+        var_entry = var_table.Next();
+    }
+
+    // -- return true if the list is full
+    return (table_is_full);
+}
+
 // ====================================================================================================================
 // TabComplete():  Return the next available command, given the partial input string
 // ====================================================================================================================
-CFunctionEntry* CScriptContext::TabComplete(const char* partial_input, int32& ref_tab_complete_index)
+bool CScriptContext::TabComplete(const char* partial_input, int32& ref_tab_complete_index,
+                                 int32& out_name_offset, CFunctionEntry*& fe, CVariableEntry*& ve)
 {
+    // -- sanity check
+    if (partial_input == nullptr)
+        return (false);
+
     // -- send the function entries through the entire hierarchy (or just the global if requested)
     tFuncTable* function_table = NULL;
     CNamespace* current_namespace = NULL;
 
     // -- set up the pointer to the start of the partial input
+    out_name_offset = 0;
     const char* partial_function_ptr = partial_input;
     if (partial_function_ptr == nullptr || partial_function_ptr[0] == '\0')
         return (nullptr);
 
+    // -- see if this is a global function or an method
+    CObjectEntry* oe = nullptr;
+    uint32 object_id = 0;
+    const char* decimal = strchr(partial_input, '.');
+    if (decimal != nullptr)
+    {
+        char object_str[kMaxNameLength];
+        int32 object_str_len = kPointerDiffUInt32(decimal, partial_input);
+        if (object_str_len > 0)
+            strncpy_s(object_str, partial_input, object_str_len);
+        object_str[object_str_len] = '\0';
+
+        // -- set the string offset
+        out_name_offset = object_str_len + 1;
+
+        // -- if we were given a valid integer, search for the object by ID
+        object_id = (uint32)atoi(object_str);
+        if (object_id > 0)
+            oe = TinScript::GetContext()->FindObjectEntry(object_id);
+
+        // -- otherwise the object_str must be a variable - see if we can find it
+        else
+        {
+            // -- find the variable
+            CVariableEntry* ve = GetGlobalNamespace()->GetVarTable()->FindItem(Hash(object_str));
+            if (ve == nullptr || ve->GetType() != eVarType::TYPE_object)
+                return (nullptr);
+
+            // -- get the variable value, and search for an object with that ID
+            object_id = *(uint32*)(ve->GetValueAddr(nullptr));
+            oe = TinScript::GetContext()->FindObjectEntry(object_id);
+        }
+
+        // -- if we don't have an object, we can't complete the member or method name
+        if (!oe)
+            return (false);
+
+        // -- update the partial_function_ptr to just after the decimal
+        partial_function_ptr = decimal + 1;
+    }
+
     size_t partial_length = strlen(partial_function_ptr);
 
     // -- if we're sending global functions, we need the global namespace only
-    CObjectEntry* oe = nullptr;
-    uint32 object_id = 0;
-    if (object_id == 0)
-    {
+    if (oe == nullptr)
         function_table = GetGlobalNamespace()->GetFuncTable();
-    }
     else
     {
         current_namespace = oe->GetNamespace();
         function_table = current_namespace->GetFuncTable();
     }
 
-    // -- send the hierarchy
-    if (function_table == nullptr)
+    // -- ensure we have a valid function table, and a non-empty of a function/method name
+    if (function_table == nullptr || partial_function_ptr[0] == '\0')
         return (nullptr);
 
-    // -- populate the list of function names
+    // -- populate the list of function and member names
     const int32 max_count = 256;
-    int32 function_count = 0;
-    CFunctionEntry* function_list[max_count];
+    int32 entry_count = 0;
+    tTabCompleteEntry tab_complete_list[max_count];
+    bool8 list_is_full = false;
 
-    // -- populate and send a function assist entry
-    CFunctionEntry* function_entry = function_table->First();
-    while (function_entry)
+    // -- if we have an object, and it has dynamic variables, add them to the list
+    tVarTable* dynamic_vars = oe != nullptr ? oe->GetDynamicVarTable() : nullptr;
+    if (dynamic_vars != nullptr)
     {
-        const char* func_name = TinScript::UnHash(function_entry->GetHash());
-        if (func_name != nullptr && !_strnicmp(partial_function_ptr, func_name, partial_length))
-        {
-            function_list[function_count++] = function_entry;
+        list_is_full = TabCompleteVarTable(partial_function_ptr, partial_length, *dynamic_vars,
+                                           tab_complete_list, entry_count, max_count);
+    }
 
-            // -- break if we're full
-            if (function_count >= max_count)
-                break;
+    // -- lots of places to exit from
+    while (function_table && !list_is_full)
+    {
+        // -- populate the list with matching function names
+        list_is_full = TabCompleteFunctionTable(partial_function_ptr, partial_length, *function_table,
+                                                tab_complete_list, entry_count, max_count);
+
+        // -- if we have an object, add the object members
+        if (oe != nullptr && !list_is_full)
+        {
+            tVarTable* var_table = current_namespace->GetVarTable();
+            if (var_table != nullptr)
+            {
+                list_is_full = TabCompleteVarTable(partial_function_ptr, partial_length, *var_table,
+                                                   tab_complete_list, entry_count, max_count);
+            }
         }
 
-        // -- next function
-        function_entry = function_table->Next();
+        // -- get the next namespace and function table
+        if (oe != nullptr)
+        {
+            current_namespace = current_namespace->GetNext();
+            if (current_namespace)
+                function_table = current_namespace->GetFuncTable();
+            else
+                function_table = NULL;
+        }
+        else
+            function_table = NULL;
     }
 
     // -- if we didn't find anything, we're done
-    if (function_count == 0)
-        return (nullptr);
+    if (entry_count == 0)
+        return (false);
 
     // -- if the number of functions is > 1, sort the list
-    if (function_count > 1)
+    if (entry_count > 1)
     {
         auto function_sort = [](const void* a, const void* b) -> int
         {
-            CFunctionEntry* func_a = *(CFunctionEntry**)a;
-            CFunctionEntry* func_b = *(CFunctionEntry**)b;
-            const char* func_name_a = TinScript::UnHash(func_a->GetHash());
-            const char* func_name_b = TinScript::UnHash(func_b->GetHash());
-            int result = _stricmp(func_name_a, func_name_b);
+            CFunctionEntry* func_a = ((tTabCompleteEntry*)a)->func_entry;
+            CVariableEntry* var_a = ((tTabCompleteEntry*)a)->var_entry;
+            CFunctionEntry* func_b = ((tTabCompleteEntry*)b)->func_entry;
+            CVariableEntry* var_b = ((tTabCompleteEntry*)b)->var_entry;
+
+            const char* name_a = func_a != nullptr ? TinScript::UnHash(func_a->GetHash())
+                                                   : TinScript::UnHash(var_a->GetHash());
+            const char* name_b = func_b != nullptr ? TinScript::UnHash(func_b->GetHash())
+                                                   : TinScript::UnHash(var_b->GetHash());
+            int result = _stricmp(name_a, name_b);
             return (result);
         };
 
-        qsort(function_list, function_count, sizeof(CFunctionEntry*), function_sort);
+        qsort(tab_complete_list, entry_count, sizeof(tTabCompleteEntry), function_sort);
     }
 
     // -- update the index
-    ref_tab_complete_index = (++ref_tab_complete_index) % function_count;
+    ref_tab_complete_index = (++ref_tab_complete_index) % entry_count;
 
     // -- return the next function entry
-    return (function_list[ref_tab_complete_index]);
+    fe = tab_complete_list[ref_tab_complete_index].func_entry;
+    ve = tab_complete_list[ref_tab_complete_index].var_entry;
+
+    return (true);
 }
 
 // ====================================================================================================================

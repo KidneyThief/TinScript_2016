@@ -360,17 +360,36 @@ const char* CCmdShell::Update()
             }
 
             // -- see if we can find a complete a function
-            TinScript::CFunctionEntry* tab_complete_function =
-                TinScript::GetContext()->TabComplete(mTabCompletionBuf, mTabCompletionIndex);
-            if (tab_complete_function)
+            int32 tab_string_offset = 0;
+            TinScript::CFunctionEntry* fe = nullptr;
+            TinScript::CVariableEntry* ve = nullptr;
+            if (TinScript::GetContext()->TabComplete(mTabCompletionBuf, mTabCompletionIndex, tab_string_offset, fe, ve))
             {
                 // -- update the input buf with the new string
-                const char* function_name = TinScript::UnHash(tab_complete_function->GetHash());
-                int32 function_name_length = strlen(function_name);
+                const char* tab_complete_name = fe != nullptr
+                                                ? TinScript::UnHash(fe->GetHash())
+                                                : TinScript::UnHash(ve->GetHash());
+                int32 tab_complete_length = (int32)strlen(tab_complete_name);
 
                 // -- build the function prototype string
                 char prototype_string[TinScript::kMaxTokenLength];
-                sprintf_s(prototype_string, "%s(", function_name);
+
+                // -- see if we are to preserve the preceeding part of the tab completion buf
+                if (tab_string_offset > 0)
+                    strncpy_s(prototype_string, mTabCompletionBuf, tab_string_offset);
+
+                // -- eventually, the tab completion will fill in the prototype arg types...
+                if (fe != nullptr)
+                {
+                    // -- if we have parameters (more than 1, since the first parameter is always the return value)
+                    if (fe->GetContext()->GetParameterCount() > 1)
+                        sprintf_s(&prototype_string[tab_string_offset], TinScript::kMaxTokenLength - tab_string_offset, "%s(", tab_complete_name);
+                    else
+                        sprintf_s(&prototype_string[tab_string_offset], TinScript::kMaxTokenLength - tab_string_offset, "%s()", tab_complete_name);
+                }
+                else
+                    sprintf_s(&prototype_string[tab_string_offset], TinScript::kMaxTokenLength - tab_string_offset, "%s", tab_complete_name);
+
                 RefreshConsoleInput(false, prototype_string);
 
                 // -- set the "new character" input ptr to the end of the buf
