@@ -62,7 +62,24 @@ class CBase {
             boolvalue = true;
             v3member = CVector3f(1.0f, 2.0f, 3.0f);
             objmember = NULL;
+
+            for (int i = 0; i < 20; ++i)
+                intArray[i] = 0;
+
+            // -- note:  if the string value is non-empty,
+            // -- you must use the string table to set the value from code, so script access
+            // $$$TZA it's been too long - I can't recall how to initialize a string registered member from code  :(
+            for (int i = 0; i < 20; ++i)
+            {
+                /*
+                char initial_value[32];
+                sprintf_s(initial_value, "string %d", i);
+                stringArray[i] = TinScript::GetContext()->GetStringTable()->AddString(initial_value, -1, TinScript::Hash(initial_value), true);
+                */
+                stringArray[i] = nullptr;
+            }
         }
+
         virtual ~CBase() {
             MTPrint("Enter destructor ~CBase()\n");
         }

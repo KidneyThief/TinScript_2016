@@ -3054,6 +3054,89 @@ void CScriptContext::DebuggerListSchedules()
 }
 
 // --------------------------------------------------------------------------------------------------------------------
+static const int32 k_maxIdentifierStackSize = 8;
+int32 ParseIdentifierStack(const char* input_str, char identifierStack[kMaxNameLength][k_maxIdentifierStackSize],
+                           int32& last_token_offset)
+{
+    // -- sanity check
+    if (input_str == nullptr || input_str[0] == '\0' || identifierStack == nullptr)
+        return (0);
+
+    // -- copy the string
+    char input_buf[kMaxTokenLength];
+    const char* input_buf_start = input_buf;
+    strcpy_s(input_buf, input_str);
+    int identifier_count = 0;
+    last_token_offset = -1;
+
+    // -- start at the end of the input string, and look for 
+    char* input_ptr = &input_buf[strlen(input_str)];
+    while (input_ptr != input_buf)
+    {
+        // -- find the beginning of the current identifier
+        char* input_end = input_ptr;
+        while (input_ptr > input_buf && IsIdentifierChar(*(char*)(input_ptr - 1), true))
+            --input_ptr;
+
+        // -- at this point, input_ptr points to the start of the identifier, and input_end is the null terminator
+        // -- if we have an empty identifier, or a string too long for an identifier, we're done
+        if (input_ptr == input_end || (int32)strlen(input_ptr) >= kMaxNameLength)
+            break;
+
+        // -- copy the identifier to the stack
+        strcpy_s(identifierStack[identifier_count++], kMaxNameLength, input_ptr);
+
+        // -- set the last token offset
+        if (last_token_offset < 0)
+            last_token_offset = (int32)kPointerDiffUInt32(input_ptr, input_buf_start);
+
+        // -- if our stack is full, or we've reached the start of our string, we're done
+        if (identifier_count >= k_maxIdentifierStackSize || input_ptr == input_buf)
+            break;
+
+        // -- back up one char, so we can scan for the next (previous) identifier
+        --input_ptr;
+
+        // -- back up past white space
+        while (input_ptr > input_buf && *input_ptr <= 0x20)
+            --input_ptr;
+
+        // -- if we found anything other than an object dereference, we're done
+        if (*input_ptr != '.')
+            break;
+
+        // -- if we did find a decimal, then we must have a preceeding identifier,
+        // -- or we've got a non-tab-completable expression
+        if (input_ptr == input_buf)
+            return (0);
+
+        // -- back up before the decimal
+        --input_ptr;
+
+        // -- back up past white space again
+        while (input_ptr > input_buf && *input_ptr <= 0x20)
+            --input_ptr;
+
+        // -- if we're at the start of the string, the we're still missing a preceeding identifier
+        if (input_ptr == input_buf)
+            return (0);
+
+        // -- if we didn't find an identifier char, we're still missing a preceeding identifier
+        if (!IsIdentifierChar(*input_ptr, true))
+            return (0);
+
+        // -- set the input_end, and terminate
+        input_end = input_ptr + 1;
+        *input_end = '\0';
+    }
+
+    // -- return the number of identifiers we found
+    return (identifier_count);
+}
+
+// --------------------------------------------------------------------------------------------------------------------
+
+// --------------------------------------------------------------------------------------------------------------------
 // struct tTabCompleteEntry:  Helper struct for tab completion, storing either a matching var name, or function name
 // --------------------------------------------------------------------------------------------------------------------
 struct tTabCompleteEntry
@@ -3083,8 +3166,22 @@ bool8 TabCompleteFunctionTable(const char* partial_function_name, int32 partial_
         const char* func_name = TinScript::UnHash(function_entry->GetHash());
         if (func_name != nullptr && !_strnicmp(partial_function_name, func_name, partial_length))
         {
+            // -- ensure the function hasn't already been added
+            // -- (derived registered classes all have their own version of ListMembers() and ListMethods())
+            bool already_added = false;
+            for (int i = 0; i < entry_count; ++i)
+            {
+                if (tab_complete_list[i].func_entry != nullptr &&
+                    tab_complete_list[i].func_entry->GetHash() == function_entry->GetHash())
+                {
+                    already_added = true;
+                    break;
+                }
+            }
+
             // -- add the function
-            tab_complete_list[entry_count++].Set(function_entry, nullptr);
+            if (!already_added)
+                tab_complete_list[entry_count++].Set(function_entry, nullptr);
 
             // -- break if we're full
             if (entry_count >= max_count)
@@ -3154,49 +3251,67 @@ bool CScriptContext::TabComplete(const char* partial_input, int32& ref_tab_compl
     out_name_offset = 0;
     const char* partial_function_ptr = partial_input;
     if (partial_function_ptr == nullptr || partial_function_ptr[0] == '\0')
-        return (nullptr);
+        return (false);
+
+    // -- parse the input, separating it into the chain of identifiers
+    char identifier_stack[kMaxNameLength][k_maxIdentifierStackSize];
+    int32 identifier_count = ParseIdentifierStack(partial_input, identifier_stack, out_name_offset);
+
+    // -- if we weren't able to parse the string into identifiers, we're done
+    if (identifier_count == 0)
+        return (false);
+
+    // -- set the pointers for the partial input
+    partial_function_ptr = identifier_stack[0];
 
     // -- see if this is a global function or an method
     CObjectEntry* oe = nullptr;
     uint32 object_id = 0;
-    const char* decimal = strchr(partial_input, '.');
-    if (decimal != nullptr)
+
+    // -- if there were multiple identifiers, then we need to find the last object entry in the chain
+    for (int stack_index = identifier_count - 1; stack_index >= 1; --stack_index)
     {
-        char object_str[kMaxNameLength];
-        int32 object_str_len = kPointerDiffUInt32(decimal, partial_input);
-        if (object_str_len > 0)
-            strncpy_s(object_str, partial_input, object_str_len);
-        object_str[object_str_len] = '\0';
+        // -- cache the prev_oe
+        CObjectEntry* prev_oe = oe;
+        oe = nullptr;
 
-        // -- set the string offset
-        out_name_offset = object_str_len + 1;
+        // -- if this is the first identifier in the chain, it must be either an object ID, or a global variable
+        if (stack_index == identifier_count - 1)
+        {
+            object_id = (uint32)atoi(identifier_stack[stack_index]);
+            if (object_id > 0)
+                oe = TinScript::GetContext()->FindObjectEntry(object_id);
+            else
+            {
+                // -- find the variable
+                CVariableEntry* ve = GetGlobalNamespace()->GetVarTable()->FindItem(Hash(identifier_stack[stack_index]));
+                if (ve == nullptr || ve->GetType() != eVarType::TYPE_object)
+                    return (false);
 
-        // -- if we were given a valid integer, search for the object by ID
-        object_id = (uint32)atoi(object_str);
-        if (object_id > 0)
-            oe = TinScript::GetContext()->FindObjectEntry(object_id);
+                // -- get the variable value, and search for an object with that ID
+                object_id = *(uint32*)(ve->GetValueAddr(nullptr));
+                oe = TinScript::GetContext()->FindObjectEntry(object_id);
+            }
+        }
 
-        // -- otherwise the object_str must be a variable - see if we can find it
+        // -- otherwise, it's an object member of the previous object
         else
         {
-            // -- find the variable
-            CVariableEntry* ve = GetGlobalNamespace()->GetVarTable()->FindItem(Hash(object_str));
-            if (ve == nullptr || ve->GetType() != eVarType::TYPE_object)
-                return (nullptr);
+            CVariableEntry* oe_member = prev_oe->GetVariableEntry(Hash(identifier_stack[stack_index]));
+            if (oe_member == nullptr || oe_member->GetType() != TYPE_object)
+                return (false);
 
-            // -- get the variable value, and search for an object with that ID
-            object_id = *(uint32*)(ve->GetValueAddr(nullptr));
+            // -- find the variable for which this member refers
+            object_id = *(uint32*)(oe_member->GetValueAddr(prev_oe->GetAddr()));
             oe = TinScript::GetContext()->FindObjectEntry(object_id);
         }
 
-        // -- if we don't have an object, we can't complete the member or method name
-        if (!oe)
+        // -- if oe is still null, we're done
+        if (oe == nullptr)
             return (false);
-
-        // -- update the partial_function_ptr to just after the decimal
-        partial_function_ptr = decimal + 1;
     }
 
+    // -- we're only performing partial string comparisons
     size_t partial_length = strlen(partial_function_ptr);
 
     // -- if we're sending global functions, we need the global namespace only
