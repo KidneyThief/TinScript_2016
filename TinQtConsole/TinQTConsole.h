@@ -247,6 +247,8 @@ class CConsoleInput : public QLineEdit
         }
 
         void SetText(const char* text, int cursor_pos);
+        void RequestTabComplete();
+        void NotifyTabComplete(int32 request_id, const char* tab_completed_string, int32 tab_complete_index);
 
         typedef struct { char text[TinScript::kMaxTokenLength]; } tHistoryEntry;
         void GetHistory(QStringList& history) const;
@@ -268,6 +270,7 @@ class CConsoleInput : public QLineEdit
 
     protected:
         virtual void keyPressEvent(QKeyEvent * event);
+        virtual bool focusNextPrevChild(bool next) { return (false); }
             
         virtual void paintEvent(QPaintEvent* e)
         {
@@ -282,6 +285,11 @@ class CConsoleInput : public QLineEdit
         int32 mHistoryIndex;
         int32 mHistoryLastIndex;
         tHistoryEntry mHistory[kMaxHistory];
+
+        // -- tab completion members
+        int32 mTabCompleteRequestID;
+        int32 mTabCompletionIndex;
+        char mTabCompletionBuf[TinScript::kMaxTokenLength];
 };
 
 // ====================================================================================================================

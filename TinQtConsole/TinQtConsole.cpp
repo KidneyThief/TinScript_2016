@@ -956,7 +956,6 @@ void CConsoleWindow::NotifyWatchVarEntry(TinScript::CDebuggerWatchVarEntry* watc
     }
 }
 
-
 // == Global Interface ================================================================================================
 
 // ====================================================================================================================
@@ -1128,6 +1127,11 @@ CConsoleInput::CConsoleInput(QWidget* parent) : QLineEdit(parent)
     for(int32 i = 0; i < kMaxHistory; ++i)
         mHistory[i].text[0] = '\0';
 
+    // -- tab complete members
+    mTabCompleteRequestID = 0;
+    mTabCompletionIndex = -1;
+    mTabCompletionBuf[0] = '\0';
+
     // -- create the label as well
     mInputLabel = new QLabel("==>", parent);
 
@@ -1150,6 +1154,39 @@ void CConsoleInput::SetText(const char* text, int cursor_pos)
     if (cursor_pos >= 0)
     {
         setCursorPosition(cursor_pos);
+    }
+}
+
+// ====================================================================================================================
+// RequestTabComplete():  Send the current input to the target, and see if we can complete the command/object/...
+// ====================================================================================================================
+void CConsoleInput::RequestTabComplete()
+{
+    // -- see if we should initialize the tab completion buffer
+    if (mTabCompletionIndex < 0)
+    {
+        QByteArray input_ba = text().toUtf8();
+        const char* input_text = input_ba.data();
+
+        TinScript::SafeStrcpy(mTabCompletionBuf, input_text, TinScript::kMaxTokenLength);
+    }
+
+    // -- if we have a non-empty string...
+    if (mTabCompletionBuf[0] != '\0')
+    {
+        ++mTabCompleteRequestID;
+        SocketManager::SendCommandf("DebuggerRequestTabComplete(%d, `%s`, %d);", mTabCompleteRequestID,
+                                    mTabCompletionBuf, mTabCompletionIndex);
+    }
+}
+
+void CConsoleInput::NotifyTabComplete(int32 request_id, const char* result, int32 tab_complete_index)
+{
+    // -- if the result contains the same request_id, update the text
+    if (request_id == mTabCompleteRequestID)
+    {
+        mTabCompletionIndex = tab_complete_index;
+        SetText(result, -1);
     }
 }
 
@@ -1342,6 +1379,9 @@ void CConsoleInput::keyPressEvent(QKeyEvent * event)
         if (mHistoryIndex != oldhistory && mHistoryIndex >= 0)
         {
             setText(mHistory[mHistoryIndex].text);
+
+            // -- reset the tab completion
+            mTabCompletionIndex = -1;
         }
     }
 
@@ -1357,12 +1397,18 @@ void CConsoleInput::keyPressEvent(QKeyEvent * event)
                 mHistoryIndex = (mHistoryIndex + 1) % kMaxHistory;
             else
                 mHistoryIndex = (mHistoryIndex + 1) % (mHistoryLastIndex + 1);
+
+            // -- reset the tab completion
+            mTabCompletionIndex = -1;
         }
 
         // -- see if we actually changed
         if (mHistoryIndex != oldhistory && mHistoryIndex >= 0)
         {
             setText(mHistory[mHistoryIndex].text);
+
+            // -- reset the tab completion
+            mTabCompletionIndex = -1;
         }
     }
 
@@ -1371,11 +1417,23 @@ void CConsoleInput::keyPressEvent(QKeyEvent * event)
     {
         setText("");
         mHistoryIndex = -1;
+
+        // -- reset the tab completion
+        mTabCompletionIndex = -1;
+    }
+
+    // -- tab
+    else if (event->key() == Qt::Key_Tab)
+    {
+        RequestTabComplete();
     }
 
     else
     {
         QLineEdit::keyPressEvent(event);
+
+        // -- reset the tab completion
+        mTabCompletionIndex = -1;
     }
 }
 
@@ -2112,6 +2170,14 @@ void DebuggerRemoveSchedule(int32 schedule_id)
     CConsoleWindow::GetInstance()->GetDebugSchedulesWin()->RemoveSchedule(schedule_id);
 }
 
+// ====================================================================================================================
+// DebuggerNotifyTabComplete():  Receive the result of a tab complete request
+// ====================================================================================================================
+void DebuggerNotifyTabComplete(int32 request_id, const char* tab_completed_string, int32 tab_complete_index)
+{
+    CConsoleWindow::GetInstance()->GetInput()->NotifyTabComplete(request_id, tab_completed_string, tab_complete_index);
+}
+
 // == ObjectBrowser Registration ======================================================================================
 
 REGISTER_FUNCTION_P0(DebuggerClearObjectBrowser, DebuggerClearObjectBrowser, void);
@@ -2120,9 +2186,14 @@ REGISTER_FUNCTION_P1(DebuggerNotifyDestroyObject, DebuggerNotifyDestroyObject, v
 REGISTER_FUNCTION_P3(DebuggerNotifySetAddObject, DebuggerNotifySetAddObject, void, int32, int32, bool8);
 REGISTER_FUNCTION_P2(DebuggerNotifySetRemoveObject, DebuggerNotifySetRemoveObject, void, int32, int32);
 
+// == Scheduler Registration ==========================================================================================
+
 REGISTER_FUNCTION_P1(DebuggerNotifyTimeScale, DebuggerNotifyTimeScale, void, float);
 REGISTER_FUNCTION_P5(DebuggerAddSchedule, DebuggerAddSchedule, void, int32, bool8, int32, int32, const char*);
 REGISTER_FUNCTION_P1(DebuggerRemoveSchedule, DebuggerRemoveSchedule, void, int32);
+
+// == TabComplete Registration ========================================================================================
+REGISTER_FUNCTION_P3(DebuggerNotifyTabComplete, DebuggerNotifyTabComplete, void, int32, const char*, int32);
 
 // --------------------------------------------------------------------------------------------------------------------
 int _tmain(int argc, _TCHAR* argv[])

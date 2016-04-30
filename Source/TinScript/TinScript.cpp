@@ -3718,6 +3718,57 @@ void DebuggerRequestFunctionAssist(int32 object_id)
     script_context->DebuggerRequestFunctionAssist(object_id);
 }
 
+// --------------------------------------------------------------------------------------------------------------------
+// DebuggerRequestTabComplete():  Receive a partial input string, and send back a tab completed one
+// --------------------------------------------------------------------------------------------------------------------
+void DebuggerRequestTabComplete(int32 request_id, const char* partial_input, int32 tab_complete_index)
+{
+    // -- ensure we have a script context
+    CScriptContext* script_context = GetContext();
+    if (!script_context)
+        return;
+
+    // -- ensure we're connected
+    int32 debugger_session = 0;
+    if (!script_context->IsDebuggerConnected(debugger_session))
+        return;
+
+    // -- methods for tab completion
+    int32 tab_string_offset = 0;
+    CFunctionEntry* fe = nullptr;
+    CVariableEntry* ve = nullptr;
+    if (script_context->TabComplete(partial_input, tab_complete_index, tab_string_offset, fe, ve))
+    {
+        // -- update the input buf with the new string
+        const char* tab_complete_name = fe != nullptr
+                                        ? TinScript::UnHash(fe->GetHash())
+                                        : TinScript::UnHash(ve->GetHash());
+        int32 tab_complete_length = (int32)strlen(tab_complete_name);
+
+        // -- build the function prototype string
+        char prototype_string[TinScript::kMaxTokenLength];
+
+        // -- see if we are to preserve the preceeding part of the tab completion buf
+        if (tab_string_offset > 0)
+            strncpy_s(prototype_string, partial_input, tab_string_offset);
+
+        // -- eventually, the tab completion will fill in the prototype arg types...
+        if (fe != nullptr)
+        {
+            // -- if we have parameters (more than 1, since the first parameter is always the return value)
+            if (fe->GetContext()->GetParameterCount() > 1)
+                sprintf_s(&prototype_string[tab_string_offset], TinScript::kMaxTokenLength - tab_string_offset, "%s(", tab_complete_name);
+            else
+                sprintf_s(&prototype_string[tab_string_offset], TinScript::kMaxTokenLength - tab_string_offset, "%s()", tab_complete_name);
+        }
+        else
+            sprintf_s(&prototype_string[tab_string_offset], TinScript::kMaxTokenLength - tab_string_offset, "%s", tab_complete_name);
+
+        // -- send the tab completed string back to the debugger
+        SocketManager::SendCommandf("DebuggerNotifyTabComplete(%d, `%s`, %d);", request_id, prototype_string, tab_complete_index);
+    }
+}
+
 // -------------------------------------------------------------------------------------------------------------------
 // -- Registration
 REGISTER_FUNCTION_P1(DebuggerSetConnected, DebuggerSetConnected, void, bool8);
@@ -3738,6 +3789,8 @@ REGISTER_FUNCTION_P1(DebuggerInspectObject, DebuggerInspectObject, void, int32);
 
 REGISTER_FUNCTION_P0(DebuggerListSchedules, DebuggerListSchedules, void);
 REGISTER_FUNCTION_P1(DebuggerRequestFunctionAssist, DebuggerRequestFunctionAssist, void, int32);
+
+REGISTER_FUNCTION_P3(DebuggerRequestTabComplete, DebuggerRequestTabComplete, void, int32, const char*, int32);
 
 // == class CThreadMutex ==============================================================================================
 // -- CThreadMutex is only functional in WIN32
