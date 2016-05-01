@@ -46,6 +46,12 @@ public:
     // -- clears out stale text, and refreshes the prompt
     void RefreshConsoleInput(bool8 display_prompt = false, const char* new_input_string = NULL);
 
+    // -- cursor methods
+    void DeleteCharactersFromDisplay(int32 count);
+    void SetCursorPosition(int32 pos);
+    void InsertCharacterAtCursor(char c);
+    void DeleteCharacterAtCursor();
+
     // -- allows the console to handle a preceeding newline 
     void NotifyPrintStart();
     void NotifyPrintEnd();
@@ -66,9 +72,14 @@ private:
     bool8 mCurrentLineIsPrompt;
     bool8 mRefreshPrompt;
 
-    // -- input members
+    // -- input buffer
     char mConsoleInputBuf[TinScript::kMaxTokenLength];
-    char* mInputPtr;
+
+    // -- cursor members
+    HANDLE m_screenHandle;
+    COORD m_screenCursorPos;
+    COORD m_screenSize;
+    int32 m_cursorOffset;
 
     // -- tab completion members
     int32 mTabCompletionIndex;

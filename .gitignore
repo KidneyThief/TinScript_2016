@@ -38,3 +38,4 @@ TinQtDemo/Release/
 TinQtConsole/TinScript_Test_Layout
 TinConsole/test.ts
 TinQtDemo/test.ts
+*.exe

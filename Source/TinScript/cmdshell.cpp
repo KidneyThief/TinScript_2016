@@ -136,9 +136,17 @@ CCmdShell::CCmdShell()
     for (int32 i = 0; i < kMaxHistory; ++i)
         *mHistory[i] = '\0';
 
-    // -- initialize the input
-    mInputPtr = mConsoleInputBuf;
-    *mInputPtr = '\0';
+    // -- initialize the cursor
+    m_screenHandle = GetStdHandle(STD_OUTPUT_HANDLE);
+    _CONSOLE_SCREEN_BUFFER_INFO console_info;
+    if (GetConsoleScreenBufferInfo(m_screenHandle, &console_info))
+    {
+        m_screenCursorPos = console_info.dwCursorPosition;
+        m_screenSize = console_info.dwMaximumWindowSize;
+    }
+
+    mConsoleInputBuf[0] = '\0';
+    m_cursorOffset = 0;
 
     // -- initialize the tab completion members
     mTabCompletionIndex = -1;
@@ -175,40 +183,124 @@ int32 SubstringLength(const char* string_a, const char* string_b)
 }
 
 // ====================================================================================================================
-// DeleteLastChar():  Removes the last character from the buffer, and updates the prompt (including word wrap).
+// DeleteCharactersFromDisplay():  Removes character from the end of the display (including word wrap)
 // ====================================================================================================================
-void DeleteLastchar()
+void CCmdShell::DeleteCharactersFromDisplay(int32 count)
 {
-    HANDLE cursor_handle = GetStdHandle(STD_OUTPUT_HANDLE);
+    if (mConsoleInputBuf[0] == '\0' || count <= 0)
+        return;
+
+    // -- set the screen cursor position to the end of the display string, without assigning the m_cursorOffset
+    SetCursorPosition(-1);
     COORD cursor_pos;
     COORD cursor_window_size;
     _CONSOLE_SCREEN_BUFFER_INFO console_info;
-    if (GetConsoleScreenBufferInfo(cursor_handle, &console_info))
+    if (GetConsoleScreenBufferInfo(m_screenHandle, &console_info))
     {
         cursor_pos = console_info.dwCursorPosition;
         cursor_window_size = console_info.dwMaximumWindowSize;
     }
 
-    // -- see if we need to set the cursor to the line above
-    if (--cursor_pos.X < 0)
+    // -- delete charactes from the end of the display string
+    for (int i = 0; i < count; ++i)
     {
-        cursor_pos.X = cursor_window_size.X - 1;
-        if (cursor_pos.Y > 0)
-            --cursor_pos.Y;
+        // -- see if we need to set the cursor to the line above
+        if (--cursor_pos.X < 0)
+        {
+            cursor_pos.X = cursor_window_size.X - 1;
+            if (cursor_pos.Y > 0)
+                --cursor_pos.Y;
 
-        // -- update the cursor poition
-        SetConsoleCursorPosition(cursor_handle, cursor_pos);
+            // -- update the cursor poition
+            SetConsoleCursorPosition(m_screenHandle, cursor_pos);
 
-        // - print a space to erase the character
-        printf(" ");
+            // - print a space to erase the character
+            printf(" ");
 
-        // -- and again, reset the cursor position
-        SetConsoleCursorPosition(cursor_handle, cursor_pos);
+            // -- and again, reset the cursor position
+            SetConsoleCursorPosition(m_screenHandle, cursor_pos);
+        }
+
+        // -- else simply back up and write a space over the last character
+        else
+            printf("\b \b");
+
+        // -- we deleted a character, so decrement the offset
+        --m_cursorOffset;
+    }
+}
+
+// ====================================================================================================================
+// SetCursorPosition():  Converts ths character index to the console x,y cursor position.
+// ====================================================================================================================
+void CCmdShell::SetCursorPosition(int32 pos)
+{
+    // -- if the pos is -1, set the cursor to the end of the string
+    int32 count = (int32)strlen(mConsoleInputBuf);
+    m_cursorOffset = pos < 0 || pos >= count ? count : pos;
+
+    // -- calculate the actual cursor position
+    int32 line_x = (m_screenCursorPos.X + m_cursorOffset) % m_screenSize.X;
+    int32 line_y = m_screenCursorPos.Y + (m_screenCursorPos.X + m_cursorOffset) / m_screenSize.X;
+    COORD newScreenPos;
+    newScreenPos.X = line_x;
+    newScreenPos.Y = line_y;
+    SetConsoleCursorPosition(m_screenHandle, newScreenPos);
+}
+
+// ====================================================================================================================
+// InsertCharacterAtCursor():  Inserts a character at the cursor position.
+// ====================================================================================================================
+void CCmdShell::InsertCharacterAtCursor(char c)
+{
+    // -- get the character count, and pointers - update the end of the buffer if needed
+    int32 count = (int32)strlen(mConsoleInputBuf);
+    char* append_ptr = &mConsoleInputBuf[count];
+    char* input_ptr = &mConsoleInputBuf[m_cursorOffset];
+
+    // -- ensure we've got room
+    if (count >= TinScript::kMaxTokenLength - 1)
+        return;
+
+    // -- ensure the string is null-terminated after inserting a character 
+    *(append_ptr + 1) = '\0';
+    while (append_ptr >= input_ptr)
+    {
+        *(append_ptr + 1) = *append_ptr;
+        --append_ptr;
     }
 
-    // -- else simply back up and write a space over the last character
-    else
-        printf("\b \b");
+    // -- set the character
+    *input_ptr++ = c;
+
+    // -- refresh the display
+    printf(&mConsoleInputBuf[m_cursorOffset]);
+
+    // -- update the offset, and cursor
+     SetCursorPosition(m_cursorOffset + 1);
+}
+
+// ====================================================================================================================
+// DeleteCharacterAtCursor():  Deletes the character at the cursor position.
+// ====================================================================================================================
+void CCmdShell::DeleteCharacterAtCursor()
+{
+    // -- remove the characters from the display
+    int32 count = (int32)strlen(mConsoleInputBuf);
+    int32 remove_count = count - m_cursorOffset;
+    DeleteCharactersFromDisplay(remove_count);
+
+    // -- get the character count, and pointers - update the end of the buffer if needed
+    char* input_ptr = &mConsoleInputBuf[m_cursorOffset];
+    while (*input_ptr != '\0')
+        *input_ptr++ = *(input_ptr + 1);
+
+    // -- if the cursor offset is not at the end of the string, we need to re-print 
+    if (m_cursorOffset < count)
+    {
+        printf(&mConsoleInputBuf[m_cursorOffset]);
+        SetCursorPosition(m_cursorOffset);
+    }
 }
 
 // ====================================================================================================================
@@ -224,28 +316,20 @@ void CCmdShell::RefreshConsoleInput(bool8 display_prompt, const char* new_input_
         return;
     }
 
-    //SetConsoleCursorPosition()
-    HANDLE cursor_handle = GetStdHandle(STD_OUTPUT_HANDLE);
-    COORD cursor_pos;
-    COORD cursor_window_size;
-    _CONSOLE_SCREEN_BUFFER_INFO console_info;
-    if (GetConsoleScreenBufferInfo(cursor_handle, &console_info))
-    {
-        cursor_pos = console_info.dwCursorPosition;
-        cursor_window_size = console_info.dwMaximumWindowSize;
-        //printf("TEST: %d, %d out of %d", cursor_pos.X, cursor_pos.Y, cursor_window_size.X);
-    }
-
     // -- if we're supposed to re-display the entire prompt
     if (display_prompt)
     {
         // -- whatever was on in the buffer needs to be deleted, by backing up, printing a space over the last char
         int input_len = strlen(mConsoleInputBuf);
-        for (int i = 0; i < input_len; ++i)
-            DeleteLastchar();
+        DeleteCharactersFromDisplay(input_len);
 
         // -- print the prompt 
         printf("\nConsole => ");
+
+        // -- cache the new screen cursor position
+        _CONSOLE_SCREEN_BUFFER_INFO console_info;
+        if (GetConsoleScreenBufferInfo(m_screenHandle, &console_info))
+            m_screenCursorPos = console_info.dwCursorPosition;
 
         // -- update the input string, if given
         if (new_input_string)
@@ -253,29 +337,25 @@ void CCmdShell::RefreshConsoleInput(bool8 display_prompt, const char* new_input_
 
         // -- display the input string
         printf(mConsoleInputBuf);
+
+        // -- ensure the cursor position is up to date
+        SetCursorPosition(-1);
     }
 
     // -- otherwise, only refresh the difference between the old and new strings
     else if (new_input_string)
     {
-        int32 substr_length = SubstringLength(mConsoleInputBuf, new_input_string);
-        int32 length_current = (int32)strlen(mConsoleInputBuf);
-        int32 length_new = (int32)strlen(new_input_string);
-
-        // -- if the new string doesn't add to the existing, remove the trailing characters
-        if (substr_length < length_current)
-        {
-            int32 remove_count = length_current - substr_length;
-            for (int i = 0; i < remove_count; ++i)
-                DeleteLastchar();
-        }
-
-        // -- if there are additional characters to print, print them now
-        if (length_new > substr_length)
-            printf(&new_input_string[substr_length]);
+        int32 count = (int32)strlen(mConsoleInputBuf);
+        DeleteCharactersFromDisplay(count);
 
         // -- update the new input string
         TinScript::SafeStrcpy(mConsoleInputBuf, new_input_string, TinScript::kMaxTokenLength);
+
+        // -- print the new string
+        printf(new_input_string);
+
+        // -- update the cursor
+        SetCursorPosition(-1);
     }
 
     // -- set the bool, so the next printed output is on a new line
@@ -333,14 +413,8 @@ const char* CCmdShell::Update()
         // -- esc
         if (!special_key && c == 27)
         {
-            // -- delete al characters from the current promp
-            int input_len = strlen(mConsoleInputBuf);
-            for (int i = 0; i < input_len; ++i)
-                DeleteLastchar();
-
-            // -- reset the input pointer, and set it to an empty string
-            mInputPtr = mConsoleInputBuf;
-            *mInputPtr = '\0';
+            // -- clear the display and buffer
+            RefreshConsoleInput(false, "");
 
             // -- reset the mHistory
             mHistoryIndex = -1;
@@ -391,10 +465,32 @@ const char* CCmdShell::Update()
                     sprintf_s(&prototype_string[tab_string_offset], TinScript::kMaxTokenLength - tab_string_offset, "%s", tab_complete_name);
 
                 RefreshConsoleInput(false, prototype_string);
-
-                // -- set the "new character" input ptr to the end of the buf
-                mInputPtr = &mConsoleInputBuf[strlen(mConsoleInputBuf)];
             }
+        }
+
+        // -- home
+        else if (special_key && c == 71)
+        {
+            SetCursorPosition(0);
+        }
+
+        // -- end
+        else if (special_key && c == 79)
+        {
+            SetCursorPosition(-1);
+        }
+
+        // -- leftarrow
+        else if (special_key && c == 75)
+        {
+            if (m_cursorOffset > 0)
+                SetCursorPosition(m_cursorOffset - 1);
+        }
+
+        // -- rightarrow
+        else if (special_key && c == 77)
+        {
+            SetCursorPosition(m_cursorOffset + 1);
         }
 
         // -- uparrow
@@ -414,11 +510,11 @@ const char* CCmdShell::Update()
             // -- see if we actually changed
             if (mHistoryIndex != oldhistory && mHistoryIndex >= 0)
             {
+                // -- clear the display and buffer
+                RefreshConsoleInput(false, "");
+
                 // -- update the input buf with the new string
                 RefreshConsoleInput(false, mHistory[mHistoryIndex]);
-
-                // -- set the "new character" input ptr to the end of the buf
-                mInputPtr = &mConsoleInputBuf[strlen(mConsoleInputBuf)];
 
                 // -- clear the tab completion
                 mTabCompletionBuf[0] = '\0';
@@ -442,11 +538,11 @@ const char* CCmdShell::Update()
             // -- see if we actually changed
             if (mHistoryIndex != oldhistory && mHistoryIndex >= 0)
             {
+                // -- clear the display and buffer
+                RefreshConsoleInput(false, "");
+
                 // -- update the input buf with the new string
                 RefreshConsoleInput(false, mHistory[mHistoryIndex]);
-
-                // -- set the "new character" input ptr to the end of the buf
-                mInputPtr = &mConsoleInputBuf[strlen(mConsoleInputBuf)];
 
                 // -- clear the tab completion
                 mTabCompletionBuf[0] = '\0';
@@ -454,20 +550,35 @@ const char* CCmdShell::Update()
         }
 
         // -- backspace keypress
-        else if (!special_key && c == 8 && mInputPtr > mConsoleInputBuf)
+        else if (!special_key && c == 8)
         {
-            *--mInputPtr = '\0';
-            DeleteLastchar();
+            if (m_cursorOffset > 0)
+            {
+                --m_cursorOffset;
+                DeleteCharacterAtCursor();
 
-            // -- clear the tab completion
-            mTabCompletionBuf[0] = '\0';
+                // -- clear the tab completion
+                mTabCompletionBuf[0] = '\0';
+            }
+        }
+
+        // -- delete keypress
+        else if (special_key && c == 83)
+        {
+            int32 count = (int32)strlen(mConsoleInputBuf);
+            if (m_cursorOffset < count)
+            {
+                DeleteCharacterAtCursor();
+
+                // -- clear the tab completion
+                mTabCompletionBuf[0] = '\0';
+            }
         }
 
         // -- return keypress
         else if (!special_key && c == 13)
         {
             // -- echo the input and execute it
-            *mInputPtr = '\0';
             NotifyPrintStart();
             printf(">> %s\n", mConsoleInputBuf);
             NotifyPrintEnd();
@@ -489,7 +600,6 @@ const char* CCmdShell::Update()
 
             // -- clear the input, and set the input ptr
             mConsoleInputBuf[0] = '\0';
-            mInputPtr = mConsoleInputBuf;
 
             // -- clear the tab completion
             mTabCompletionBuf[0] = '\0';
@@ -498,10 +608,11 @@ const char* CCmdShell::Update()
         // ignore any other non-printable character
         else if (!special_key && (uint32)c >= 0x20)
         {
-            RefreshConsoleInput();
-            *mInputPtr++ = c;
-            *mInputPtr = '\0';
-            printf("%c", c);
+            //RefreshConsoleInput();
+            //*mInputPtr++ = c;
+            //*mInputPtr = '\0';
+            //printf("%c", c);
+            InsertCharacterAtCursor(c);
 
             // -- clear the tab completion
             mTabCompletionBuf[0] = '\0';
