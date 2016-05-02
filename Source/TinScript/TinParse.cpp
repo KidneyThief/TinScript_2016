@@ -858,12 +858,39 @@ void DumpFuncTable(CScriptContext* script_context, const tFuncTable* functable)
 	if (!functable || !script_context)
 		return;
 
+    int32 function_count = 0;
+    CFunctionEntry* function_list[1024];
+
 	CFunctionEntry* fe = functable->First();
     while (fe)
     {
-		TinPrint(script_context, "    %s()\n", UnHash(fe->GetHash()));
+        function_list[function_count++] = fe;
 		fe = functable->Next();
+
+        if (function_count >= 1024)
+            break;
 	}
+
+    // -- sort the function list alphabetically
+    if (function_count > 1)
+    {
+        auto function_sort = [](const void* a, const void* b) -> int
+        {
+            CFunctionEntry* func_a = *(CFunctionEntry**)a;
+            CFunctionEntry* func_b = *(CFunctionEntry**)b;
+
+            const char* name_a = func_a != nullptr ? TinScript::UnHash(func_a->GetHash()) : "";
+            const char* name_b = func_b != nullptr ? TinScript::UnHash(func_b->GetHash()) : "";
+            int result = _stricmp(name_a, name_b);
+            return (result);
+        };
+
+        qsort(function_list, function_count, sizeof(CFunctionEntry*), function_sort);
+    }
+
+    // -- print out the function names
+    for (int i = 0; i < function_count; ++i)
+        TinPrint(script_context, "    %s()\n", UnHash(function_list[i]->GetHash()));
 }
 
 // ====================================================================================================================

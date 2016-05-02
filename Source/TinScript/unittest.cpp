@@ -38,6 +38,7 @@ DECLARE_FILE(unittest_cpp);
 
 // -- constants -----------------------------------------------------------------------------------
 static const char* kUnitTestScriptName = "../Source/TinScript/unittest.ts";
+static const char* kProfilingTestScriptName = "../Source/TinScript/profilingtest.ts";
 
 // --------------------------------------------------------------------------------------------------------------------
 // -- Print function, for use by the unit tests
@@ -983,7 +984,7 @@ REGISTER_FUNCTION_P0(BeginMultiThreadTest, BeginMultiThreadTest, void);
     #include "TinExecute.h"
 	void BeginProfilingTests()
 	{
-        TinScript::ExecScript("tintest.ts");
+        TinScript::ExecScript(kProfilingTestScriptName);
 
         uint32 func_hash = TinScript::Hash("CallFromCode");
 
