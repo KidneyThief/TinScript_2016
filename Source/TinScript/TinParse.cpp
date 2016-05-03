@@ -158,6 +158,12 @@ const char* gReservedKeywords[KEYWORD_COUNT] =
 	#undef ReservedKeywordEntry
 };
 
+const char** GetReservedKeywords(int32& count)
+{
+    count = KEYWORD_COUNT;
+    return (gReservedKeywords);
+}
+
 eReservedKeyword GetReservedKeywordType(const char* token, int32 length)
 {
 	for (eReservedKeyword i = KEYWORD_NULL; i < KEYWORD_COUNT; i = (eReservedKeyword)(i + 1))

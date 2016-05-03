@@ -3141,11 +3141,13 @@ int32 ParseIdentifierStack(const char* input_str, char identifierStack[kMaxNameL
 // --------------------------------------------------------------------------------------------------------------------
 struct tTabCompleteEntry
 {
+    const char* tab_string;
     CFunctionEntry* func_entry;
     CVariableEntry* var_entry;
 
-    void Set(CFunctionEntry* fe, CVariableEntry* ve)
+    void Set(const char* name, CFunctionEntry* fe, CVariableEntry* ve)
     {
+        tab_string = name;
         func_entry = fe;
         var_entry = ve;
     }
@@ -3181,7 +3183,8 @@ bool8 TabCompleteFunctionTable(const char* partial_function_name, int32 partial_
 
             // -- add the function
             if (!already_added)
-                tab_complete_list[entry_count++].Set(function_entry, nullptr);
+                tab_complete_list[entry_count++].Set(TinScript::UnHash(function_entry->GetHash()),
+                                                     function_entry, nullptr);
 
             // -- break if we're full
             if (entry_count >= max_count)
@@ -3214,8 +3217,23 @@ bool8 TabCompleteVarTable(const char* partial_function_name, int32 partial_lengt
         const char* func_name = TinScript::UnHash(var_entry->GetHash());
         if (func_name != nullptr && !_strnicmp(partial_function_name, func_name, partial_length))
         {
-            // -- add the function
-            tab_complete_list[entry_count++].Set(nullptr, var_entry);
+            // -- ensure the function hasn't already been added
+            // -- (derived registered classes all have their own version of ListMembers() and ListMethods())
+            bool already_added = false;
+            for (int i = 0; i < entry_count; ++i)
+            {
+                if (tab_complete_list[i].var_entry != nullptr &&
+                    tab_complete_list[i].var_entry->GetHash() == var_entry->GetHash())
+                {
+                    already_added = true;
+                    break;
+                }
+            }
+
+            // -- add the variable
+            if (!already_added)
+                tab_complete_list[entry_count++].Set(TinScript::UnHash(var_entry->GetHash()),
+                                                      nullptr, var_entry);
 
             // -- break if we're full
             if (entry_count >= max_count)
@@ -3237,7 +3255,8 @@ bool8 TabCompleteVarTable(const char* partial_function_name, int32 partial_lengt
 // TabComplete():  Return the next available command, given the partial input string
 // ====================================================================================================================
 bool CScriptContext::TabComplete(const char* partial_input, int32& ref_tab_complete_index,
-                                 int32& out_name_offset, CFunctionEntry*& fe, CVariableEntry*& ve)
+                                 int32& out_name_offset, const char*& tab_result, CFunctionEntry*& fe,
+                                 CVariableEntry*& ve)
 {
     // -- sanity check
     if (partial_input == nullptr)
@@ -3333,6 +3352,21 @@ bool CScriptContext::TabComplete(const char* partial_input, int32& ref_tab_compl
     tTabCompleteEntry tab_complete_list[max_count];
     bool8 list_is_full = false;
 
+    // -- if we have no object, tab complete with keywords
+    if (oe == nullptr)
+    {
+        int32 keyword_count = 0;
+        const char** keyword_list = GetReservedKeywords(keyword_count);
+        for (int32 i = 0; i < keyword_count; ++i)
+        {
+            if (!_strnicmp(partial_function_ptr, keyword_list[i], partial_length))
+            {
+                // -- add the function
+                tab_complete_list[entry_count++].Set(keyword_list[i], nullptr, nullptr);
+            }
+        }
+    }
+
     // -- if we have an object, and it has dynamic variables, add them to the list
     tVarTable* dynamic_vars = oe != nullptr ? oe->GetDynamicVarTable() : nullptr;
     if (dynamic_vars != nullptr)
@@ -3381,16 +3415,9 @@ bool CScriptContext::TabComplete(const char* partial_input, int32& ref_tab_compl
     {
         auto function_sort = [](const void* a, const void* b) -> int
         {
-            CFunctionEntry* func_a = ((tTabCompleteEntry*)a)->func_entry;
-            CVariableEntry* var_a = ((tTabCompleteEntry*)a)->var_entry;
-            CFunctionEntry* func_b = ((tTabCompleteEntry*)b)->func_entry;
-            CVariableEntry* var_b = ((tTabCompleteEntry*)b)->var_entry;
-
-            const char* name_a = func_a != nullptr ? TinScript::UnHash(func_a->GetHash())
-                                                   : TinScript::UnHash(var_a->GetHash());
-            const char* name_b = func_b != nullptr ? TinScript::UnHash(func_b->GetHash())
-                                                   : TinScript::UnHash(var_b->GetHash());
-            int result = _stricmp(name_a, name_b);
+            tTabCompleteEntry* entry_a = (tTabCompleteEntry*)a;
+            tTabCompleteEntry* entry_b = (tTabCompleteEntry*)b;
+            int result = _stricmp(entry_a->tab_string, entry_b->tab_string);
             return (result);
         };
 
@@ -3401,6 +3428,7 @@ bool CScriptContext::TabComplete(const char* partial_input, int32& ref_tab_compl
     ref_tab_complete_index = (++ref_tab_complete_index) % entry_count;
 
     // -- return the next function entry
+    tab_result = tab_complete_list[ref_tab_complete_index].tab_string;
     fe = tab_complete_list[ref_tab_complete_index].func_entry;
     ve = tab_complete_list[ref_tab_complete_index].var_entry;
 
@@ -3735,15 +3763,13 @@ void DebuggerRequestTabComplete(int32 request_id, const char* partial_input, int
 
     // -- methods for tab completion
     int32 tab_string_offset = 0;
+    const char* tab_result = nullptr;
     CFunctionEntry* fe = nullptr;
     CVariableEntry* ve = nullptr;
-    if (script_context->TabComplete(partial_input, tab_complete_index, tab_string_offset, fe, ve))
+    if (script_context->TabComplete(partial_input, tab_complete_index, tab_string_offset, tab_result, fe, ve))
     {
         // -- update the input buf with the new string
-        const char* tab_complete_name = fe != nullptr
-                                        ? TinScript::UnHash(fe->GetHash())
-                                        : TinScript::UnHash(ve->GetHash());
-        int32 tab_complete_length = (int32)strlen(tab_complete_name);
+        int32 tab_complete_length = (int32)strlen(tab_result);
 
         // -- build the function prototype string
         char prototype_string[TinScript::kMaxTokenLength];
@@ -3757,12 +3783,12 @@ void DebuggerRequestTabComplete(int32 request_id, const char* partial_input, int
         {
             // -- if we have parameters (more than 1, since the first parameter is always the return value)
             if (fe->GetContext()->GetParameterCount() > 1)
-                sprintf_s(&prototype_string[tab_string_offset], TinScript::kMaxTokenLength - tab_string_offset, "%s(", tab_complete_name);
+                sprintf_s(&prototype_string[tab_string_offset], TinScript::kMaxTokenLength - tab_string_offset, "%s(", tab_result);
             else
-                sprintf_s(&prototype_string[tab_string_offset], TinScript::kMaxTokenLength - tab_string_offset, "%s()", tab_complete_name);
+                sprintf_s(&prototype_string[tab_string_offset], TinScript::kMaxTokenLength - tab_string_offset, "%s()", tab_result);
         }
         else
-            sprintf_s(&prototype_string[tab_string_offset], TinScript::kMaxTokenLength - tab_string_offset, "%s", tab_complete_name);
+            sprintf_s(&prototype_string[tab_string_offset], TinScript::kMaxTokenLength - tab_string_offset, "%s", tab_result);
 
         // -- send the tab completed string back to the debugger
         SocketManager::SendCommandf("DebuggerNotifyTabComplete(%d, `%s`, %d);", request_id, prototype_string, tab_complete_index);

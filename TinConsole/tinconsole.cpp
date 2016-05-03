@@ -77,25 +77,6 @@ float32 GetSimTime() {
 }
 REGISTER_FUNCTION_P0(GetSimTime, GetSimTime, float32);
 
-int ConsolePrintf(const char* fmt, ...)
-{
-    // -- notify the shell we're about to print
-    gCmdShell->NotifyPrintStart();
-
-    // -- print the message
-    va_list args;
-    va_start(args, fmt);
-    char buffer[1024];
-    vsprintf_s(buffer, 1024, fmt, args);
-    va_end(args);
-    printf(buffer);
-
-    // -- notify the shell we're about to print
-    gCmdShell->NotifyPrintEnd();
-
-    return (0);
-}
-
 int32 _tmain(int32 argc, _TCHAR* argv[])
 {
     // -- required to ensure registered functions from unittest.cpp are linked.
@@ -104,7 +85,7 @@ int32 _tmain(int32 argc, _TCHAR* argv[])
     REGISTER_FILE(socket_cpp);
 
     // -- initialize
-    TinScript::CreateContext(ConsolePrintf, CmdShellAssertHandler, true);
+    TinScript::CreateContext(CmdShellPrintf, CmdShellAssertHandler, true);
 
     // -- create a command shell
     gCmdShell = new CCmdShell();

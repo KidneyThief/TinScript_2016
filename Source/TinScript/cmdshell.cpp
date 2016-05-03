@@ -38,9 +38,35 @@
 // -- includes
 #include "cmdshell.h"
 
+// -- statics ---------------------------------------------------------------------------------------------------------
+CCmdShell* CCmdShell::sm_cmdShell = nullptr;
+
 // ====================================================================================================================
-// AssertHandler():  default assert handler - simply uses printf
-// returns false if we should break
+// CmdShellPrintf():  Default printf handler.
+// ====================================================================================================================
+int CmdShellPrintf(const char* fmt, ...)
+{
+    // -- notify the shell we're about to print
+    if (CCmdShell::GetInstance() != nullptr)
+        CCmdShell::GetInstance()->NotifyPrintStart();
+
+    // -- print the message
+    va_list args;
+    va_start(args, fmt);
+    char buffer[1024];
+    vsprintf_s(buffer, 1024, fmt, args);
+    va_end(args);
+    printf(buffer);
+
+    // -- notify the shell we're about to print
+    if (CCmdShell::GetInstance() != nullptr)
+        CCmdShell::GetInstance()->NotifyPrintEnd();
+
+    return (0);
+}
+
+// ====================================================================================================================
+// CmdShellAssertHandler():  Default assert handler - returns false if we should break.
 // ====================================================================================================================
 bool8 CmdShellAssertHandler(TinScript::CScriptContext* script_context, const char* condition,
                             const char* file, int32 linenumber, const char* fmt, ...) {
@@ -124,6 +150,9 @@ bool8 CmdShellAssertHandler(TinScript::CScriptContext* script_context, const cha
 // ====================================================================================================================
 CCmdShell::CCmdShell()
 {
+    // -- set the singleton
+    sm_cmdShell = this;
+
     mCurrentLineIsPrompt = false;
     mRefreshPrompt = false;
 
@@ -391,6 +420,11 @@ const char* CCmdShell::Update()
     // -- see if we should refresh the prompt
     if (mRefreshPrompt)
     {
+        // -- cache the new screen cursor position
+        _CONSOLE_SCREEN_BUFFER_INFO console_info;
+        if (GetConsoleScreenBufferInfo(m_screenHandle, &console_info))
+            m_screenCursorPos = console_info.dwCursorPosition;
+
         RefreshConsoleInput(true);
         mRefreshPrompt = false;
     }
@@ -435,15 +469,13 @@ const char* CCmdShell::Update()
 
             // -- see if we can find a complete a function
             int32 tab_string_offset = 0;
+            const char* tab_result = nullptr;
             TinScript::CFunctionEntry* fe = nullptr;
             TinScript::CVariableEntry* ve = nullptr;
-            if (TinScript::GetContext()->TabComplete(mTabCompletionBuf, mTabCompletionIndex, tab_string_offset, fe, ve))
+            if (TinScript::GetContext()->TabComplete(mTabCompletionBuf, mTabCompletionIndex, tab_string_offset, tab_result, fe, ve))
             {
                 // -- update the input buf with the new string
-                const char* tab_complete_name = fe != nullptr
-                                                ? TinScript::UnHash(fe->GetHash())
-                                                : TinScript::UnHash(ve->GetHash());
-                int32 tab_complete_length = (int32)strlen(tab_complete_name);
+                int32 tab_complete_length = (int32)strlen(tab_result);
 
                 // -- build the function prototype string
                 char prototype_string[TinScript::kMaxTokenLength];
@@ -457,12 +489,12 @@ const char* CCmdShell::Update()
                 {
                     // -- if we have parameters (more than 1, since the first parameter is always the return value)
                     if (fe->GetContext()->GetParameterCount() > 1)
-                        sprintf_s(&prototype_string[tab_string_offset], TinScript::kMaxTokenLength - tab_string_offset, "%s(", tab_complete_name);
+                        sprintf_s(&prototype_string[tab_string_offset], TinScript::kMaxTokenLength - tab_string_offset, "%s(", tab_result);
                     else
-                        sprintf_s(&prototype_string[tab_string_offset], TinScript::kMaxTokenLength - tab_string_offset, "%s()", tab_complete_name);
+                        sprintf_s(&prototype_string[tab_string_offset], TinScript::kMaxTokenLength - tab_string_offset, "%s()", tab_result);
                 }
                 else
-                    sprintf_s(&prototype_string[tab_string_offset], TinScript::kMaxTokenLength - tab_string_offset, "%s", tab_complete_name);
+                    sprintf_s(&prototype_string[tab_string_offset], TinScript::kMaxTokenLength - tab_string_offset, "%s", tab_result);
 
                 RefreshConsoleInput(false, prototype_string);
             }

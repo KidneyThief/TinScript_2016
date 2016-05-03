@@ -394,7 +394,7 @@ int32 _tmain(int argc, _TCHAR* argv[])
     REGISTER_FILE(socket_cpp);
 
     // -- Create the TinScript context, using the default printf, and no assert handler
-    TinScript::CScriptContext* thread_context = TinScript::CScriptContext::Create(printf, CmdShellAssertHandler);
+    TinScript::CScriptContext* thread_context = TinScript::CScriptContext::Create(CmdShellPrintf, CmdShellAssertHandler);
 
     // -- create a command shell
     gCmdShell = new CCmdShell();

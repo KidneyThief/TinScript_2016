@@ -518,7 +518,8 @@ class CScriptContext
 
         // -- methods for tab completion
         bool TabComplete(const char* partial_input, int32& ref_tab_complete_index,
-                         int32& out_name_offset, CFunctionEntry*& fe, CVariableEntry*& ve);
+                         int32& out_name_offset, const char*& tab_result, CFunctionEntry*& fe,
+                         CVariableEntry*& ve);
 
         // -- useful debugging statics
         static bool8 gDebugParseTree;

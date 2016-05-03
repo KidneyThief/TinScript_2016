@@ -145,7 +145,7 @@ typedef bool8 (*TinAssertHandler)(TinScript::CScriptContext* script_context, con
     }
 
 // -- Pass a function of the following prototype when creating the CScriptContext
-typedef int (*TinPrintHandler)(const char* fmt, ...);
+typedef int32 (*TinPrintHandler)(const char* fmt, ...);
 #define TinPrint(scriptcontext, fmt, ...)                           \
     if (scriptcontext != NULL)                                      \
     {                                                               \

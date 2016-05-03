@@ -31,9 +31,8 @@
 #include "TinScript.h"
 #include "TinRegistration.h"
 
-// ====================================================================================================================
-// Default Assert Handler
-// ====================================================================================================================
+// == prototypes ======================================================================================================
+int32 CmdShellPrintf(const char* fmt, ...);
 bool8 CmdShellAssertHandler(TinScript::CScriptContext* script_context, const char* condition,
                             const char* file, int32 linenumber, const char* fmt, ...);
 
@@ -46,6 +45,8 @@ public:
     // -- constructor / destructor
     CCmdShell();
     virtual ~CCmdShell() { }
+    static CCmdShell* GetInstance() { return (sm_cmdShell); }
+    static CCmdShell* sm_cmdShell;
 
     // -- clears out stale text, and refreshes the prompt
     void RefreshConsoleInput(bool8 display_prompt = false, const char* new_input_string = NULL);

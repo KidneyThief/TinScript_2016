@@ -355,7 +355,7 @@ int CConsoleWindow::Exec()
 // -- create a handler to register, so we can receive print messages and asserts
 bool PushAssertDialog(const char* assertmsg, const char* errormsg, bool& skip, bool& trace);
 
-int ConsolePrint(const char* fmt, ...)
+int32 ConsolePrint(const char* fmt, ...)
 {
     static bool initialized = false;
     static char last_msg[4096] = { '\0' };

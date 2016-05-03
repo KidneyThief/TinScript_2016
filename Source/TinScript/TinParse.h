@@ -196,6 +196,8 @@ enum eReservedKeyword
 	KEYWORD_COUNT
 };
 
+const char** GetReservedKeywords(int32& count);
+
 // --------------------------------------------------------------------------------------------------------------------
 // struct for reading tokens
 struct tReadToken
