@@ -387,6 +387,57 @@ void CCompileTreeNode::Dump(char*& output, int32& length) const
 	length -= debuglength;
 }
 
+// == class CBinaryTreeNode =============================================================================================
+
+// ====================================================================================================================
+// Constructor
+// ====================================================================================================================
+CBinaryTreeNode::CBinaryTreeNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber,
+                                 eVarType _left_result_type, eVarType _right_result_type)
+    : CCompileTreeNode(_codeblock, _link, eBinaryNOP, _linenumber)
+{
+    m_leftResultType = _left_result_type;
+    m_rightResultType = _right_result_type;
+}
+
+// ====================================================================================================================
+// Eval():  Has no operations of its own, used to compile left, then right children.
+// ====================================================================================================================
+int32 CBinaryTreeNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 countonly) const
+{
+    DebugEvaluateNode(*this, countonly, instrptr);
+    int32 size = 0;
+
+    // -- ensure we have a left child
+    if (!leftchild)
+    {
+        printf("Error - CBinaryTreeNode with no left child\n");
+        return (-1);
+    }
+
+    // -- ensure we have a left child
+    if (!rightchild)
+    {
+        printf("Error - CBinaryTreeNode with no right child\n");
+        return (-1);
+    }
+
+    // -- evaluate the left child, pushing the result of the type required
+    // -- except in the case of an assignment operator - the left child is the variable
+    int32 tree_size = leftchild->Eval(instrptr, m_leftResultType, countonly);
+    if (tree_size < 0)
+        return (-1);
+    size += tree_size;
+
+    // -- evaluate the right child, pushing the result
+    tree_size = rightchild->Eval(instrptr, m_rightResultType, countonly);
+    if (tree_size < 0)
+        return (-1);
+    size += tree_size;
+
+    return (size);
+}
+
 // == class CValueNode ================================================================================================
 
 // ====================================================================================================================
@@ -1990,13 +2041,9 @@ void CObjMemberDeclNode::Dump(char*& output, int32& length) const
 // ====================================================================================================================
 // Constructor
 // ====================================================================================================================
-CScheduleNode::CScheduleNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber, int32 _delaytime,
-                             bool8 _repeat)
+CScheduleNode::CScheduleNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber, bool8 _repeat)
     : CCompileTreeNode(_codeblock, _link, eSched, _linenumber)
 {
-    delaytime = _delaytime;
-    if (delaytime < 1)
-        delaytime = 1;
     mRepeat = _repeat;
 };
 
@@ -2022,16 +2069,13 @@ int32 CScheduleNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 countonl
 		return (-1);
 	}
 
-    // -- push the delaytime
-    size += PushInstruction(countonly, instrptr, OP_Push, DBG_instr);
-    size += PushInstruction(countonly, instrptr, TYPE_int, DBG_vartype);
-    size += PushInstruction(countonly, instrptr, delaytime, DBG_value);
+    // -- push the "repeat" flag
     size += PushInstruction(countonly, instrptr, OP_Push, DBG_instr);
     size += PushInstruction(countonly, instrptr, TYPE_bool, DBG_vartype);
     size += PushInstruction(countonly, instrptr, mRepeat ? 1 : 0, DBG_value);
 
-    // -- evaluate the left child, to get the object ID
-    int32 tree_size = leftchild->Eval(instrptr, TYPE_object, countonly);
+    // -- evaluate the left child, to push the object ID, and then the delay time
+    int32 tree_size = leftchild->Eval(instrptr, TYPE_void, countonly);
     if (tree_size < 0)
         return (-1);
     size += tree_size;

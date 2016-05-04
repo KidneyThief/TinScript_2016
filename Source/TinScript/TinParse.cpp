@@ -3317,35 +3317,6 @@ bool8 TryParseSchedule(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeN
         return (false);
     }
 
-    // -- read the delay (msec)
-    // $$$TZA read a statement?  tree resolving to the scheduled delay time?
-    int32 delaytime = 0;
-    if (!immediate_execution)
-    {
-        tReadToken delaytoken(peektoken);
-        if (!GetToken(delaytoken) || delaytoken.type != TOKEN_INTEGER)
-        {
-            ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
-                          delaytoken.linenumber,
-                          "Error - expecting delay (msec) in schedule/execute() call\n");
-            return (false);
-        }
-
-        char delaybuf[kMaxTokenLength];
-        SafeStrcpy(delaybuf, delaytoken.tokenptr, delaytoken.length + 1);
-        delaytime = Atoi(delaybuf);
-
-        // -- read a comma next
-        peektoken = delaytoken;
-        if (!GetToken(peektoken))
-        {
-            ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
-                          peektoken.linenumber,
-                          "Error - expecting ',' in schedule/execute() call\n");
-            return (false);
-        }
-    }
-
     // -- at this point we're obviously committed, the rightchild of a CScheduleNode is a
     // -- CSchedFuncNode, who's left child resolves to the hashvalue identifying a function,
     // -- and the right child is the root of the parameter assignments
@@ -3353,10 +3324,45 @@ bool8 TryParseSchedule(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeN
 
     // -- add a CScheduleNode node
     CScheduleNode* schedulenode = TinAlloc(ALLOC_TreeNode, CScheduleNode, codeblock, link,
-                                           filebuf.linenumber, delaytime, repeat_execution);
+                                           filebuf.linenumber, repeat_execution);
 
-    // -- set its left child to be the tree resolving to an object ID
-    schedulenode->leftchild = templink;
+    // -- the left child is a generic binary tree node
+    CBinaryTreeNode* binary_tree_node = TinAlloc(ALLOC_TreeNode, CBinaryTreeNode, codeblock, schedulenode->leftchild,
+                                                 filebuf.linenumber, TYPE_object, TYPE_int);
+
+    // -- the binary tree node's left child resolving to an object ID,
+    // -- and the right child resolves to a delay time
+    binary_tree_node->leftchild = templink;
+
+    // -- if this is immediate execution, the right child is a value (0) node, else an expression
+    if (immediate_execution)
+    {
+        CValueNode* delay_0 = TinAlloc(ALLOC_TreeNode, CValueNode, codeblock,
+                                       binary_tree_node->rightchild, filebuf.linenumber, "", 0, false,
+                                       TYPE_int);
+    }
+    else
+    {
+        bool8 result = TryParseStatement(codeblock, filebuf, binary_tree_node->rightchild);
+        if (!result)
+        {
+            ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
+                          "Error - Unable to resolve a 'delay time' expression in a schedule/execute() call\n");
+            return (false);
+        }
+
+        // -- read a comma next
+        peektoken = filebuf;
+        if (!GetToken(peektoken))
+        {
+            ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
+                          "Error - expecting ',' in schedule/execute() call\n");
+            return (false);
+        }
+
+        // -- update the file buf
+        filebuf = peektoken;
+    }
 
     // -- add a CSchedFuncNode node
     CSchedFuncNode* schedulefunc = TinAlloc(ALLOC_TreeNode, CSchedFuncNode, codeblock,

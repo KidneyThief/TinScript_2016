@@ -52,6 +52,7 @@ class CWhileLoopNode;
 // compile tree node types
 #define CompileNodeTypesTuple \
 	CompileNodeTypeEntry(NOP)					\
+	CompileNodeTypeEntry(BinaryNOP)			    \
 	CompileNodeTypeEntry(Value)					\
 	CompileNodeTypeEntry(Self)       			\
 	CompileNodeTypeEntry(ObjMember) 			\
@@ -219,14 +220,33 @@ class CCompileTreeNode
 };
 
 // ====================================================================================================================
+// class CBinaryTreeNode:  Parse tree node, that holds a left and right child, and specifies their eval types.
+// ====================================================================================================================
+class CBinaryTreeNode : public CCompileTreeNode
+{
+public:
+    CBinaryTreeNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber, eVarType _left_result_type,
+                    eVarType _right_result_type);
+
+    virtual int32 Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
+
+protected:
+    eVarType m_leftResultType;
+    eVarType m_rightResultType;
+
+protected:
+    CBinaryTreeNode() { }
+};
+
+// ====================================================================================================================
 // class CValueNode:  Parse tree node, compiling to a literal value or a variable.
 // ====================================================================================================================
 class CValueNode : public CCompileTreeNode
 {
 	public:
-		CValueNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber, const char* _value,
+        CValueNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber, const char* _value,
                    int32 _valuelength, bool _isvar, eVarType _valtype);
-		CValueNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber, int32 _paramindex,
+        CValueNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber, int32 _paramindex,
                    eVarType _valtype);
 
 		virtual int32 Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
@@ -628,14 +648,12 @@ class CObjMemberDeclNode : public CCompileTreeNode
 class CScheduleNode : public CCompileTreeNode
 {
 	public:
-		CScheduleNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber,
-                      int32 _delaytime, bool8 repeat);
+		CScheduleNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber, bool8 repeat);
 
 		virtual int32 Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
 
 	protected:
 		char funcname[kMaxNameLength];
-        int32 delaytime;
         bool8 mRepeat;
 
 	protected:
