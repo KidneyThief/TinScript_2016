@@ -1205,11 +1205,49 @@ bool CSocket::ProcessRecvData(void* data, int dataSize)
 } // namespace SocketManager
 
 // ====================================================================================================================
+// SocketCommand():  Creates a command string for to send through the socket
+// ====================================================================================================================
+bool SocketCommand(const char* str0, const char* str1, const char* str2, const char* str3, const char* str4,
+                   const char* str5, const char* str6, const char* str7)
+{
+    // -- ensure we have at least one arg
+    if (!str0)
+        return ("");
+
+    // -- concatenate the arguments
+    // -- stop as soon as we have an empty string
+    char buf[2048];
+    if (!str1 || !str1[0])
+        sprintf_s(buf, "%s();", str0, str1);
+    else if (!str2 || !str2[0])
+        sprintf_s(buf, "%s(`%s`);", str0, str1);
+    else if (!str3 || !str3[0])
+        sprintf_s(buf, "%s(`%s`, `%s`);", str0, str1, str2);
+    else if (!str4 || !str4[0])
+        sprintf_s(buf, "%s(`%s`, `%s`, `%s`);", str0, str1, str2, str3);
+    else if (!str5 || !str5[0])
+        sprintf_s(buf, "%s(`%s`, `%s`, `%s`, `%s`);", str0, str1, str2, str3, str4);
+    else if (!str6 || !str6[0])
+        sprintf_s(buf, "%s(`%s`, `%s`, `%s`, `%s`, `%s`);", str0, str1, str2, str3, str4, str5);
+    else if (!str7 || !str7[0])
+        sprintf_s(buf, "%s(`%s`, `%s`, `%s`, `%s`, `%s`, `%s`);", str0, str1, str2, str3, str4, str5, str6);
+    else
+        sprintf_s(buf, "%s(`%s`, `%s`, `%s`, `%s`, `%s`, `%s`, `%s`);", str0, str1, str2, str3, str4, str5, str6, str7);
+
+    // -- send the command
+    bool result = SocketManager::SendCommand(buf);
+
+    // -- return the result
+    return (result);
+}
+
+// ====================================================================================================================
 // -- TinScript Registration
 REGISTER_FUNCTION_P0(SocketListen, SocketManager::Listen, bool);
 REGISTER_FUNCTION_P1(SocketConnect, SocketManager::Connect, bool, const char*);
 REGISTER_FUNCTION_P0(SocketDisconnect, SocketManager::Disconnect, void);
 REGISTER_FUNCTION_P1(SocketSend, SocketManager::SendCommand, bool, const char*);
+REGISTER_FUNCTION_P8(SocketCommand, SocketCommand, bool, const char*, const char*, const char*, const char*, const char*, const char*, const char*, const char*);
 
 // ====================================================================================================================
 // EOF
