@@ -870,8 +870,17 @@ int32 CBinaryOpNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 countonl
         return (-1);
     size += tree_size;
 
-	// -- push the specific operation to be performed
-	size += PushInstruction(countonly, instrptr, binaryopcode, DBG_instr);
+    // -- if both ourself, and our rightchild are assignment nodes, then we need to push the bool
+    // -- to allow right three assignment to leave it's value on the stack
+    // -- (e.g. consecutive assignments such as x = y = 5)
+    if (isassignop && rightchild->IsAssignOpNode())
+    {
+        // -- add the instruction to push the last assignment result before performing ours
+        size += PushInstruction(countonly, instrptr, OP_PushAssignValue, DBG_instr, "consec assigns");
+    }
+
+    // -- push the specific operation to be performed
+    size += PushInstruction(countonly, instrptr, binaryopcode, DBG_instr);
 
     // -- the branch destination is after the evaluation of the binary op code
     // -- if booleanAnd, and the left child is false, then:
@@ -933,9 +942,7 @@ int32 CUnaryOpNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 countonly
     // -- pre inc/dec operations are assignments - we need to ensure the left branch resolves to a variable
     eVarType resultType = pushresult;
     if (unaryopcode == OP_UnaryPreInc || unaryopcode == OP_UnaryPreDec)
-    {
         resultType = TYPE__var;
-    }
 
 	// -- evaluate the left child, pushing the result of the type required
 	// -- except in the case of an assignment operator - the left child is the variable
@@ -1707,6 +1714,13 @@ int32 CArrayHashNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 counton
         return (-1);
     size += tree_size;
 
+    // -- if the right child happened to be an assignment, then we need to push the assign value back onto the stack
+    if (rightchild->IsAssignOpNode())
+    {
+        // -- add the instruction to push the last assignment result before performing ours
+        size += PushInstruction(countonly, instrptr, OP_PushAssignValue, DBG_instr, "consec assign");
+    }
+
     // -- push an OP_ArrayHash, pops the top two stack items, the first is a "hash in progress",
     // -- and the second is a string to continue to add to the hash value
     // -- pushes the int32 hash result back onto the stack
@@ -1757,7 +1771,7 @@ int32 CArrayVarNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 countonl
         return (-1);
     size += tree_size;
 
-   	// -- right child will contain the hash value for the entry we're declaring
+   	// -- right child will contain the hash value or array index for the entry we're declaring
     tree_size = rightchild->Eval(instrptr, TYPE_int, countonly);
     if (tree_size < 0)
         return (-1);

@@ -395,6 +395,11 @@ bool8 PerformBinaryOpPush(CScriptContext* script_context, CExecStack& execstack,
     return (false);
 }
 
+// --------------------------------------------------------------------------------------------------------------------
+// -- for consecutive assignments, we need to push the previous assignment result back onto the stack
+eVarType g_lastAssignResultType = TYPE_void;
+uint32 g_lastAssignResultBuffer[MAX_TYPE_SIZE];
+
 // ====================================================================================================================
 // PerformAssignOp():  Consolidates all variations of the assignment operation execution.
 // ====================================================================================================================
@@ -449,9 +454,7 @@ bool8 PerformAssignOp(CScriptContext* script_context, CExecStack& execstack, CFu
 	    void* valaddr = execstack.Pop(valtype);
         uint32 valbuf[MAX_TYPE_SIZE];
         if (!valaddr)
-        {
             return (false);
-        }
         memcpy(valbuf, valaddr, MAX_TYPE_SIZE * sizeof(uint32));
 
         // -- push the variable to be assigned, back on the stack
@@ -468,9 +471,11 @@ bool8 PerformAssignOp(CScriptContext* script_context, CExecStack& execstack, CFu
 	eVarType val1type;
 	void* val1addr = execstack.Pop(val1type);
     if (!GetStackValue(script_context, execstack, funccallstack, val1addr, val1type, ve1, oe1))
-    {
-        return false;
-    }
+        return (false);
+
+    // -- cache the result value, because we'll need to push it back onto the stack if we have consecutive assignments
+    g_lastAssignResultType = val1type;
+    memcpy(g_lastAssignResultBuffer, val1addr, MAX_TYPE_SIZE * sizeof(uint32));
 
 	// -- pop the var
     CVariableEntry* ve0 = NULL;
@@ -481,18 +486,14 @@ bool8 PerformAssignOp(CScriptContext* script_context, CExecStack& execstack, CFu
     bool8 is_pod_member = (varhashtype == TYPE__podmember);
     bool8 use_var_addr = (is_stack_var || is_pod_member);
     if (!GetStackValue(script_context, execstack, funccallstack, var, varhashtype, ve0, oe0))
-    {
         return (false);
-    }
 
     // -- if the variable is a local variable, we also have the actual address already
     use_var_addr = use_var_addr || (ve0 && ve0->IsStackVariable(funccallstack));
 
     // -- ensure we're assigning to a variable, an object member, or a local stack variable
     if (!ve0 && !use_var_addr)
-    {
         return (false);
-    }
 
     // -- if we've been given the actual address of the var, copy directly to it
     if (use_var_addr)
@@ -625,6 +626,26 @@ bool8 OpExecParamDecl(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExec
 
     fe->GetContext()->AddParameter(UnHash(varhash), varhash, vartype, array_size, 0);
     DebugTrace(op, "Var: %s", UnHash(varhash));
+    return (true);
+}
+
+// ====================================================================================================================
+// OpPushAssignValue() : Push the last assignment value back onto the stack.
+// ====================================================================================================================
+bool8 OpExecPushAssignValue(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExecStack& execstack,
+                            CFunctionCallStack& funccallstack)
+{
+    if (g_lastAssignResultType == TYPE_void)
+    {
+        ScriptAssert_(cb->GetScriptContext(), 0, "<internal>", -1,
+                      "Error - Consecutive Assign operation without a previous result\n");
+        return (false);
+    }
+
+    // -- push the last value assigned
+    execstack.Push((void*)g_lastAssignResultBuffer, g_lastAssignResultType);
+
+    // -- success
     return (true);
 }
 
@@ -810,11 +831,6 @@ bool8 OpExecAssignBitXor(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CE
 bool8 OpExecUnaryPreInc(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExecStack& execstack,
                         CFunctionCallStack& funccallstack)
 {
-    // $$$TZA For now, we do not allow chaining of assignments, which includes
-    // -- int x = ++y;
-    // -- unary preinc is the same as "x += 1", except we also push the variable back onto the stack
-    // -- as it's also used as a value
-
     // -- first get the variable we're assigning
     eVarType assign_type;
 	void* assign_var = execstack.Peek(assign_type);
@@ -838,11 +854,6 @@ bool8 OpExecUnaryPreInc(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CEx
         return (false);
     }
 
-    // $$$TZA For now, we do not allow chaining of assignments, which includes
-    // -- int x = ++y;
-    // -- push the variable back onto the stack
-    //execstack.Push((void*)assign_buf, assign_type);
-
     // -- success
     return (true);
 }
@@ -853,11 +864,6 @@ bool8 OpExecUnaryPreInc(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CEx
 bool8 OpExecUnaryPreDec(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExecStack& execstack,
                         CFunctionCallStack& funccallstack)
 {
-    // $$$TZA For now, we do not allow chaining of assignments, which includes
-    // -- int x = ++y;
-    // -- unary predec is the same as "x += -1", except we also push the variable back onto the stack
-    // -- as it's also used as a value
-
     // -- first get the variable we're assigning
     eVarType assign_type;
 	void* assign_var = execstack.Peek(assign_type);
@@ -880,11 +886,6 @@ bool8 OpExecUnaryPreDec(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CEx
                         "Error - Failed to perform op: %s\n", GetOperationString(op));
         return (false);
     }
-
-    // -- push the variable back onto the stack
-    // $$$TZA For now, we do not allow chaining of assignments, which includes
-    // -- int x = ++y;
-    //execstack.Push((void*)assign_buf, assign_type);
 
     // -- success
     return (true);

@@ -53,7 +53,7 @@
 // -- executed through their hash values...
 #define CASE_SENSITIVE 1
 
-const int32 kCompilerVersion = 8;
+const int32 kCompilerVersion = 9;
 
 // --------------------------------------------------------------------------------------------------------------------
 // -- only case_sensitive has been extensively tested, however theoretically TinScript should function as a

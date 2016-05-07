@@ -104,6 +104,7 @@ const char* GetNodeTypeString(ECompileNodeType nodetype);
 	OperationEntry(VarDecl)				\
 	OperationEntry(ParamDecl)			\
 	OperationEntry(Assign)				\
+	OperationEntry(PushAssignValue)     \
 	OperationEntry(PushParam)			\
 	OperationEntry(Push)				\
 	OperationEntry(PushLocalVar)		\
@@ -203,6 +204,8 @@ class CCompileTreeNode
         CCodeBlock* GetCodeBlock() const { return codeblock; }
         int32 GetLineNumber() const { return linenumber; }
 
+        virtual bool8 IsAssignOpNode() const { return (false); }
+
 		static CCompileTreeNode* CreateTreeRoot(CCodeBlock* codeblock);
 
 	protected:
@@ -278,6 +281,7 @@ class CBinaryOpNode : public CCompileTreeNode
 		virtual int32 Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
 		virtual void Dump(char*& output, int32& length)const;
 
+        virtual bool8 IsAssignOpNode() const { return (isassignop); }
         eOpCode GetOpCode() const { return binaryopcode; }
         int32 GetBinaryOpPrecedence() const { return binaryopprecedence; }
         void OverrideBinaryOpPrecedence(int32 new_precedence) { binaryopprecedence = new_precedence; }
@@ -302,6 +306,7 @@ class CUnaryOpNode : public CCompileTreeNode
                      eUnaryOpType _unaryoptype);
 
 		virtual int32 Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
+        virtual bool8 IsAssignOpNode() const { return (unaryopcode == OP_UnaryPreInc || unaryopcode == OP_UnaryPreDec); }
 
 	protected:
 		CUnaryOpNode() { }
