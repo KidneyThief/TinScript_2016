@@ -61,6 +61,22 @@ static const int32 gMaxWhileLoopDepth = 32;
 static int32 gWhileLoopDepth = 0;
 static CWhileLoopNode* gWhileLoopStack[gMaxWhileLoopDepth];
 
+static CCompileTreeNode* g_postStatementNode = nullptr;
+
+// ====================================================================================================================
+// AddPostStatementNode():  The only valid nodes are post increment/decrement, but they get compiled at the end.
+// ====================================================================================================================
+void AddPostStatementNode(CCompileTreeNode* post_statement_node)
+{
+    // -- sanity check
+    if (post_statement_node == nullptr)
+        return;
+
+    // -- post statement nodes can be added in any order
+    post_statement_node->next = g_postStatementNode;
+    g_postStatementNode = post_statement_node;
+}
+
 // ====================================================================================================================
 // -- binary operators
 static const char* gBinOperatorString[] =
@@ -1809,6 +1825,35 @@ bool8 TryParseExpression(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTre
                                                  filebuf.linenumber, firsttoken.tokenptr, firsttoken.length, true,
                                                  TYPE_hashtable);
 
+                // -- see if we're post-incrementing/decrementing this variable
+                tReadToken peek_post_unary(arrayhashtoken);
+                if (!GetToken(peek_post_unary, true))
+                    return (false);
+
+                if (peek_post_unary.type == TOKEN_UNARY)
+                {
+                    // -- if the unary type is either increment or decrement, create a unary node, and add it to the
+                    // -- list of nodes to compile upon completion of the statement
+                    CUnaryOpNode* unarynode = NULL;
+                    eUnaryOpType unarytype = GetUnaryOpType(peek_post_unary.tokenptr, peek_post_unary.length);
+                    if (unarytype == UNARY_UnaryPreInc || unarytype == UNARY_UnaryPreDec)
+                    {
+                        CCompileTreeNode* temp_link = nullptr;
+                        CUnaryOpNode* post_unary_node = TinAlloc(ALLOC_TreeNode, CUnaryOpNode, codeblock, temp_link,
+                                                                 peek_post_unary.linenumber, unarytype);
+
+                        // -- duplicate the value node
+                        TinAlloc(ALLOC_TreeNode, CValueNode, codeblock, post_unary_node->leftchild, filebuf.linenumber,
+                                 firsttoken.tokenptr, firsttoken.length, true, TYPE_hashtable);
+
+                        // -- add the post unary node to the post statement list
+                        AddPostStatementNode(post_unary_node);
+
+                        // -- update the token
+                        arrayhashtoken = peek_post_unary;
+                    }
+                }
+
                 // the right child of the array is the array hash
                 arrayvarnode->rightchild = *temp_root;
 
@@ -1821,6 +1866,35 @@ bool8 TryParseExpression(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTre
             {
 		        CValueNode* valuenode = TinAlloc(ALLOC_TreeNode, CValueNode, codeblock, *temp_link, filebuf.linenumber,
                                                  firsttoken.tokenptr, firsttoken.length, true, var->GetType());
+
+                // -- see if we're post-incrementing/decrementing this variable
+                tReadToken peek_post_unary(firsttoken);
+                if (!GetToken(peek_post_unary, true))
+                    return (false);
+
+                if (peek_post_unary.type == TOKEN_UNARY)
+                {
+                    // -- if the unary type is either increment or decrement, create a unary node, and add it to the
+                    // -- list of nodes to compile upon completion of the statement
+                    CUnaryOpNode* unarynode = NULL;
+                    eUnaryOpType unarytype = GetUnaryOpType(peek_post_unary.tokenptr, peek_post_unary.length);
+                    if (unarytype == UNARY_UnaryPreInc || unarytype == UNARY_UnaryPreDec)
+                    {
+                        CCompileTreeNode* temp_link = nullptr;
+                        CUnaryOpNode* post_unary_node = TinAlloc(ALLOC_TreeNode, CUnaryOpNode, codeblock, temp_link,
+                                                                 peek_post_unary.linenumber, unarytype);
+
+                        // -- duplicate the value node
+                        TinAlloc(ALLOC_TreeNode, CValueNode, codeblock, post_unary_node->leftchild, filebuf.linenumber,
+                                 firsttoken.tokenptr, firsttoken.length, true, var->GetType());
+
+                        // -- add the post unary node to the post statement list
+                        AddPostStatementNode(post_unary_node);
+
+                        // -- update the token
+                        filebuf = peek_post_unary;
+                    }
+                }
             }
 		}
         else
@@ -3675,6 +3749,15 @@ bool8 ParseStatementBlock(CCodeBlock* codeblock, CCompileTreeNode*& link, tReadT
 			// -- always add to the end of the current root linked list
             while (curroot && curroot->next)
                 curroot = curroot->next;
+
+            // -- append the chain of post statement nodes as well
+            curroot->next = g_postStatementNode;
+            while (curroot && curroot->next)
+                curroot = curroot->next;
+
+            // -- end of the statement, clear the link of post statement nodes
+            g_postStatementNode = nullptr;
+
 		}
 		else
         {
