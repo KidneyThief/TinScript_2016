@@ -61,20 +61,90 @@ static const int32 gMaxWhileLoopDepth = 32;
 static int32 gWhileLoopDepth = 0;
 static CWhileLoopNode* gWhileLoopStack[gMaxWhileLoopDepth];
 
-static CCompileTreeNode* g_postStatementNode = nullptr;
+// -- struct tPostOperationStack --------------------------------------------------------------------------------------
+class CPostOperationEntry
+{
+    public:
+        CPostOperationEntry(CCompileTreeNode*& statement_root, bool8 is_root_statement)
+            : m_statementRoot(statement_root)
+            , m_postOpNodeList(nullptr)
+        {
+            // -- if this is not a root statement, don't add it to the list
+            if (is_root_statement)
+            {
+                m_next = m_head;
+                m_head = this;
+            }
+        }
+
+        ~CPostOperationEntry()
+        {
+            if (m_postOpNodeList != nullptr)
+            {
+                if (m_head != this)
+                {
+                    ScriptAssert_(TinScript::GetContext(), 0, "<internal>", -1,
+                                  "Error - CPostOperationEntry is invalid, possible incorrect use of a unary operators\n");
+                }
+                else
+                {
+                    // -- if we have post op nodes, at this point, the statement root must be valid
+                    if (m_statementRoot == nullptr)
+                    {
+                        ScriptAssert_(TinScript::GetContext(), 0, "<internal>", -1,
+                            "Error - CPostOperationEntry is invalid, possible incorrect use of a unary operators\n");
+                    }
+                    else
+                    {
+                        // -- append the post operations to the end of the statement root list
+                        CCompileTreeNode* statement_next = m_statementRoot;
+                        while (statement_next->next != nullptr)
+                            statement_next = statement_next->next;
+
+                        // -- append the list
+                        statement_next->next = m_postOpNodeList;
+                    }
+                }
+
+                // -- remove this statement root from the stack
+                m_head = m_next;
+            }
+        }
+
+        // -- the parent link to which the statement is rooted
+        CCompileTreeNode*& m_statementRoot;
+        CCompileTreeNode* m_postOpNodeList;
+
+        // -- the constructor/destructor pushes/pops using a linked list like a stack
+        static CPostOperationEntry* m_head;
+        CPostOperationEntry* m_next;
+};
+
+CPostOperationEntry* CPostOperationEntry::m_head = nullptr;
 
 // ====================================================================================================================
 // AddPostStatementNode():  The only valid nodes are post increment/decrement, but they get compiled at the end.
 // ====================================================================================================================
-void AddPostStatementNode(CCompileTreeNode* post_statement_node)
+bool8 AddPostStatementNode(CCompileTreeNode* post_statement_node)
 {
     // -- sanity check
     if (post_statement_node == nullptr)
-        return;
+        return (false);
 
-    // -- post statement nodes can be added in any order
-    post_statement_node->next = g_postStatementNode;
-    g_postStatementNode = post_statement_node;
+    // -- we need to find the root of the current statement node
+    if (CPostOperationEntry::m_head == nullptr)
+    {
+        ScriptAssert_(TinScript::GetContext(), 0, "<internal>", -1,
+                      "Error - CPostOperationEntry is invalid, possible incorrect use of a unary operators\n");
+        return (false);
+    }
+
+    // -- add the node to the list of post op nodes
+    post_statement_node->next = CPostOperationEntry::m_head->m_postOpNodeList;
+    CPostOperationEntry::m_head->m_postOpNodeList = post_statement_node;
+
+    // -- success
+    return (true);
 }
 
 // ====================================================================================================================
@@ -1432,13 +1502,17 @@ void SortTreeBinaryOps(CCompileTreeNode** toplink)
 // ====================================================================================================================
 // TryParseStatement():  Parse a complete statement, as described in the comments below.
 // ====================================================================================================================
-bool8 TryParseStatement(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link)
+bool8 TryParseStatement(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link, bool8 is_root_statement)
 {
 	// -- an statement is one of:
     // -- a semicolon
     // -- a return statement, a create statement, or a destroy statement
 	// -- an expression followed by a semicolon
 	// -- an expression followed by a binary operator, followed by an expression
+
+    // -- mark the start of the statement, so any post operations (e.g. post-increment)
+    // -- can be compiled in, to be executed after the complete statement
+    CPostOperationEntry statment_root(link, is_root_statement);
 
 	tReadToken firsttoken(filebuf);
 	if (!GetToken(firsttoken))
@@ -1535,7 +1609,7 @@ bool8 TryParseStatement(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTree
 
         else if (nexttoken.type == TOKEN_SEMICOLON)
         {
-            // $$$TZA From within a 'For' loop, we have valid ';' within parenthesis
+            // -- from within a 'For' loop, we have valid ';' within parenthesis
             // -- if so, do not consume the ';'
             if (gGlobalExprParenDepth > 0)
                 filebuf = readexpr;
@@ -2052,7 +2126,11 @@ bool8 TryParseExpression(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTre
 // ====================================================================================================================
 bool8 TryParseIfStatement(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link)
 {
-	// -- the first token can be anything but a reserved word or type
+    // -- mark the start of the statement, so any post operations (e.g. post-increment)
+    // -- can be compiled in, to be executed after the complete statement
+    CPostOperationEntry statment_root(link, true);
+
+    // -- the first token can be anything but a reserved word or type
 	tReadToken firsttoken(filebuf);
 	if (!GetToken(firsttoken))
 		return (false);
@@ -2085,7 +2163,7 @@ bool8 TryParseIfStatement(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTr
                                             filebuf.linenumber);
 
 	// we need to have a valid expression for the left hand child
-	bool8 result = TryParseStatement(codeblock, filebuf, ifstmtnode->leftchild);
+	bool8 result = TryParseStatement(codeblock, filebuf, ifstmtnode->leftchild, true);
 	if (!result)
     {
 		ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
@@ -3738,7 +3816,7 @@ bool8 ParseStatementBlock(CCodeBlock* codeblock, CCompileTreeNode*& link, tReadT
 		bool8 found = false;
 		found = found || TryParseVarDeclaration(codeblock, filetokenbuf, curroot->next);
         found = found || TryParseFuncDefinition(codeblock, filetokenbuf, curroot->next);
-		found = found || TryParseStatement(codeblock, filetokenbuf, curroot->next);
+		found = found || TryParseStatement(codeblock, filetokenbuf, curroot->next, true);
 		found = found || TryParseIfStatement(codeblock, filetokenbuf, curroot->next);
 		found = found || TryParseWhileLoop(codeblock, filetokenbuf, curroot->next);
 		found = found || TryParseForLoop(codeblock, filetokenbuf, curroot->next);
@@ -3749,15 +3827,6 @@ bool8 ParseStatementBlock(CCodeBlock* codeblock, CCompileTreeNode*& link, tReadT
 			// -- always add to the end of the current root linked list
             while (curroot && curroot->next)
                 curroot = curroot->next;
-
-            // -- append the chain of post statement nodes as well
-            curroot->next = g_postStatementNode;
-            while (curroot && curroot->next)
-                curroot = curroot->next;
-
-            // -- end of the statement, clear the link of post statement nodes
-            g_postStatementNode = nullptr;
-
 		}
 		else
         {
