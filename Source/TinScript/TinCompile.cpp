@@ -954,6 +954,15 @@ int32 CUnaryOpNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 countonly
 	// -- push the specific operation to be performed
 	size += PushInstruction(countonly, instrptr, unaryopcode, DBG_instr);
 
+    // -- unary op nodes are used for post-operations (post-increment, post-decrement)
+    if (next)
+    {
+        int32 next_size = next->Eval(instrptr, resultType, countonly);
+        if (next_size < 0)
+            return (-1);
+        size += next_size;
+    }
+
 	return size;
 }
 

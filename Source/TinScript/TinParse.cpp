@@ -96,13 +96,18 @@ class CPostOperationEntry
                     }
                     else
                     {
-                        // -- append the post operations to the end of the statement root list
-                        CCompileTreeNode* statement_next = m_statementRoot;
-                        while (statement_next->next != nullptr)
-                            statement_next = statement_next->next;
+                        // -- insert a binary tree node above the statement root
+                        CCompileTreeNode* temp_link = nullptr;
+                        CBinaryTreeNode* binary_tree_node = TinAlloc(ALLOC_TreeNode, CBinaryTreeNode,
+                                                                     m_statementRoot->GetCodeBlock(), temp_link,
+                                                                     m_statementRoot->GetLineNumber(), TYPE__resolve,
+                                                                     TYPE__resolve);
 
-                        // -- append the list
-                        statement_next->next = m_postOpNodeList;
+                        // -- the left child is the original statement root
+                        // -- the right child is the chain of post op nodes
+                        binary_tree_node->leftchild = m_statementRoot;
+                        binary_tree_node->rightchild = m_postOpNodeList;
+                        m_statementRoot = binary_tree_node;
                     }
                 }
 
@@ -1733,8 +1738,7 @@ bool8 TryParseExpression(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTre
     if (firsttoken.type == TOKEN_UNARY)
     {
         eUnaryOpType unarytype = GetUnaryOpType(firsttoken.tokenptr, firsttoken.length);
-		unarynode = TinAlloc(ALLOC_TreeNode, CUnaryOpNode, codeblock, link, filebuf.linenumber,
-                             unarytype);
+		unarynode = TinAlloc(ALLOC_TreeNode, CUnaryOpNode, codeblock, link, filebuf.linenumber, unarytype);
 
         // -- committed
         filebuf = firsttoken;
@@ -2214,7 +2218,7 @@ bool8 TryParseIfStatement(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTr
 	// else try a single expression
 	else
 	{
-		result = TryParseStatement(codeblock, filebuf, condbranchnode->leftchild);
+		result = TryParseStatement(codeblock, filebuf, condbranchnode->leftchild, true);
 		if (!result)
         {
 			ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
@@ -2271,7 +2275,7 @@ bool8 TryParseIfStatement(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTr
 		// -- finally, it must be a simple expression
 		else
         {
-			result = TryParseStatement(codeblock, filebuf, condbranchnode->rightchild);
+			result = TryParseStatement(codeblock, filebuf, condbranchnode->rightchild, true);
 			if (!result)
             {
 				ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
@@ -2340,7 +2344,7 @@ bool8 TryParseWhileLoop(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTree
     gWhileLoopStack[gWhileLoopDepth++] = whileloopnode;
 
 	// we need to have a valid expression for the left hand child
-	bool8 result = TryParseStatement(codeblock, filebuf, whileloopnode->leftchild);
+	bool8 result = TryParseStatement(codeblock, filebuf, whileloopnode->leftchild, true);
 	if (!result)
     {
 		ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
@@ -2393,7 +2397,7 @@ bool8 TryParseWhileLoop(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTree
 	// -- else it's a single expression
 	else
     {
-		result = TryParseStatement(codeblock, filebuf, whileloopnode->rightchild);
+		result = TryParseStatement(codeblock, filebuf, whileloopnode->rightchild, true);
 		if (!result)
         {
 			ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
@@ -2508,7 +2512,7 @@ bool8 TryParseForLoop(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNo
 
 	// -- the end of loop expression is next, but we're going to hold on to it for a moment
 	CCompileTreeNode* tempendofloop = NULL;
-	result = TryParseStatement(codeblock, filebuf, tempendofloop);
+	result = TryParseStatement(codeblock, filebuf, tempendofloop, true);
 	if (!result)
     {
 		ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
@@ -3085,7 +3089,7 @@ bool8 TryParseFuncCall(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeN
                                          TYPE__var);
         Unused_(valuenode);
 
-        bool8 result = TryParseStatement(codeblock, filebuf, binopnode->rightchild);
+        bool8 result = TryParseStatement(codeblock, filebuf, binopnode->rightchild, true);
         if (!result)
         {
             ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
