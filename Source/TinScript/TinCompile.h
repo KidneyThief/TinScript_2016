@@ -53,6 +53,7 @@ class CWhileLoopNode;
 #define CompileNodeTypesTuple \
 	CompileNodeTypeEntry(NOP)					\
 	CompileNodeTypeEntry(BinaryNOP)			    \
+	CompileNodeTypeEntry(DebugNOP)			    \
 	CompileNodeTypeEntry(Value)					\
 	CompileNodeTypeEntry(Self)       			\
 	CompileNodeTypeEntry(ObjMember) 			\
@@ -101,6 +102,7 @@ const char* GetNodeTypeString(ECompileNodeType nodetype);
 #define OperationTuple \
 	OperationEntry(NULL)				\
 	OperationEntry(NOP)					\
+	OperationEntry(DebugMsg)			\
 	OperationEntry(VarDecl)				\
 	OperationEntry(ParamDecl)			\
 	OperationEntry(Assign)				\
@@ -149,6 +151,8 @@ const char* GetNodeTypeString(ECompileNodeType nodetype);
 	OperationEntry(BitXor)	            \
 	OperationEntry(UnaryPreInc)	        \
 	OperationEntry(UnaryPreDec)	        \
+	OperationEntry(UnaryPostInc)        \
+	OperationEntry(UnaryPostDec)        \
 	OperationEntry(UnaryBitInvert)	    \
 	OperationEntry(UnaryNot)	        \
 	OperationEntry(UnaryNeg)	        \
@@ -208,10 +212,13 @@ class CCompileTreeNode
 
 		static CCompileTreeNode* CreateTreeRoot(CCodeBlock* codeblock);
 
+        void SetPostUnaryOpDelta(int32 unary_delta) { m_unaryDelta = unary_delta; }
+
 	protected:
         CCodeBlock* codeblock;
 		ECompileNodeType type;
         int32 linenumber;
+        int32 m_unaryDelta;
 
 	protected:
 		CCompileTreeNode(CCodeBlock* _codeblock = NULL)
@@ -219,7 +226,25 @@ class CCompileTreeNode
             type = eNOP;
             codeblock = _codeblock;
             linenumber = -1;
+            m_unaryDelta = 0;
         }
+};
+
+// ====================================================================================================================
+// class CDebugNode:  An inoccuous node that will issue a debug op command, to print a message.
+// ====================================================================================================================
+class CDebugNode : public CCompileTreeNode
+{
+    public:
+        CDebugNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, const char* debug_msg);
+
+        virtual int32 Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
+
+    protected:
+        const char* m_debugMesssage;
+
+    protected:
+        CDebugNode() { }
 };
 
 // ====================================================================================================================
@@ -306,7 +331,8 @@ class CUnaryOpNode : public CCompileTreeNode
                      eUnaryOpType _unaryoptype);
 
 		virtual int32 Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
-        virtual bool8 IsAssignOpNode() const { return (unaryopcode == OP_UnaryPreInc || unaryopcode == OP_UnaryPreDec); }
+        virtual bool8 IsAssignOpNode() const { return (unaryopcode == OP_UnaryPreInc ||
+                                                       unaryopcode == OP_UnaryPreDec); }
 
 	protected:
 		CUnaryOpNode() { }
@@ -339,7 +365,7 @@ class CObjMemberNode : public CCompileTreeNode
 		virtual int32 Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
 		virtual void Dump(char*& output, int32& length) const;
 
-	protected:
+    protected:
 		char membername[kMaxTokenLength];
 
 	protected:
@@ -358,7 +384,7 @@ class CPODMemberNode : public CCompileTreeNode
 		virtual int32 Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
 		virtual void Dump(char*& output, int32& length) const;
 
-	protected:
+    protected:
 		char podmembername[kMaxTokenLength];
 
 	protected:

@@ -337,6 +337,9 @@ CCompileTreeNode::CCompileTreeNode(CCodeBlock* _codeblock, CCompileTreeNode*& _l
     // -- store the current code block we're compiline
     codeblock = _codeblock;
     linenumber = _linenumber;
+
+    // -- no post-op increment/decrements by default;
+    m_unaryDelta = 0;
 }
 
 // ====================================================================================================================
@@ -385,6 +388,36 @@ void CCompileTreeNode::Dump(char*& output, int32& length) const
 	int32 debuglength = (int32)strlen(output);
 	output += debuglength;
 	length -= debuglength;
+}
+
+// == class CDebugNode ================================================================================================
+
+// ====================================================================================================================
+// Constructor
+// ====================================================================================================================
+CDebugNode::CDebugNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, const char* debug_msg)
+    : CCompileTreeNode(_codeblock, _link, eDebugNOP, -1)
+{
+    m_debugMesssage =
+        TinScript::GetContext()->GetStringTable()->AddString(debug_msg, TinScript::Hash(debug_msg), true);
+}
+
+// ====================================================================================================================
+// Eval():  Has no operations of its own, used to compile left, then right children.
+// ====================================================================================================================
+int32 CDebugNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 countonly) const
+{
+    DebugEvaluateNode(*this, countonly, instrptr);
+    int32 size = 0;
+
+    // -- push the op
+    size += PushInstruction(countonly, instrptr, OP_DebugMsg, DBG_instr);
+
+    // -- push the hash of the string value
+    uint32 hash = TinScript::Hash(m_debugMesssage);
+    size += PushInstruction(countonly, instrptr, hash, DBG_value, "debug message");
+
+    return (size);
 }
 
 // == class CBinaryTreeNode =============================================================================================
@@ -477,7 +510,7 @@ int32 CValueNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 countonly) 
 	int32 size = 0;
 
 	// -- if the value is being used, push it on the stack
-	if (pushresult > TYPE_void)
+	if (pushresult > TYPE_void || m_unaryDelta != 0)
     {
         if (isparam)
         {
@@ -506,7 +539,8 @@ int32 CValueNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 countonly) 
 
 			// -- if we're supposed to be pushing a var (e.g. for an assign...)
             // -- (note:  there is no such thing as the "value" of a hashtable)
-            bool8 push_value = (pushresult != TYPE__var && pushresult != TYPE_hashtable &&
+            // -- we also pus the variable, if we are planning to perform a post increment/decrement unary op
+            bool8 push_value = (m_unaryDelta == 0 && pushresult != TYPE__var && pushresult != TYPE_hashtable &&
                                 var->GetType() != TYPE_hashtable && !var->IsArray());
 
             // -- if this isn't a func var, make sure we push the global namespace
@@ -544,7 +578,18 @@ int32 CValueNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 countonly) 
                 }
         		size += PushInstruction(countonly, instrptr, var_index, DBG_var);
             }
-		}
+
+            // -- if we're applying a post increment/decrement, we also need to push the post-op instruction
+            if (m_unaryDelta != 0)
+            {
+                size += PushInstruction(countonly, instrptr, m_unaryDelta > 0 ? OP_UnaryPostInc : OP_UnaryPostDec, DBG_instr);
+                size += PushInstruction(countonly, instrptr, 0, DBG_value, "non-array var");
+
+                // -- in addition, if the value isn't actually going to be used, issue an immediate pop
+                if (pushresult == TYPE_void)
+                    size += PushInstruction(countonly, instrptr, OP_Pop, DBG_instr, "post unary op");
+            }
+        }
 
 		// -- else we're pushing an actual value
 		else
@@ -662,14 +707,14 @@ int32 CObjMemberNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 counton
     size += tree_size;
 
 	// -- if the value is being used, push it on the stack
-	if (pushresult > TYPE_void)
+    if (pushresult > TYPE_void || m_unaryDelta != 0)
     {
         // -- get the hash of the member
 		uint32 memberhash = Hash(membername);
 
 		// -- if we're supposed to be pushing a var (for an assign...), we actually push
         // -- a member (still a variable, but the lookup is different)
-		if (pushresult == TYPE__var || pushresult == TYPE_hashtable)
+        if (pushresult == TYPE__var || pushresult == TYPE_hashtable || m_unaryDelta != 0)
         {
 			size += PushInstruction(countonly, instrptr, OP_PushMember, DBG_instr);
 			size += PushInstruction(countonly, instrptr, memberhash, DBG_var);
@@ -681,10 +726,17 @@ int32 CObjMemberNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 counton
 			size += PushInstruction(countonly, instrptr, OP_PushMemberVal, DBG_instr);
 			size += PushInstruction(countonly, instrptr, memberhash, DBG_var);
 		}
-	}
 
-    // -- otherwise, we're referencing a member without actually doing anything - pop the stack
-    else
+        // -- if we're applying a post increment/decrement, we also need to push the post-op instruction
+        if (m_unaryDelta != 0)
+        {
+            size += PushInstruction(countonly, instrptr, m_unaryDelta > 0 ? OP_UnaryPostInc : OP_UnaryPostDec, DBG_instr);
+            size += PushInstruction(countonly, instrptr, 0, DBG_value, "non-array var");
+        }
+    }
+
+    // -- if we're referencing a member without actually doing anything - pop the stack
+    if (pushresult == TYPE_void)
     {
         size += PushInstruction(countonly, instrptr, OP_Pop, DBG_instr);
     }
@@ -757,11 +809,27 @@ int32 CPODMemberNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 counton
 			size += PushInstruction(countonly, instrptr, OP_PushPODMemberVal, DBG_instr);
 			size += PushInstruction(countonly, instrptr, memberhash, DBG_var);
 		}
-	}
+
+        // -- if we're applying a post increment/decrement, we also need to push the post-op instruction
+        if (m_unaryDelta != 0)
+        {
+            size += PushInstruction(countonly, instrptr, m_unaryDelta > 0 ? OP_UnaryPostInc : OP_UnaryPostDec, DBG_instr);
+            size += PushInstruction(countonly, instrptr, 0, DBG_value, "non-array var");
+        }
+    }
 
     // -- otherwise, we're referencing a member without actually doing anything - pop the stack
     else
+    {
+        // -- if we're applying a post increment/decrement, we also need to push the post-op instruction
+        if (m_unaryDelta != 0)
+        {
+            size += PushInstruction(countonly, instrptr, m_unaryDelta > 0 ? OP_UnaryPostInc : OP_UnaryPostDec, DBG_instr);
+            size += PushInstruction(countonly, instrptr, 0, DBG_value, "non-array var");
+        }
+
         size += PushInstruction(countonly, instrptr, OP_Pop, DBG_instr);
+    }
 
 	return size;
 }
@@ -953,15 +1021,6 @@ int32 CUnaryOpNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 countonly
 
 	// -- push the specific operation to be performed
 	size += PushInstruction(countonly, instrptr, unaryopcode, DBG_instr);
-
-    // -- unary op nodes are used for post-operations (post-increment, post-decrement)
-    if (next)
-    {
-        int32 next_size = next->Eval(instrptr, resultType, countonly);
-        if (next_size < 0)
-            return (-1);
-        size += next_size;
-    }
 
 	return size;
 }
@@ -1753,8 +1812,6 @@ CArrayVarNode::CArrayVarNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, i
 // ====================================================================================================================
 int32 CArrayVarNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 countonly) const
 {
-    Unused_(pushresult);
-
 	DebugEvaluateNode(*this, countonly, instrptr);
 	int32 size = 0;
 
@@ -1786,9 +1843,24 @@ int32 CArrayVarNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 countonl
         return (-1);
     size += tree_size;
 
-	// -- see if we're supposed to be pushing a var (e.g. for an assign...)
-    bool8 push_value = (pushresult != TYPE__var && pushresult != TYPE_hashtable);
-	size += PushInstruction(countonly, instrptr, push_value ? OP_PushArrayValue : OP_PushArrayVar, DBG_instr);
+    // -- if we're applying a post increment/decrement, we also need to push the post-op instruction
+    if (m_unaryDelta != 0)
+    {
+        size += PushInstruction(countonly, instrptr, m_unaryDelta > 0 ? OP_UnaryPostInc : OP_UnaryPostDec, DBG_instr);
+        size += PushInstruction(countonly, instrptr, 1, DBG_value, "array var");
+
+        // -- in addition, if the value isn't actually going to be used, issue an immediate pop
+        //if (pushresult == TYPE_void)
+        //    size += PushInstruction(countonly, instrptr, OP_Pop, DBG_instr, "post unary op");
+    }
+
+    // -- see if we're supposed to be pushing a var (e.g. for an assign...)
+    bool8 push_value = (pushresult != TYPE__var && pushresult != TYPE_hashtable && pushresult != TYPE_void);
+    size += PushInstruction(countonly, instrptr, push_value ? OP_PushArrayValue : OP_PushArrayVar, DBG_instr);
+
+    // -- if the return type is void, and we're performing a unary post op, then pop the array var back off
+    if (pushresult == TYPE_void && m_unaryDelta != 0)
+        size += PushInstruction(countonly, instrptr, OP_Pop, DBG_instr, "post unary op");
 
 	return size;
 }

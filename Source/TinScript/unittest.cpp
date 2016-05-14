@@ -808,7 +808,7 @@ void BeginUnitTests(bool8 results_only = false, const char* specific_test = NULL
     if (!CreateUnitTests())
         return;
 
-        // -- unit tests are run on the main thread
+    // -- unit tests are run on the main thread
     TinScript::CScriptContext* script_context = TinScript::GetContext();
 
     // -- sanity check

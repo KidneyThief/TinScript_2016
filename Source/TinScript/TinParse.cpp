@@ -61,97 +61,6 @@ static const int32 gMaxWhileLoopDepth = 32;
 static int32 gWhileLoopDepth = 0;
 static CWhileLoopNode* gWhileLoopStack[gMaxWhileLoopDepth];
 
-// -- struct tPostOperationStack --------------------------------------------------------------------------------------
-class CPostOperationEntry
-{
-    public:
-        CPostOperationEntry(CCompileTreeNode*& statement_root, bool8 is_root_statement)
-            : m_statementRoot(statement_root)
-            , m_postOpNodeList(nullptr)
-        {
-            // -- if this is not a root statement, don't add it to the list
-            if (is_root_statement)
-            {
-                m_next = m_head;
-                m_head = this;
-            }
-        }
-
-        ~CPostOperationEntry()
-        {
-            if (m_postOpNodeList != nullptr)
-            {
-                if (m_head != this)
-                {
-                    ScriptAssert_(TinScript::GetContext(), 0, "<internal>", -1,
-                                  "Error - CPostOperationEntry is invalid, possible incorrect use of a unary operators\n");
-                }
-                else
-                {
-                    // -- if we have post op nodes, at this point, the statement root must be valid
-                    if (m_statementRoot == nullptr)
-                    {
-                        ScriptAssert_(TinScript::GetContext(), 0, "<internal>", -1,
-                            "Error - CPostOperationEntry is invalid, possible incorrect use of a unary operators\n");
-                    }
-                    else
-                    {
-                        // -- insert a binary tree node above the statement root
-                        CCompileTreeNode* temp_link = nullptr;
-                        CBinaryTreeNode* binary_tree_node = TinAlloc(ALLOC_TreeNode, CBinaryTreeNode,
-                                                                     m_statementRoot->GetCodeBlock(), temp_link,
-                                                                     m_statementRoot->GetLineNumber(), TYPE__resolve,
-                                                                     TYPE__resolve);
-
-                        // -- the left child is the original statement root
-                        // -- the right child is the chain of post op nodes
-                        binary_tree_node->leftchild = m_statementRoot;
-                        binary_tree_node->rightchild = m_postOpNodeList;
-                        m_statementRoot = binary_tree_node;
-                    }
-                }
-
-                // -- remove this statement root from the stack
-                m_head = m_next;
-            }
-        }
-
-        // -- the parent link to which the statement is rooted
-        CCompileTreeNode*& m_statementRoot;
-        CCompileTreeNode* m_postOpNodeList;
-
-        // -- the constructor/destructor pushes/pops using a linked list like a stack
-        static CPostOperationEntry* m_head;
-        CPostOperationEntry* m_next;
-};
-
-CPostOperationEntry* CPostOperationEntry::m_head = nullptr;
-
-// ====================================================================================================================
-// AddPostStatementNode():  The only valid nodes are post increment/decrement, but they get compiled at the end.
-// ====================================================================================================================
-bool8 AddPostStatementNode(CCompileTreeNode* post_statement_node)
-{
-    // -- sanity check
-    if (post_statement_node == nullptr)
-        return (false);
-
-    // -- we need to find the root of the current statement node
-    if (CPostOperationEntry::m_head == nullptr)
-    {
-        ScriptAssert_(TinScript::GetContext(), 0, "<internal>", -1,
-                      "Error - CPostOperationEntry is invalid, possible incorrect use of a unary operators\n");
-        return (false);
-    }
-
-    // -- add the node to the list of post op nodes
-    post_statement_node->next = CPostOperationEntry::m_head->m_postOpNodeList;
-    CPostOperationEntry::m_head->m_postOpNodeList = post_statement_node;
-
-    // -- success
-    return (true);
-}
-
 // ====================================================================================================================
 // -- binary operators
 static const char* gBinOperatorString[] =
@@ -1515,10 +1424,6 @@ bool8 TryParseStatement(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTree
 	// -- an expression followed by a semicolon
 	// -- an expression followed by a binary operator, followed by an expression
 
-    // -- mark the start of the statement, so any post operations (e.g. post-increment)
-    // -- can be compiled in, to be executed after the complete statement
-    CPostOperationEntry statment_root(link, is_root_statement);
-
 	tReadToken firsttoken(filebuf);
 	if (!GetToken(firsttoken))
 		return (false);
@@ -1714,6 +1619,36 @@ bool8 TryParseStatement(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTree
 }
 
 // ====================================================================================================================
+// TryParseUnaryPostOp():  See if there's a trailing unary post inc/dec operation, return the +1, -1, or 0 if none
+// ====================================================================================================================
+int32 TryParseUnaryPostOp(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode* var_root)
+{
+    // -- see if we're post-incrementing/decrementing the last var/member
+    tReadToken peek_post_unary(filebuf);
+    if (!GetToken(peek_post_unary, true))
+        return (false);
+
+    // -- see if we read a unary operator
+    if (peek_post_unary.type == TOKEN_UNARY)
+    {
+        // -- if the unary type is either increment or decrement, create a unary node, and add it to the
+        // -- list of nodes to compile upon completion of the statement
+        CUnaryOpNode* unarynode = NULL;
+        eUnaryOpType unarytype = GetUnaryOpType(peek_post_unary.tokenptr, peek_post_unary.length);
+        if (unarytype == UNARY_UnaryPreInc || unarytype == UNARY_UnaryPreDec)
+        {
+            filebuf = peek_post_unary;
+
+            // -- success
+            return (unarytype == UNARY_UnaryPreInc ? 1 : -1);
+        }
+    }
+
+    // -- not found - no adjustment
+    return (0);
+}
+
+// ====================================================================================================================
 // TryParseExpression():  Parse an expression, as defined in the comments below.
 // ====================================================================================================================
 bool8 TryParseExpression(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link)
@@ -1903,40 +1838,16 @@ bool8 TryParseExpression(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTre
                                                  filebuf.linenumber, firsttoken.tokenptr, firsttoken.length, true,
                                                  TYPE_hashtable);
 
-                // -- see if we're post-incrementing/decrementing this variable
-                tReadToken peek_post_unary(arrayhashtoken);
-                if (!GetToken(peek_post_unary, true))
-                    return (false);
-
-                if (peek_post_unary.type == TOKEN_UNARY)
-                {
-                    // -- if the unary type is either increment or decrement, create a unary node, and add it to the
-                    // -- list of nodes to compile upon completion of the statement
-                    CUnaryOpNode* unarynode = NULL;
-                    eUnaryOpType unarytype = GetUnaryOpType(peek_post_unary.tokenptr, peek_post_unary.length);
-                    if (unarytype == UNARY_UnaryPreInc || unarytype == UNARY_UnaryPreDec)
-                    {
-                        CCompileTreeNode* temp_link = nullptr;
-                        CUnaryOpNode* post_unary_node = TinAlloc(ALLOC_TreeNode, CUnaryOpNode, codeblock, temp_link,
-                                                                 peek_post_unary.linenumber, unarytype);
-
-                        // -- duplicate the value node
-                        TinAlloc(ALLOC_TreeNode, CValueNode, codeblock, post_unary_node->leftchild, filebuf.linenumber,
-                                 firsttoken.tokenptr, firsttoken.length, true, TYPE_hashtable);
-
-                        // -- add the post unary node to the post statement list
-                        AddPostStatementNode(post_unary_node);
-
-                        // -- update the token
-                        arrayhashtoken = peek_post_unary;
-                    }
-                }
-
                 // the right child of the array is the array hash
                 arrayvarnode->rightchild = *temp_root;
 
                 // -- we're committed to a method hashtable lookup
                 filebuf = arrayhashtoken;
+
+                // -- see if the array lookup var is being post-inc/decremented
+                int32 post_op_adjust = TryParseUnaryPostOp(codeblock, filebuf, valuenode);
+                if (post_op_adjust != 0)
+                    arrayvarnode->SetPostUnaryOpDelta(post_op_adjust);
             }
 
             // -- not a hash table - create the value node
@@ -1945,34 +1856,11 @@ bool8 TryParseExpression(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTre
 		        CValueNode* valuenode = TinAlloc(ALLOC_TreeNode, CValueNode, codeblock, *temp_link, filebuf.linenumber,
                                                  firsttoken.tokenptr, firsttoken.length, true, var->GetType());
 
-                // -- see if we're post-incrementing/decrementing this variable
-                tReadToken peek_post_unary(firsttoken);
-                if (!GetToken(peek_post_unary, true))
-                    return (false);
-
-                if (peek_post_unary.type == TOKEN_UNARY)
-                {
-                    // -- if the unary type is either increment or decrement, create a unary node, and add it to the
-                    // -- list of nodes to compile upon completion of the statement
-                    CUnaryOpNode* unarynode = NULL;
-                    eUnaryOpType unarytype = GetUnaryOpType(peek_post_unary.tokenptr, peek_post_unary.length);
-                    if (unarytype == UNARY_UnaryPreInc || unarytype == UNARY_UnaryPreDec)
-                    {
-                        CCompileTreeNode* temp_link = nullptr;
-                        CUnaryOpNode* post_unary_node = TinAlloc(ALLOC_TreeNode, CUnaryOpNode, codeblock, temp_link,
-                                                                 peek_post_unary.linenumber, unarytype);
-
-                        // -- duplicate the value node
-                        TinAlloc(ALLOC_TreeNode, CValueNode, codeblock, post_unary_node->leftchild, filebuf.linenumber,
-                                 firsttoken.tokenptr, firsttoken.length, true, var->GetType());
-
-                        // -- add the post unary node to the post statement list
-                        AddPostStatementNode(post_unary_node);
-
-                        // -- update the token
-                        filebuf = peek_post_unary;
-                    }
-                }
+                // -- the valuenode is added to the parse tree as expected, but if there's a following post-inc/dec operator
+                // -- we need to add a "deferred" operation
+                int32 post_op_adjust = TryParseUnaryPostOp(codeblock, filebuf, valuenode);
+                if (post_op_adjust != 0)
+                    valuenode->SetPostUnaryOpDelta(post_op_adjust);
             }
 		}
         else
@@ -2059,6 +1947,12 @@ bool8 TryParseExpression(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTre
 
                     // the right child of the array is the array hash
                     arrayvarnode->rightchild = *temp_root;
+
+                    // -- the objmember is added to the parse tree as expected, but if there's a following post-inc/dec operator
+                    // -- we need to add a "deferred" operation
+                    int32 post_op_adjust = TryParseUnaryPostOp(codeblock, filebuf, objmember);
+                    if (post_op_adjust != 0)
+                        arrayvarnode->SetPostUnaryOpDelta(post_op_adjust);
                 }
 
                 // -- else not an array, just an object member
@@ -2070,6 +1964,12 @@ bool8 TryParseExpression(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTre
 
                     // -- the left child is the branch that resolves to an object
                     objmember->leftchild = templeftchild;
+
+                    // -- the objmember is added to the parse tree as expected, but if there's a following post-inc/dec operator
+                    // -- we need to add a "deferred" operation
+                    int32 post_op_adjust = TryParseUnaryPostOp(codeblock, filebuf, objmember);
+                    if (post_op_adjust != 0)
+                        objmember->SetPostUnaryOpDelta(post_op_adjust);
                 }
             }
         }
@@ -2106,6 +2006,12 @@ bool8 TryParseExpression(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTre
             // -- and because POD members do not continue to be dereferenced, this is the end of the expression
             exprlink = expression_root;
 
+            // -- the objmember is added to the parse tree as expected, but if there's a following post-inc/dec operator
+            // -- we need to add a "deferred" operation
+            int32 post_op_adjust = TryParseUnaryPostOp(codeblock, filebuf, objmember);
+            if (post_op_adjust != 0)
+                objmember->SetPostUnaryOpDelta(post_op_adjust);
+
             // -- and we're done
             return (true);
         }
@@ -2130,10 +2036,6 @@ bool8 TryParseExpression(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTre
 // ====================================================================================================================
 bool8 TryParseIfStatement(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link)
 {
-    // -- mark the start of the statement, so any post operations (e.g. post-increment)
-    // -- can be compiled in, to be executed after the complete statement
-    CPostOperationEntry statment_root(link, true);
-
     // -- the first token can be anything but a reserved word or type
 	tReadToken firsttoken(filebuf);
 	if (!GetToken(firsttoken))

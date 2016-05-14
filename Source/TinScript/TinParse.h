@@ -260,6 +260,7 @@ CCodeBlock* LoadBinary(CScriptContext* script_context, const char* filename, con
 bool8 TryParseVarDeclaration(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link);
 bool8 TryParseBreakContinue(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link);
 bool8 TryParseReturn(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link);
+int32 TryParseUnaryPostOp(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode* var_root);
 bool8 TryParseStatement(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link,
                         bool8 is_root_statement = false);
 bool8 TryParseExpression(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link);

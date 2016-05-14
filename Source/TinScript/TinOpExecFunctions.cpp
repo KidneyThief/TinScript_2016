@@ -67,6 +67,127 @@ void VoidFunction() {}
 
 #endif
 
+// --------------------------------------------------------------------------------------------------------------------
+// struct tPostUnaryOpEntry
+// Used to cache the variable info, and the request ID
+// the variable info is read from the stack per the operation, but not applied until after the var is popped
+// --------------------------------------------------------------------------------------------------------------------
+struct tPostUnaryOpEntry
+{
+    void Set(eVarType value_type, void* value_addr, int32 adjust, bool8 append)
+    {
+        m_valType = value_type;
+        m_valAddr = value_addr;
+
+        if (append)
+            m_postOpAdjust += adjust;
+        else
+            m_postOpAdjust = adjust;
+    }
+
+    eVarType m_valType;
+    void* m_valAddr;
+    int32 m_postOpAdjust;
+};
+
+const int32 k_maxPostOpEntryCount = 32;
+int32 g_postOpEntryCount = 0;
+tPostUnaryOpEntry g_postOpEntryList[k_maxPostOpEntryCount];
+
+bool8 AddPostUnaryOpEntry(eVarType value_type, void* value_addr, int32 adjust)
+{
+    // -- sanity check
+    if (value_addr == nullptr || (value_type != TYPE_int && value_type != TYPE_float))
+    {
+        ScriptAssert_(TinScript::GetContext(), 0, "<internal>", -1,
+                      "Error - AddPostUnaryOpEntry(): invalid type to apply a post-inc/dec op\n");
+        return (false);
+    }
+
+    for (int32 i = 0; i < g_postOpEntryCount; ++i)
+    {
+        if (g_postOpEntryList[i].m_valAddr == value_addr)
+        {
+            g_postOpEntryList[i].Set(value_type, value_addr, adjust, true);
+            return (true);
+        }
+    }
+
+    // -- add the post unary op request
+    if (g_postOpEntryCount >= k_maxPostOpEntryCount)
+    {
+        ScriptAssert_(TinScript::GetContext(), 0, "<internal>", -1,
+                      "Error - AddPostUnaryOpEntry(): request list is full, increase count\n");
+        return (false);
+    }
+
+    // -- add the request
+    g_postOpEntryList[g_postOpEntryCount++].Set(value_type, value_addr, adjust, false);
+
+    if (CScriptContext::gDebugTrace)
+        printf("***  Add POST OP: 0x%x, count: %d\n", kPointerToUInt32(value_addr), g_postOpEntryCount);
+
+    // -- success
+    return (true);
+}
+
+bool8 ApplyPostUnaryOpEntry(eVarType value_type, void* value_addr)
+{
+    // -- sanity check
+    if (value_addr == nullptr || (value_type != TYPE_int && value_type != TYPE_float))
+    {
+        return (false);
+    }
+
+    // -- find the request in the list, and apply the adjust
+    int32 found = -1;
+    for (int32 i = 0; i < g_postOpEntryCount; ++i)
+    {
+        if (g_postOpEntryList[i].m_valAddr == value_addr)
+        {
+            found = i;
+            break;
+        }
+    }
+
+    // -- if we found our entry
+    bool8 success = true;
+    if (found >= 0)
+    {
+        // -- ensure the types match, as a safety precaution
+        if (value_type != g_postOpEntryList[found].m_valType)
+        {
+            ScriptAssert_(TinScript::GetContext(), 0, "<internal>", -1,
+                          "Error - AddPostUnaryOpEntry(): mismatched value type - corrupt variable?\n");
+            success = false;
+        }
+        else
+        {
+            if (g_postOpEntryList[found].m_valType == TYPE_int)
+                *(int32*)(g_postOpEntryList[found].m_valAddr) += g_postOpEntryList[found].m_postOpAdjust;
+            else if (g_postOpEntryList[found].m_valType == TYPE_float)
+                *(float32*)(g_postOpEntryList[found].m_valAddr) += (float32)(g_postOpEntryList[found].m_postOpAdjust);
+        }
+
+        if (CScriptContext::gDebugTrace)
+            printf("***  found POST OP: 0x%x, count: %d\n", kPointerToUInt32(g_postOpEntryList[found].m_valAddr), g_postOpEntryCount - 1);
+
+        // -- remove the entry (replace with the last)
+        if (found < g_postOpEntryCount - 1)
+        {
+            g_postOpEntryList[found].Set(g_postOpEntryList[g_postOpEntryCount - 1].m_valType,
+                                         g_postOpEntryList[g_postOpEntryCount - 1].m_valAddr,
+                                         g_postOpEntryList[g_postOpEntryCount - 1].m_postOpAdjust, true);
+        }
+
+        // -- decrement the count
+        --g_postOpEntryCount;
+    }
+
+    // -- return the result
+    return (success);
+}
+
 // ====================================================================================================================
 // GetStackVarAddr():  Get the address of a stack veriable, given the actual variable entry
 // ====================================================================================================================
@@ -238,13 +359,7 @@ bool8 GetStackValue(CScriptContext* script_context, CExecStack& execstack,
 
         // -- would be better to have random access to a hash table
         tVarTable* var_table = fe->GetContext()->GetLocalVarTable();
-        int32 var_index = 0;
-        ve = var_table->First();
-        while (ve && var_index < local_var_index)
-        {
-            ve = var_table->Next();
-            ++var_index;
-        }
+        ve = var_table->FindItemByIndex(local_var_index);
 
         // -- if we're pulling a stack var of type_hashtable, then the hash table isn't a "value" that can be
         // -- modified locally, but rather it lives in the function context, and must be manually emptied
@@ -316,6 +431,102 @@ bool8 GetStackValue(CScriptContext* script_context, CExecStack& execstack,
 }
 
 // ====================================================================================================================
+// GetStackArrayVarAddr():  Return the address of the actual variable value, for the array + hash, on the stack
+// ====================================================================================================================
+bool8 GetStackArrayVarAddr(CScriptContext* script_context, CExecStack& execstack,
+                           CFunctionCallStack& funccallstack, void*& valaddr, eVarType& valtype,
+                           CVariableEntry*& ve, CObjectEntry*& oe)
+{
+    // -- hash value will have already been pushed
+    eVarType contenttype;
+    void* contentptr = execstack.Peek(contenttype);
+    if (contenttype != TYPE_int)
+    {
+        ScriptAssert_(script_context, false, "<internal>", -1, "Error - ExecStack should contain TYPE_int\n");
+        return false;
+    }
+    int32 arrayvarhash = *(int32*)contentptr;
+
+    // -- next, pop the hash table variable off the stack
+    // -- pull the hashtable variable off the stack
+    CVariableEntry* ve0 = NULL;
+    CObjectEntry* oe0 = NULL;
+    eVarType val0type;
+    void* val0 = execstack.Peek(val0type, 1);
+    if (!GetStackValue(script_context, execstack, funccallstack, val0, val0type, ve0, oe0))
+    {
+        ScriptAssert_(script_context, false, "<internal>", -1,
+                      "Error - ExecStack should contain a hashtable variable\n");
+        return false;
+    }
+
+    if (!ve0 || (ve0->GetType() != TYPE_hashtable && !ve0->IsArray()))
+    {
+        ScriptAssert_(script_context, false, "<internal>", -1,
+                      "Error - ExecStack should contain hashtable variable\n");
+        return false;
+    }
+
+    // -- now fill in the details of what we need to retrieve this variable:
+    // -- if the ns hash is zero, then the next word is the object ID
+    // -- if the ns hash is non-zero, then
+    // --    the next word is non-zero means the var is a local var in a function
+    // --    (note:  the ns hash could be "_global" for global functions)
+    // --    else if the next word is zero, it's a global variable
+    // -- the last two words are, the hash table variable name, and the hash value of the entry
+
+    uint32 ns_hash = 0;
+    uint32 func_or_obj = 0;
+    uint32 var_hash = ve0->GetHash();
+
+    // -- if this is an object member...
+    if (oe0)
+    {
+        ns_hash = 0;
+        func_or_obj = oe0->GetID();
+    }
+
+    // -- global hash table variable
+    else if (!ve0->GetFunctionEntry())
+    {
+        ns_hash = CScriptContext::kGlobalNamespaceHash;
+    }
+
+    // -- function local variable
+    else
+    {
+        ns_hash = ve0->GetFunctionEntry()->GetNamespaceHash();
+        func_or_obj = ve0->GetFunctionEntry()->GetHash();
+    }
+
+    // -- now find the variable
+    ve = GetVariable(script_context, script_context->GetGlobalNamespace()->GetVarTable(),
+                     ns_hash, func_or_obj, ve0->GetHash(), arrayvarhash);
+    if (!ve)
+    {
+        ScriptAssert_(script_context, false, "<internal>", -1,
+                      "Error - Unable to find a variable entry\n");
+        return false;
+    }
+
+    // -- push the variable onto the stack
+    // -- if the variable is a stack parameter, we need to push it's value from the stack
+    valtype = ve->GetType();
+    if (ve->IsStackVariable(funccallstack))
+    {
+        valaddr = GetStackVarAddr(script_context, execstack, funccallstack, *ve, arrayvarhash);
+    }
+    else
+    {
+        valaddr = ve->IsArray() ? ve->GetArrayVarAddr(oe0 ? oe0->GetAddr() : NULL, arrayvarhash)
+                                : ve->GetAddr(oe0 ? oe0->GetAddr() : NULL);
+    }
+
+    // -- success
+    return (true);
+}
+
+// ====================================================================================================================
 // GetBinOpValues():  Pull the top two stack entries, and get the type and address for each.
 // ====================================================================================================================
 bool8 GetBinOpValues(CScriptContext* script_context, CExecStack& execstack,
@@ -380,6 +591,10 @@ bool8 PerformBinaryOpPush(CScriptContext* script_context, CExecStack& execstack,
         success = (secondary_op_func && secondary_op_func(script_context, op, result_type, (void*)result,
                                                           val0type, val0, val1type, val1));
     }
+
+    // -- apply any post-unary ops (increment/decrement)
+    ApplyPostUnaryOpEntry(val0type, val0);
+    ApplyPostUnaryOpEntry(val1type, val1);
 
     // -- hopefully one of them worked
     if (success)
@@ -477,6 +692,9 @@ bool8 PerformAssignOp(CScriptContext* script_context, CExecStack& execstack, CFu
     g_lastAssignResultType = val1type;
     memcpy(g_lastAssignResultBuffer, val1addr, MAX_TYPE_SIZE * sizeof(uint32));
 
+    // -- we're also going to convert val1add to the required type for assignment
+    void* val1_convert = val1addr;
+
 	// -- pop the var
     CVariableEntry* ve0 = NULL;
     CObjectEntry* oe0 = NULL;
@@ -507,18 +725,22 @@ bool8 PerformAssignOp(CScriptContext* script_context, CExecStack& execstack, CFu
             return (false);
         }
 
-        val1addr = TypeConvert(script_context, val1type, val1addr, varhashtype);
-        if (!val1addr)
+        val1_convert = TypeConvert(script_context, val1type, val1addr, varhashtype);
+        if (!val1_convert)
         {
             ScriptAssert_(script_context, 0, "<internal>", -1,
                           "Error - fail to conver from type %s to type %s\n",
                           GetRegisteredTypeName(val1type), GetRegisteredTypeName(varhashtype));
             return (false);
         }
-        memcpy(var, val1addr, gRegisteredTypeSize[varhashtype]);
+        memcpy(var, val1_convert, gRegisteredTypeSize[varhashtype]);
         DebugTrace(op, is_stack_var ? "StackVar: %s" : "PODMember: %s", DebugPrintVar(var, varhashtype));
 
-       	// -- if we're connected to the debugger, then the variable entry associated with the stack var will be returned,
+        // -- apply any post-unary ops (increment/decrement)
+        ApplyPostUnaryOpEntry(val1type, val1addr);
+        ApplyPostUnaryOpEntry(varhashtype, var);
+
+        // -- if we're connected to the debugger, then the variable entry associated with the stack var will be returned,
 		// -- notify we're breaking on it
 		if (ve0)
 			ve0->NotifyWrite(script_context, &execstack, &funccallstack);
@@ -527,8 +749,8 @@ bool8 PerformAssignOp(CScriptContext* script_context, CExecStack& execstack, CFu
     // -- else set the value through the variable entry
     else
     {
-        val1addr = TypeConvert(script_context, val1type, val1addr, ve0->GetType());
-        if (!val1addr)
+        val1_convert = TypeConvert(script_context, val1type, val1addr, ve0->GetType());
+        if (!val1_convert)
         {
             ScriptAssert_(script_context, 0, "<internal>", -1,
                           "Error - fail to convert from type %s to type %s\n",
@@ -550,9 +772,13 @@ bool8 PerformAssignOp(CScriptContext* script_context, CExecStack& execstack, CFu
 
         else if (!ve0->IsArray())
         {
-    	    ve0->SetValue(oe0 ? oe0->GetAddr() : NULL, val1addr, &execstack, &funccallstack);
-            DebugTrace(op, "Var %s: %s", UnHash(ve0->GetHash()),
-                        DebugPrintVar(val1addr, ve0->GetType()));
+            ve0->SetValue(oe0 ? oe0->GetAddr() : NULL, val1_convert, &execstack, &funccallstack);
+            DebugTrace(op, "Var %s: %s", UnHash(ve0->GetHash()), DebugPrintVar(val1_convert, ve0->GetType()));
+
+            // -- apply any post-unary ops (increment/decrement)
+            // -- (to the non-convert, original address)
+            ApplyPostUnaryOpEntry(val1type, val1addr);
+            ApplyPostUnaryOpEntry(varhashtype, var);
         }
         else
         {
@@ -560,7 +786,12 @@ bool8 PerformAssignOp(CScriptContext* script_context, CExecStack& execstack, CFu
             void* ve0_addr = ve0->GetAddr(oe0 ? oe0->GetAddr() : NULL);
             int32 byte_count = kPointerDiffUInt32(var, ve0_addr);
             int32 array_index = byte_count / gRegisteredTypeSize[ve0->GetType()];
-            ve0->SetValue(oe0 ? oe0->GetAddr() : NULL, val1addr, &execstack, &funccallstack, array_index);
+            ve0->SetValue(oe0 ? oe0->GetAddr() : NULL, val1_convert, &execstack, &funccallstack, array_index);
+
+            // -- apply any post-unary ops (increment/decrement)
+            // -- I *believe* the actual a ve0->SetValue() will end up writing to the same address as "var"...
+            ApplyPostUnaryOpEntry(val1type, val1addr);
+            ApplyPostUnaryOpEntry(varhashtype, var);
         }
     }
 
@@ -586,6 +817,22 @@ bool8 OpExecNOP(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExecStack&
                 CFunctionCallStack& funccallstack)
 {
     DebugTrace(op, "");
+    return (true);
+}
+
+// ====================================================================================================================
+// OpExecDebugMsg():  DebugMsg operation, benign.
+// ====================================================================================================================
+bool8 OpExecDebugMsg(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExecStack& execstack,
+                     CFunctionCallStack& funccallstack)
+{
+    DebugTrace(op, "");
+
+    // -- get the debug string
+    uint32 string_hash = *instrptr++;
+    const char* debug_msg = cb->GetScriptContext()->GetStringTable()->FindString(string_hash);
+    TinPrint(cb->GetScriptContext(), "\n%s\n", debug_msg);
+
     return (true);
 }
 
@@ -825,10 +1072,11 @@ bool8 OpExecAssignBitXor(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CE
     return (true);
 }
 
-// ====================================================================================================================
-// OpExecAssignPreInc():  Pre-increment unary operation.
-// ====================================================================================================================
-bool8 OpExecUnaryPreInc(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExecStack& execstack,
+
+// --------------------------------------------------------------------------------------------------------------------
+// PerformUnaryPreOp():  Pre-increment/decrement unary operation.
+// --------------------------------------------------------------------------------------------------------------------
+bool8 PerformUnaryPreOp(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExecStack& execstack,
                         CFunctionCallStack& funccallstack)
 {
     // -- first get the variable we're assigning
@@ -840,12 +1088,9 @@ bool8 OpExecUnaryPreInc(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CEx
                         "Error - Failed to pop stack variable, performing: %s\n", GetOperationString(op));
         return (false);
     }
-    // -- cache the variable - we'll want to push it's value after it has been incremented
-    uint32 assign_buf[MAX_TYPE_SIZE];
-    memcpy(assign_buf, assign_var, MAX_TYPE_SIZE * sizeof(uint32));
 
-    // push a "1" onto the stack, and perform an AssignAdd
-    int32 value = 1;
+    // push the adjustment onto the stack, and perform an AssignAdd
+    int32 value = (op == OP_UnaryPreInc ? 1 : -1);
     execstack.Push(&value, TYPE_int);
     if (!PerformAssignOp(cb->GetScriptContext(), execstack, funccallstack, OP_AssignAdd))
     {
@@ -859,36 +1104,86 @@ bool8 OpExecUnaryPreInc(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CEx
 }
 
 // ====================================================================================================================
-// OpExecAssignPreDec():  Pre-decrement unary operation.
+// OpExecUnaryPreInc():  Pre-increment unary operation.
+// ====================================================================================================================
+bool8 OpExecUnaryPreInc(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExecStack& execstack,
+    CFunctionCallStack& funccallstack)
+{
+    return (PerformUnaryPreOp(cb, op, instrptr, execstack, funccallstack));
+}
+
+// ====================================================================================================================
+// OpExecUnaryPreDec():  Pre-increment unary operation.
 // ====================================================================================================================
 bool8 OpExecUnaryPreDec(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExecStack& execstack,
-                        CFunctionCallStack& funccallstack)
+    CFunctionCallStack& funccallstack)
 {
-    // -- first get the variable we're assigning
-    eVarType assign_type;
-	void* assign_var = execstack.Peek(assign_type);
-    if (!assign_var)
-    {
-        DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
-                        "Error - Failed to pop stack variable, performing: %s\n", GetOperationString(op));
-        return (false);
-    }
-    // -- cache the variable - we'll want to push it's value after it has been incremented
-    uint32 assign_buf[MAX_TYPE_SIZE];
-    memcpy(assign_buf, assign_var, MAX_TYPE_SIZE * sizeof(uint32));
+    return (PerformUnaryPreOp(cb, op, instrptr, execstack, funccallstack));
+}
 
-    // push a "-1" onto the stack, and perform an AssignAdd
-    int32 value = -1;
-    execstack.Push(&value, TYPE_int);
-    if (!PerformAssignOp(cb->GetScriptContext(), execstack, funccallstack, OP_AssignAdd))
+// --------------------------------------------------------------------------------------------------------------------
+// PerformUnaryPostOp():  Post-increment unary operation.
+// --------------------------------------------------------------------------------------------------------------------
+bool8 PerformUnaryPostOp(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExecStack& execstack,
+                         CFunctionCallStack& funccallstack)
+{
+    bool is_array_var = *instrptr++ != 0;
+
+    // -- these are the details we need to find out where to apply the post inc
+    CVariableEntry* ve = NULL;
+    CObjectEntry* oe = NULL;
+    eVarType valtype;
+    void* valaddr;
+    
+    // -- if we're incrementing a hashtable or array element, we need to peek at the top two stack entries
+    if (is_array_var)
     {
-        DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
-                        "Error - Failed to perform op: %s\n", GetOperationString(op));
-        return (false);
+        if (!GetStackArrayVarAddr(cb->GetScriptContext(), execstack, funccallstack, valaddr, valtype, ve, oe))
+        {
+            DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
+                            "Error - no hashtable/array, index on the stack for op: %s\n", GetOperationString(op));
+            return false;
+
+        }
     }
+
+    // -- otherwise, the top entry is the variable to be incremented
+    else
+    {
+        valaddr = execstack.Peek(valtype);
+        if (!GetStackValue(cb->GetScriptContext(), execstack, funccallstack, valaddr, valtype, ve, oe))
+        {
+            DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
+                            "Error - no variable on the stack for op: %s\n", GetOperationString(op));
+            return false;
+        }
+    }
+
+    // -- add a post op adjust (OP_UnaryPostInc == 1) to the specific address peek'd from the stack
+    AddPostUnaryOpEntry(valtype, valaddr, op == OP_UnaryPostInc ? 1 : -1);
+
+    DebugTrace(op, "%s", DebugPrintVar((void*)valaddr, valtype));
 
     // -- success
     return (true);
+}
+
+// ====================================================================================================================
+// OpExecUnaryPostInc():  Post-increment unary operation.
+// ====================================================================================================================
+bool8 OpExecUnaryPostInc(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExecStack& execstack,
+                         CFunctionCallStack& funccallstack)
+{
+    return (PerformUnaryPostOp(cb, op, instrptr, execstack, funccallstack));
+}
+
+// ====================================================================================================================
+// OpExecUnaryPostDec():  Post-decrement unary operation.
+// ====================================================================================================================
+bool8 OpExecUnaryPostDec(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExecStack& execstack,
+                         CFunctionCallStack& funccallstack)
+{
+    return (PerformUnaryPostOp(cb, op, instrptr, execstack, funccallstack));
 }
 
 // ====================================================================================================================
@@ -948,6 +1243,9 @@ bool8 OpExecUnaryBitInvert(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, 
     execstack.Push(&result, TYPE_int);
     DebugTrace(op, "%s", DebugPrintVar((void*)&result, TYPE_int));
 
+    // -- why you would post increment/decrement a variable after bit-inverting is questionable...  but supported
+    ApplyPostUnaryOpEntry(valtype, valaddr);
+
     // -- success
     return (true);
 }
@@ -985,6 +1283,9 @@ bool8 OpExecUnaryNot(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExecS
 
     execstack.Push(&result, TYPE_bool);
     DebugTrace(op, "%s", DebugPrintVar((void*)&result, TYPE_bool));
+
+    // -- post increment/decrement support
+    ApplyPostUnaryOpEntry(valtype, valaddr);
 
     // -- success
     return (true);
@@ -1498,6 +1799,24 @@ bool8 OpExecPop(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExecStack&
     eVarType contenttype;
     void* content = execstack.Pop(contenttype);
     DebugTrace(op, "Val: %s", DebugPrintVar(content, contenttype));
+
+    // -- if we have a pending post unary op to apply, we have to find out what was on the stack, and potentially
+    // -- apply the unary op
+    if (g_postOpEntryCount > 0)
+    {
+        CVariableEntry* ve = NULL;
+        CObjectEntry* oe = NULL;
+        if (!GetStackValue(cb->GetScriptContext(), execstack, funccallstack, content, contenttype, ve, oe))
+        {
+            DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
+                            "Error - GetStackValue() failed\n");
+            return (false);
+        }
+
+        // -- post increment/decrement support
+        ApplyPostUnaryOpEntry(contenttype, content);
+    }
+
     return (true);
 }
 
@@ -2113,6 +2432,13 @@ bool8 OpExecFuncReturn(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExe
     // -- strings are decremented, keeping the string table clear of unassigned values
     fe->GetContext()->ClearParameters();
 
+    // -- in addition, all post-unary ops had better have been applied
+    if (g_postOpEntryCount > 0)
+    {
+        ScriptAssert_(cb->GetScriptContext(), 0, cb->GetFileName(), cb->CalcLineNumber(instrptr),
+                      "Error - There is still an outstanding post unary op that has not been applied\n");
+    }
+
     DebugTrace(op, "func: %s, val: %s", UnHash(fe->GetHash()),
                DebugPrintVar(stacktopcontent, contenttype));
 
@@ -2230,6 +2556,9 @@ bool8 OpExecArrayHash(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExec
         // -- push the result
         execstack.Push((void*)&array_index, TYPE_int);
         DebugTrace(op, "ArrayIndex: %d", array_index);
+
+        // -- post increment/decrement support
+        ApplyPostUnaryOpEntry(val1type, val1);
     }
 
     return (true);
@@ -2497,6 +2826,7 @@ bool8 OpExecScheduleBegin(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, C
     uint32 funchash = *(uint32*)(contentptr);
 
     // -- pull the delay time off the stack
+    // $$$TZA  The delay time could be a variable...??
     contentptr = execstack.Pop(contenttype);
     if (contenttype != TYPE_int)
     {
@@ -2575,6 +2905,9 @@ bool8 OpExecScheduleParam(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, C
                          mFuncContext->GetParameter(paramindex);
     ve->SetValue(NULL, contentptr);
     DebugTrace(op, "Param: %d, Var: %s", paramindex, varnamebuf);
+
+    // -- post increment/decrement support
+    ApplyPostUnaryOpEntry(contenttype, contentptr);
 
     return (true);
 }
@@ -2670,6 +3003,9 @@ bool8 OpExecCreateObject(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CE
 	// -- if this is a local object, notify the call stack
 	if (local_object)
 		funccallstack.NotifyLocalObjectID(objid);
+
+    // -- post increment/decrement support  (named by an integer variable, incremented?  it's possible....)
+    ApplyPostUnaryOpEntry(contenttype, contentptr);
 
     return (true);
 }
