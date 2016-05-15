@@ -704,6 +704,18 @@ bool8 CreateUnitTests()
         success = success && AddUnitTest("float_bool", "var_float = true", "float var_float = true; gUnitTestScriptResult = StringCat(var_float);", "1.0000");
         success = success && AddUnitTest("float_string", "var_float = '5.3f';", "float var_float = '5.3f'; gUnitTestScriptResult = StringCat(var_float);", "5.3000");
 
+        // -- post-unary op tests (e.g. x++)
+        success = success && AddUnitTest("post_inc_int", "var_int++;", "int var_int = 5; var_int++; gUnitTestScriptResult = StringCat(var_int);", "6");
+        success = success && AddUnitTest("post_inc_float", "var_float++;", "float var_float = -5.25f; var_float++; gUnitTestScriptResult = StringCat(var_float);", "-4.2500");
+        success = success && AddUnitTest("post_inc_assign", "var_int = a++;", "int a = 3; int var_int = a++; gUnitTestScriptResult = StringCat(var_int, ' ', a);", "3 4");
+        success = success && AddUnitTest("post_inc_array", "foo[3]++;", "int[5] foo; foo[3] = 7; foo[3]++; gUnitTestScriptResult = StringCat(foo[3]);", "8");
+        success = success && AddUnitTest("post_inc_index", "foo[bar++];", "int[5] foo; int bar = 2; foo[bar++] = 9; gUnitTestScriptResult = StringCat(bar, ' ', foo[2]);", "3 9");
+        success = success && AddUnitTest("post_inc_array_index", "foo[bar++]++;", "int[5] foo; int bar = 4; foo[bar] = 7; foo[bar++]++; gUnitTestScriptResult = StringCat(bar, ' ', foo[4]);", "5 8");
+        //success = success && AddUnitTest("post_inc_v3f", "pos:x++;", "vector3f pos = '1 2 3'; pos:y++; gUnitTestScriptResult = StringCat(pos:y);", "3.000");
+        success = success && AddUnitTest("post_inc_member", "obj.mem++;", "object obj = create CChild(); obj.intvalue++; gUnitTestScriptResult = StringCat(obj.intvalue);", "12");
+        success = success && AddUnitTest("post_inc_member_array", "obj.intArray[bar++];", "int bar = 3; object obj = create CChild(); obj.intArray[bar++] = 7; gUnitTestScriptResult = StringCat(bar, ' ', obj.intArray[3]);", "4 7");
+        success = success && AddUnitTest("post_inc_member_array2", "obj.mem++;", "int bar = 3; object obj = create CChild(); obj.intArray[3] = 17; obj.intArray[bar++]++; gUnitTestScriptResult = StringCat(bar, ' ', obj.intArray[3]);", "4 18");
+
         // -- bool unit tests -----------------------------------------------------------------------------------------
         // -- bool boolean unit tests
         success = success && AddUnitTest("bool_and_tt", "true && true", "gUnitTestScriptResult = StringCat(true && true);", "true");

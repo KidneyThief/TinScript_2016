@@ -790,14 +790,14 @@ int32 CPODMemberNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 counton
     size += tree_size;
 
 	// -- if the value is being used, push it on the stack
-	if (pushresult > TYPE_void)
+    if (pushresult > TYPE_void || m_unaryDelta != 0)
     {
         // -- get the hash of the member
 		uint32 memberhash = Hash(podmembername);
 
 		// -- if we're supposed to be pushing a var (for an assign...), we actually push
         // -- a member (still a variable, but the lookup is different)
-		if (pushresult == TYPE__var)
+        if (pushresult == TYPE__var || m_unaryDelta != 0)
         {
 			size += PushInstruction(countonly, instrptr, OP_PushPODMember, DBG_instr);
 			size += PushInstruction(countonly, instrptr, memberhash, DBG_var);
@@ -814,20 +814,13 @@ int32 CPODMemberNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 counton
         if (m_unaryDelta != 0)
         {
             size += PushInstruction(countonly, instrptr, m_unaryDelta > 0 ? OP_UnaryPostInc : OP_UnaryPostDec, DBG_instr);
-            size += PushInstruction(countonly, instrptr, 0, DBG_value, "non-array var");
+            size += PushInstruction(countonly, instrptr, 0, DBG_value, "POD var");
         }
     }
 
     // -- otherwise, we're referencing a member without actually doing anything - pop the stack
-    else
+    if (pushresult == TYPE_void)
     {
-        // -- if we're applying a post increment/decrement, we also need to push the post-op instruction
-        if (m_unaryDelta != 0)
-        {
-            size += PushInstruction(countonly, instrptr, m_unaryDelta > 0 ? OP_UnaryPostInc : OP_UnaryPostDec, DBG_instr);
-            size += PushInstruction(countonly, instrptr, 0, DBG_value, "non-array var");
-        }
-
         size += PushInstruction(countonly, instrptr, OP_Pop, DBG_instr);
     }
 
