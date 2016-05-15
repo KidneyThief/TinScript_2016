@@ -784,7 +784,9 @@ int32 CPODMemberNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 counton
 
   	// -- evaluate the left child - the pushresult for the leftchild should be the same
     // -- either we're referencing the POD member of a value, or a variable
-    int32 tree_size = leftchild->Eval(instrptr, pushresult, countonly);
+    // -- note:  if we're applying a post unary op, then we need to left child to resolve to a variable, not a value
+    eVarType var_result_type = (pushresult == TYPE_void && m_unaryDelta != 0) ? TYPE__var : pushresult;
+    int32 tree_size = leftchild->Eval(instrptr, var_result_type, countonly);
     if (tree_size < 0)
         return (-1);
     size += tree_size;
