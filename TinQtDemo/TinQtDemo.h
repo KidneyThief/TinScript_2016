@@ -82,7 +82,30 @@ struct tCircle
 };
 
 // --------------------------------------------------------------------------------------------------------------------
-// struct tCircle:  simple wrapper to submit a text request
+// struct tRect:  simple wrapper to submit a rectangle request
+// --------------------------------------------------------------------------------------------------------------------
+struct tRect
+{
+    tRect(int32 _id, const CVector3f& _pos, float _width, float _height, int32 _color)
+    {
+        id = _id;
+        pos = _pos;
+        width = _width;
+        height = _height;
+        color = _color;
+        expired = false;
+    }
+
+    int32 id;
+    CVector3f pos;
+    float width;
+    float height;
+    int32 color;
+    bool expired;
+};
+
+// --------------------------------------------------------------------------------------------------------------------
+// struct tText:  simple wrapper to submit a text request
 // --------------------------------------------------------------------------------------------------------------------
 struct tText
 {
@@ -115,6 +138,7 @@ class CDemoWidget : public QWidget
         // -- draw interface
         void DrawLine(int32 id, const CVector3f& start, const CVector3f& end, int color);
         void DrawCircle(int32 id, const CVector3f& center, float radius, int color);
+        void DrawRect(int32 id, const CVector3f& position, float width, float height, int color);
         void DrawText(int32 id, const CVector3f& position, const char* _text, int color);
         void CancelDrawRequests(int draw_request_id);
 
@@ -136,6 +160,7 @@ class CDemoWidget : public QWidget
         // -- store the vectors of draw requests
         std::vector<tLine> mDrawLines;
         std::vector<tCircle> mDrawCircles;
+        std::vector<tRect> mDrawRects;
         std::vector<tText> mDrawText;
 };
 

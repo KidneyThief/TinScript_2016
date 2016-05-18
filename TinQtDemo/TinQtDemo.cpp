@@ -209,6 +209,31 @@ void CDemoWidget::paintEvent(QPaintEvent *event)
         }
     }
 
+    // -- draw all the submitted circles
+    int rect_count = mDrawRects.size();
+    for (int i = 0; i < rect_count; ++i)
+    {
+        tRect& rect = mDrawRects[i];
+        if (!rect.expired)
+        {
+            // -- create the colored pen
+            int a = (rect.color >> 24) & 0xff;
+            int r = (rect.color >> 16) & 0xff;
+            int g = (rect.color >> 8) & 0xff;
+            int b = (rect.color >> 0) & 0xff;
+            QColor color(r, g, b, a);
+            QPen pen(color);
+
+            QRadialGradient gradient(rect.pos.x, rect.pos.y, rect.width > rect.height ? rect.width : rect.height);
+            gradient.setColorAt(0.0, Qt::white);
+            gradient.setColorAt(1.0f, color);
+
+            painter.setPen(pen);
+            painter.setBrush(gradient);
+            painter.fillRect(QRect(rect.pos.x, rect.pos.y, rect.width, rect.height), gradient);
+        }
+    }
+
     // -- draw all the submitted text
     int text_count = mDrawText.size();
     for (int i = 0; i < text_count; ++i)
@@ -298,6 +323,37 @@ void CDemoWidget::DrawCircle(int32 id, const CVector3f& center, float radius, in
     }
 }
 
+void CDemoWidget::DrawRect(int32 id, const CVector3f& pos, float width, float height, int color)
+{
+    // -- find an expired item, to avoid thrashing memory
+    bool found = false;
+    int count = mDrawRects.size();
+    for (int i = 0; i < count; ++i)
+    {
+        tRect& item = mDrawRects[i];
+        if (item.expired)
+        {
+            item.id = id;
+            item.pos = pos;
+            item.width = width;
+            item.height = height;
+            item.color = color;
+            item.expired = false;
+
+            // -- we found an expired entry
+            found = true;
+            break;
+        }
+    }
+
+    // -- if we didn't find an expired entry, add a new one
+    if (!found)
+    {
+        tRect rect(id, pos, width, height, color);
+        mDrawRects.push_back(rect);
+    }
+}
+
 void CDemoWidget::DrawText(int32 id, const CVector3f& position, const char* _text, int color)
 {
     // -- find an expired item, to avoid thrashing memory
@@ -345,6 +401,17 @@ void CDemoWidget::CancelDrawRequests(int draw_request_id)
     for (circle_it = mDrawCircles.begin(); circle_it != mDrawCircles.end(); ++circle_it)
     {
         tCircle& item = *circle_it;
+        if (draw_request_id < 0 || item.id == draw_request_id)
+        {
+            item.expired = true;
+            break;
+        }
+    }
+
+    std::vector<tRect>::iterator rect_it;
+    for (rect_it = mDrawRects.begin(); rect_it != mDrawRects.end(); ++rect_it)
+    {
+        tRect& item = *rect_it;
         if (draw_request_id < 0 || item.id == draw_request_id)
         {
             item.expired = true;
@@ -433,6 +500,14 @@ void DrawCircle(int32 id, CVector3f center, float32 radius, int32 color)
     }
 }
 
+void DrawRect(int32 id, CVector3f position, float32 width, float32 height, int32 color)
+{
+    if (gCanvas)
+    {
+        gCanvas->DrawRect(id, position, width, height, color);
+    }
+}
+
 void DrawText(int32 id, CVector3f position, const char* text, int32 color)
 {
     if (gCanvas)
@@ -451,6 +526,7 @@ void CancelDrawRequests(int32 id)
 
 REGISTER_FUNCTION_P4(DrawLine, DrawLine, void, int32, CVector3f, CVector3f, int32);
 REGISTER_FUNCTION_P4(DrawCircle, DrawCircle, void, int32, CVector3f, float32, int32);
+REGISTER_FUNCTION_P5(DrawRect, DrawRect, void, int32, CVector3f, float32, float32, int32);
 REGISTER_FUNCTION_P4(DrawText, DrawText, void, int32, CVector3f, const char*, int32);
 
 REGISTER_FUNCTION_P1(CancelDrawRequests, CancelDrawRequests, void, int32);
