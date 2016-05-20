@@ -3071,10 +3071,10 @@ int32 ParseIdentifierStack(const char* input_str, char identifierStack[kMaxNameL
 
     // -- start at the end of the input string, and look for 
     char* input_ptr = &input_buf[strlen(input_str)];
-    while (input_ptr != input_buf)
+    char* input_end = input_ptr;
+    while (true)
     {
         // -- find the beginning of the current identifier
-        char* input_end = input_ptr;
         while (input_ptr > input_buf && IsIdentifierChar(*(char*)(input_ptr - 1), true))
             --input_ptr;
 
@@ -3101,6 +3101,26 @@ int32 ParseIdentifierStack(const char* input_str, char identifierStack[kMaxNameL
         while (input_ptr > input_buf && *input_ptr <= 0x20)
             --input_ptr;
 
+        // -- feels like a hack, but check for the specific keywords 'create' or 'createlocal'
+        if (identifier_count == 1)
+        {
+            // -- note:  inputPtr will be pointing at the last character in the string, so the lenghts are off by 1
+            int32 create_length = (int32)strlen("create") - 1;
+            int32 createlocal_length = (int32)strlen("createlocal") - 1;
+            if (kPointerDiffUInt32(input_ptr, input_buf) >= (uint32)create_length &&
+                !strncmp(input_ptr - create_length, "create", create_length + 1))
+            {
+                strcpy_s(identifierStack[identifier_count++], kMaxNameLength, "create");
+                break;
+            }
+            else if (kPointerDiffUInt32(input_ptr, input_buf) >= (uint32)createlocal_length &&
+                     !strncmp(input_ptr - createlocal_length, "createlocal", createlocal_length + 1))
+            {
+                strcpy_s(identifierStack[identifier_count++], kMaxNameLength, "createlocal");
+                break;
+            }
+        }
+
         // -- if we found anything other than an object dereference, we're done
         if (*input_ptr != '.')
             break;
@@ -3116,10 +3136,6 @@ int32 ParseIdentifierStack(const char* input_str, char identifierStack[kMaxNameL
         // -- back up past white space again
         while (input_ptr > input_buf && *input_ptr <= 0x20)
             --input_ptr;
-
-        // -- if we're at the start of the string, the we're still missing a preceeding identifier
-        if (input_ptr == input_buf)
-            return (0);
 
         // -- if we didn't find an identifier char, we're still missing a preceeding identifier
         if (!IsIdentifierChar(*input_ptr, true))
@@ -3251,6 +3267,56 @@ bool8 TabCompleteVarTable(const char* partial_function_name, int32 partial_lengt
     return (table_is_full);
 }
 
+// --------------------------------------------------------------------------------------------------------------------
+// TabCompleteKeywordCreate():  If the previous token was 'create', then we create based on available namespaces.
+// --------------------------------------------------------------------------------------------------------------------
+bool8 TabCompleteKeywordCreate(const char* partial_function_name, int32 partial_length,
+                               tTabCompleteEntry* tab_complete_list, int32& entry_count,
+                               int32 max_count)
+{
+    bool table_is_full = false;
+    CHashTable<CNamespace>* namespaces = TinScript::GetContext()->GetNamespaceDictionary();
+    if (namespaces != nullptr)
+    {
+        CNamespace* current_namespace = namespaces->First();
+        while (current_namespace != nullptr)
+        {
+            const char* namespace_name = TinScript::UnHash(current_namespace->GetHash());
+            if (namespace_name != nullptr && !_strnicmp(partial_function_name, namespace_name, partial_length))
+            {
+                // -- ensure the function hasn't already been added
+                // -- (derived registered classes all have their own version of ListMembers() and ListMethods())
+                bool already_added = false;
+                for (int i = 0; i < entry_count; ++i)
+                {
+                    if (tab_complete_list[i].tab_string == namespace_name)
+                    {
+                        already_added = true;
+                        break;
+                    }
+                }
+
+                // -- add the variable
+                if (!already_added)
+                    tab_complete_list[entry_count++].Set(namespace_name, nullptr, nullptr);
+
+                // -- break if we're full
+                if (entry_count >= max_count)
+                {
+                    table_is_full = true;
+                    break;
+                }
+            }
+
+            // -- next namespace
+            current_namespace = namespaces->Next();
+        }
+    }
+
+    // -- return true if the table is full
+    return (table_is_full);
+}
+
 // ====================================================================================================================
 // TabComplete():  Return the next available command, given the partial input string
 // ====================================================================================================================
@@ -3282,128 +3348,139 @@ bool CScriptContext::TabComplete(const char* partial_input, int32& ref_tab_compl
 
     // -- set the pointers for the partial input
     partial_function_ptr = identifier_stack[0];
-
-    // -- see if this is a global function or an method
-    CObjectEntry* oe = nullptr;
-    uint32 object_id = 0;
-
-    // -- if there were multiple identifiers, then we need to find the last object entry in the chain
-    for (int stack_index = identifier_count - 1; stack_index >= 1; --stack_index)
-    {
-        // -- cache the prev_oe
-        CObjectEntry* prev_oe = oe;
-        oe = nullptr;
-
-        // -- if this is the first identifier in the chain, it must be either an object ID, or a global variable
-        if (stack_index == identifier_count - 1)
-        {
-            object_id = (uint32)atoi(identifier_stack[stack_index]);
-            if (object_id > 0)
-                oe = TinScript::GetContext()->FindObjectEntry(object_id);
-            else
-            {
-                // -- find the variable
-                CVariableEntry* ve = GetGlobalNamespace()->GetVarTable()->FindItem(Hash(identifier_stack[stack_index]));
-                if (ve == nullptr || ve->GetType() != eVarType::TYPE_object)
-                    return (false);
-
-                // -- get the variable value, and search for an object with that ID
-                object_id = *(uint32*)(ve->GetValueAddr(nullptr));
-                oe = TinScript::GetContext()->FindObjectEntry(object_id);
-            }
-        }
-
-        // -- otherwise, it's an object member of the previous object
-        else
-        {
-            CVariableEntry* oe_member = prev_oe->GetVariableEntry(Hash(identifier_stack[stack_index]));
-            if (oe_member == nullptr || oe_member->GetType() != TYPE_object)
-                return (false);
-
-            // -- find the variable for which this member refers
-            object_id = *(uint32*)(oe_member->GetValueAddr(prev_oe->GetAddr()));
-            oe = TinScript::GetContext()->FindObjectEntry(object_id);
-        }
-
-        // -- if oe is still null, we're done
-        if (oe == nullptr)
-            return (false);
-    }
-
-    // -- we're only performing partial string comparisons
     size_t partial_length = strlen(partial_function_ptr);
 
-    // -- if we're sending global functions, we need the global namespace only
-    if (oe == nullptr)
-        function_table = GetGlobalNamespace()->GetFuncTable();
-    else
-    {
-        current_namespace = oe->GetNamespace();
-        function_table = current_namespace->GetFuncTable();
-    }
-
-    // -- ensure we have a valid function table, and a non-empty of a function/method name
-    if (function_table == nullptr || partial_function_ptr[0] == '\0')
+    // -- ensure we have a non-empty partial string
+    if (partial_function_ptr[0] == '\0')
         return (nullptr);
 
-    // -- populate the list of function and member names
+    // -- populate the list of function and member names, etc...
     const int32 max_count = 256;
     int32 entry_count = 0;
     tTabCompleteEntry tab_complete_list[max_count];
     bool8 list_is_full = false;
 
-    // -- if we have no object, tab complete with keywords
-    if (oe == nullptr)
+    // -- special case, if we're tab completing on "create"
+    bool tabcomplete_handled = false;
+    if (identifier_count == 2 && (!strcmp(identifier_stack[1], "create") ||
+                                  !strcmp(identifier_stack[1], "createlocal")))
     {
-        int32 keyword_count = 0;
-        const char** keyword_list = GetReservedKeywords(keyword_count);
-        for (int32 i = 0; i < keyword_count; ++i)
-        {
-            if (!_strnicmp(partial_function_ptr, keyword_list[i], partial_length))
-            {
-                // -- add the function
-                tab_complete_list[entry_count++].Set(keyword_list[i], nullptr, nullptr);
-            }
-        }
+        tabcomplete_handled = true;
+        list_is_full = TabCompleteKeywordCreate(partial_function_ptr, partial_length, tab_complete_list, entry_count,
+                                                max_count);
     }
 
-    // -- if we have an object, and it has dynamic variables, add them to the list
-    tVarTable* dynamic_vars = oe != nullptr ? oe->GetDynamicVarTable() : nullptr;
-    if (dynamic_vars != nullptr)
-    {
-        list_is_full = TabCompleteVarTable(partial_function_ptr, partial_length, *dynamic_vars,
-                                           tab_complete_list, entry_count, max_count);
-    }
+    // -- see if this is a global function or an method
+    CObjectEntry* oe = nullptr;
+    uint32 object_id = 0;
 
-    // -- lots of places to exit from
-    while (function_table && !list_is_full)
+    // -- if we haven't handled the completion (e.g. through the keyword create completion)
+    if (!tabcomplete_handled)
     {
-        // -- populate the list with matching function names
-        list_is_full = TabCompleteFunctionTable(partial_function_ptr, partial_length, *function_table,
-                                                tab_complete_list, entry_count, max_count);
-
-        // -- if we have an object, add the object members
-        if (oe != nullptr && !list_is_full)
+        // -- if there were multiple identifiers, then we need to find the last object entry in the chain
+        for (int stack_index = identifier_count - 1; stack_index >= 1; --stack_index)
         {
-            tVarTable* var_table = current_namespace->GetVarTable();
-            if (var_table != nullptr)
+            // -- cache the prev_oe
+            CObjectEntry* prev_oe = oe;
+            oe = nullptr;
+
+            // -- if this is the first identifier in the chain, it must be either an object ID, or a global variable
+            if (stack_index == identifier_count - 1)
             {
-                list_is_full = TabCompleteVarTable(partial_function_ptr, partial_length, *var_table,
-                                                   tab_complete_list, entry_count, max_count);
-            }
-        }
+                object_id = (uint32)atoi(identifier_stack[stack_index]);
+                if (object_id > 0)
+                    oe = TinScript::GetContext()->FindObjectEntry(object_id);
+                else
+                {
+                    // -- find the variable
+                    CVariableEntry* ve = GetGlobalNamespace()->GetVarTable()->FindItem(Hash(identifier_stack[stack_index]));
+                    if (ve == nullptr || ve->GetType() != eVarType::TYPE_object)
+                        return (false);
 
-        // -- get the next namespace and function table
-        if (oe != nullptr)
-        {
-            current_namespace = current_namespace->GetNext();
-            if (current_namespace)
-                function_table = current_namespace->GetFuncTable();
+                    // -- get the variable value, and search for an object with that ID
+                    object_id = *(uint32*)(ve->GetValueAddr(nullptr));
+                    oe = TinScript::GetContext()->FindObjectEntry(object_id);
+                }
+            }
+
+            // -- otherwise, it's an object member of the previous object
             else
-                function_table = NULL;
+            {
+                CVariableEntry* oe_member = prev_oe->GetVariableEntry(Hash(identifier_stack[stack_index]));
+                if (oe_member == nullptr || oe_member->GetType() != TYPE_object)
+                    return (false);
+
+                // -- find the variable for which this member refers
+                object_id = *(uint32*)(oe_member->GetValueAddr(prev_oe->GetAddr()));
+                oe = TinScript::GetContext()->FindObjectEntry(object_id);
+            }
+
+            // -- if oe is still null, we're done
+            if (oe == nullptr)
+                return (false);
         }
+
+        // -- if we don't have an object, populate with keywords, global functions, and global var names
+        if (oe == nullptr)
+        {
+            int32 keyword_count = 0;
+            const char** keyword_list = GetReservedKeywords(keyword_count);
+            for (int32 i = 0; i < keyword_count; ++i)
+            {
+                if (!_strnicmp(partial_function_ptr, keyword_list[i], partial_length))
+                {
+                    // -- add the function
+                    tab_complete_list[entry_count++].Set(keyword_list[i], nullptr, nullptr);
+                }
+            }
+
+            // -- also tab complete with global variables
+            list_is_full = TabCompleteVarTable(partial_function_ptr, partial_length, *(GetGlobalNamespace()->GetVarTable()),
+                tab_complete_list, entry_count, max_count);
+
+            // -- populate the list with matching function names
+            function_table = GetGlobalNamespace()->GetFuncTable();
+            list_is_full = TabCompleteFunctionTable(partial_function_ptr, partial_length, *function_table,
+                tab_complete_list, entry_count, max_count);
+        }
+
+        // -- else we have an object - populate with dynamic var names, and through the hierarchy
+        // -- of namespaces, each derived member and method name
         else
-            function_table = NULL;
+        {
+            tVarTable* dynamic_vars = oe->GetDynamicVarTable();
+            if (dynamic_vars != nullptr)
+            {
+                list_is_full = TabCompleteVarTable(partial_function_ptr, partial_length, *dynamic_vars,
+                    tab_complete_list, entry_count, max_count);
+            }
+
+            current_namespace = oe->GetNamespace();
+            function_table = current_namespace->GetFuncTable();
+
+            // -- lots of places to exit from
+            while (function_table && !list_is_full)
+            {
+                // -- populate the list with matching function names
+                list_is_full = TabCompleteFunctionTable(partial_function_ptr, partial_length, *function_table,
+                    tab_complete_list, entry_count, max_count);
+
+                // -- add the object members
+                tVarTable* var_table = current_namespace->GetVarTable();
+                if (var_table != nullptr)
+                {
+                    list_is_full = TabCompleteVarTable(partial_function_ptr, partial_length, *var_table,
+                        tab_complete_list, entry_count, max_count);
+                }
+
+                // -- get the next namespace and function table
+                current_namespace = current_namespace->GetNext();
+                if (current_namespace)
+                    function_table = current_namespace->GetFuncTable();
+                else
+                    function_table = NULL;
+            }
+        }
     }
 
     // -- if we didn't find anything, we're done
