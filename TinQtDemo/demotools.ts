@@ -3,13 +3,13 @@
 // Test script to demonstrate populating the debugger tool palette elements to support the FLTK demo.
 // --------------------------------------------------------------------------------------------------------------------
 
-SocketSend("ToolPaletteClear('Asteroids');");
-SocketSend("ToolPaletteAddMessage('Asteroids', 'Demo Buttons');");
-SocketSend("ToolPaletteAddButton('Asteroids', 'Tools', 'Execute demotools.ts', 'Tools', 'Exec(`demotools.ts`);');");
-SocketSend("ToolPaletteAddButton('Asteroids', 'Exec', 'Execute asteroids.ts', 'Exec Asteroids', 'Exec(`asteroids.ts`);');");
-SocketSend("ToolPaletteAddButton('Asteroids', 'Start', 'Start the Asteroids game', 'Start', 'StartAsteroids();');");
-SocketSend("ToolPaletteAddButton('Asteroids', 'Pause', 'Pause the simulation', 'Pause', 'SimPause();');");
-SocketSend("ToolPaletteAddButton('Asteroids', 'Unpause', 'Unpause the simulation', 'Unpause', 'SimUnpause();');");
+SocketCommand("ToolPaletteClear", "Asteroids");
+SocketCommand("ToolPaletteAddMessage", "Asteroids", "Demo Buttons");
+SocketCommand("ToolPaletteAddButton", "Asteroids", "Tools", "Execute demotools.ts", "Tools", "Exec('demotools.ts');");
+SocketCommand("ToolPaletteAddButton", "Asteroids", "Exec", "Execute asteroids.ts", "Exec Asteroids", "Exec('asteroids.ts');");
+SocketCommand("ToolPaletteAddButton", "Asteroids", "Start", "Start the Asteroids game", "Start", "StartAsteroids();");
+SocketCommand("ToolPaletteAddButton", "Asteroids", "Pause", "Pause the simulation", "Pause", "SimPause();");
+SocketCommand("ToolPaletteAddButton", "Asteroids", "Unpause", "Unpause the simulation", "Unpause", "SimUnpause();");
 
 void TogglePaused()
 {
