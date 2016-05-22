@@ -3743,7 +3743,6 @@ void DebuggerToggleVarWatch(int32 watch_request_id, uint32 object_id, int32 var_
                                    trace_on_cond);
 }
 
-
 // --------------------------------------------------------------------------------------------------------------------
 // DebuggerListObjects():  Send the connected debugger, a dump of all the object entries.
 // --------------------------------------------------------------------------------------------------------------------

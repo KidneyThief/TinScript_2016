@@ -64,6 +64,9 @@ public:
     // -- update should be called every frame - returns the const char* of the current command
     const char* Update();
 
+    // -- tab complete based on thie history buffer
+    bool8 TabCompleteHistory(const char* partial_function_name, int32& tab_complete_index, const char*& tab_result);
+
 private:
     // -- constants
     static const int32 kMaxHistory = 64;

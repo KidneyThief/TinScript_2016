@@ -412,6 +412,61 @@ void CCmdShell::NotifyPrintEnd()
     mRefreshPrompt = true;
 }
 
+// --------------------------------------------------------------------------------------------------------------------
+// TabCompleteKeywordCreate():  If the previous token was 'create', then we create based on available namespaces.
+// --------------------------------------------------------------------------------------------------------------------
+bool8 CCmdShell::TabCompleteHistory(const char* partial_function_name, int32& ref_tab_complete_index,
+                                    const char*& tab_result)
+{
+    // -- sanity check
+    if (partial_function_name == nullptr)
+        return (false);
+
+    // -- we're tab-completing history if the first non-white character is a '!'
+    const char* partial_ptr = partial_function_name;
+    while (*partial_ptr != '\0' && *partial_ptr < 0x20)
+        ++partial_ptr;
+
+    // -- if the first non-zero character is a '!', we'll try to tab-complete based on the history
+    if (*partial_ptr != '!')
+        return (false);
+
+    // -- skip past the '!', and the following whitespace
+    ++partial_ptr;
+    while (*partial_ptr != '\0' && *partial_ptr < 0x20)
+        ++partial_ptr;
+
+    // -- if we have nothing to compare, we're done
+    if (*partial_ptr == '\0')
+        return (false);
+
+    int32 partial_length = (int32)strlen(partial_ptr);
+
+    // -- loop through the history in reverse order
+    int32 matching_history_count = 0;
+    const char* matching_history[kMaxHistory];
+    int history_count = mHistoryFull ? kMaxHistory : mHistoryLastIndex + 1;
+    for (int32 i = 0; i < history_count; ++i)
+    {
+        // -- look through the history buf from most recent and back
+        int32 index = (mHistoryLastIndex + kMaxHistory - i) % kMaxHistory;
+        if (!_strnicmp(partial_ptr, mHistory[index], partial_length))
+            matching_history[matching_history_count++] = mHistory[index];
+    }
+
+    // -- if we found no matching history, we're done
+    if (matching_history_count == 0)
+        return (false);
+
+    // -- update the index
+    ref_tab_complete_index = (++ref_tab_complete_index) % matching_history_count;
+
+    // -- return the matching history entry
+    tab_result = matching_history[ref_tab_complete_index];
+
+    return (true);
+}
+
 // ====================================================================================================================
 // Update():  Called every frame, returns a const char* if there's a command to be processed
 // ====================================================================================================================
@@ -467,12 +522,18 @@ const char* CCmdShell::Update()
                 mTabCompletionIndex = -1;
             }
 
-            // -- see if we can find a complete a function
+            // -- see if we can find a complete a function - first, tab completing history
+            // -- and second, tab completing the string in context
             int32 tab_string_offset = 0;
             const char* tab_result = nullptr;
             TinScript::CFunctionEntry* fe = nullptr;
             TinScript::CVariableEntry* ve = nullptr;
-            if (TinScript::GetContext()->TabComplete(mTabCompletionBuf, mTabCompletionIndex, tab_string_offset, tab_result, fe, ve))
+            if (TabCompleteHistory(mTabCompletionBuf, mTabCompletionIndex, tab_result))
+            {
+                RefreshConsoleInput(false, tab_result);
+            }
+
+            else if (TinScript::GetContext()->TabComplete(mTabCompletionBuf, mTabCompletionIndex, tab_string_offset, tab_result, fe, ve))
             {
                 // -- update the input buf with the new string
                 int32 tab_complete_length = (int32)strlen(tab_result);
