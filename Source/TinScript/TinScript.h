@@ -165,8 +165,8 @@ const int32 kDebuggerCallstackSize = 32;
 const int32 kDebuggerWatchWindowSize = 128;
 const int32 kBreakpointTableSize = 17;
 
-const int32 kGlobalFuncTableSize = 97;
-const int32 kGlobalVarTableSize = 97;
+const int32 kGlobalFuncTableSize = 251;
+const int32 kGlobalVarTableSize = 251;
 
 const int32 kLocalFuncTableSize = 17;
 const int32 kLocalVarTableSize = 17;
