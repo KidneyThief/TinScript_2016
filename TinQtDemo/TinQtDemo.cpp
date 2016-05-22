@@ -31,6 +31,7 @@
 #include <QShortcut>
 #include <QApplication>
 #include <QPainter>
+#include <QPaintEvent>
 
 // -- tinscript includes
 #include <cmdshell.h>
@@ -38,6 +39,9 @@
 
 // -- includes
 #include "TinQtDemo.h"
+
+// -- forward declares ------------------------------------------------------------------------------------------------
+int32 GetSimTime();
 
 // --------------------------------------------------------------------------------------------------------------------
 // -- override the macro from integration.h
@@ -52,10 +56,6 @@ static CDemoWidget* gCanvas = NULL;
 static int gCurrentTimeMS = 0;
 static bool gPaused = false;
 static float gTimeScale = 1.0f;
-
-#include <QPainter>
-#include <QPaintEvent>
-#include <QTimer>
 
 // == class CDemoWidget ===============================================================================================
 
@@ -76,21 +76,15 @@ CDemoWidget::CDemoWidget(QWidget *parent)
     mBackground = QBrush(QColor(64, 32, 64));
     mTextFont.setPixelSize(12);
 
-    // -- We don't have a lineedit, or another standard widget to receive keypresses, so use shortcuts
-    QShortcut* input_key_i = new QShortcut(QKeySequence("i"), this);
-    QObject::connect(input_key_i, SIGNAL(activated()), this, SLOT(OnInputKeyI()));
+    // -- setting focus allows the widget to receive keyPressEvent()s
+    setFocusPolicy(Qt::FocusPolicy::StrongFocus);
 
-    QShortcut* input_key_j = new QShortcut(QKeySequence("j"), this);
-    QObject::connect(input_key_j, SIGNAL(activated()), this, SLOT(OnInputKeyJ()));
-
-    QShortcut* input_key_l = new QShortcut(QKeySequence("l"), this);
-    QObject::connect(input_key_l, SIGNAL(activated()), this, SLOT(OnInputKeyL()));
-
-    QShortcut* input_key_space = new QShortcut(QKeySequence(" "), this);
-    QObject::connect(input_key_space, SIGNAL(activated()), this, SLOT(OnInputKeySpace()));
-
-	QShortcut* input_key_q = new QShortcut(QKeySequence("q"), this);
-	QObject::connect(input_key_q, SIGNAL(activated()), this, SLOT(OnInputKeyQ()));
+    // -- initialize the key states
+    for (int32 i = 0; i < k_maxKeyCode; ++i)
+    {
+        m_keyStates[i].m_pressed = false;
+        m_keyStates[i].m_keyTime = 0;
+    }
 }
 
 void CDemoWidget::OnUpdate()
@@ -123,33 +117,74 @@ void CDemoWidget::OnUpdate()
 }
 
 // --------------------------------------------------------------------------------------------------------------------
-// -- input handlers (would be simpler if QWidget would receive keyPressEvent() calls...?)
+// -- input handler, sends the key press event to the script context
 static uint32 hash_NotifyEvent = TinScript::Hash("NotifyEvent");
-void CDemoWidget::OnInputKeyI()
+void CDemoWidget::keyPressEvent(QKeyEvent* event)
 {
-    int32 dummy = 0;
-    TinScript::ExecFunction(dummy, hash_NotifyEvent, (int32)'i');
-}
-void CDemoWidget::OnInputKeyJ()
-{
-    int32 dummy = 0;
-    TinScript::ExecFunction(dummy, hash_NotifyEvent, (int32)'j');
-}
-void CDemoWidget::OnInputKeyL()
-{
-    int32 dummy = 0;
-    TinScript::ExecFunction(dummy, hash_NotifyEvent, (int32)'l');
-}
-void CDemoWidget::OnInputKeySpace()
-{
-    int32 dummy = 0;
-    TinScript::ExecFunction(dummy, hash_NotifyEvent, (int32)' ');
+    // -- no repeats!
+    if (event->isAutoRepeat())
+        return;
+
+    // -- calculate the key_code from the event
+    int32 key_code = event->key();
+    if (key_code & 0x1000000)
+        key_code = (key_code & ~0x1000000) + 100;
+
+    // -- ensure we're within range of the max key code
+    if (key_code < k_maxKeyCode)
+    {
+        // -- do not handle key repeats
+        if (!m_keyStates[key_code].m_pressed)
+        {
+            // -- track the key state
+            UpdateKeyEvent(key_code, true);
+
+            if (TinScript::GetContext()->FunctionExists(hash_NotifyEvent, 0))
+            {
+                int32 dummy = 0;
+                TinScript::ExecFunction(dummy, hash_NotifyEvent, key_code, true);
+            }
+        }
+    }
 }
 
-void CDemoWidget::OnInputKeyQ()
+void CDemoWidget::keyReleaseEvent(QKeyEvent* event)
 {
-	int32 dummy = 0;
-	TinScript::ExecFunction(dummy, hash_NotifyEvent, (int32)'q');
+    // -- no repeats!
+    if (event->isAutoRepeat())
+        return;
+
+    // -- calculate the key_code from the event
+    int32 key_code = event->key();
+    if (key_code & 0x1000000)
+        key_code = (key_code & ~0x1000000) + 100;
+
+    // -- ensure we're within range of the max key code
+    if (key_code < k_maxKeyCode)
+    {
+        // -- track the key state
+        UpdateKeyEvent(key_code, false);
+
+        if (TinScript::GetContext()->FunctionExists(hash_NotifyEvent, 0))
+        {
+            int32 dummy = 0;
+            TinScript::ExecFunction(dummy, hash_NotifyEvent, key_code, false);
+        }
+    }
+}
+
+void CDemoWidget::UpdateKeyEvent(int32 key_code, bool8 pressed)
+{
+    // -- sanity check
+    if (key_code < 0 || key_code >= k_maxKeyCode)
+        return;
+
+    // -- timestamp the state change
+    if (m_keyStates[key_code].m_pressed != pressed)
+    {
+        m_keyStates[key_code].m_keyTime = GetSimTime();
+        m_keyStates[key_code].m_pressed = pressed;
+    }
 }
 
 // --------------------------------------------------------------------------------------------------------------------
@@ -430,7 +465,35 @@ void CDemoWidget::CancelDrawRequests(int draw_request_id)
     }
 }
 
+bool8 CDemoWidget::IsKeyPressed(int32 key_code)
+{
+    // -- sanity check
+    if (key_code < 0 || key_code >= k_maxKeyCode)
+        return (false);
+
+    return (m_keyStates[key_code].m_pressed);
+}
+
+bool8 CDemoWidget::KeyPressedSinceTime(int32 key_code, int32 update_time)
+{
+    // -- sanity check
+    if (key_code < 0 || key_code >= k_maxKeyCode)
+        return (false);
+
+    return (m_keyStates[key_code].m_pressed && m_keyStates[key_code].m_keyTime >= update_time);
+}
+
+bool8 CDemoWidget::KeyReleasedSinceTime(int32 key_code, int32 update_time)
+{
+    // -- sanity check
+    if (key_code < 0 || key_code >= k_maxKeyCode)
+        return (false);
+
+    return (!m_keyStates[key_code].m_pressed && m_keyStates[key_code].m_keyTime >= update_time);
+}
+
 // == class CDemoWindow ===============================================================================================
+
 CDemoWindow::CDemoWindow() : QWidget()
 {
     setWindowTitle(tr("TinScript Demo"));
@@ -571,6 +634,35 @@ REGISTER_FUNCTION_P0(SimUnpause, SimUnpause, void);
 REGISTER_FUNCTION_P0(SimIsPaused, SimIsPaused, bool8);
 REGISTER_FUNCTION_P0(GetSimTime, GetSimTime, int32);
 REGISTER_FUNCTION_P1(SimSetTimeScale, SimSetTimeScale, void, float);
+
+// -- register the enum class KeyCode 
+CREATE_ENUM_CLASS(KeyCode, KeyCodes);
+REGISTER_ENUM_CLASS(KeyCode, KeyCodes);
+
+bool8 IsKeyPressed(int32 key_code)
+{
+    if (!gCanvas)
+        return (false);
+    return (gCanvas->IsKeyPressed(key_code));
+}
+
+bool8 KeyPressedSinceTime(int32 key_code, int32 update_time)
+{
+    if (!gCanvas)
+        return (false);
+    return (gCanvas->KeyPressedSinceTime(key_code, update_time));
+}
+
+bool8 KeyReleasedSinceTime(int32 key_code, int32 update_time)
+{
+    if (!gCanvas)
+        return (false);
+    return (gCanvas->KeyReleasedSinceTime(key_code, update_time));
+}
+
+REGISTER_FUNCTION_P1(IsKeyPressed, IsKeyPressed, bool8, int32);
+REGISTER_FUNCTION_P2(KeyPressedSinceTime, KeyPressedSinceTime, bool8, int32, int32);
+REGISTER_FUNCTION_P2(KeyReleasedSinceTime, KeyReleasedSinceTime, bool8, int32, int32);
 
 // --------------------------------------------------------------------------------------------------------------------
 #include "TinQtDemoMoc.cpp"

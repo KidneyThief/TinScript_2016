@@ -87,11 +87,11 @@ void ResetGame()
 }
 
 // -- wrapper to handle events
-void NotifyEvent(int keypress)
+void NotifyEvent(int key_code, bool pressed)
 {
-    if (IsObject(gCurrentGame))
+    if (IsObject(gCurrentGame) && ObjectHasMethod(gCurrentGame, "OnKeyEvent"))
     {
-        gCurrentGame.OnKeyPress(keypress);
+        gCurrentGame.OnKeyEvent(key_code, pressed);
     }
 }
 

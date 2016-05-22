@@ -6,9 +6,10 @@
 Include("TinScriptDemo.ts");
 
 // -- global tunables -------------------------------------------------------------------------------------------------
-float gThrust = 12.0f;
+float gThrust = 3.0f;
 float gAsteroidSpeed = 52.0f;
 float gBulletSpeed = 150.0f;
+float g_rotateSpeed = 2.0f;
 
 int gMaxBullets = 4;
 float gFireCDTime = 0.1f;
@@ -90,6 +91,16 @@ void Asteroid::OnCollision()
     else
     {
         destroy self;
+
+        // -- if this is the last asteroid, we win
+        object asteroid_set = FindObject("AsteroidSet");
+        if (IsObject(asteroid_set) && asteroid_set.Used() == 0)
+        {
+            DrawText(self, '320 240 0', "Y O U   W I N", gCOLOR_RED);
+            
+            SimPause();
+            Print("Type StartAsteroids(); to continue...");
+        }
     }
 }
 
@@ -350,6 +361,9 @@ void AsteroidsGame::OnCreate() : DefaultGame
     
     // -- cache the 'ship' object
     object self.ship;
+
+    // -- set the update time
+    int self.update_time = 0;
 }
 
 // -- the schedule to call this happens in DefaultGame::OnInit()
@@ -377,7 +391,11 @@ void AsteroidsGame::OnUpdate()
 {
     // -- update all the scene objects
     DefaultGame::OnUpdate();
-    
+
+    // -- update the inputs
+    self.UpdateKeys(self.update_time);
+    self.update_time = GetSimTime();
+
     object bullet = self.bullet_set.First();
     while (IsObject(bullet))
     {
@@ -453,34 +471,27 @@ void AsteroidsGame::OnDestroy()
     destroy self.delete_set;
 }
 
-void AsteroidsGame::OnKeyPress(int keypress)
+void AsteroidsGame::UpdateKeys(int update_time)
 {
+    if (!IsObject(self.ship))
+        return;
+
     // -- rotate left
-    if (keypress == CharToInt('j'))
-    {
-        if (IsObject(self.ship))
-            self.ship.rotation -= 10.0f;
-    }
+    if (IsKeyPressed(KeyCode_j))
+        self.ship.rotation -= g_rotateSpeed;
     
     // -- rotate right
-    else if (keypress == CharToInt('l'))
-    {
-        if (IsObject(self.ship))
-            self.ship.rotation += 10.0f;
-    }
+    if (IsKeyPressed(KeyCode_l))
+        self.ship.rotation += g_rotateSpeed;
     
     // -- thrust
-    else if (keypress == CharToInt('i'))
-    {
-        if (IsObject(self.ship))
-            self.ship.ApplyThrust(gThrust);
-    }
+    if (IsKeyPressed(KeyCode_i))
+        self.ship.ApplyThrust(gThrust);
     
     // -- fire
-    else if (keypress == CharToInt(' '))
+    if (KeyPressedSinceTime(KeyCode_space, update_time))
     {
-        if (IsObject(self.ship))
-            self.ship.OnFire();
+        self.ship.OnFire();
     }
 }
 

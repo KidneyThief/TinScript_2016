@@ -16,7 +16,7 @@ Include("MissionTest.ts");
 
 object gCurrentGame;
 
-float gPlayer_Thrust = 30.0f;
+float gPlayer_Thrust = 3.0f;
 float gAsteroidSpeed = 52.0f;
 float gBulletSpeed = 150.0f;
 
@@ -31,9 +31,9 @@ int TEAM_ENEMY = 2;
 float gPlayer_Radius = 20.0f;
 float gEnemy_Radius = 15.0f;
 
-float gDefaultRotationSpeed = 5.0f;
+float gDefaultRotationSpeed = 2.0f;
 float gEnemy_RotationSpeed = 1.0f;
-float gPlayer_RotationSpeed = 10.0f;
+float gPlayer_RotationSpeed = 1.5f;
 
 float gEnemy_Thrust = 3.0f;
 float gEnemy_MinSpeed = 10.0f;
@@ -499,6 +499,9 @@ void MissionSim::OnCreate() : DefaultGame
 {
     // -- construct the base class
     DefaultGame::OnCreate();
+
+    // -- update time
+    int self.update_time = 0;
     
     // -- cache the 'player' object
     object self.player;
@@ -531,6 +534,8 @@ void MissionSim::OnUpdate()
 {
     // -- update all the scene objects
     DefaultGame::OnUpdate();
+
+    MissionSim::UpdateKeys();
     
     object bullet = self.bullet_set.First();
     while (IsObject(bullet))
@@ -573,45 +578,20 @@ void MissionSim::OnUpdate()
     }
 }
 
-void MissionSim::OnKeyPress(int keypress)
+void MissionSim::OnKeyEvent(int key_code, bool pressed)
 {
-    // -- rotate left
-    if (keypress == CharToInt('j'))
-    {
-        if (IsObject(gCurrentGame.player))
-            gCurrentGame.player.rotation -= gPlayer_RotationSpeed;
-    }
-    
-    // -- rotate right
-    else if (keypress == CharToInt('l'))
-    {
-        if (IsObject(gCurrentGame.player))
-            gCurrentGame.player.rotation += gPlayer_RotationSpeed;
-    }
-    
-    // -- thrust
-    else if (keypress == CharToInt('i'))
-    {
-        if (IsObject(gCurrentGame.player))
-            gCurrentGame.player.ApplyThrust(gPlayer_Thrust);
-    }
-    
-    // -- break
-    else if (keypress == CharToInt('k'))
-    {
-        if (IsObject(gCurrentGame.player))
-            gCurrentGame.player.ApplyBreak();
-    }
-    
+    // -- only handle presses
+    if (!pressed || !IsObject(gCurrentGame.player))
+        return;
+
     // -- fire
-    else if (keypress == CharToInt(' '))
+    if (key_code == KeyCode_space)
     {
-        if (IsObject(gCurrentGame.player))
-            gCurrentGame.player.OnFire();
+        gCurrentGame.player.OnFire();
     }
     
     // -- pause / unpause
-    else if (keypress == CharToInt('z'))
+    if (key_code == KeyCode_esc)
     {
         bool is_paused = SimIsPaused();
         if (is_paused)
@@ -620,12 +600,46 @@ void MissionSim::OnKeyPress(int keypress)
             SimPause();
     }
     
-    // -- q is our "dialog OK" button for this demo
-    else if (keypress == CharToInt('q'))
+    // -- "dialog OK" button
+    if (key_code == KeyCode_enter)
     {
         if (ObjectHasMethod(gCurrentGame.notify_dialog_ok, "OnDialogOK"))
             gCurrentGame.notify_dialog_ok.OnDialogOK();
     }
+}
+
+void MissionSim::UpdateKeys()
+{
+    // -- ensure we have a valid player
+    if (!IsObject(self.player))
+        return;
+
+    // -- rotate left
+    if (IsKeyPressed(KeyCode_j))
+    {
+        gCurrentGame.player.rotation -= gPlayer_RotationSpeed;
+    }
+    
+    // -- rotate right
+    if (IsKeyPressed(KeyCode_l))
+    {
+        gCurrentGame.player.rotation += gPlayer_RotationSpeed;
+    }
+    
+    // -- thrust
+    if (IsKeyPressed(KeyCode_i))
+    {
+        gCurrentGame.player.ApplyThrust(gPlayer_Thrust);
+    }
+    
+    // -- break
+    if (IsKeyPressed(KeyCode_k))
+    {
+        gCurrentGame.player.ApplyBreak();
+    }
+    
+    // -- update the time
+    self.update_time = GetSimTime();
 }
 
 void MissionSim::SetNotifyDialogOK(object notify_me)

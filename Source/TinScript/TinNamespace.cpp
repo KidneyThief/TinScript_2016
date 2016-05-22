@@ -427,6 +427,32 @@ bool8 CScriptContext::LinkNamespaces(CNamespace* childns, CNamespace* parentns)
 }
 
 // ====================================================================================================================
+// FunctionExists():  Returns true if the function entry exists, in the given namespace if it exists.
+// ====================================================================================================================
+bool8 CScriptContext::FunctionExists(uint32 func_hash, uint32 ns_hash)
+{
+    // -- if a namespace was given, find it
+    CNamespace* ns = ns_hash != 0 ? mNamespaceDictionary->FindItem(ns_hash) : GetGlobalNamespace();
+    if (ns == nullptr)
+        return (false);
+
+    // -- see if the namespace has a function entry for the hash
+    if (func_hash == 0 || !ns->GetFuncTable() || ns->GetFuncTable()->FindItem(func_hash) == nullptr)
+        return (false);
+
+    // -- success
+    return (true);
+}
+
+// ====================================================================================================================
+// FunctionExists():  Returns true if the function entry exists, in the given namespace if it exists.
+// ====================================================================================================================
+bool8 CScriptContext::FunctionExists(const char* function_name, const char* ns_name)
+{
+    return (FunctionExists(Hash(function_name), Hash(ns_name)));
+}
+
+// ====================================================================================================================
 // GetNextObjectID():  Generate the object ID for the next object registered.
 // ====================================================================================================================
 uint32 CScriptContext::GetNextObjectID()

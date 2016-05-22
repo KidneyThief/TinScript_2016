@@ -36,7 +36,87 @@
 #include <socket.h>
 
 // --------------------------------------------------------------------------------------------------------------------
-// -- Forward declarations
+// -- input keys - special keys are 100 + key_code
+const int k_maxKeyCode = 160;
+#define KeyCodes(Key, Key_Entry)            \
+    Key_Entry(Key, space,           32)     \
+    Key_Entry(Key, a,               65)     \
+    Key_Entry(Key, b,               66)     \
+    Key_Entry(Key, c,               67)     \
+    Key_Entry(Key, d,               68)     \
+    Key_Entry(Key, e,               69)     \
+    Key_Entry(Key, f,               70)     \
+    Key_Entry(Key, g,               71)     \
+    Key_Entry(Key, h,               72)     \
+    Key_Entry(Key, i,               73)     \
+    Key_Entry(Key, j,               74)     \
+    Key_Entry(Key, k,               75)     \
+    Key_Entry(Key, l,               76)     \
+    Key_Entry(Key, m,               77)     \
+    Key_Entry(Key, n,               78)     \
+    Key_Entry(Key, o,               79)     \
+    Key_Entry(Key, p,               80)     \
+    Key_Entry(Key, q,               81)     \
+    Key_Entry(Key, r,               82)     \
+    Key_Entry(Key, s,               83)     \
+    Key_Entry(Key, t,               84)     \
+    Key_Entry(Key, u,               85)     \
+    Key_Entry(Key, v,               86)     \
+    Key_Entry(Key, w,               87)     \
+    Key_Entry(Key, x,               88)     \
+    Key_Entry(Key, y,               89)     \
+    Key_Entry(Key, z,               90)     \
+    Key_Entry(Key, tilde,           96)     \
+    Key_Entry(Key, zero,            48)     \
+    Key_Entry(Key, one,             49)     \
+    Key_Entry(Key, two,             50)     \
+    Key_Entry(Key, three,           51)     \
+    Key_Entry(Key, four,            52)     \
+    Key_Entry(Key, five,            53)     \
+    Key_Entry(Key, six,             54)     \
+    Key_Entry(Key, seven,           55)     \
+    Key_Entry(Key, eight,           56)     \
+    Key_Entry(Key, nine,            57)     \
+    Key_Entry(Key, minus,           45)     \
+    Key_Entry(Key, equals,          61)     \
+    Key_Entry(Key, backslash,       92)     \
+    Key_Entry(Key, leftbracket,     91)     \
+    Key_Entry(Key, rightbracket,    93)     \
+    Key_Entry(Key, semicolon,       59)     \
+    Key_Entry(Key, quote,           39)     \
+    Key_Entry(Key, comma,           44)     \
+    Key_Entry(Key, period,          46)     \
+    Key_Entry(Key, forwardslash,    47)     \
+    Key_Entry(Key, esc,             100)    \
+    Key_Entry(Key, tab,             101)    \
+    Key_Entry(Key, caps,            136)    \
+    Key_Entry(Key, shift,           132)    \
+    Key_Entry(Key, ctrl,            133)    \
+    Key_Entry(Key, alt,             135)    \
+    Key_Entry(Key, backspace,       103)    \
+    Key_Entry(Key, enter,           104)    \
+    Key_Entry(Key, insert,          106)    \
+    Key_Entry(Key, del,             107)    \
+    Key_Entry(Key, home,            116)    \
+    Key_Entry(Key, end,             117)    \
+    Key_Entry(Key, pageup,          122)    \
+    Key_Entry(Key, pagedown,        123)    \
+    Key_Entry(Key, uparrow,         119)    \
+    Key_Entry(Key, downarrow,       121)    \
+    Key_Entry(Key, leftarrow,       118)    \
+    Key_Entry(Key, rightarrow,      120)    \
+    Key_Entry(Key, f1,              148)    \
+    Key_Entry(Key, f2,              149)    \
+    Key_Entry(Key, f3,              150)    \
+    Key_Entry(Key, f4,              151)    \
+    Key_Entry(Key, f5,              152)    \
+    Key_Entry(Key, f6,              153)    \
+    Key_Entry(Key, f7,              154)    \
+    Key_Entry(Key, f8,              155)    \
+    Key_Entry(Key, f9,              156)    \
+    Key_Entry(Key, f10,             157)    \
+    Key_Entry(Key, f11,             158)    \
+    Key_Entry(Key, f12,             159)    \
 
 // --------------------------------------------------------------------------------------------------------------------
 // struct Line:  simple wrapper to submit a line request
@@ -142,16 +222,18 @@ class CDemoWidget : public QWidget
         void DrawText(int32 id, const CVector3f& position, const char* _text, int color);
         void CancelDrawRequests(int draw_request_id);
 
+        bool8 IsKeyPressed(int32 key_code);
+        bool8 KeyPressedSinceTime(int32 key_code, int32 update_time);
+        bool8 KeyReleasedSinceTime(int32 key_code, int32 update_time);
+
     public slots:
         void OnUpdate();
-        void OnInputKeyI();
-        void OnInputKeyJ();
-        void OnInputKeyL();
-        void OnInputKeySpace();
-		void OnInputKeyQ();
 
     protected:
         void paintEvent(QPaintEvent *event);
+        virtual void keyPressEvent(QKeyEvent* event);
+        virtual void keyReleaseEvent(QKeyEvent* event);
+        void UpdateKeyEvent(int32 key_code, bool8 pressed);
 
     private:
         QBrush mBackground;
@@ -162,6 +244,14 @@ class CDemoWidget : public QWidget
         std::vector<tCircle> mDrawCircles;
         std::vector<tRect> mDrawRects;
         std::vector<tText> mDrawText;
+
+        // -- track key events
+        struct tKeyState
+        {
+            bool8 m_pressed;
+            int32 m_keyTime;
+        };
+        tKeyState m_keyStates[k_maxKeyCode];
 };
 
 // ====================================================================================================================

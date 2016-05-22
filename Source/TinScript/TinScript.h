@@ -402,6 +402,9 @@ class CScriptContext
         bool8 LinkNamespaces(const char* parentnsname, const char* childnsname);
         bool8 LinkNamespaces(CNamespace* parentns, CNamespace* childns);
 
+        bool8 FunctionExists(uint32 function_hash, uint32 ns_hash);
+        bool8 FunctionExists(const char* function_name, const char* ns_name);
+
         uint32 GetNextObjectID();
         uint32 CreateObject(uint32 classhash, uint32 objnamehash);
         uint32 RegisterObject(void* objaddr, const char* classname, const char* objectname);
