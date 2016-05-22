@@ -2067,11 +2067,11 @@ static int32 ToolPaletteAddCheckBox(const char* win_name, const char* name, cons
 }
 
 // ====================================================================================================================
-// ToolPaletteSetName():  Given a DebugEntry ID, update the name.
+// ToolPaletteSetDescription():  Given a DebugEntry name, update the name.
 // ====================================================================================================================
-static void ToolPaletteSetName(int32 entry_id, const char* new_name)
+static void ToolPaletteSetDescription(const char* entry_name, const char* new_description)
 {
-    CDebugToolsWin::SetEntryName(entry_id, new_name);
+    CDebugToolsWin::SetEntryDescription(entry_name, new_description);
 }
 
 // ====================================================================================================================
@@ -2080,6 +2080,14 @@ static void ToolPaletteSetName(int32 entry_id, const char* new_name)
 static void ToolPaletteSetDescription(int32 entry_id, const char* new_description)
 {
     CDebugToolsWin::SetEntryDescription(entry_id, new_description);
+}
+
+// ====================================================================================================================
+// ToolPaletteSetValue():  Given a DebugEntry name, update the value.
+// ====================================================================================================================
+static void ToolPaletteSetValue(const char* entry_name, const char* new_value)
+{
+    CDebugToolsWin::SetEntryValue(entry_name, new_value);
 }
 
 // ====================================================================================================================
@@ -2099,8 +2107,9 @@ REGISTER_FUNCTION_P7(ToolPaletteAddSlider, ToolPaletteAddSlider, int32, const ch
 REGISTER_FUNCTION_P5(ToolPaletteAddTextEdit, ToolPaletteAddTextEdit, int32, const char*, const char*, const char*, const char*, const char*);
 REGISTER_FUNCTION_P5(ToolPaletteAddCheckBox, ToolPaletteAddCheckBox, int32, const char*, const char*, const char*, bool8, const char*);
 
-REGISTER_FUNCTION_P2(ToolPaletteSetName, ToolPaletteSetName, void, int32, const char*);
+REGISTER_FUNCTION_P2(ToolPaletteSetEntryDescription, ToolPaletteSetDescription, void, const char*, const char*);
 REGISTER_FUNCTION_P2(ToolPaletteSetDescription, ToolPaletteSetDescription, void, int32, const char*);
+REGISTER_FUNCTION_P2(ToolPaletteSetEntryValue, ToolPaletteSetValue, void, const char*, const char*);
 REGISTER_FUNCTION_P2(ToolPaletteSetValue, ToolPaletteSetValue, void, int32, const char*);
 
 // ====================================================================================================================

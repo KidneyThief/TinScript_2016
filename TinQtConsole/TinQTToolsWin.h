@@ -63,6 +63,7 @@ class CDebugToolEntry : public QWidget
     protected:
         static int32 gToolsWindowElementIndex;
         int32 mEntryID;
+        uint32 mEntryNameHash;
         CDebugToolsWin* mParent;
 
         QLabel* mName;
@@ -211,6 +212,7 @@ class CDebugToolsWin : public QWidget
         QGridLayout* GetLayout() { return (mLayout); }
         QWidget* GetContent() { return (mScrollContent); }
         QScrollArea* GetScrollArea() { return (mScrollArea); }
+        const char* GetWindowName() { return (mWindowName); }
         void AddEntry(CDebugToolEntry* entry) { mEntryList.push_back(entry); }
 
         int32 AddMessage(const char* message);
@@ -221,12 +223,14 @@ class CDebugToolsWin : public QWidget
         int32 AddCheckBox(const char* name, const char* description, bool cur_value, const char* command);
 
         // -- setting the value of a DebugEntry by ID, regardless of which window it belongs to
-        static void SetEntryName(int32 entry_id, const char* new_name);
+        static void SetEntryDescription(const char* entry_name, const char* new_description);
         static void SetEntryDescription(int32 entry_id, const char* new_description);
+        static void SetEntryValue(const char* entry_name, const char* new_value);
         static void SetEntryValue(int32 entry_id, const char* new_value);
 
         // -- static map of all entries, regardless of which tool window it actually belongs to
         static QMap<int32, CDebugToolEntry*> gDebugToolEntryMap;
+        static QMap<uint32, CDebugToolEntry*> gDebugToolEntryNamedMap;
 
     private:
         char mWindowName[TinScript::kMaxNameLength];

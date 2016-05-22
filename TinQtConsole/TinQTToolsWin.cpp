@@ -42,6 +42,7 @@
 // -- statics
 int32 CDebugToolEntry::gToolsWindowElementIndex = 0;
 QMap<int32, CDebugToolEntry*> CDebugToolsWin::gDebugToolEntryMap;
+QMap<uint32, CDebugToolEntry*> CDebugToolsWin::gDebugToolEntryNamedMap;
 
 // == CDebugToolEntry =================================================================================================
 
@@ -51,6 +52,7 @@ QMap<int32, CDebugToolEntry*> CDebugToolsWin::gDebugToolEntryMap;
 CDebugToolEntry::CDebugToolEntry(CDebugToolsWin* parent) : QWidget()
 {
     mEntryID = 0;
+    mEntryNameHash = 0;
     mParent = parent;
 }
 
@@ -67,6 +69,12 @@ CDebugToolEntry::~CDebugToolEntry()
     if (CDebugToolsWin::gDebugToolEntryMap[mEntryID] == this)
     {
         CDebugToolsWin::gDebugToolEntryMap[mEntryID] = NULL;
+    }
+
+    // -- remove this entry from the named map
+    if (mEntryNameHash != 0 && CDebugToolsWin::gDebugToolEntryNamedMap[mEntryNameHash] == this)
+    {
+        CDebugToolsWin::gDebugToolEntryNamedMap[mEntryNameHash] = NULL;
     }
 }
 
@@ -103,17 +111,16 @@ int32 CDebugToolEntry::Initialize(const char* name, const char* description, QWi
     // -- add the entry to the global map
     CDebugToolsWin::gDebugToolEntryMap[mEntryID] = this;
 
-    return (mEntryID);
-}
+    // -- add the entry to the named map
+    char hash_string[TinScript::kMaxNameLength];
+    sprintf_s(hash_string, "%s::%s", mParent != nullptr ? mParent->GetWindowName() : "<unnamed>", name);
+    mEntryNameHash = TinScript::Hash(hash_string);
+    if (!CDebugToolsWin::gDebugToolEntryNamedMap.contains(mEntryNameHash))
+        CDebugToolsWin::gDebugToolEntryNamedMap[mEntryNameHash] = this;
+    else
+        mEntryNameHash = 0;
 
-// ====================================================================================================================
-// SetName():  Update the name of the CDebugToolEntry
-// ====================================================================================================================
-void CDebugToolEntry::SetName(const char* new_name)
-{
-    if (!new_name)
-        new_name = "";
-    mName->setText(new_name);
+    return (mEntryID);
 }
 
 // ====================================================================================================================
@@ -536,14 +543,15 @@ int32 CDebugToolsWin::AddCheckBox(const char* name, const char* description, boo
 }
 
 // ====================================================================================================================
-// SetEntryName():  Given an entry ID, update the DebugEntry's name.
+// SetEntryDescription():  Given an entry name, update the DebugEntry's description.
 // ====================================================================================================================
-void CDebugToolsWin::SetEntryName(int32 entry_id, const char* new_name)
+void CDebugToolsWin::SetEntryDescription(const char* entry_name, const char* new_description)
 {
-    if (gDebugToolEntryMap.contains(entry_id))
+    uint32 name_hash = TinScript::Hash(entry_name);
+    if (name_hash != 0 && gDebugToolEntryNamedMap.contains(name_hash))
     {
-        CDebugToolEntry* entry = gDebugToolEntryMap[entry_id];
-        entry->SetName(new_name);
+        CDebugToolEntry* entry = gDebugToolEntryNamedMap[name_hash];
+        entry->SetDescription(new_description);
     }
 }
 
@@ -556,6 +564,19 @@ void CDebugToolsWin::SetEntryDescription(int32 entry_id, const char* new_descrip
     {
         CDebugToolEntry* entry = gDebugToolEntryMap[entry_id];
         entry->SetDescription(new_description);
+    }
+}
+
+// ====================================================================================================================
+// SetEntryValue():  Given an entry name, update the DebugEntry's value.
+// ====================================================================================================================
+void CDebugToolsWin::SetEntryValue(const char* entry_name, const char* new_value)
+{
+    uint32 name_hash = TinScript::Hash(entry_name);
+    if (name_hash != 0 && gDebugToolEntryNamedMap.contains(name_hash))
+    {
+        CDebugToolEntry* entry = gDebugToolEntryNamedMap[name_hash];
+        entry->SetValue(new_value);
     }
 }
 

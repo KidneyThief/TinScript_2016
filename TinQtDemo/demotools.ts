@@ -16,25 +16,24 @@ void TogglePaused()
     if (SimIsPaused())
     {
         SimUnpause();
-        SocketSend("ToolPaletteSetValue(gPauseButton, 'Pause');");
-        SocketSend("ToolPaletteSetDescription(gPauseButton, 'The simulation is running.');");
+        SocketCommand("ToolPaletteSetEntryValue", "Asteroids::Toggle", "Pause");
+        SocketCommand("ToolPaletteSetEntryDescription", "Asteroids::Toggle", "The simulation is running.");
     }
     else
     {
         SimPause();
-        SocketSend("ToolPaletteSetValue(gPauseButton, 'Unpause');");
-        SocketSend("ToolPaletteSetDescription(gPauseButton, 'The simulation is paused.');");
+        SocketCommand("ToolPaletteSetEntryValue", "Asteroids::Toggle", "Unpause");
+        SocketCommand("ToolPaletteSetEntryDescription", "Asteroids::Toggle", "The simulation is paused.");
     }
 }
-SocketSend("int gPauseButton = ToolPaletteAddButton('Asteroids', 'Toggle', 'Toggle the paused state of the simulation.', 'Pause', 'TogglePaused();');");
+SocketCommand("ToolPaletteAddButton", "Asteroids", "Toggle", "Toggle the paused state of the simulation.", "Pause", "TogglePaused();");
 
 void SetTimeScale(int time_ticks)
 {
     float new_time_scale = time_ticks;
     new_time_scale /= 100.0f;
     SimSetTimeScale(new_time_scale);
-    string new_description = StringCat("`[", time_ticks, "%%]: Set the simulation time scale.`");
-    string update_command = StringCat("ToolPaletteSetDescription(gTimeScaleSlider, ", new_description, ");");
-    SocketSend(update_command);
+    string new_description = StringCat("[", time_ticks, "%%]: Set the simulation time scale.");
+    SocketCommand("ToolPaletteSetEntryDescription", "Asteroids::TimeScale", new_description);
 }
-SocketSend("int gTimeScaleSlider = ToolPaletteAddSlider('Asteroids', 'TimeScale', '[100%%]: Set the simulation time scale', 1, 400, 100, 'SetTimeScale');");
+SocketCommand("ToolPaletteAddSlider", "Asteroids", "TimeScale", "[100%%]: Set the simulation time scale", 1, 400, 100, "SetTimeScale");
