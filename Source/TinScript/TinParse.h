@@ -172,6 +172,7 @@ enum eUnaryOpType
 	ReservedKeywordEntry(NULL)			\
 	ReservedKeywordEntry(if)			\
 	ReservedKeywordEntry(else)			\
+	ReservedKeywordEntry(do)			\
 	ReservedKeywordEntry(while)			\
 	ReservedKeywordEntry(break)			\
 	ReservedKeywordEntry(continue)		\
@@ -266,6 +267,7 @@ bool8 TryParseStatement(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTree
 bool8 TryParseExpression(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link);
 bool8 TryParseIfStatement(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link);
 bool8 TryParseWhileLoop(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link);
+bool8 TryParseDoWhileLoop(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link);
 bool8 TryParseForLoop(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link);
 bool8 TryParseFuncDefinition(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link);
 bool8 TryParseFuncCall(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link,

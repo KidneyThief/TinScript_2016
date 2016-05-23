@@ -444,7 +444,7 @@ class CLoopJumpNode : public CCompileTreeNode
 class CWhileLoopNode : public CCompileTreeNode
 {
 	public:
-		CWhileLoopNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber);
+		CWhileLoopNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber, bool is_do_while);
 
 		virtual int32 Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
         bool8 AddLoopJumpNode(CLoopJumpNode* jump_node);
@@ -471,6 +471,7 @@ class CWhileLoopNode : public CCompileTreeNode
         mutable uint32* mContinueHereInstr;
         mutable uint32* mBreakHereInstr;
 
+        bool8 m_isDoWhile;
         int32 mLoopJumpNodeCount;
         CLoopJumpNode* mLoopJumpNodeList[kMaxLoopJumpCount];
 };

@@ -2202,7 +2202,7 @@ bool8 TryParseWhileLoop(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTree
 	if (!GetToken(firsttoken))
 		return (false);
 
-	// -- starts with the keyword 'for'
+	// -- starts with the keyword 'while'
 	if (firsttoken.type != TOKEN_KEYWORD)
 		return (false);
 
@@ -2231,7 +2231,7 @@ bool8 TryParseWhileLoop(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTree
 	// -- a while loop has the expression tree as it's left child,
 	// -- and the body as a statement block as its right child
 	CWhileLoopNode* whileloopnode = TinAlloc(ALLOC_TreeNode, CWhileLoopNode, codeblock, link,
-                                             filebuf.linenumber);
+                                             filebuf.linenumber, false);
 
     // -- push the while loop onto the stack
     if (gWhileLoopDepth >= gMaxWhileLoopDepth)
@@ -2316,6 +2316,119 @@ bool8 TryParseWhileLoop(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTree
 }
 
 // ====================================================================================================================
+// TryParseDoWhileLoop():  A do..while loop has a well defined syntax.
+// ====================================================================================================================
+bool8 TryParseDoWhileLoop(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link)
+{
+    // -- the first token can be anything but a reserved word or type
+    tReadToken firsttoken(filebuf);
+    if (!GetToken(firsttoken))
+        return (false);
+
+    // -- starts with the keyword 'do'
+    if (firsttoken.type != TOKEN_KEYWORD)
+        return (false);
+
+    int32 reservedwordtype = GetReservedKeywordType(firsttoken.tokenptr, firsttoken.length);
+    if (reservedwordtype != KEYWORD_do)
+        return (false);
+
+    // -- we're committed to a 'do..while' loop now
+    filebuf = firsttoken;
+
+    // -- see if we've got a statement block, or a single statement
+    if (!GetToken(filebuf) || filebuf.type != TOKEN_BRACE_OPEN)
+    {
+        ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
+                      "Error - 'do..while loop' without a body\n");
+        return (false);
+    }
+
+    // -- a while loop has the expression tree as it's left child,
+    // -- and the body as a statement block as its right child
+    CWhileLoopNode* whileloopnode = TinAlloc(ALLOC_TreeNode, CWhileLoopNode, codeblock, link,
+                                             filebuf.linenumber, true);
+
+    // -- push the while loop onto the stack
+    if (gWhileLoopDepth >= gMaxWhileLoopDepth)
+    {
+        ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
+                      filebuf.linenumber, "Error - 'while loop' depth of %d exceeded\n", gMaxWhileLoopDepth);
+        return (false);
+    }
+
+    // -- push the while node onto the stack (used so break and continue know which loop they're affecting)
+    gWhileLoopStack[gWhileLoopDepth++] = whileloopnode;
+
+    // -- read the while loop body
+    bool8 result = ParseStatementBlock(codeblock, whileloopnode->rightchild, filebuf, true);
+    if (!result)
+    {
+        ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
+                      filebuf.linenumber,
+                      "Error - unable to parse the while loop statmentblock\n");
+        --gWhileLoopDepth;
+        return (false);
+    }
+
+    // -- success - pop the while node off the stack
+    --gWhileLoopDepth;
+
+    // -- after the statement block, we need to read the while keyword, and the conditional
+    if (!GetToken(filebuf) || filebuf.type != TOKEN_KEYWORD)
+    {
+        ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
+                      filebuf.linenumber, "Error - expecting keyword 'while'\n");
+        return (false);
+    }
+
+    // -- ensure the keyword was 'while'
+    reservedwordtype = GetReservedKeywordType(filebuf.tokenptr, filebuf.length);
+    if (reservedwordtype != KEYWORD_while)
+    {
+        ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
+                      filebuf.linenumber, "Error - expecting keyword 'while'\n");
+        return (false);
+    }
+
+    // -- next token better be an open parenthesis
+    if (!GetToken(filebuf) || (filebuf.type != TOKEN_PAREN_OPEN))
+    {
+        ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
+                      filebuf.linenumber, "Error - expecting '('\n");
+        return (false);
+    }
+
+    // -- increment the paren depth
+    ++gGlobalExprParenDepth;
+
+    // we need to have a valid expression for the left hand child
+    result = TryParseStatement(codeblock, filebuf, whileloopnode->leftchild, true);
+    if (!result)
+    {
+        ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
+                      filebuf.linenumber, "Error - 'while loop' without a conditional expression\n");
+        --gWhileLoopDepth;
+        return (false);
+    }
+
+    // -- consume the closing parenthesis
+    if (!GetToken(filebuf) || filebuf.type != TOKEN_PAREN_CLOSE)
+    {
+        ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
+                      "Error - expecting ')'\n");
+        --gWhileLoopDepth;
+        return (false);
+    }
+
+    // -- decrement the paren depth
+    --gGlobalExprParenDepth;
+
+    // -- success
+    return (true);
+}
+
+// ====================================================================================================================
 // TryParseForLoop():  A 'for' loop has a well defined syntax.
 // ====================================================================================================================
 bool8 TryParseForLoop(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link)
@@ -2378,7 +2491,7 @@ bool8 TryParseForLoop(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNo
 
 	// add the while loop node
 	CWhileLoopNode* whileloopnode = TinAlloc(ALLOC_TreeNode, CWhileLoopNode, codeblock,
-                                             AppendToRoot(*forlooproot), filebuf.linenumber);
+                                             AppendToRoot(*forlooproot), filebuf.linenumber, false);
 
     // -- push the while loop onto the stack
     if (gWhileLoopDepth >= gMaxWhileLoopDepth)
@@ -3725,7 +3838,8 @@ bool8 ParseStatementBlock(CCodeBlock* codeblock, CCompileTreeNode*& link, tReadT
 		found = found || TryParseStatement(codeblock, filetokenbuf, curroot->next, true);
 		found = found || TryParseIfStatement(codeblock, filetokenbuf, curroot->next);
 		found = found || TryParseWhileLoop(codeblock, filetokenbuf, curroot->next);
-		found = found || TryParseForLoop(codeblock, filetokenbuf, curroot->next);
+        found = found || TryParseDoWhileLoop(codeblock, filetokenbuf, curroot->next);
+        found = found || TryParseForLoop(codeblock, filetokenbuf, curroot->next);
 		found = found || TryParseDestroyObject(codeblock, filetokenbuf, curroot->next);
 
 		if (found)

@@ -1233,13 +1233,14 @@ void CLoopJumpNode::NotifyLoopInstr(uint32* continue_instr, uint32* break_instr)
 // ====================================================================================================================
 // Constructor
 // ====================================================================================================================
-CWhileLoopNode::CWhileLoopNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber)
+CWhileLoopNode::CWhileLoopNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber, bool8 is_do_while)
     : CCompileTreeNode(_codeblock, _link, eWhileLoop, _linenumber)
 {
     mEndOfLoopNode = NULL;
     mContinueHereInstr = NULL;
     mBreakHereInstr = NULL;
     mLoopJumpNodeCount = 0;
+    m_isDoWhile = is_do_while;
 }
 
 // ====================================================================================================================
@@ -1264,6 +1265,18 @@ int32 CWhileLoopNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 counton
 		return (-1);
 	}
 
+    // -- if this is a do..while loop, then the first instruction we push, is to skip the conditional,
+    // -- so the body is run at least once
+    uint32 empty = 0;
+    int32 do_while_jump_count = 0;
+    uint32* do_while_branch = nullptr;
+    if (m_isDoWhile)
+    {
+        size += PushInstruction(countonly, instrptr, OP_Branch, DBG_instr);
+        do_while_branch = instrptr;
+        size += PushInstructionRaw(countonly, instrptr, (void*)&empty, 1, DBG_NULL, "placeholder for do-while branch");
+    }
+
     // -- this is the start of the condition for the loop - mark the instruction pointer
     // -- so continue and break nodes can jump correctly
     if (!countonly)
@@ -1286,9 +1299,17 @@ int32 CWhileLoopNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 counton
     size += PushInstruction(countonly, instrptr, 0, DBG_value, "not a short_circuit branch");
 
 	uint32* branchwordcount = instrptr;
-	uint32 empty = 0;
 	size += PushInstructionRaw(countonly, instrptr, (void*)&empty, 1, DBG_NULL, "placeholder for branch");
-	int32 cursize = size;
+
+    // -- we don't want to branch all the way to skipping the conditional
+    int32 cursize = size;
+
+    // -- if this is a do-while loop, this is where we want to initially jump to
+    if (!countonly && m_isDoWhile)
+    {
+        // -- the count is the current size, minus the branch instruction itself
+        *do_while_branch = (size - 2);
+    }
 
 	// -- evaluate the right child, which is the body of the while loop
     tree_size = rightchild->Eval(instrptr, TYPE_void, countonly);
@@ -1316,7 +1337,9 @@ int32 CWhileLoopNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 counton
 
 	// -- after the body of the while loop has been executed, we want to jump back
 	// -- to the top and evaluate the condition again
-	int32 jumpcount = -(size + 2);  // note + 2 is to account for the actual jump itself
+    // note:  in a do-while, we want to jump to the conditional, not to the initial branch
+    // note: + 2 is to account for the actual jump itself
+	int32 jumpcount = m_isDoWhile ? -size : -(size + 2);
 	size += PushInstruction(countonly, instrptr, OP_Branch, DBG_instr);
 	size += PushInstruction(countonly, instrptr, (uint32)jumpcount, DBG_NULL);
 
