@@ -2340,7 +2340,7 @@ bool8 TryParseDoWhileLoop(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTr
     if (!GetToken(filebuf) || filebuf.type != TOKEN_BRACE_OPEN)
     {
         ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
-                      "Error - 'do..while loop' without a body\n");
+                      "Error - 'do..while loop' expecting '{'\n");
         return (false);
     }
 
@@ -2366,7 +2366,7 @@ bool8 TryParseDoWhileLoop(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTr
     {
         ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
                       filebuf.linenumber,
-                      "Error - unable to parse the while loop statmentblock\n");
+                      "Error - unable to parse the do..while statmentblock\n");
         --gWhileLoopDepth;
         return (false);
     }
@@ -2423,6 +2423,15 @@ bool8 TryParseDoWhileLoop(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTr
 
     // -- decrement the paren depth
     --gGlobalExprParenDepth;
+
+    // -- consume the statent terminator
+    if (!GetToken(filebuf) || filebuf.type != TOKEN_SEMICOLON)
+    {
+        ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
+                      "Error - expecting ')'\n");
+        --gWhileLoopDepth;
+        return (false);
+    }
 
     // -- success
     return (true);
