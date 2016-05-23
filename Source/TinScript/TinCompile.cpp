@@ -900,7 +900,15 @@ int32 CBinaryOpNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 countonl
         return (-1);
     size += tree_size;
 
-	// -- if the binary op is boolean, we can insert a branch to pre-empt the result:
+    // -- if our left child is an assignment, it'll consume the stack contents - we need to re-push
+    // -- the value of the assignment back onto the stack
+    if (leftchild->IsAssignOpNode())
+    {
+        // -- add the instruction to push the last assignment result before performing ours
+        size += PushInstruction(countonly, instrptr, OP_PushAssignValue, DBG_instr, "consec assigns");
+    }
+
+    // -- if the binary op is boolean, we can insert a branch to pre-empt the result:
 	// -- e.g.  if the lhs of an "or" is true, we don't need to evaluate the rhs
     uint32* branchwordcount = instrptr;
     uint32 empty = 0;
@@ -933,10 +941,9 @@ int32 CBinaryOpNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 countonl
         return (-1);
     size += tree_size;
 
-    // -- if both ourself, and our rightchild are assignment nodes, then we need to push the bool
-    // -- to allow right three assignment to leave it's value on the stack
-    // -- (e.g. consecutive assignments such as x = y = 5)
-    if (isassignop && rightchild->IsAssignOpNode())
+    // -- if our right child is an assignment, it'll consume the stack contents - we need to re-push
+    // -- the value of the assignment back onto the stack
+    if (rightchild->IsAssignOpNode())
     {
         // -- add the instruction to push the last assignment result before performing ours
         size += PushInstruction(countonly, instrptr, OP_PushAssignValue, DBG_instr, "consec assigns");

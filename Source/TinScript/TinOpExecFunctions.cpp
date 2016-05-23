@@ -268,6 +268,10 @@ bool8 GetStackValue(CScriptContext* script_context, CExecStack& execstack,
                     CFunctionCallStack& funccallstack, void*& valaddr, eVarType& valtype,
                     CVariableEntry*& ve, CObjectEntry*& oe)
 {
+    // -- sanity check
+    if (valaddr == nullptr)
+        return (false);
+
     // -- we'll always return a value, but if that comes from a var or an object member,
     // -- return those as well
     ve = NULL;
