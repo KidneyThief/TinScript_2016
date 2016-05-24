@@ -74,6 +74,7 @@ typedef CHashTable<CFunctionEntry> tFuncTable;
 	TokenTypeEntry(SEMICOLON)		\
 	TokenTypeEntry(PERIOD)			\
 	TokenTypeEntry(COLON)  	        \
+	TokenTypeEntry(TERNARY)         \
 	TokenTypeEntry(BRACE_OPEN)		\
 	TokenTypeEntry(BRACE_CLOSE)		\
 	TokenTypeEntry(SQUARE_OPEN)		\

@@ -1066,7 +1066,9 @@ int32 CIfStatementNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 count
     size += tree_size;
 
 	// -- evaluate the right child, which is the branch node
-    tree_size = rightchild->Eval(instrptr, TYPE_void, countonly);
+    // note:  if used as an actual 'if', the pushresult will be void
+    // -- otherwise, if it's a ternary op, it *might* require a non-void result
+    tree_size = rightchild->Eval(instrptr, pushresult, countonly);
     if (tree_size < 0)
         return (-1);
     size += tree_size;
@@ -1110,7 +1112,7 @@ int32 CCondBranchNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 counto
     {
 		int32 cursize = size;
 
-        int32 tree_size = leftchild->Eval(instrptr, TYPE_void, countonly);
+        int32 tree_size = leftchild->Eval(instrptr, pushresult, countonly);
         if (tree_size < 0)
             return (-1);
         size += tree_size;
@@ -1138,7 +1140,7 @@ int32 CCondBranchNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 counto
 		// now evaluate the right child, tracking it's size
 		int32 cursize = size;
 
-        int32 tree_size = rightchild->Eval(instrptr, TYPE_void, countonly);
+        int32 tree_size = rightchild->Eval(instrptr, pushresult, countonly);
         if (tree_size < 0)
             return (-1);
         size += tree_size;

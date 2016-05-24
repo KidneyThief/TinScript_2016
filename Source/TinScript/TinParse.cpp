@@ -56,6 +56,11 @@ static bool8 gGlobalReturnStatement = false;
 static bool8 gGlobalDestroyStatement = false;
 static bool8 gGlobalCreateStatement = false;
 
+// -- ternary expressions are complicated, as the ':' conflicts with the POD member token
+static const int32 gMaxTernaryDepth = 32;
+static int32 gTernaryDepth = 0;
+static int32 gTernaryStack[gMaxTernaryDepth];
+
 // -- stack for managing loops (break and continue statments need to know where to jump
 static const int32 gMaxWhileLoopDepth = 32;
 static int32 gWhileLoopDepth = 0;
@@ -311,8 +316,8 @@ const char* gTokenTypeStrings[] =
 };
 
 // -- note:  the order must match the defined TokenTypeTuple in TinParse.h, starting at '('
-static const int32 kNumSymbols = 10;
-const char symbols[kNumSymbols + 1] = "(),;.:{}[]";
+const char symbols[] = "(),;.:?{}[]";
+static const int32 kNumSymbols = (int32)strlen(symbols);
 
 // ====================================================================================================================
 // GetToken():  Reads the next token, skipping whitespace.
@@ -1505,9 +1510,14 @@ bool8 TryParseStatement(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTree
             }
         }
 
-        else if (nexttoken.type == TOKEN_COMMA)
+        // -- for statements requiring multiple expressions, 
+        // -- e.g. the paremeters in a function call, the true/false expressions in a ternary op
+        // -- ignore the delineator, and complete the expression
+        else if (nexttoken.type == TOKEN_COMMA ||
+                 (nexttoken.type == TOKEN_COLON && gTernaryDepth > 0 &&
+                  gTernaryStack[gTernaryDepth - 1] >= gGlobalExprParenDepth))
         {
-            // -- don't consume the ',' - let the expression handle it
+            // -- don't consume the token - let the statement parsing handle it
             filebuf = readexpr;
             link = statementroot;
 
@@ -1521,7 +1531,7 @@ bool8 TryParseStatement(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTree
         {
             // -- from within a 'For' loop, we have valid ';' within parenthesis
             // -- if so, do not consume the ';'
-            if (gGlobalExprParenDepth > 0)
+            if (gGlobalExprParenDepth > 0 || gTernaryDepth > 0)
                 filebuf = readexpr;
             // -- otherwise this is a complete statement - consume the ';'
             else
@@ -1532,6 +1542,75 @@ bool8 TryParseStatement(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTree
             SortTreeBinaryOps(&link);
 
             return (true);
+        }
+
+        else if (nexttoken.type == TOKEN_TERNARY)
+        {
+            // -- we're committed to a ternary op at this point
+            readexpr = nexttoken;
+
+            // -- push the ternary parse depth
+            if (gTernaryDepth >= gMaxTernaryDepth)
+            {
+                ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
+                              readexpr.linenumber, "Error - Ternary operator max depth exceeded\n");
+                return (false);
+            }
+            gTernaryStack[gTernaryDepth++] = gGlobalExprParenDepth;
+
+            // -- create the ifstatement node, and set it as the statement root
+            CCompileTreeNode* null_link = nullptr;
+            CIfStatementNode* ifstmtnode = TinAlloc(ALLOC_TreeNode, CIfStatementNode, codeblock, null_link,
+                                                    readexpr.linenumber);
+
+            // -- the statement node is now the condition for the ifstatment, and the statement root is now the if
+            ifstmtnode->leftchild = statementroot;
+            statementroot = ifstmtnode;
+
+            // -- create the conditional branch node
+            CCondBranchNode* condbranchnode = TinAlloc(ALLOC_TreeNode, CCondBranchNode, codeblock,
+                                                       ifstmtnode->rightchild, readexpr.linenumber);
+
+            // -- read the left "true" side of the conditional branch
+            bool8 result = TryParseStatement(codeblock, readexpr, condbranchnode->leftchild, false);
+            if (!result || condbranchnode->leftchild == nullptr)
+            {
+                ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
+                              readexpr.linenumber, "Error - Ternary operator without a 'true' expression\n");
+                --gTernaryDepth;
+                return (false);
+            }
+
+            // -- read the ':' 
+            if (!GetToken(readexpr) || readexpr.type != TOKEN_COLON)
+            {
+                ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
+                              readexpr.linenumber, "Error - Ternary operator, expecting ':'\n");
+                --gTernaryDepth;
+                return (false);
+            }
+
+            // -- pop the ternary depth
+            --gTernaryDepth;
+
+            // -- read the right "false" side of the conditional branch
+            result = TryParseStatement(codeblock, readexpr, condbranchnode->rightchild, false);
+            if (!result || condbranchnode->rightchild == nullptr)
+            {
+                ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
+                              readexpr.linenumber, "Error - Ternary operator without a 'false' expression\n");
+                --gTernaryDepth;
+                return (false);
+            }
+
+            // -- read the next token 
+            nexttoken = readexpr;
+            if (!GetToken(nexttoken))
+            {
+                ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
+                    readexpr.linenumber, "Error - expecting ';'\n");
+                return (false);
+            }
         }
 
         // -- see if we've got a binary operation
@@ -1975,7 +2054,8 @@ bool8 TryParseExpression(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTre
         }
 
         // -- else if we have a colon, we're dereferrencing a member of a registered POD type
-        else if (nexttoken.type == TOKEN_COLON)
+        else if (nexttoken.type == TOKEN_COLON &&
+                 (gTernaryDepth == 0 || gTernaryStack[gTernaryDepth - 1] < gGlobalExprParenDepth))
         {
             // -- we're committed
             filebuf = nexttoken;
