@@ -1317,6 +1317,30 @@ bool8 OpExecPush(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExecStack
 }
 
 // ====================================================================================================================
+// OpExecPushCopy():  Pushes a copy of whatever is on top of the stack.
+// ====================================================================================================================
+bool8 OpExecPushCopy(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExecStack& execstack,
+    CFunctionCallStack& funccallstack)
+{
+    eVarType valtype;
+    CVariableEntry* ve = NULL;
+    CObjectEntry* oe = NULL;
+    void* val = execstack.Peek(valtype);
+    if (val == nullptr)
+    {
+        DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
+                        "Error - stack is empty, op: %s\n", GetOperationString(op));
+        return false;
+    }
+
+    // -- push the a copy back onto the stack
+    execstack.Push(val, valtype);
+    DebugTrace(op, "%s", DebugPrintVar((void*)val, valtype));
+
+    return (true);
+}
+
+// ====================================================================================================================
 // OpExecPushLocalVar():  Push a local variable onto the exec stack.
 // ====================================================================================================================
 bool8 OpExecPushLocalVar(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExecStack& execstack,
@@ -2374,7 +2398,7 @@ bool8 OpExecFuncCall(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExecS
     CObjectEntry* return_oe = NULL;
 	void* return_val = execstack.Peek(return_valtype);
     if (!GetStackValue(cb->GetScriptContext(), execstack, funccallstack, return_val, return_valtype, return_ve,
-                      return_oe))
+                       return_oe))
     {
         DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
                         "Error - no return value (even void pushes 0) from function: %s()\n", UnHash(fe->GetHash()));

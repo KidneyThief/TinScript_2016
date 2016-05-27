@@ -61,10 +61,11 @@ static const int32 gMaxTernaryDepth = 32;
 static int32 gTernaryDepth = 0;
 static int32 gTernaryStack[gMaxTernaryDepth];
 
-// -- stack for managing loops (break and continue statments need to know where to jump
-static const int32 gMaxWhileLoopDepth = 32;
-static int32 gWhileLoopDepth = 0;
-static CWhileLoopNode* gWhileLoopStack[gMaxWhileLoopDepth];
+// -- stack for managing loops (break and continue statments need to know where to jump)
+// -- applies to both while loops and switch statements
+static const int32 gMaxBreakStatementDepth = 32;
+static int32 gBreakStatementDepth = 0;
+static CCompileTreeNode* gBreakStatementStack[gMaxBreakStatementDepth];
 
 // ====================================================================================================================
 // -- binary operators
@@ -2273,6 +2274,268 @@ bool8 TryParseIfStatement(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTr
 }
 
 // ====================================================================================================================
+// TryParseSwitchStatement():  A 'switch' statement is a well defined syntax, but we'll create a chain of if..else
+// ====================================================================================================================
+bool8 TryParseSwitchStatement(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link)
+{
+    // -- the first token can be anything but a reserved word or type
+    tReadToken firsttoken(filebuf);
+    if (!GetToken(firsttoken) || firsttoken.type != TOKEN_KEYWORD)
+        return (false);
+
+    // -- starts with the keyword 'switch'
+    int32 reservedwordtype = GetReservedKeywordType(firsttoken.tokenptr, firsttoken.length);
+    if (reservedwordtype != KEYWORD_switch)
+        return (false);
+
+    // -- at this point, we're committed
+    filebuf = firsttoken;
+
+    // -- read the opening parenthesis
+    if (!GetToken(filebuf) || (filebuf.type != TOKEN_PAREN_OPEN))
+    {
+        ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
+                      firsttoken.linenumber, "Error - expecting '('\n");
+        return (false);
+    }
+
+    // -- increment the paren depth
+    ++gGlobalExprParenDepth;
+
+    // -- a switch statement 
+    // -- and the body as a statement block as its right child
+    CSwitchStatementNode* switch_node = TinAlloc(ALLOC_TreeNode, CSwitchStatementNode, codeblock, link,
+                                                 filebuf.linenumber);
+
+    // -- push the switch statement onto the stack
+    if (gBreakStatementDepth >= gMaxBreakStatementDepth)
+    {
+        ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
+                      filebuf.linenumber, "Error - depth of %d exceeded\n", gMaxBreakStatementDepth);
+        return (false);
+    }
+
+    // -- push the while node onto the stack (used so break and continue know which loop they're affecting)
+    gBreakStatementStack[gBreakStatementDepth++] = switch_node;
+
+    // we need to have a valid expression for the left hand child
+    bool8 result = TryParseStatement(codeblock, filebuf, switch_node->leftchild, true);
+    if (!result || switch_node->leftchild == nullptr)
+    {
+        ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
+                      filebuf.linenumber, "Error - unable to parse 'switch' condition\n");
+        --gBreakStatementDepth;
+        return (false);
+    }
+
+    // -- consume the closing parenthesis
+    if (!GetToken(filebuf) || filebuf.type != TOKEN_PAREN_CLOSE)
+    {
+        ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
+                      "Error - expecting ')'\n");
+        --gBreakStatementDepth;
+        return (false);
+    }
+
+    // -- decrement the paren depth
+    --gGlobalExprParenDepth;
+
+    // -- read the opening brace
+    if (!GetToken(filebuf) || filebuf.type != TOKEN_BRACE_OPEN)
+    {
+        ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
+                      "Error - expecting '{'\n");
+        --gBreakStatementDepth;
+        return (false);
+    }
+    
+    // -- read the case statments, linked together so we can determine jump offsets
+    switch_node->rightchild = CCompileTreeNode::CreateTreeRoot(codeblock);
+    CCompileTreeNode* case_statements = switch_node->rightchild;
+
+    // -- read the case statements
+    while (true)
+    {
+        // -- read each case
+        tReadToken peek_token(filebuf);
+        if (!GetToken(peek_token))
+        {
+            ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
+                          "Error - expecting '}'\n");
+            --gBreakStatementDepth;
+            return (false);
+        }
+
+        // -- if we have a keyword, it must be either 'case' or 'default'
+        if (peek_token.type == TOKEN_KEYWORD)
+        {
+            // -- starts with the keyword 'switch'
+            int32 reservedwordtype = GetReservedKeywordType(peek_token.tokenptr, peek_token.length);
+            if (reservedwordtype == KEYWORD_case || reservedwordtype == KEYWORD_default)
+            {
+                // -- update the filebuf
+                filebuf = peek_token;
+
+                // -- create the case statement node
+                CCaseStatementNode* case_statement = TinAlloc(ALLOC_TreeNode, CCaseStatementNode, codeblock,
+                                                              AppendToRoot(*case_statements), filebuf.linenumber);
+
+                // -- if a case statement, we have a value expression before the colon
+                if (reservedwordtype == KEYWORD_case)
+                {
+                    peek_token = filebuf;
+                    if (!GetToken(peek_token) || peek_token.type != TOKEN_PAREN_OPEN)
+                    {
+                        ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
+                                      "Error - expecting '('.  'case' expression format is: case ( ... ):\n");
+                        --gBreakStatementDepth;
+                        return (false);
+                    }
+
+                    // -- read the value expression
+                    // $$$TZA TinScript doesn't yet enforce a constant expression -
+                    // -- perhaps validate a single CValue non-var node?
+                    bool8 result = TryParseExpression(codeblock, filebuf, case_statement->leftchild);
+                    if (!result || case_statement->leftchild == nullptr)
+                    {
+                        ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
+                                      "Error - expecting 'case' expression\n");
+                        --gBreakStatementDepth;
+                        return (false);
+                    }
+                }
+                else
+                {
+                    // -- setdefault...  make sure it's the only one
+                    case_statement->SetDefaultCase();
+                    if (!switch_node->SetDefaultNode(case_statement))
+                    {
+                        ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
+                            "Error - 'default' case already defined\n");
+                        --gBreakStatementDepth;
+                        return (false);
+                    }
+                }
+
+                // -- the statements are also a list of statements, as we can have multiple per case
+                case_statement->rightchild = CCompileTreeNode::CreateTreeRoot(codeblock);
+                CCompileTreeNode* case_content = case_statement->rightchild;
+
+                // -- read the colon
+                if (!GetToken(filebuf) || filebuf.type != TOKEN_COLON)
+                {
+                    ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
+                                  "Error - expecting ':'.  'case' expression format is: case ( ... ): \n");
+                    --gBreakStatementDepth;
+                    return (false);
+                }
+
+                // -- read statement blocks, and individual statments, until we find the next case,
+                // -- or the final closing brace
+                while (true)
+                {
+                    // -- we *may* have an opening brace
+                    bool8 handled = false;
+                    peek_token = filebuf;
+                    if (!GetToken(peek_token))
+                    {
+                        ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
+                                      "Error - expecting ':'\n");
+                        --gBreakStatementDepth;
+                        return (false);
+                    }
+
+                    // -- possible opening brace
+                    if (peek_token.type == TOKEN_BRACE_OPEN)
+                    {
+                        filebuf = peek_token;
+
+                        // -- read the statement block (includes consuming the closing brace)
+                        result = ParseStatementBlock(codeblock, AppendToRoot(*case_content), filebuf, true);
+                        if (!result)
+                        {
+                            ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
+                                filebuf.linenumber, "Error - unable to parse the 'case' statmentblock\n");
+                            --gBreakStatementDepth;
+                            return (false);
+                        }
+
+                        // -- set the bool
+                        handled = true;
+                    }
+
+                    // -- else a new case is about to be defined, concluding our current case
+                    if (!handled && peek_token.type == TOKEN_KEYWORD)
+                    {
+                        int32 reservedwordtype = GetReservedKeywordType(peek_token.tokenptr, peek_token.length);
+                        if (reservedwordtype == KEYWORD_case || reservedwordtype == KEYWORD_default)
+                        {
+                            break;
+                        }
+                    }
+
+                    // -- the end of the entire switch
+                    if (!handled && peek_token.type == TOKEN_BRACE_CLOSE)
+                    {
+                        break;
+                    }
+
+                    // -- else, read the next statement for the case
+                    if (!handled)
+                    {
+                        result = TryParseStatement(codeblock, filebuf, AppendToRoot(*case_content));
+                        if (!result)
+                        {
+                            ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
+                                          filebuf.linenumber, "Error - expecting a '}'\n");
+                            --gBreakStatementDepth;
+                            return (false);
+                        }
+                    }
+                }
+            }
+
+            // -- invalid keyword
+            else
+            {
+                ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
+                              "Error - expecting '}'\n");
+                --gBreakStatementDepth;
+                return (false);
+            }
+        }
+
+        // -- else it had better be the closing brace
+        else if (peek_token.type != TOKEN_BRACE_CLOSE)
+        {
+            ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
+                          "Error - expecting '}'\n");
+            --gBreakStatementDepth;
+            return (false);
+        }
+
+        // -- we've reached the end of our cases
+        else
+        {
+            break;
+        }
+    }
+
+    // -- read the closing brace
+    if (!GetToken(filebuf) || filebuf.type != TOKEN_BRACE_CLOSE)
+    {
+        ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
+                      "Error - expecting '{'\n");
+        --gBreakStatementDepth;
+        return (false);
+    }
+
+    // -- success
+    --gBreakStatementDepth;
+    return (true);
+}
+
+// ====================================================================================================================
 // TryParseWhileLoop():  A while loop has a well defined syntax.
 // ====================================================================================================================
 bool8 TryParseWhileLoop(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link)
@@ -2314,16 +2577,16 @@ bool8 TryParseWhileLoop(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTree
                                              filebuf.linenumber, false);
 
     // -- push the while loop onto the stack
-    if (gWhileLoopDepth >= gMaxWhileLoopDepth)
+    if (gBreakStatementDepth >= gMaxBreakStatementDepth)
     {
 		ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
                       filebuf.linenumber,
-                      "Error - 'while loop' depth of %d exceeded\n", gMaxWhileLoopDepth);
+                      "Error - 'while loop' depth of %d exceeded\n", gMaxBreakStatementDepth);
         return (false);
     }
 
     // -- push the while node onto the stack (used so break and continue know which loop they're affecting)
-    gWhileLoopStack[gWhileLoopDepth++] = whileloopnode;
+    gBreakStatementStack[gBreakStatementDepth++] = whileloopnode;
 
 	// we need to have a valid expression for the left hand child
 	bool8 result = TryParseStatement(codeblock, filebuf, whileloopnode->leftchild, true);
@@ -2332,7 +2595,7 @@ bool8 TryParseWhileLoop(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTree
 		ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
                       filebuf.linenumber,
                       "Error - 'while loop' without a conditional expression\n");
-        --gWhileLoopDepth;
+        --gBreakStatementDepth;
 		return (false);
 	}
 
@@ -2341,7 +2604,7 @@ bool8 TryParseWhileLoop(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTree
     {
         ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
                       "Error - expecting ')'\n");
-        --gWhileLoopDepth;
+        --gBreakStatementDepth;
         return (false);
     }
 
@@ -2354,7 +2617,7 @@ bool8 TryParseWhileLoop(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTree
     {
 		ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
                       "Error - 'while loop' without a body\n");
-        --gWhileLoopDepth;
+        --gBreakStatementDepth;
 		return (false);
 	}
 
@@ -2367,12 +2630,12 @@ bool8 TryParseWhileLoop(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTree
 			ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
                           filebuf.linenumber,
                           "Error - unable to parse the while loop statmentblock\n");
-            --gWhileLoopDepth;
+            --gBreakStatementDepth;
 			return (false);
 		}
 
         // -- success - pop the while node off the stack
-        --gWhileLoopDepth;
+        --gBreakStatementDepth;
 		return (true);
 	}
 
@@ -2385,12 +2648,12 @@ bool8 TryParseWhileLoop(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTree
 			ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
                           filebuf.linenumber,
                           "Error - unable to parse the while loop body\n");
-            --gWhileLoopDepth;
+            --gBreakStatementDepth;
 			return (false);
 		}
 
         // -- success - pop the while node off the stack
-        --gWhileLoopDepth;
+        --gBreakStatementDepth;
 		return (true);
 	}
 }
@@ -2430,15 +2693,15 @@ bool8 TryParseDoWhileLoop(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTr
                                              filebuf.linenumber, true);
 
     // -- push the while loop onto the stack
-    if (gWhileLoopDepth >= gMaxWhileLoopDepth)
+    if (gBreakStatementDepth >= gMaxBreakStatementDepth)
     {
         ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
-                      filebuf.linenumber, "Error - 'while loop' depth of %d exceeded\n", gMaxWhileLoopDepth);
+                      filebuf.linenumber, "Error - 'while loop' depth of %d exceeded\n", gMaxBreakStatementDepth);
         return (false);
     }
 
     // -- push the while node onto the stack (used so break and continue know which loop they're affecting)
-    gWhileLoopStack[gWhileLoopDepth++] = whileloopnode;
+    gBreakStatementStack[gBreakStatementDepth++] = whileloopnode;
 
     // -- read the while loop body
     bool8 result = ParseStatementBlock(codeblock, whileloopnode->rightchild, filebuf, true);
@@ -2447,12 +2710,12 @@ bool8 TryParseDoWhileLoop(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTr
         ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
                       filebuf.linenumber,
                       "Error - unable to parse the do..while statmentblock\n");
-        --gWhileLoopDepth;
+        --gBreakStatementDepth;
         return (false);
     }
 
     // -- success - pop the while node off the stack
-    --gWhileLoopDepth;
+    --gBreakStatementDepth;
 
     // -- after the statement block, we need to read the while keyword, and the conditional
     if (!GetToken(filebuf) || filebuf.type != TOKEN_KEYWORD)
@@ -2488,7 +2751,7 @@ bool8 TryParseDoWhileLoop(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTr
     {
         ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
                       filebuf.linenumber, "Error - 'while loop' without a conditional expression\n");
-        --gWhileLoopDepth;
+        --gBreakStatementDepth;
         return (false);
     }
 
@@ -2497,7 +2760,7 @@ bool8 TryParseDoWhileLoop(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTr
     {
         ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
                       "Error - expecting ')'\n");
-        --gWhileLoopDepth;
+        --gBreakStatementDepth;
         return (false);
     }
 
@@ -2509,7 +2772,7 @@ bool8 TryParseDoWhileLoop(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTr
     {
         ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
                       "Error - expecting ')'\n");
-        --gWhileLoopDepth;
+        --gBreakStatementDepth;
         return (false);
     }
 
@@ -2583,16 +2846,16 @@ bool8 TryParseForLoop(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNo
                                              AppendToRoot(*forlooproot), filebuf.linenumber, false);
 
     // -- push the while loop onto the stack
-    if (gWhileLoopDepth >= gMaxWhileLoopDepth)
+    if (gBreakStatementDepth >= gMaxBreakStatementDepth)
     {
 		ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
                       filebuf.linenumber,
-                      "Error - 'while loop' depth of %d exceeded\n", gMaxWhileLoopDepth);
+                      "Error - 'while loop' depth of %d exceeded\n", gMaxBreakStatementDepth);
         return (false);
     }
 
     // -- push the while node onto the stack (used so break and continue know which loop they're affecting)
-    gWhileLoopStack[gWhileLoopDepth++] = whileloopnode;
+    gBreakStatementStack[gBreakStatementDepth++] = whileloopnode;
 
 	// -- the for loop condition is the left child of the while loop node
 	result = TryParseStatement(codeblock, filebuf, whileloopnode->leftchild);
@@ -2601,7 +2864,7 @@ bool8 TryParseForLoop(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNo
 		ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
                       filebuf.linenumber,
                       "Error - unable to parse the conditional expression\n");
-        --gWhileLoopDepth;
+        --gBreakStatementDepth;
 		return (false);
 	}
 
@@ -2610,7 +2873,7 @@ bool8 TryParseForLoop(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNo
 	{
 		ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
                       filebuf.linenumber, "Error - expecting ';'\n");
-        --gWhileLoopDepth;
+        --gBreakStatementDepth;
 		return (false);
 	}
 
@@ -2622,7 +2885,7 @@ bool8 TryParseForLoop(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNo
 		ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
                       filebuf.linenumber,
                       "Error - unable to parse the end of loop expression\n");
-        --gWhileLoopDepth;
+        --gBreakStatementDepth;
 		return (false);
 	}
 
@@ -2631,7 +2894,7 @@ bool8 TryParseForLoop(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNo
 	{
 		ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
                       filebuf.linenumber, "Error - expecting ')'\n");
-        --gWhileLoopDepth;
+        --gBreakStatementDepth;
 		return (false);
 	}
 
@@ -2648,7 +2911,7 @@ bool8 TryParseForLoop(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNo
 		ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
                       filebuf.linenumber,
                       "Error - unable to parse the for loop body\n");
-        --gWhileLoopDepth;
+        --gBreakStatementDepth;
 		return (false);
 	}
 
@@ -2663,7 +2926,7 @@ bool8 TryParseForLoop(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNo
 			ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
                           filebuf.linenumber,
                           "Error - failed to read statement block\n");
-            --gWhileLoopDepth;
+            --gBreakStatementDepth;
 			return (false);
 		}
 	}
@@ -2677,7 +2940,7 @@ bool8 TryParseForLoop(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNo
 			ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
                           filebuf.linenumber,
                           "Error - failed to read statement block\n");
-            --gWhileLoopDepth;
+            --gBreakStatementDepth;
 			return (false);
 		}
 	}
@@ -2686,7 +2949,7 @@ bool8 TryParseForLoop(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNo
     whileloopnode->SetEndOfLoopNode(tempendofloop);
 
     // -- success - pop the while node off the stack
-    --gWhileLoopDepth;
+    --gBreakStatementDepth;
 
 	// -- success
 	return (true);
@@ -3231,10 +3494,18 @@ bool8 TryParseBreakContinue(CCodeBlock* codeblock, tReadToken& filebuf, CCompile
         return (false);
 
     // -- ensure we're in the middle of compiling a loop
-    if (gWhileLoopDepth < 1)
+    if (gBreakStatementDepth < 1)
     {
 		ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
                       "Error - trying parse continue / break, outside of a loop\n");
+        return (false);
+    }
+
+    // -- ensure we don't have a 'continue' within a 'switch' statement
+    if (reservedwordtype == KEYWORD_continue && gBreakStatementStack[gBreakStatementDepth - 1]->GetType() == eSwitchStmt)
+    {
+        ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
+                      "Error - 'continue' is not valid within a 'switch' statement\n");
         return (false);
     }
 
@@ -3243,7 +3514,7 @@ bool8 TryParseBreakContinue(CCodeBlock* codeblock, tReadToken& filebuf, CCompile
 
     // -- add a return node to the tree, and parse the return expression
     CLoopJumpNode* loopJumpNode = TinAlloc(ALLOC_TreeNode, CLoopJumpNode, codeblock, link, filebuf.linenumber,
-                                           gWhileLoopStack[gWhileLoopDepth - 1], reservedwordtype == KEYWORD_break);
+                                           gBreakStatementStack[gBreakStatementDepth - 1], reservedwordtype == KEYWORD_break);
 
     // -- success
     return (true);
@@ -3926,7 +4197,8 @@ bool8 ParseStatementBlock(CCodeBlock* codeblock, CCompileTreeNode*& link, tReadT
         found = found || TryParseFuncDefinition(codeblock, filetokenbuf, curroot->next);
 		found = found || TryParseStatement(codeblock, filetokenbuf, curroot->next, true);
 		found = found || TryParseIfStatement(codeblock, filetokenbuf, curroot->next);
-		found = found || TryParseWhileLoop(codeblock, filetokenbuf, curroot->next);
+        found = found || TryParseSwitchStatement(codeblock, filetokenbuf, curroot->next);
+        found = found || TryParseWhileLoop(codeblock, filetokenbuf, curroot->next);
         found = found || TryParseDoWhileLoop(codeblock, filetokenbuf, curroot->next);
         found = found || TryParseForLoop(codeblock, filetokenbuf, curroot->next);
 		found = found || TryParseDestroyObject(codeblock, filetokenbuf, curroot->next);

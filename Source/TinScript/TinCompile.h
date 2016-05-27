@@ -61,6 +61,8 @@ class CWhileLoopNode;
 	CompileNodeTypeEntry(Assignment)			\
 	CompileNodeTypeEntry(BinaryOp)				\
 	CompileNodeTypeEntry(UnaryOp)				\
+	CompileNodeTypeEntry(SwitchStmt)    		\
+	CompileNodeTypeEntry(CaseStmt)    		    \
 	CompileNodeTypeEntry(IfStmt)				\
 	CompileNodeTypeEntry(CondBranch)			\
 	CompileNodeTypeEntry(WhileLoop)				\
@@ -109,6 +111,7 @@ const char* GetNodeTypeString(ECompileNodeType nodetype);
 	OperationEntry(PushAssignValue)     \
 	OperationEntry(PushParam)			\
 	OperationEntry(Push)				\
+	OperationEntry(PushCopy)			\
 	OperationEntry(PushLocalVar)		\
 	OperationEntry(PushLocalValue)		\
 	OperationEntry(PushGlobalVar)		\
@@ -392,7 +395,70 @@ class CPODMemberNode : public CCompileTreeNode
 };
 
 // ====================================================================================================================
-// class CObjMemberNode:  Parse tree node, compiling to an if statement.
+// class CLoopJumpNode:  Parse tree node, compiling to an jump from within a loop.
+// ====================================================================================================================
+class CLoopJumpNode : public CCompileTreeNode
+{
+	public:
+		CLoopJumpNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber, CCompileTreeNode* loop_node,
+                      bool is_break);
+
+		virtual int32 Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
+        void NotifyLoopInstr(uint32* continue_instr, uint32* break_instr);
+
+	protected:
+		CLoopJumpNode() { }
+        bool8 mIsBreak;
+        mutable uint32* mJumpInstr;
+        mutable uint32* mJumpOffset;
+};
+
+// ====================================================================================================================
+// class CCaseStatementNode:  Parse tree node, compiling to a switch statement.
+// ====================================================================================================================
+class CCaseStatementNode : public CCompileTreeNode
+{
+	public:
+        CCaseStatementNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber);
+
+		virtual int32 Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
+        int32 EvalCondition(uint32*& instrptr, bool countonly);
+        int32 EvalStatements(uint32*& instrptr, bool countonly);
+
+        void SetDefaultCase() { m_isDefaultCase = true; }
+        void SetDefaultOffsetInstr(uint32* instrptr) { m_branchOffset = instrptr; }
+
+	protected:
+        CCaseStatementNode() { }
+        bool8 m_isDefaultCase;
+        uint32* m_branchOffset;
+};
+
+// ====================================================================================================================
+// class CSwitchStatementNode:  Parse tree node, compiling to a switch statement.
+// ====================================================================================================================
+class CSwitchStatementNode : public CCompileTreeNode
+{
+public:
+    CSwitchStatementNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber);
+
+    virtual int32 Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
+
+    bool8 SetDefaultNode(CCaseStatementNode* default_node);
+    bool8 AddLoopJumpNode(CLoopJumpNode* jump_node);
+
+protected:
+    CSwitchStatementNode() { }
+    CCaseStatementNode* m_defaultNode;
+
+    // -- we're also going to keep a list of break nodes so we can set the offsets to 
+    enum { kMaxLoopJumpCount = 128 };
+    int32 mLoopJumpNodeCount;
+    CLoopJumpNode* mLoopJumpNodeList[kMaxLoopJumpCount];
+};
+
+// ====================================================================================================================
+// class CIfStatementNode:  Parse tree node, compiling to an if statement.
 // ====================================================================================================================
 class CIfStatementNode : public CCompileTreeNode
 {
@@ -417,25 +483,6 @@ class CCondBranchNode : public CCompileTreeNode
 
 	protected:
 		CCondBranchNode() { }
-};
-
-// ====================================================================================================================
-// class CLoopJumpNode:  Parse tree node, compiling to an jump from within a loop.
-// ====================================================================================================================
-class CLoopJumpNode : public CCompileTreeNode
-{
-	public:
-		CLoopJumpNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber, CWhileLoopNode* loop_node,
-                      bool is_break);
-
-		virtual int32 Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
-        void NotifyLoopInstr(uint32* continue_instr, uint32* break_instr);
-
-	protected:
-		CLoopJumpNode() { }
-        bool8 mIsBreak;
-        mutable uint32* mJumpInstr;
-        mutable uint32* mJumpOffset;
 };
 
 // ====================================================================================================================

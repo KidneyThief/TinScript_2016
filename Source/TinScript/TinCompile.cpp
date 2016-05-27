@@ -1027,6 +1027,328 @@ int32 CUnaryOpNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 countonly
 	return size;
 }
 
+// == class CLoopJumpNode =============================================================================================
+
+// ====================================================================================================================
+// Constructor
+// ====================================================================================================================
+CLoopJumpNode::CLoopJumpNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber,
+    CCompileTreeNode* loop_node, bool8 is_break)
+    : CCompileTreeNode(_codeblock, _link, eLoopJump, _linenumber)
+{
+    mIsBreak = is_break;
+    mJumpInstr = NULL;
+    mJumpOffset = NULL;
+
+    // -- notify the loop node that this node is jumping within
+    if (loop_node->GetType() == eWhileLoop)
+    {
+        ((CWhileLoopNode*)loop_node)->AddLoopJumpNode(this);
+    }
+    else if (loop_node->GetType() == eSwitchStmt)
+    {
+        ((CSwitchStatementNode*)loop_node)->AddLoopJumpNode(this);
+    }
+}
+
+// ====================================================================================================================
+// Eval():  Generates the byte code instruction compiled from this node.
+// ====================================================================================================================
+int32 CLoopJumpNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 countonly) const
+{
+    Unused_(pushresult);
+
+    DebugEvaluateNode(*this, countonly, instrptr);
+    int32 size = 0;
+
+    // -- we'll need to calculate the offset, based on where we are now
+    // -- push the branch instruction
+    if (!countonly)
+        mJumpInstr = instrptr;
+    size += PushInstruction(countonly, instrptr, OP_Branch, DBG_instr);
+
+    // -- cache the location of the offset - we'll fill it in after the while node has finished compiling
+    // -- push a placeholder in the meantime
+    if (!countonly)
+        mJumpOffset = instrptr;
+    uint32 empty = 0;
+    size += PushInstructionRaw(countonly, instrptr, (void*)&empty, 1, DBG_NULL, "placeholder for branch");
+    return size;
+}
+
+void CLoopJumpNode::NotifyLoopInstr(uint32* continue_instr, uint32* break_instr)
+{
+    // -- ensure we have valid loop start and end instructions
+    if ((!mIsBreak && !continue_instr) || (mIsBreak && !break_instr) || !mJumpInstr || !mJumpOffset)
+    {
+        ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), linenumber,
+            "Error - NotifyLoopInstr(): invalid offsets\n");
+        return;
+    }
+
+    // -- pick which instruction we're jumping to
+    uint32* next_instr = mIsBreak ? break_instr : continue_instr;
+
+    // -- if the instruction we're jumping to is *before* our current instruction, we'll have a negative jump,
+    // -- and we'll add 2, to jump before the OP_BRANCH itself.
+    if (kPointerToUInt32(next_instr) <= kPointerToUInt32(mJumpInstr))
+    {
+        int32 jump_offset = (int32)(kPointerDiffUInt32(mJumpInstr, next_instr)) >> 2;
+        jump_offset += 2;
+
+        // -- fill in the offset
+        *mJumpOffset = -jump_offset;
+    }
+    else
+    {
+        int32 jump_offset = (int32)(kPointerDiffUInt32(next_instr, mJumpInstr)) >> 2;
+        jump_offset -= 2;
+        if (jump_offset < 0)
+        {
+            ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), linenumber,
+                "Error - NotifyLoopInstr(): invalid offsets\n");
+            return;
+        }
+
+        // -- fill in the offset
+        *mJumpOffset = jump_offset;
+    }
+}
+
+// == class CCaseStatementNode ========================================================================================
+
+// ====================================================================================================================
+// Constructor
+// ====================================================================================================================
+CCaseStatementNode::CCaseStatementNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber)
+    : CCompileTreeNode(_codeblock, _link, eCaseStmt, _linenumber)
+{
+    // -- initialize the members
+    m_isDefaultCase = false;
+    m_branchOffset = nullptr;
+}
+
+// ====================================================================================================================
+// Eval():  Generates the byte code instruction compiled from this node.
+// ====================================================================================================================
+int32 CCaseStatementNode::Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const
+{
+    return (0);
+}
+
+// ====================================================================================================================
+// EvalCondition():  Case Statements build a table of comparisons and jumps, so they evaluate out of sequence.
+// ====================================================================================================================
+int32 CCaseStatementNode::EvalCondition(uint32*& instrptr, bool countonly)
+{
+    DebugEvaluateNode(*this, countonly, instrptr);
+    int32 size = 0;
+
+    // -- ensure we have a left child
+    if (!leftchild && !m_isDefaultCase)
+    {
+        printf("Error - CSwitchStatementNode with no left child\n");
+        return (-1);
+    }
+
+    // -- if this is the default case, we don't have to do anything yet, as the condition is always true
+    // -- otherwise, we'll push a duplicate of the top of the stack, which at this point is the switch value
+    if (!m_isDefaultCase)
+    {
+        size += PushInstruction(countonly, instrptr, OP_PushCopy, DBG_instr);
+
+        // -- then evaluate the left child, resolves to this case's value (must be of type int)
+        size += leftchild->Eval(instrptr, TYPE_int, countonly);
+
+        // -- perform a comparison - pops the value, and the copy of the switch value, pushes the bool result
+        size += PushInstruction(countonly, instrptr, OP_CompareEqual, DBG_instr);
+
+        // -- if the comparison is equal, we want to pop the original switch value, and then jump
+        // -- therefore, if not equal, we want to skip over those instructions
+        size += PushInstruction(countonly, instrptr, OP_BranchCond, DBG_instr);
+        size += PushInstruction(countonly, instrptr, 0, DBG_value, "branch false");
+        size += PushInstruction(countonly, instrptr, 0, DBG_value, "not a short_circuit branch");
+
+        // -- we're jumping over a pop, and another jump
+        // -- a pop instruction is one, branch take 2x instructions, so 3 total
+        size += PushInstruction(countonly, instrptr, 3, DBG_value, "branch over case value");
+
+        // -- pop the switch value
+        size += PushInstruction(countonly, instrptr, OP_Pop, DBG_instr, "switch value");
+        size += PushInstruction(countonly, instrptr, OP_Branch, DBG_instr, "branch to case statement");
+
+        // -- if this isn't just calculating the count, cache the location for the branch offset
+        if (!countonly)
+            m_branchOffset = instrptr;
+
+        size += PushInstruction(countonly, instrptr, 0, DBG_NULL, "placeholder for branch");
+    }
+
+    // -- return the size
+    return (size);
+}
+
+// ====================================================================================================================
+// EvalStatements():  Evaluate the statement block for the case.
+// ====================================================================================================================
+int32 CCaseStatementNode::EvalStatements(uint32*& instrptr, bool countonly)
+{
+    DebugEvaluateNode(*this, countonly, instrptr);
+    int32 size = 0;
+
+    // -- all case statement nodes have a branch offset - now is when we fill it in
+    if (!countonly)
+    {
+        // -- note:  when reading the branch offset, we increment, so the actual offset is diff - 1
+        int32 branch_offset = (int32)(kPointerDiffUInt32(instrptr, m_branchOffset)) >> 2;
+        *m_branchOffset = branch_offset - 1;
+    }
+
+    // -- ensure we have a right child
+    if (rightchild)
+    {
+        size += rightchild->Eval(instrptr, TYPE_void, countonly);
+    }
+
+    // -- return the size
+    return (size);
+}
+
+// == class CSwitchStatementNode ======================================================================================
+
+// ====================================================================================================================
+// Constructor
+// ====================================================================================================================
+CSwitchStatementNode::CSwitchStatementNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber)
+    : CCompileTreeNode(_codeblock, _link, eSwitchStmt, _linenumber)
+{
+    // -- we need to cache the default node, so it is compiled last (the final 'else')
+    m_defaultNode = nullptr;
+    mLoopJumpNodeCount = 0;
+}
+
+// ====================================================================================================================
+// Eval():  Generates the byte code instruction compiled from this node.
+// ====================================================================================================================
+int32 CSwitchStatementNode::Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const
+{
+    DebugEvaluateNode(*this, countonly, instrptr);
+    int32 size = 0;
+
+    // -- ensure we have a left child
+    if (!leftchild)
+    {
+        printf("Error - CSwitchStatementNode with no left child\n");
+        return (-1);
+    }
+
+    // -- ensure we have a right child
+    if (!rightchild)
+    {
+        printf("Error - Switch Statement with no cases\n");
+        return (-1);
+    }
+
+    // -- evaluate the left child, pushing the comparison value onto the stack
+    int32 tree_size = leftchild->Eval(instrptr, TYPE_int, countonly);
+    if (tree_size < 0)
+        return (-1);
+    size += tree_size;
+
+    // -- this is unusual, in that we evaluate all of the left children of each of the case nodes
+    // -- to create the list of comparison-jump instructions
+    CCompileTreeNode* next_node = rightchild;
+    while (next_node != nullptr)
+    {
+        // -- if the case_node is a cast statement node, evaluate its left child
+        if (next_node->GetType() == eCaseStmt)
+        {
+            CCaseStatementNode* case_node = (CCaseStatementNode*)next_node;
+            size += case_node->EvalCondition(instrptr, countonly);
+        }
+
+        // -- get the next node
+        next_node = next_node->next;
+    }
+
+    // -- at this point, we've compiled the "jump table" instructions
+    // -- however, if none of the cases matched, then we'll need to pop the switch value back off
+    size += PushInstruction(countonly, instrptr, OP_Pop, DBG_instr, "pop unmatched switch value");
+
+    // -- if we have a default case, then we jump to wherever the default instructions start
+    if (m_defaultNode != nullptr)
+    {
+        size += PushInstruction(countonly, instrptr, OP_Branch, DBG_instr, "default case branch");
+
+        // -- store default the branch offset instruction, since this is what we'll need to fill in
+        if (!countonly)
+            m_defaultNode->SetDefaultOffsetInstr(instrptr);
+
+        size += PushInstruction(countonly, instrptr, 0, DBG_NULL, "placeholder for branch");
+    }
+
+    // -- now we loop through the case nodes, and compile their instructions...
+    // -- as we do so, we fill in the jump offsets
+    // -- note:  by compiling all comparisons with jumps, then compiling all instructions into one
+    // -- big block statement, we support fallthrough
+    next_node = rightchild;
+    while (next_node != nullptr)
+    {
+        // -- if the case_node is a cast statement node, evaluate its left child
+        if (next_node->GetType() == eCaseStmt)
+        {
+            CCaseStatementNode* case_node = (CCaseStatementNode*)next_node;
+            size += case_node->EvalStatements(instrptr, countonly);
+        }
+
+        // -- get the next node
+        next_node = next_node->next;
+    }
+
+    // -- this is the end of body of the swtich statement - mark the instruction pointer
+    // -- so continue and break nodes can jump correctly
+    if (!countonly)
+    {
+        // -- now that we've completed compiling the while loop, go through all break
+        // -- nodes that jump out of their case
+        for (int32 i = 0; i < mLoopJumpNodeCount; ++i)
+        {
+            mLoopJumpNodeList[i]->NotifyLoopInstr(nullptr, instrptr);
+        }
+    }
+
+    // -- return the size
+    return (size);
+}
+
+// ====================================================================================================================
+// SetDefaultNode():  Set the node for the default case - returns false if we already have one.
+// ====================================================================================================================
+bool8 CSwitchStatementNode::SetDefaultNode(CCaseStatementNode* default_node)
+{
+    // -- if we already have a default node, we're done
+    if (m_defaultNode != nullptr)
+        return (false);
+
+    return (true);
+}
+
+// ====================================================================================================================
+// AddLoopJumpNode():  Adds a jump node to the list belonging to a loop, so the beginning/end offset can be set.
+// ====================================================================================================================
+bool8 CSwitchStatementNode::AddLoopJumpNode(CLoopJumpNode* jump_node)
+{
+    if (mLoopJumpNodeCount >= kMaxLoopJumpCount || !jump_node)
+    {
+        ScriptAssert_(codeblock->GetScriptContext(), 0, "<internal>", -1,
+                      "Error - AddLoopJumpNode() in file: %s\n", codeblock->GetFileName());
+        return (false);
+    }
+
+    mLoopJumpNodeList[mLoopJumpNodeCount++] = jump_node;
+    return (true);
+}
+
 // == class CIfStatementNode ==========================================================================================
 
 // ====================================================================================================================
@@ -1154,87 +1476,6 @@ int32 CCondBranchNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 counto
 	}
 
 	return size;
-}
-
-// == class CLoopJumpNode =============================================================================================
-
-// ====================================================================================================================
-// Constructor
-// ====================================================================================================================
-CLoopJumpNode::CLoopJumpNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber,
-                             CWhileLoopNode* loop_node, bool8 is_break)
-    : CCompileTreeNode(_codeblock, _link, eLoopJump, _linenumber)
-{
-    mIsBreak = is_break;
-    mJumpInstr = NULL;
-    mJumpOffset = NULL;
-
-    // -- notify the loop node that this node is jumping within
-    loop_node->AddLoopJumpNode(this);
-}
-
-// ====================================================================================================================
-// Eval():  Generates the byte code instruction compiled from this node.
-// ====================================================================================================================
-int32 CLoopJumpNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 countonly) const
-{
-    Unused_(pushresult);
-
-	DebugEvaluateNode(*this, countonly, instrptr);
-	int32 size = 0;
-
-    // -- we'll need to calculate the offset, based on where we are now
-    // -- push the branch instruction
-    if (!countonly)
-        mJumpInstr = instrptr;
-	size += PushInstruction(countonly, instrptr, OP_Branch, DBG_instr);
-
-    // -- cache the location of the offset - we'll fill it in after the while node has finished compiling
-	// -- push a placeholder in the meantime
-    if (!countonly)
-        mJumpOffset = instrptr;
-	uint32 empty = 0;
-	size += PushInstructionRaw(countonly, instrptr, (void*)&empty, 1, DBG_NULL, "placeholder for branch");
-	return size;
-}
-
-void CLoopJumpNode::NotifyLoopInstr(uint32* continue_instr, uint32* break_instr)
-{
-    // -- ensure we have valid loop start and end instructions
-    if (!continue_instr || !break_instr || !mJumpInstr || !mJumpOffset)
-    {
-        ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), linenumber,
-                      "Error - NotifyLoopInstr(): invalid offsets\n");
-        return;
-    }
-
-    // -- pick which instruction we're jumping to
-    uint32* next_instr = mIsBreak ? break_instr : continue_instr;
-
-    // -- if the instruction we're jumping to is *before* our current instruction, we'll have a negative jump,
-    // -- and we'll add 2, to jump before the OP_BRANCH itself.
-    if (kPointerToUInt32(next_instr) <=  kPointerToUInt32(mJumpInstr))
-    {
-        int32 jump_offset = (int32)(kPointerDiffUInt32(mJumpInstr, next_instr)) >> 2;
-        jump_offset += 2;
-
-        // -- fill in the offset
-        *mJumpOffset = -jump_offset;
-    }
-    else
-    {
-        int32 jump_offset = (int32)(kPointerDiffUInt32(next_instr, mJumpInstr)) >> 2;
-        jump_offset -= 2;
-        if (jump_offset < 0)
-        {
-            ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), linenumber,
-                          "Error - NotifyLoopInstr(): invalid offsets\n");
-            return;
-        }
-
-        // -- fill in the offset
-        *mJumpOffset = jump_offset;
-    }
 }
 
 // == class CWhileLoopNode ============================================================================================
