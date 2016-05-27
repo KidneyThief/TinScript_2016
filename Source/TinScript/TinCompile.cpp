@@ -1076,6 +1076,9 @@ int32 CLoopJumpNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 countonl
     return size;
 }
 
+// ====================================================================================================================
+// NotifyLoopInstr():  Fill in the jump offset to the start/end of a loop when a break/continue is executed
+// ====================================================================================================================
 void CLoopJumpNode::NotifyLoopInstr(uint32* continue_instr, uint32* break_instr)
 {
     // -- ensure we have valid loop start and end instructions
@@ -1151,7 +1154,7 @@ int32 CCaseStatementNode::EvalCondition(uint32*& instrptr, bool countonly)
         return (-1);
     }
 
-    // -- if this is the default case, we don't have to do anything yet, as the condition is always true
+    // -- if this is the default case, the "condition" is already true - we don't need to do anything
     // -- otherwise, we'll push a duplicate of the top of the stack, which at this point is the switch value
     if (!m_isDefaultCase)
     {
@@ -1330,6 +1333,7 @@ bool8 CSwitchStatementNode::SetDefaultNode(CCaseStatementNode* default_node)
     if (m_defaultNode != nullptr)
         return (false);
 
+    m_defaultNode = default_node;
     return (true);
 }
 
