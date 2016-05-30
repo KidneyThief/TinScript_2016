@@ -187,7 +187,8 @@ void Player::NotifyPosition()
     DrawRect(self.m_currentDrawRequest + draw_request_offset, draw_position, g_playerSize, g_playerSize, player_color);
 
     // -- notify the client
-    SocketCommand("NotifyPlayerUpdate", is_local_player, self.position, self.length);
+    if (gCurrentGame.m_isHost)
+        SocketCommand("NotifyPlayerUpdate", is_local_player, self.position, self.length);
 }
 
 void Player::OnCollision()
@@ -217,7 +218,7 @@ void WormsGame::OnCreate() : DefaultGame
     object self.m_localPlayer;
 
     int self.m_lastUpdateTime = GetSimTime();
-    int self.m_updatePeriod = 100;
+    int self.m_updatePeriod = 200;
 
     // -- create the field
     bool[3072] self.m_arena;
@@ -239,17 +240,18 @@ void WormsGame::OnUpdate()
     // -- initialize the hierarchy
     DefaultGame::OnUpdate();
 
+    int deltaTime = GetSimTime() - self.m_updateTime;
+    self.m_updateTime = GetSimTime();
+
     // -- if we haven't started yet, we're done
     if (!self.m_gameStarted)
     {
-        self.m_updateTime = GetSimTime();
         return;
     }
 
     // -- perform the countdown
     if (self.m_gameCountdown > 0)
     {
-        int deltaTime = GetSimTime() - self.m_updateTime;
         self.m_gameCountdown -= deltaTime;
         int seconds = (self.m_gameCountdown / 1000) + 1;
 
@@ -258,11 +260,14 @@ void WormsGame::OnUpdate()
         DrawText(8000, '320 240 0', seconds, gCOLOR_RED);
 
         // -- start both players moving
-        object player = self.m_playerGroup.First();
-        while (IsObject(player))
+        if (self.m_gameCountdown <= 0)
         {
-            player.m_direction = g_directionUp;
-            player = self.m_playerGroup.Next();
+            object player = self.m_playerGroup.First();
+            while (IsObject(player))
+            {
+                player.m_nextDirection = g_directionUp;
+                player = self.m_playerGroup.Next();
+            }
         }
     }
 
@@ -291,7 +296,7 @@ void WormsGame::OnUpdate()
         return;
 
     // -- see if it's time to create an apple
-    if (self.SimTime > self.m_appleTime && !self.m_hasApple)
+    if (self.m_isHost && self.SimTime > self.m_appleTime && !self.m_hasApple)
     {
         self.SpawnApple();
     }
@@ -307,6 +312,10 @@ void WormsGame::OnUpdate()
         // -- draw the 4 lines creating the "triangle-ish" ship
         DrawRect(8000, draw_position, g_playerSize, g_playerSize, gCOLOR_RED);
     }
+
+    // -- if we're the host, notify the client
+    if (self.m_isHost)
+        SocketCommand("NotifyApple", self.m_hasApple, self.m_apple);
 }
 
 void WormsGame::SpawnApple()
@@ -447,10 +456,10 @@ void NotifyChallenge(string challenger_name)
 {
     // -- create the player
     gCurrentGame.CreatePlayer(challenger_name, false, "42 24 0");
-    SocketSend("AcceptChallenge", gCurrentGame.m_localPlayer.GetObjectName());
+    SocketCommand("AcceptChallenge", gCurrentGame.m_localPlayer.GetObjectName());
 
     // -- set the bool to start the game
-    self.m_gameStarted = true;
+    gCurrentGame.m_gameStarted = true;
 }
 
 void AcceptChallenge(string challenger_name)
@@ -459,7 +468,7 @@ void AcceptChallenge(string challenger_name)
     gCurrentGame.CreatePlayer(challenger_name, false, "24 24 0");
 
     // -- set the bool to notify that the game has started
-    self.m_gameStarted = true;
+    gCurrentGame.m_gameStarted = true;
 }
 
 void NotifyPlayerMove(int direction)
@@ -473,6 +482,8 @@ void NotifyPlayerMove(int direction)
 
 void NotifyPlayerUpdate(bool is_local_player, vector3f position, int length)
 {
+    Print("here");
+
     // -- find the player
     int player_index = 0;
     if (!is_local_player)
@@ -480,7 +491,23 @@ void NotifyPlayerUpdate(bool is_local_player, vector3f position, int length)
     object player = gCurrentGame.m_playerGroup.GetObjectByIndex(player_index);
     player.position = position;
     player.length = length;
-    player.NotifyUpdate();
+    player.NotifyPosition();
+}
+
+void NotifyApple(bool has_apple, vector3f apple_position)
+{
+    gCurrentGame.m_hasApple = has_apple;
+    gCurrentGame.m_apple = apple_position;
+}
+
+void NOtifyGameOver(bool you_win)
+{
+    if (!you_win)
+        DrawText(self, '320 240 0', "Y O U   L O S E", gCOLOR_RED);
+    else
+        DrawText(self, '320 240 0', "Y O U   W I N", gCOLOR_RED);
+
+    SimPause();
 }
 
 // ====================================================================================================================
