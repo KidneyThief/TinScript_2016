@@ -196,9 +196,9 @@ void Player::OnCollision()
     // -- game over, at the center of the screen
     bool is_local_player = (self == gCurrentGame.m_localPlayer);
     if (is_local_player)
-        DrawText(self, '320 240 0', "Y O U   L O S E", gCOLOR_RED);
+        DrawText(8000, '320 240 0', "Y O U   L O S E", gCOLOR_RED);
     else
-        DrawText(self, '320 240 0', "Y O U   W I N", gCOLOR_RED);
+        DrawText(8000, '320 240 0', "Y O U   W I N", gCOLOR_RED);
 
     // -- notify the client
     SocketCommand("NotifyGameOver", is_local_player);
@@ -482,8 +482,6 @@ void NotifyPlayerMove(int direction)
 
 void NotifyPlayerUpdate(bool is_local_player, vector3f position, int length)
 {
-    Print("here");
-
     // -- find the player
     int player_index = 0;
     if (!is_local_player)
@@ -500,12 +498,12 @@ void NotifyApple(bool has_apple, vector3f apple_position)
     gCurrentGame.m_apple = apple_position;
 }
 
-void NOtifyGameOver(bool you_win)
+void NotifyGameOver(bool you_win)
 {
     if (!you_win)
-        DrawText(self, '320 240 0', "Y O U   L O S E", gCOLOR_RED);
+        DrawText(8000, '320 240 0', "Y O U   L O S E", gCOLOR_RED);
     else
-        DrawText(self, '320 240 0', "Y O U   W I N", gCOLOR_RED);
+        DrawText(8000, '320 240 0', "Y O U   W I N", gCOLOR_RED);
 
     SimPause();
 }
