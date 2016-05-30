@@ -439,7 +439,6 @@ void CDemoWidget::CancelDrawRequests(int draw_request_id)
         if (draw_request_id < 0 || item.id == draw_request_id)
         {
             item.expired = true;
-            break;
         }
     }
 
@@ -450,7 +449,6 @@ void CDemoWidget::CancelDrawRequests(int draw_request_id)
         if (draw_request_id < 0 || item.id == draw_request_id)
         {
             item.expired = true;
-            break;
         }
     }
 
