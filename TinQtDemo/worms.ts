@@ -196,14 +196,14 @@ void Player::OnCollision()
     // -- game over, at the center of the screen
     bool is_local_player = (self == gCurrentGame.m_localPlayer);
     if (is_local_player)
-        DrawText(8000, '320 240 0', "Y O U   L O S E", gCOLOR_RED);
+        DrawText(9000, '320 240 0', "Y O U   L O S E", gCOLOR_RED);
     else
-        DrawText(8000, '320 240 0', "Y O U   W I N", gCOLOR_RED);
+        DrawText(9000, '320 240 0', "Y O U   W I N", gCOLOR_RED);
 
     // -- notify the client
     SocketCommand("NotifyGameOver", is_local_player);
-    
-    SimPause();
+
+    SimPause(); 
 }
 
 // ====================================================================================================================
@@ -448,7 +448,8 @@ void ChallengeWorms(string player_name, string ip_address)
     gCurrentGame.CreatePlayer(player_name, true, "42 24 0");
 
     // -- the challenger is player two
-    SocketConnect(ip_address);
+    if (!SocketIsConnected())
+        SocketConnect(ip_address);
     SocketCommand("NotifyChallenge", player_name);
 }
 
@@ -501,9 +502,9 @@ void NotifyApple(bool has_apple, vector3f apple_position)
 void NotifyGameOver(bool you_win)
 {
     if (!you_win)
-        DrawText(8000, '320 240 0', "Y O U   L O S E", gCOLOR_RED);
+        DrawText(9000, '320 240 0', "Y O U   L O S E", gCOLOR_RED);
     else
-        DrawText(8000, '320 240 0', "Y O U   W I N", gCOLOR_RED);
+        DrawText(9000, '320 240 0', "Y O U   W I N", gCOLOR_RED);
 
     SimPause();
 }

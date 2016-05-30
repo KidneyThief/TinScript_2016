@@ -1246,6 +1246,7 @@ bool SocketCommand(const char* str0, const char* str1, const char* str2, const c
 REGISTER_FUNCTION_P0(SocketListen, SocketManager::Listen, bool);
 REGISTER_FUNCTION_P1(SocketConnect, SocketManager::Connect, bool, const char*);
 REGISTER_FUNCTION_P0(SocketDisconnect, SocketManager::Disconnect, void);
+REGISTER_FUNCTION_P0(SocketIsConnected, SocketManager::IsConnected, bool);
 REGISTER_FUNCTION_P1(SocketSend, SocketManager::SendCommand, bool, const char*);
 REGISTER_FUNCTION_P8(SocketCommand, SocketCommand, bool, const char*, const char*, const char*, const char*, const char*, const char*, const char*, const char*);
 
