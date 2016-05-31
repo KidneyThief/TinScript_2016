@@ -189,8 +189,12 @@ void Player::NotifyPosition()
     // -- notify the client
     if (gCurrentGame.m_isHost)
     {
-        self.m_requireResponseID = GetSimTime();
-        SocketCommand("NotifyPlayerUpdate", self.m_requireResponseID, is_local_player, self.position, self.length);
+        int current_time = GetSimTime();
+        if (gCurrentGame.m_requireResponseID > current_time)
+            ++gCurrentGame.m_requireResponseID;
+        else
+            gCurrentGame.m_requireResponseID = current_time
+        SocketCommand("NotifyPlayerUpdate", gCurrentGame.m_requireResponseID, is_local_player, self.position, self.length);
     }
 }
 
@@ -293,6 +297,15 @@ void WormsGame::OnUpdate()
             {
                 player.OnUpdate(0.0f);
                 player = self.m_playerGroup.Next();
+            }
+        }
+        else if (self.m_requireResponseID > 0)
+        {
+            int elapsed = GetSimTime() - self.m_requireResponseID;
+            if (elapsed > 5000)
+            {
+                Print("ERROR - no response to update packet from the client!");
+                self.m_requireResponseID = 0;
             }
         }
     }
