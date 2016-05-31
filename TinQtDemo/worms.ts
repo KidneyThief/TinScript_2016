@@ -222,7 +222,7 @@ void Apple::OnCreate() : CScriptObject
     bool self.m_spawned = false;
 
     // -- spawn at a random time
-    Respawn();
+    self.Respawn();
 }
 
 void Apple::Spawn()
@@ -251,15 +251,7 @@ void Apple::Respawn()
     // -- set the flag, and respawn at a random time
     self.m_spawned = false;
     int rand_time = 1000 + RandomInt(3000);
-    schedule(rand_time, self, hash("Spawn"));
-}
-
-void Apple::OnCollision()
-{
-    // -- set the flag, and respawn at a random time
-    self.m_spawned = false;
-    int rand_time = 1000 + RandomInt(3000);
-    schedule(rand_time, self, hash("Spawn"));
+    schedule(self, rand_time, hash("Spawn"));
 }
 
 // ====================================================================================================================
@@ -280,7 +272,7 @@ void WormsGame::OnCreate() : DefaultGame
     bool[3072] self.m_arena;
 
     // -- the set of apples
-    int self.m_appleGroup = create CObjectGroup("AppleGroup");
+    object self.m_appleGroup = create CObjectGroup("AppleGroup");
     int self.m_appleCount = 0;
     int self.m_clientAppleCount = 0;
     vector3f[16] self.m_clientApples;
@@ -293,6 +285,12 @@ void WormsGame::OnCreate() : DefaultGame
     int self.m_clientUpdateTime = 0;
 
     int self.m_requireResponseID = 0;
+}
+
+void WormsGame::OnDestroy()
+{
+    destroy self.m_playerGroup;
+    destroy self.m_appleGroup;
 }
 
 void WormsGame::OnUpdate()
@@ -340,11 +338,12 @@ void WormsGame::OnUpdate()
     self.UpdateKeys(self.SimTime);
 
     // -- only the host updates the players
-    if (gCurrentGame.m_isHost)
+    if (self.m_isHost)
     {
         int cur_time = GetSimTime();
         int elapsed = cur_time - self.m_lastUpdateTime;
-        if (elapsed >= self.m_updatePeriod && self.m_requireResponseID == 0)
+        bool has_response = self.m_requireResponseID == 0 || self.m_playerGroup.Used() < 2;
+        if (elapsed >= self.m_updatePeriod && has_response)
         {
             self.m_lastUpdateTime = cur_time;
 
@@ -355,19 +354,14 @@ void WormsGame::OnUpdate()
                 player = self.m_playerGroup.Next();
             }
 
-            // -- if we're the host, notify the client of the updated apple positions
-            if (self.m_isHost)
+            // -- notify the client of the updated apple positions
+            SocketCommand("NotifyClearApples");
+            object apple = self.m_appleGroup.First();
+            while (IsObject(apple))
             {
-                SocketCommand("NotifyClearApples");
-                object apple = self.m_appleGroup.First();
-                while (IsObject(apple))
-                {
-                    if (apple.m_spawned)
-                    {
-                        SocketCommand("NotifyApple", apple.m_position);
-                    }
-                    apple = self.m_appleGroup.Next();
-                }
+                if (apple.m_spawned)
+                    SocketCommand("NotifyApple", apple.m_position);
+                apple = self.m_appleGroup.Next();
             }
         }
         else if (self.m_requireResponseID > 0)
