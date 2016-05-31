@@ -193,7 +193,7 @@ void Player::NotifyPosition()
         if (gCurrentGame.m_requireResponseID > current_time)
             ++gCurrentGame.m_requireResponseID;
         else
-            gCurrentGame.m_requireResponseID = current_time
+            gCurrentGame.m_requireResponseID = current_time;
         SocketCommand("NotifyPlayerUpdate", gCurrentGame.m_requireResponseID, is_local_player, self.position, self.length);
     }
 }
@@ -214,6 +214,55 @@ void Player::OnCollision()
 }
 
 // ====================================================================================================================
+// Apple implementation
+// ====================================================================================================================
+void Apple::OnCreate() : CScriptObject
+{
+    vector3f self.m_position;
+    bool self.m_spawned = false;
+
+    // -- spawn at a random time
+    Respawn();
+}
+
+void Apple::Spawn()
+{
+    // -- find a location
+    int i;
+    for (i = 0; i < 100; ++i)
+    {
+        int rand_x = RandomInt(64);
+        int rand_y = RandomInt(48);
+        vector3f rand_position = StringCat(rand_x, " ", rand_y, " 0");
+        if (!gCurrentGame.IsPositionOccupied(rand_position))
+        {
+            self.m_spawned = true;
+            self.m_position = rand_position;
+            break;
+        }
+    }
+
+    if (!self.m_spawned)
+        self.Respawn();
+}
+
+void Apple::Respawn()
+{
+    // -- set the flag, and respawn at a random time
+    self.m_spawned = false;
+    int rand_time = 1000 + RandomInt(3000);
+    schedule(rand_time, self, hash("Spawn"));
+}
+
+void Apple::OnCollision()
+{
+    // -- set the flag, and respawn at a random time
+    self.m_spawned = false;
+    int rand_time = 1000 + RandomInt(3000);
+    schedule(rand_time, self, hash("Spawn"));
+}
+
+// ====================================================================================================================
 // Worms Game implementation
 // ====================================================================================================================
 void WormsGame::OnCreate() : DefaultGame
@@ -230,9 +279,10 @@ void WormsGame::OnCreate() : DefaultGame
     // -- create the field
     bool[3072] self.m_arena;
 
-    bool self.m_hasApple = false;
-    vector3f self.m_apple;
-    int self.m_appleTime = GetSimTime() + 4000;
+    // -- the set of apples
+    int self.m_appleGroup = create CObjectGroup("AppleGroup");
+    int self.m_clientAppleCount = 0;
+    vector3f[16] self.m_clientApples;
 
     // -- issue the countdown
     int self.m_updateTime = GetSimTime();
@@ -277,6 +327,11 @@ void WormsGame::OnUpdate()
                 player.m_nextDirection = g_directionUp;
                 player = self.m_playerGroup.Next();
             }
+
+            // -- spawn the apples
+            int i;
+            for (i = 0; i < self.m_appleCount; ++i)
+                self.m_appleGroup.AddObject(create Apple());
         }
     }
 
@@ -298,6 +353,21 @@ void WormsGame::OnUpdate()
                 player.OnUpdate(0.0f);
                 player = self.m_playerGroup.Next();
             }
+
+            // -- if we're the host, notify the client of the updated apple positions
+            if (self.m_isHost)
+            {
+                SocketCommand("NotifyClearApples");
+                object apple = self.m_appleGroup.First();
+                while (IsObject(apple))
+                {
+                    if (apple.m_spawned)
+                    {
+                        SocketCommand("NotifyApple", apple.m_position);
+                    }
+                    apple = self.m_appleGroup.Next();
+                }
+            }
         }
         else if (self.m_requireResponseID > 0)
         {
@@ -313,66 +383,57 @@ void WormsGame::OnUpdate()
     if (self.m_gameCountdown > 0)
         return;
 
-    // -- see if it's time to create an apple
-    if (self.m_isHost && self.SimTime > self.m_appleTime && !self.m_hasApple)
-    {
-        self.SpawnApple();
-    }
-
-    // -- draw the apple
+    // -- draw the apples
     CancelDrawRequests(8000);
-    if (self.m_hasApple)
-    {
-        vector3f draw_position = self.m_apple;
-        draw_position:x *= g_playerSize;
-        draw_position:y *= g_playerSize;
-        
-        // -- draw the 4 lines creating the "triangle-ish" ship
-        DrawRect(8000, draw_position, g_playerSize, g_playerSize, gCOLOR_RED);
-    }
 
-    // -- if we're the host, notify the client
+    // -- if we're the host, draw the apples based on the actual group
     if (self.m_isHost)
-        SocketCommand("NotifyApple", self.m_hasApple, self.m_apple);
-}
-
-void WormsGame::SpawnApple()
-{
-    // -- find a location
-    int i;
-    for (i = 0; i < 100; ++i)
     {
-        int rand_x = RandomInt(64);
-        int rand_y = RandomInt(48);
-        vector3f rand_position = StringCat(rand_x, " ", rand_y, " 0");
-        if (!self.IsPositionOccupied(rand_position))
+        object apple = self.m_appleGroup.First();
+        while (IsObject(apple))
         {
-            self.m_hasApple = true;
-            self.m_apple = rand_position;
-            break;
+            if (apple.m_spawned)
+            {
+                vector3f draw_position = apple.m_position;
+                draw_position:x *= g_playerSize;
+                draw_position:y *= g_playerSize;
+                
+                // -- draw the 4 lines creating the "triangle-ish" ship
+                DrawRect(8000, draw_position, g_playerSize, g_playerSize, gCOLOR_RED);
+            }
+            apple = self.m_appleGroup.Next();
         }
     }
-
-    // -- either way, update the spawn time
-    self.m_appleTime = self.SimTime + 4000;
+    else
+    {
+        int i;
+        for (i = 0; i < self.m_clientAppleCount; ++i)
+        {
+            vector3f draw_position = gCurrentGame.m_clientApples[i];
+            draw_position:x *= g_playerSize;
+            draw_position:y *= g_playerSize;
+            
+            // -- draw the 4 lines creating the "triangle-ish" ship
+            DrawRect(8000, draw_position, g_playerSize, g_playerSize, gCOLOR_RED);
+        }
+    }
 }
 
 bool WormsGame::FoundApplePosition(vector3f position)
 {
-    if (self.m_hasApple && self.m_apple == position)
+    object apple = self.m_appleGroup.First();
+    while (IsObject(apple))
     {
-        self.m_hasApple = false;
-        self.m_updatePeriod -= 5;
-        if (self.m_updatePeriod < 10)
-            self.m_updatePeriod = 10;
-
-        // -- update the spawn time
-        self.m_appleTime = self.SimTime + 4000;
-
-        return (true);
+        if (apple.m_spawned && apple.m_position == position)
+        {
+            apple.Respawn();
+            self.m_updatePeriod -= 5;
+            return (true);
+        }
+        apple = self.m_appleGroup.Next();
     }
 
-    // -- no apple, or not apple position
+    // -- no apples eaten
     return (false);
 }
 
@@ -441,12 +502,19 @@ void WormsGame::UpdateKeys(int update_time)
         local_player.SetDirection(g_directionDown);
 }
 
-void StartWorms(string player_name)
+void StartWorms(string player_name, int apple_count)
 {
     CancelDrawRequests(-1);
     ResetGame();
     gCurrentGame = create WormsGame("CurrentGame");
     gCurrentGame.m_isHost = true;
+
+    // -- set the apple count, to be created when the game is actually started
+    if (apple_count < 1)
+        apple_count = 1;
+    else if (apple_count > 16)
+        apple_count = 16;
+    gCurrentGame.m_appleCount = apple_count;
 
     // -- create the player
     gCurrentGame.CreatePlayer(player_name, true, "22 24 0");
@@ -522,10 +590,17 @@ void NotifyPlayerUpdateResponse(int packet_index)
     }
 }
 
-void NotifyApple(bool has_apple, vector3f apple_position)
+void NotifyClearApples()
 {
-    gCurrentGame.m_hasApple = has_apple;
-    gCurrentGame.m_apple = apple_position;
+    gCurrentGame.m_clientAppleCount = 0;
+}
+
+void NotifyApple(vector3f apple_position)
+{
+    if (gCurrentGame.m_clientAppleCount < 16)
+    {
+        gCurrentGame.m_clientApples[gCurrentGame.m_clientAppleCount] = apple_position;
+    }
 }
 
 void NotifyGameOver(bool you_win)
