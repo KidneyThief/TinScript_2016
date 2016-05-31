@@ -281,6 +281,7 @@ void WormsGame::OnCreate() : DefaultGame
 
     // -- the set of apples
     int self.m_appleGroup = create CObjectGroup("AppleGroup");
+    int self.m_appleCount = 0;
     int self.m_clientAppleCount = 0;
     vector3f[16] self.m_clientApples;
 
