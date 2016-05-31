@@ -188,7 +188,10 @@ void Player::NotifyPosition()
 
     // -- notify the client
     if (gCurrentGame.m_isHost)
-        SocketCommand("NotifyPlayerUpdate", is_local_player, self.position, self.length);
+    {
+        self.m_requireResponseID = GetSimTime();
+        SocketCommand("NotifyPlayerUpdate", self.m_requireResponseID, is_local_player, self.position, self.length);
+    }
 }
 
 void Player::OnCollision()
@@ -218,7 +221,7 @@ void WormsGame::OnCreate() : DefaultGame
     object self.m_localPlayer;
 
     int self.m_lastUpdateTime = GetSimTime();
-    int self.m_updatePeriod = 200;
+    int self.m_updatePeriod = 100;
 
     // -- create the field
     bool[3072] self.m_arena;
@@ -233,6 +236,8 @@ void WormsGame::OnCreate() : DefaultGame
     bool self.m_gameStarted = false;
     bool self.m_isHost = false;
     int self.m_clientUpdateTime = 0;
+
+    int self.m_requireResponseID = 0;
 }
 
 void WormsGame::OnUpdate()
@@ -279,7 +284,7 @@ void WormsGame::OnUpdate()
     {
         int cur_time = GetSimTime();
         int elapsed = cur_time - self.m_lastUpdateTime;
-        if (elapsed >= self.m_updatePeriod)
+        if (elapsed >= self.m_updatePeriod && self.m_requireResponseID == 0)
         {
             self.m_lastUpdateTime = cur_time;
 
@@ -481,7 +486,7 @@ void NotifyPlayerMove(int direction)
     }
 }
 
-void NotifyPlayerUpdate(bool is_local_player, vector3f position, int length)
+void NotifyPlayerUpdate(int packet_index, bool is_local_player, vector3f position, int length)
 {
     // -- find the player
     int player_index = 0;
@@ -491,6 +496,17 @@ void NotifyPlayerUpdate(bool is_local_player, vector3f position, int length)
     player.position = position;
     player.length = length;
     player.NotifyPosition();
+
+    // -- let the host know we received the update
+    SocketCommand("NotifyPlayerUpdateResponse", packet_index);
+}
+
+void NotifyPlayerUpdateResponse(int packet_index)
+{
+    if (packet_index >= gCurrentGame.m_requireResponseID)
+    {
+        gCurrentGame.m_requireResponseID = 0;
+    }
 }
 
 void NotifyApple(bool has_apple, vector3f apple_position)
