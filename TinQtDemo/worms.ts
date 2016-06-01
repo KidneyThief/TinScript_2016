@@ -125,17 +125,10 @@ void Player::OnUpdate(float deltaTime)
     // -- if the position is occupied, game over
     if (self.m_direction != g_directionNone)
     {
-        if (gCurrentGame.IsPositionOccupied(self.position))
+        // -- see if we ate the apple
+        if (gCurrentGame.FoundApplePosition(self.position))
         {
-            self.OnCollision();
-        }
-        else
-        {
-            // -- see if we ate the apple
-            if (gCurrentGame.FoundApplePosition(self.position))
-            {
-                self.length += 3;
-            }
+            self.length += 3;
         }
     }
 
@@ -210,7 +203,8 @@ void Player::OnCollision()
     // -- notify the client
     SocketCommand("NotifyGameOver", is_local_player);
 
-    SimPause(); 
+    SimPause();
+    gCurrentGame.m_gameStarted = false;
 }
 
 // ====================================================================================================================
@@ -352,6 +346,19 @@ void WormsGame::OnUpdate()
             {
                 player.OnUpdate(0.0f);
                 player = self.m_playerGroup.Next();
+            }
+
+            // -- after both players have been updated, we check both players to see
+            // -- if they've collided - avoids server bias
+            if (self.m_gameStarted)
+            {
+                player = self.m_playerGroup.First();
+                while (IsObject(player))
+                {
+                    if (gCurrentGame.IsPositionOccupied(player.position))
+                        player.OnCollision();
+                    player = self.m_playerGroup.Next();
+                }
             }
 
             // -- notify the client of the updated apple positions
@@ -601,9 +608,17 @@ void NotifyApple(vector3f apple_position)
 void NotifyGameOver(bool you_win)
 {
     if (!you_win)
-        DrawText(9000, '320 240 0', "Y O U   L O S E", gCOLOR_RED);
+    {
+        string lose_string;
+        object challenger = gCurrentGame.m_playerGroup.GetObjectByIndex(1);
+        if (IsObject(challenger))
+            lose_string = StringCat(challenger.GetObjectName(), " Wins!");
+        else
+            lose_string = StringCat("You Lose!");
+        DrawText(9000, '320 240 0', lose_string, gCOLOR_RED);
+    }
     else
-        DrawText(9000, '320 240 0', "Y O U   W I N", gCOLOR_RED);
+        DrawText(9000, '320 240 0', "You Win!", gCOLOR_GREEN);
 
     SimPause();
 }
