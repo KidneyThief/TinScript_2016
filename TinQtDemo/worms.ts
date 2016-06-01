@@ -36,6 +36,9 @@ void Player::OnCreate() : SceneObject
     int self.m_direction = g_directionNone;
     int self.m_nextDirection = g_directionNone;
 
+    int self.m_score = 0;
+    bool self.m_hasCollided = false;
+
     self.position;
     float self.radius;
 
@@ -48,6 +51,7 @@ void Player::OnCreate() : SceneObject
 void Player::Initialize(vector3f position)
 {
     self.position = position;
+    self.m_hasCollided = false;
 
     // -- the radius is global
     self.radius = g_playerSize;
@@ -213,16 +217,8 @@ void Player::NotifyPosition()
 
 void Player::OnCollision()
 {
-    // -- game over, at the center of the screen
-    bool is_local_player = (self == gCurrentGame.m_localPlayer);
-    if (is_local_player)
-        DrawText(9000, '320 240 0', "Y O U   L O S E", gCOLOR_RED);
-    else
-        DrawText(9000, '320 240 0', "Y O U   W I N", gCOLOR_RED);
-
     // -- notify both players
-    SocketCommand("NotifyGameOver", is_local_player);
-    NotifyGameOver(!is_local_player);
+    self.m_hasCollided = true;
 }
 
 // ====================================================================================================================
@@ -304,7 +300,8 @@ void WormsGame::Restart()
     // -- clear all draw requests
     CancelDrawRequests(-1);
 
-    // -- reset the game bools
+    // -- reset the game countdown and state bools
+    self.m_gameCountdown = 5000;
     self.m_gameStarted = false;
     self.m_gameRematch = false;
 
@@ -320,9 +317,6 @@ void WormsGame::Restart()
         destroy self.m_appleGroup;
         object self.m_appleGroup = create CObjectGroup("AppleGroup");
         self.m_clientAppleCount = 0;
-
-        // -- reset the game countdown and state bools
-        self.m_gameCountdown = 5000;
 
         // -- initialize the player positions
         object local_player = self.m_playerGroup.GetObjectByIndex(0);
@@ -414,11 +408,28 @@ void WormsGame::OnUpdate()
         {
             self.m_lastUpdateTime = cur_time;
 
+            int collision_count = 0;
             object player = self.m_playerGroup.First();
             while (IsObject(player))
             {
                 player.OnUpdate(0.0f);
+                if (player.m_hasCollided)
+                    ++collision_count;
                 player = self.m_playerGroup.Next();
+            }
+
+            // -- if either player has collided, the game is over
+            bool host_wins;
+            if (collision_count == 1)
+            {
+                host_wins = !gCurrentGame.m_localPlayer.m_hasCollided;
+                SocketCommand("NotifyGameOver", !host_wins, false);
+                NotifyGameOver(host_wins, false);
+            }
+            else if (collision_count == 2)
+            {
+                SocketCommand("NotifyGameOver", false, true);
+                NotifyGameOver(false, true);
             }
 
             // -- notify the client of the updated apple positions
@@ -591,7 +602,9 @@ void WormsGame::DialogPressEnter()
     gCurrentGame.Restart();
 
     // -- if we're not the host, then we're accepting the challenge
-    if (!self.m_isHost)
+    if (self.m_isHost)
+        DrawText(8000, "320 240 0", "Waiting for challenger...", gCOLOR_BLUE);
+    else
         SocketCommand("Host_NotifyChallenge");
 }
 
@@ -670,7 +683,7 @@ void Host_NotifyPlayerMove(int direction)
     }
 }
 
-void Cient_NotifyPlayerUpdate(int packet_index, bool is_local_player, vector3f position, int length)
+void Client_NotifyPlayerUpdate(int packet_index, bool is_local_player, vector3f position, int length)
 {
     // -- find the player
     int player_index = 0;
@@ -706,14 +719,27 @@ void Client_NotifyApple(vector3f apple_position)
     }
 }
 
-void NotifyGameOver(bool you_win)
+void NotifyGameOver(bool you_win, bool is_tie)
 {
     // -- set the bools
     gCurrentGame.m_gameStarted = false;
     gCurrentGame.m_gameRematch = true;
+    object challenger = gCurrentGame.m_playerGroup.GetObjectByIndex(1);
 
-    if (!you_win)
+    if (is_tie)
     {
+        ++gCurrentGame.m_localPlayer.m_score;
+        if (IsObject(challenger))
+            ++challenger.m_score;
+
+        DrawText(9000, '320 240 0', "Tie Game!", gCOLOR_BLUE);
+    }
+
+    else if (!you_win)
+    {
+        if (IsObject(challenger))
+            ++challenger.m_score;
+
         string lose_string;
         object challenger = gCurrentGame.m_playerGroup.GetObjectByIndex(1);
         if (IsObject(challenger))
@@ -723,7 +749,19 @@ void NotifyGameOver(bool you_win)
         DrawText(9000, '320 240 0', lose_string, gCOLOR_RED);
     }
     else
+    {
+        ++gCurrentGame.m_localPlayer.m_score;
         DrawText(9000, '320 240 0', "You Win!", gCOLOR_GREEN);
+    }
+
+    // -- draw the scores
+    string my_score = StringCat(gCurrentGame.m_localPlayer.GetObjectName(), ": ", gCurrentGame.m_localPlayer.m_score);
+    DrawText(9000, '10 10 0', my_score, gCOLOR_GREEN);
+    if (IsObject(challenger))
+    {
+        string challenger_score = StringCat(challenger.GetObjectName(), ": ", challenger.m_score);
+        DrawText(9000, '10 20 0', challenger_score, gCOLOR_BLUE);
+    }
 
     if (gCurrentGame.m_isHost)
         gCurrentGame.DialogPlayAgain();
