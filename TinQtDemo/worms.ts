@@ -51,6 +51,14 @@ void Player::Initialize(vector3f position)
 
     // -- the radius is global
     self.radius = g_playerSize;
+
+    // -- move initialization
+    self.m_direction = g_directionNone;
+    self.m_nextDirection = g_directionNone;
+
+    // -- tail initialization
+    self.m_currentDrawRequest = 0;
+    self.length = 0;
 }
 
 void Player::SetDirection(int direction)
@@ -70,7 +78,7 @@ void Player::SetDirection(int direction)
 
     // -- if we're the challenger, notify the host
     if (!gCurrentGame.m_isHost)
-        SocketCommand("NotifyPlayerMove", direction);
+        SocketCommand("Host_NotifyPlayerMove", direction);
 }
 
 void Player::OnUpdate(float deltaTime)
@@ -125,8 +133,20 @@ void Player::OnUpdate(float deltaTime)
     // -- if the position is occupied, game over
     if (self.m_direction != g_directionNone)
     {
+        if (gCurrentGame.IsPositionOccupied(self.position))
+        {
+            self.OnCollision();
+
+            // -- if we're updating second - ensure the first player isn't at the same spot
+            object host_player = gCurrentGame.m_playerGroup.GetObjectByIndex(0);
+            if (self != host_player && self.position == host_player.position)
+            {
+                host_player.OnCollision();
+            }
+        }
+
         // -- see if we ate the apple
-        if (gCurrentGame.FoundApplePosition(self.position))
+        else if (gCurrentGame.FoundApplePosition(self.position))
         {
             self.length += 3;
         }
@@ -187,7 +207,7 @@ void Player::NotifyPosition()
             ++gCurrentGame.m_requireResponseID;
         else
             gCurrentGame.m_requireResponseID = current_time;
-        SocketCommand("NotifyPlayerUpdate", gCurrentGame.m_requireResponseID, is_local_player, self.position, self.length);
+        SocketCommand("Client_NotifyPlayerUpdate", gCurrentGame.m_requireResponseID, is_local_player, self.position, self.length);
     }
 }
 
@@ -200,11 +220,9 @@ void Player::OnCollision()
     else
         DrawText(9000, '320 240 0', "Y O U   W I N", gCOLOR_RED);
 
-    // -- notify the client
+    // -- notify both players
     SocketCommand("NotifyGameOver", is_local_player);
-
-    SimPause();
-    gCurrentGame.m_gameStarted = false;
+    NotifyGameOver(!is_local_player);
 }
 
 // ====================================================================================================================
@@ -275,10 +293,65 @@ void WormsGame::OnCreate() : DefaultGame
     int self.m_updateTime = GetSimTime();
     int self.m_gameCountdown = 5000;
     bool self.m_gameStarted = false;
+    bool self.m_gameRematch = false;
     bool self.m_isHost = false;
-    int self.m_clientUpdateTime = 0;
 
     int self.m_requireResponseID = 0;
+}
+
+void WormsGame::Restart()
+{
+    // -- clear all draw requests
+    CancelDrawRequests(-1);
+
+    // -- reset the game bools
+    self.m_gameStarted = false;
+    self.m_gameRematch = false;
+
+    // -- perform the reset needed by the host
+    if (self.m_isHost)
+    {
+        // -- reset the arena
+        int i;
+        for (i = 0; i < 3072; ++i)
+            self.m_arena[i] = false;
+
+        // -- clear the apples group
+        destroy self.m_appleGroup;
+        object self.m_appleGroup = create CObjectGroup("AppleGroup");
+        self.m_clientAppleCount = 0;
+
+        // -- reset the game countdown and state bools
+        self.m_gameCountdown = 5000;
+
+        // -- initialize the player positions
+        object local_player = self.m_playerGroup.GetObjectByIndex(0);
+        object challenger = self.m_playerGroup.GetObjectByIndex(1);
+        if (RandomInt(100) < 50)
+        {
+            local_player.Initialize("22 24 0");
+            if (IsObject(challenger))
+                challenger.Initialize("42 24 0");
+        }
+        else
+        {
+            local_player.Initialize("42 24 0");
+            if (IsObject(challenger))
+                challenger.Initialize("22 24 0");
+        }
+
+        // -- update the player positions
+        if (IsObject(challenger))
+        {
+            int current_time = GetSimTime();
+            gCurrentGame.m_requireResponseID = current_time + 1;
+            SocketCommand("Client_NotifyPlayerUpdate", current_time, false, local_player.position, 1);
+            SocketCommand("Client_NotifyPlayerUpdate", current_time + 1, true, challenger.position, 1);
+
+            // -- notify the challenger we're waiting for a re-match
+            SocketCommand("Client_NotifyRematchRequest");
+        }
+    }
 }
 
 void WormsGame::OnDestroy()
@@ -329,7 +402,7 @@ void WormsGame::OnUpdate()
     }
 
     // -- update the input
-    self.UpdateKeys(self.SimTime);
+    //self.UpdateKeys(self.SimTime);
 
     // -- only the host updates the players
     if (self.m_isHost)
@@ -348,26 +421,13 @@ void WormsGame::OnUpdate()
                 player = self.m_playerGroup.Next();
             }
 
-            // -- after both players have been updated, we check both players to see
-            // -- if they've collided - avoids server bias
-            if (self.m_gameStarted)
-            {
-                player = self.m_playerGroup.First();
-                while (IsObject(player))
-                {
-                    if (gCurrentGame.IsPositionOccupied(player.position))
-                        player.OnCollision();
-                    player = self.m_playerGroup.Next();
-                }
-            }
-
             // -- notify the client of the updated apple positions
-            SocketCommand("NotifyClearApples");
+            SocketCommand("Client_NotifyClearApples");
             object apple = self.m_appleGroup.First();
             while (IsObject(apple))
             {
                 if (apple.m_spawned)
-                    SocketCommand("NotifyApple", apple.m_position);
+                    SocketCommand("Client_NotifyApple", apple.m_position);
                 apple = self.m_appleGroup.Next();
             }
         }
@@ -382,6 +442,7 @@ void WormsGame::OnUpdate()
         }
     }
 
+    // -- if we haven't actually started, no updates
     if (self.m_gameCountdown > 0)
         return;
 
@@ -400,7 +461,7 @@ void WormsGame::OnUpdate()
                 draw_position:x *= g_playerSize;
                 draw_position:y *= g_playerSize;
                 
-                // -- draw the 4 lines creating the "triangle-ish" ship
+                // -- draw the apple in red
                 DrawRect(8000, draw_position, g_playerSize, g_playerSize, gCOLOR_RED);
             }
             apple = self.m_appleGroup.Next();
@@ -478,7 +539,7 @@ object WormsGame::CreatePlayer(string name, bool is_local, vector3f position)
     return (player);
 }
 
-void WormsGame::UpdateKeys(int update_time)
+void WormsGame::OnKeyEvent(int key_code, bool pressed)
 {
     if (self.m_gameCountdown > 0)
         return;
@@ -487,22 +548,54 @@ void WormsGame::UpdateKeys(int update_time)
     if (!IsObject(local_player))
         return;
 
+    // -- only handle key presses
+    if (!pressed)
+        return;
+    
     // -- move up
-    if (IsKeyPressed(KeyCode_i))
+    if (key_code == KeyCode_i)
         local_player.SetDirection(g_directionUp);
     
     // -- rotate left
-    if (IsKeyPressed(KeyCode_j))
+    if (key_code == KeyCode_j)
         local_player.SetDirection(g_directionLeft);
     
     // -- move right
-    if (IsKeyPressed(KeyCode_l))
+    if (key_code == KeyCode_l)
         local_player.SetDirection(g_directionRight);
     
     // -- move down
-    if (IsKeyPressed(KeyCode_k))
+    if (key_code == KeyCode_k)
         local_player.SetDirection(g_directionDown);
+
+    // -- enter
+    if (key_code == KeyCode_enter)
+        self.DialogPressEnter();
 }
+
+void WormsGame::DialogPlayAgain()
+{
+    // -- set the bool
+    self.m_gameRematch = true;
+
+    // -- if we're the host, wait for a "press to issue rematch"
+    DrawText(9000, '320 400 0', "Press <return> to play again!", gCOLOR_BLUE);
+}
+
+void WormsGame::DialogPressEnter()
+{
+    if (!self.m_gameRematch)
+        return;
+
+    // -- we must have pressed enter
+    gCurrentGame.Restart();
+
+    // -- if we're not the host, then we're accepting the challenge
+    if (!self.m_isHost)
+        SocketCommand("Host_NotifyChallenge");
+}
+
+// -- network related functions ----------------------------------------------------------------------------------
 
 void StartWorms(string player_name, int apple_count)
 {
@@ -521,6 +614,8 @@ void StartWorms(string player_name, int apple_count)
     // -- create the player
     gCurrentGame.CreatePlayer(player_name, true, "22 24 0");
 
+    DrawText(8000, "320 240 0", "Waiting for challenger...", gCOLOR_BLUE);
+
     // -- this will be the host
     SocketListen();
 }
@@ -538,29 +633,35 @@ void ChallengeWorms(string player_name, string ip_address)
     // -- the challenger is player two
     if (!SocketIsConnected())
         SocketConnect(ip_address);
-    SocketCommand("NotifyChallenge", player_name);
+
+    SocketCommand("Host_NotifyChallenge", player_name);
 }
 
-void NotifyChallenge(string challenger_name)
+void Host_NotifyChallenge(string challenger_name)
 {
     // -- create the player
-    gCurrentGame.CreatePlayer(challenger_name, false, "42 24 0");
-    SocketCommand("AcceptChallenge", gCurrentGame.m_localPlayer.GetObjectName());
+    if (gCurrentGame.m_playerGroup.Used() < 2)
+        gCurrentGame.CreatePlayer(challenger_name, false, "42 24 0");
+
+    SocketCommand("Client_AcceptChallenge", gCurrentGame.m_localPlayer.GetObjectName());
 
     // -- set the bool to start the game
     gCurrentGame.m_gameStarted = true;
+    gCurrentGame.m_gameRematch = false;
 }
 
-void AcceptChallenge(string challenger_name)
+void Client_AcceptChallenge(string challenger_name)
 {
     // -- create the player
-    gCurrentGame.CreatePlayer(challenger_name, false, "24 24 0");
+    if (gCurrentGame.m_playerGroup.Used() < 2)
+        gCurrentGame.CreatePlayer(challenger_name, false, "24 24 0");
 
     // -- set the bool to notify that the game has started
     gCurrentGame.m_gameStarted = true;
+    gCurrentGame.m_gameRematch = false;
 }
 
-void NotifyPlayerMove(int direction)
+void Host_NotifyPlayerMove(int direction)
 {
     object challenger = gCurrentGame.m_playerGroup.GetObjectByIndex(1);
     if (IsObject(challenger))
@@ -569,7 +670,7 @@ void NotifyPlayerMove(int direction)
     }
 }
 
-void NotifyPlayerUpdate(int packet_index, bool is_local_player, vector3f position, int length)
+void Cient_NotifyPlayerUpdate(int packet_index, bool is_local_player, vector3f position, int length)
 {
     // -- find the player
     int player_index = 0;
@@ -581,10 +682,10 @@ void NotifyPlayerUpdate(int packet_index, bool is_local_player, vector3f positio
     player.NotifyPosition();
 
     // -- let the host know we received the update
-    SocketCommand("NotifyPlayerUpdateResponse", packet_index);
+    SocketCommand("Host_NotifyPlayerUpdateResponse", packet_index);
 }
 
-void NotifyPlayerUpdateResponse(int packet_index)
+void Host_NotifyPlayerUpdateResponse(int packet_index)
 {
     if (packet_index >= gCurrentGame.m_requireResponseID)
     {
@@ -592,21 +693,25 @@ void NotifyPlayerUpdateResponse(int packet_index)
     }
 }
 
-void NotifyClearApples()
+void Client_NotifyClearApples()
 {
     gCurrentGame.m_clientAppleCount = 0;
 }
 
-void NotifyApple(vector3f apple_position)
+void Client_NotifyApple(vector3f apple_position)
 {
     if (gCurrentGame.m_clientAppleCount < 16)
     {
-        gCurrentGame.m_clientApples[gCurrentGame.m_clientAppleCount] = apple_position;
+        gCurrentGame.m_clientApples[gCurrentGame.m_clientAppleCount++] = apple_position;
     }
 }
 
 void NotifyGameOver(bool you_win)
 {
+    // -- set the bools
+    gCurrentGame.m_gameStarted = false;
+    gCurrentGame.m_gameRematch = true;
+
     if (!you_win)
     {
         string lose_string;
@@ -620,7 +725,13 @@ void NotifyGameOver(bool you_win)
     else
         DrawText(9000, '320 240 0', "You Win!", gCOLOR_GREEN);
 
-    SimPause();
+    if (gCurrentGame.m_isHost)
+        gCurrentGame.DialogPlayAgain();
+}
+
+void Client_NotifyRematchRequest()
+{
+    gCurrentGame.DialogPlayAgain();
 }
 
 // ====================================================================================================================
