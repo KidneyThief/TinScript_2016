@@ -139,11 +139,21 @@ void Player::OnUpdate(float deltaTime)
     {
         if (gCurrentGame.IsPositionOccupied(self.position))
         {
+            // $$$TZA DEBUG ME!!!  
+            /*  != is failing here???
+            if (self.GetObjectID() != gCurrentGame.m_localPlayer.GetObjectID())
+                Print("DEBUG WTF", " ", self, " ", gCurrentGame.m_localPlayer);
+            else
+                Print("DEBUG ", " ", self, " ", gCurrentGame.m_localPlayer);
+            */
+
             self.OnCollision();
 
             // -- if we're updating second - ensure the first player isn't at the same spot
-            object host_player = gCurrentGame.m_playerGroup.GetObjectByIndex(0);
-            if (self != host_player && self.position == host_player.position)
+            object host_player = gCurrentGame.m_localPlayer;
+            if (self == host_player)
+                Print("DEBUG ME!!");
+            else if (self.position == host_player.position)
             {
                 host_player.OnCollision();
             }
@@ -270,6 +280,9 @@ void WormsGame::OnCreate() : DefaultGame
     // -- initialize the hierarchy
     DefaultGame::OnInit();
 
+    // -- need to determine if we've lost a connection
+    bool self.m_isConnected = false;
+
     object self.m_playerGroup = create CObjectGroup("PlayerGroup");
     object self.m_localPlayer;
 
@@ -359,6 +372,18 @@ void WormsGame::OnUpdate()
     // -- initialize the hierarchy
     DefaultGame::OnUpdate();
 
+    // -- if we've lost the connection...
+    if (self.m_isConnected && !SocketIsConnected())
+    {
+        // -- the game is no longer started
+        gCurrentGame.m_gameStarted = false;
+
+        // -- print the message - note, OnUpdate() will still get called every frame
+        CancelDrawRequests(9000);
+        DrawText(9000, '320 400 0', "Your connection has been lost...", gCOLOR_BLUE);
+        return;
+    }
+
     int deltaTime = GetSimTime() - self.m_updateTime;
     self.m_updateTime = GetSimTime();
 
@@ -395,9 +420,6 @@ void WormsGame::OnUpdate()
         }
     }
 
-    // -- update the input
-    //self.UpdateKeys(self.SimTime);
-
     // -- only the host updates the players
     if (self.m_isHost)
     {
@@ -408,17 +430,22 @@ void WormsGame::OnUpdate()
         {
             self.m_lastUpdateTime = cur_time;
 
-            int collision_count = 0;
             object player = self.m_playerGroup.First();
             while (IsObject(player))
             {
                 player.OnUpdate(0.0f);
-                if (player.m_hasCollided)
-                    ++collision_count;
                 player = self.m_playerGroup.Next();
             }
 
             // -- if either player has collided, the game is over
+            int collision_count = 0;
+            object challenger = self.m_playerGroup.GetObjectByIndex(1);
+            if (self.m_localPlayer.m_hasCollided)
+                ++collision_count;
+            if (IsObject(challenger) && challenger.m_hasCollided)
+                ++collision_count;
+
+
             bool host_wins;
             if (collision_count == 1)
             {
@@ -656,6 +683,10 @@ void Host_NotifyChallenge(string challenger_name)
     if (gCurrentGame.m_playerGroup.Used() < 2)
         gCurrentGame.CreatePlayer(challenger_name, false, "42 24 0");
 
+    // -- set the connected bool
+    gCurrentGame.m_isConnected = true;
+
+    // -- send the handshake
     SocketCommand("Client_AcceptChallenge", gCurrentGame.m_localPlayer.GetObjectName());
 
     // -- set the bool to start the game
@@ -668,6 +699,9 @@ void Client_AcceptChallenge(string challenger_name)
     // -- create the player
     if (gCurrentGame.m_playerGroup.Used() < 2)
         gCurrentGame.CreatePlayer(challenger_name, false, "24 24 0");
+
+    // -- set the connected bool
+    gCurrentGame.m_isConnected = true;
 
     // -- set the bool to notify that the game has started
     gCurrentGame.m_gameStarted = true;
@@ -756,11 +790,11 @@ void NotifyGameOver(bool you_win, bool is_tie)
 
     // -- draw the scores
     string my_score = StringCat(gCurrentGame.m_localPlayer.GetObjectName(), ": ", gCurrentGame.m_localPlayer.m_score);
-    DrawText(9000, '10 10 0', my_score, gCOLOR_GREEN);
+    DrawText(9000, '200 10 0', my_score, gCurrentGame.m_isHost ? gCOLOR_BLUE : gCOLOR_GREEN);
     if (IsObject(challenger))
     {
         string challenger_score = StringCat(challenger.GetObjectName(), ": ", challenger.m_score);
-        DrawText(9000, '10 20 0', challenger_score, gCOLOR_BLUE);
+        DrawText(9000, '200 30 0', challenger_score, gCurrentGame.m_isHost ? gCOLOR_GREEN : gCOLOR_BLUE);
     }
 
     if (gCurrentGame.m_isHost)
