@@ -1565,8 +1565,19 @@ bool8 TryParseStatement(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTree
                                                     readexpr.linenumber);
 
             // -- the statement node is now the condition for the ifstatment, and the statement root is now the if
-            ifstmtnode->leftchild = statementroot;
-            statementroot = ifstmtnode;
+            // -- this speems specific to a single assign...  what if the tenrnary conditional was an assign statement?
+            // -- if the statement root is an assignment, then the leftchild of the assignment, then the right child
+            // -- is actually the conditional for the ternary op
+            if (statementroot->GetType() == eBinaryOp && ((CBinaryOpNode*)statementroot)->IsAssignOpNode())
+            {
+                ifstmtnode->leftchild = statementroot->rightchild;
+                statementroot->rightchild = ifstmtnode;
+            }
+            else
+            {
+                ifstmtnode->leftchild = statementroot;
+                statementroot = ifstmtnode;
+            }
 
             // -- create the conditional branch node
             CCondBranchNode* condbranchnode = TinAlloc(ALLOC_TreeNode, CCondBranchNode, codeblock,
@@ -1591,9 +1602,6 @@ bool8 TryParseStatement(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTree
                 return (false);
             }
 
-            // -- pop the ternary depth
-            --gTernaryDepth;
-
             // -- read the right "false" side of the conditional branch
             result = TryParseStatement(codeblock, readexpr, condbranchnode->rightchild, false);
             if (!result || condbranchnode->rightchild == nullptr)
@@ -1603,6 +1611,11 @@ bool8 TryParseStatement(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTree
                 --gTernaryDepth;
                 return (false);
             }
+
+            // -- pop the ternary depth
+            // -- note:  as long as the ternary depth is "pushed" the "ternary" statement won't consume
+            // -- the semi-colon belonging to the actual statement
+            --gTernaryDepth;
 
             // -- read the next token 
             nexttoken = readexpr;

@@ -1279,6 +1279,7 @@ int32 CSwitchStatementNode::Eval(uint32*& instrptr, eVarType pushresult, bool co
     size += PushInstruction(countonly, instrptr, OP_Pop, DBG_instr, "pop unmatched switch value");
 
     // -- if we have a default case, then we jump to wherever the default instructions start
+    uint32* no_default_branch = nullptr;
     if (m_defaultNode != nullptr)
     {
         size += PushInstruction(countonly, instrptr, OP_Branch, DBG_instr, "default case branch");
@@ -1287,6 +1288,16 @@ int32 CSwitchStatementNode::Eval(uint32*& instrptr, eVarType pushresult, bool co
         if (!countonly)
             m_defaultNode->SetDefaultOffsetInstr(instrptr);
 
+        size += PushInstruction(countonly, instrptr, 0, DBG_NULL, "placeholder for default branch");
+    }
+
+    //-- otherwise, no default instruction - we need to jump to the end of the switch statement instructions
+    // -- the same place the break nodes jump to
+    else
+    {
+        size += PushInstruction(countonly, instrptr, OP_Branch, DBG_instr, "no default branch");
+        if (!countonly)
+            no_default_branch = instrptr;
         size += PushInstruction(countonly, instrptr, 0, DBG_NULL, "placeholder for branch");
     }
 
@@ -1317,6 +1328,14 @@ int32 CSwitchStatementNode::Eval(uint32*& instrptr, eVarType pushresult, bool co
         for (int32 i = 0; i < mLoopJumpNodeCount; ++i)
         {
             mLoopJumpNodeList[i]->NotifyLoopInstr(nullptr, instrptr);
+        }
+
+        // -- if we have no default case, we also need to set the no_default branch
+        if (no_default_branch != nullptr)
+        {
+            int32 jump_offset = (int32)(kPointerDiffUInt32(instrptr, no_default_branch)) >> 2;
+            jump_offset -= 1;
+            *no_default_branch = jump_offset;
         }
     }
 

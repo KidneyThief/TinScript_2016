@@ -746,21 +746,16 @@ bool8 ObjectBinaryOp(CScriptContext* script_context, eOpCode op, eVarType& resul
 
     // -- perform the operation - note, both object handle values
     // -- can differ, but if neither object actually exists, they are equal
+    // -- note: all comparisons follow the same result as, say, strcmp()...
+    // -- '0' is equal, -1 is (a < b), '1' is (a > b)
     switch (op)
     {
+        case OP_CompareNotEqual:
         case OP_CompareEqual:
         {
             CObjectEntry* oe0 = script_context->FindObjectEntry(v0);
             CObjectEntry* oe1 = script_context->FindObjectEntry(v1);
             *result = (oe0 == oe1) ? 0 : 1;
-            return (true);
-        }
-
-        case OP_CompareNotEqual:
-        {
-            CObjectEntry* oe0 = script_context->FindObjectEntry(v0);
-            CObjectEntry* oe1 = script_context->FindObjectEntry(v1);
-            *result = (oe0 != oe1) ? 0 : 1;
             return (true);
         }
     }
@@ -1013,12 +1008,11 @@ bool8 BooleanBinaryOp(CScriptContext* script_context, eOpCode op, eVarType& resu
             *result = *v0 || *v1 ? 1 : 0;
             return (true);
 
+        // -- note: all comparisons follow the same result as, say, strcmp()...
+        // -- '0' is equal, -1 is (a < b), '1' is (a > b)
         case OP_CompareEqual:
-            *result = *v0 == *v1 ? 0 : 1;
-            return (true);
-
         case OP_CompareNotEqual:
-            *result = *v0 != *v1 ? 0 : 1;
+            *result = *v0 == *v1 ? 0 : 1;
             return (true);
     }
 
