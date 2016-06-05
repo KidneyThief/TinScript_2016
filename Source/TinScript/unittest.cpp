@@ -816,6 +816,9 @@ bool8 CreateUnitTests()
 
 void BeginUnitTests(bool8 results_only = false, const char* specific_test = NULL)
 {
+    // -- required to ensure registered functions from memory.cpp are linked, even if the memory tracker is not enabled
+    REGISTER_FILE(tinmemory_cpp);
+
     // -- first create the unit tests
     if (!CreateUnitTests())
         return;

@@ -2704,6 +2704,9 @@ CCodeBlock::~CCodeBlock()
     mFunctionList->DestroyAll();
     TinFree(mFunctionList);
 
+    // -- free the function definition stack, and the global var table
+    TinFree(smFuncDefinitionStack);
+
     if (mLineNumbers)
         TinFreeArray(mLineNumbers);
 }

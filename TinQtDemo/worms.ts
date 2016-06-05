@@ -139,21 +139,11 @@ void Player::OnUpdate(float deltaTime)
     {
         if (gCurrentGame.IsPositionOccupied(self.position))
         {
-            // $$$TZA DEBUG ME!!!  
-            /*  != is failing here???
-            if (self.GetObjectID() != gCurrentGame.m_localPlayer.GetObjectID())
-                Print("DEBUG WTF", " ", self, " ", gCurrentGame.m_localPlayer);
-            else
-                Print("DEBUG ", " ", self, " ", gCurrentGame.m_localPlayer);
-            */
-
             self.OnCollision();
 
             // -- if we're updating second - ensure the first player isn't at the same spot
             object host_player = gCurrentGame.m_localPlayer;
-            if (self == host_player)
-                Print("DEBUG ME!!");
-            else if (self.position == host_player.position)
+            if (self != host_player && self.position == host_player.position)
             {
                 host_player.OnCollision();
             }

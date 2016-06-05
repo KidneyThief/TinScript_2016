@@ -224,6 +224,7 @@ class CCompileTreeNode
         int32 m_unaryDelta;
 
 	protected:
+        friend class CMemoryTracker;
 		CCompileTreeNode(CCodeBlock* _codeblock = NULL)
         {
             type = eNOP;

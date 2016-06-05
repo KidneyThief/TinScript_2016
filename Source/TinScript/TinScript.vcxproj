@@ -77,6 +77,7 @@
     <ClCompile Include="stdafx.cpp" />
     <ClCompile Include="TinCompile.cpp" />
     <ClCompile Include="TinExecute.cpp" />
+    <ClCompile Include="TinMemory.cpp" />
     <ClCompile Include="TinNamespace.cpp" />
     <ClCompile Include="TinObjectGroup.cpp" />
     <ClCompile Include="TinOpExecFunctions.cpp" />

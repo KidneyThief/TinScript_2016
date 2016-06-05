@@ -275,7 +275,7 @@ CNamespace* CScriptContext::FindOrCreateNamespace(const char* _nsname, bool8 cre
     uint32 nshash = Hash(nsname);
     CNamespace* namespaceentry = mNamespaceDictionary->FindItem(nshash);
     if (!namespaceentry && create) {
-        namespaceentry = TinAlloc(ALLOC_Namespace, CNamespace, this, nsname, 0, NULL);
+        namespaceentry = TinAlloc(ALLOC_Namespace, CNamespace, this, nsname, 0, nullptr);
 
         // -- add the namespace to the dictionary
         mNamespaceDictionary->AddItem(*namespaceentry, nshash);

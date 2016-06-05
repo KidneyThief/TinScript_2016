@@ -20,18 +20,16 @@
 // ------------------------------------------------------------------------------------------------
 
 // ------------------------------------------------------------------------------------------------
-// TinScript.h
-//
+// integration.h
+// ------------------------------------------------------------------------------------------------
 
-// -- system includes
-#include <new>
 
 #ifndef __INTEGRATION_H
 #define __INTEGRATION_H
 
-namespace TinScript {
-    class CScriptContext;
-}
+// -- system includes -------------------------------------------------------------------------------------------------
+
+#include <new>
 
 // -- The stack size is a limiting factor, if TinScript is to be used for any recursive scripting.
 // -- Highly recommended to avoid this, as there are no optimizations (such as tail-end recursion)
@@ -39,6 +37,8 @@ namespace TinScript {
 // -- depth with the default stack is Fibonacci(12).
 // -- Setting a stack size of 4Mb, Fibonacci(30) was successful, but prohibitively slow.
 #pragma comment(linker, "/STACK:4000000")
+
+#define MEMORY_TRACKER_ENABLE 0
 
 // ------------------------------------------------------------------------------------------------
 // -- TYPES
@@ -103,14 +103,45 @@ typedef float               float32;
     AllocTypeEntry(FileBuf)         \
     AllocTypeEntry(Debugger)        \
 
-enum eAllocType {
+enum eAllocType
+{
     #define AllocTypeEntry(a) ALLOC_##a,
     AllocTypeTuple
     #undef AllocTypeEntry
+    AllocType_Count
 };
 
+// -- forward declarations --------------------------------------------------------------------------------------------
+
+namespace TinScript
+{
+    class CScriptContext;
+    void NotifyMemoryAlloc(eAllocType alloc_type, int32 size);
+}
+
+// -- allocation macros -----------------------------------------------------------------------------------------------
+
+#if MEMORY_TRACKER_ENABLE
+
 #define TinAlloc(alloctype, T, ...) \
-    new (reinterpret_cast<T*>(::operator new(sizeof(T)))) T(__VA_ARGS__)
+    new (reinterpret_cast<T*>(TinScript::CMemoryTracker::Alloc(alloctype, sizeof(T)))) T(__VA_ARGS__);
+
+#define TinFree(addr) \
+    { \
+        void* notify_addr = (void*)addr; \
+        TinScript::CMemoryTracker::Free(notify_addr);                    \
+        delete addr; \
+    }
+
+#else
+
+#define TinAlloc(alloctype, T, ...)                                         \
+    new (reinterpret_cast<T*>(::operator new(sizeof(T)))) T(__VA_ARGS__);
+
+#define TinFree(addr) \
+    delete addr;
+
+#endif
 
 #define TinAllocVarContent(type) \
     new char[gRegisteredTypeSize[_type]];
@@ -121,8 +152,6 @@ enum eAllocType {
 #define TinAllocArray(alloctype, T, size) \
     new T[size];
 
-#define TinFree(addr) \
-    delete addr;
 
 #define TinFreeArray(addr) \
     delete [] addr;

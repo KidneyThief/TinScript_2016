@@ -31,6 +31,7 @@
 #include "stdarg.h"
 
 #include "integration.h"
+#include "TinMemory.h"
 #include "TinTypes.h"
 #include "TinNamespace.h"
 
@@ -176,7 +177,7 @@ const int32 kExecFuncCallDepth = 2048;
 const int32 kExecFuncCallMaxLocalObjects = 32;
 
 const int32 kStringTableSize = 1024 * 1024;
-const int32 kStringTableDictionarySize = 577;
+const int32 kStringTableDictionarySize = 1553;
 
 const int32 kObjectTableSize = 10007;
 
@@ -536,6 +537,7 @@ class CScriptContext
         #endif // WIN32
 
     private:
+        friend class CMemoryTracker;
         // -- use the static Create() method
         CScriptContext(TinPrintHandler printhandler = NULL, TinAssertHandler asserthandler = NULL,
                        bool is_main_thread = true);
