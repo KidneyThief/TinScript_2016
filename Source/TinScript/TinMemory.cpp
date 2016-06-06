@@ -37,7 +37,9 @@ DECLARE_FILE(tinmemory_cpp);
 namespace TinScript
 {
 
-CMemoryTracker* CMemoryTracker::sm_instance = nullptr;
+// -- thread singleton ------------------------------------------------------------------------------------------------
+
+_declspec(thread) CMemoryTracker* g_memoryTrackerInstance = nullptr;
 
 // -- create the string table of allocation type names
 const char* g_allocationTypeNames[] =
@@ -47,17 +49,29 @@ const char* g_allocationTypeNames[] =
     #undef AllocTypeEntry
 };
 
+// == class CMemoryTracker ============================================================================================
+
+// ====================================================================================================================
+// Constructor
+// ====================================================================================================================
 CMemoryTracker::CMemoryTracker()
 {
     // -- initialize the array of allocations
     for (int32 i = 0; i < AllocType_Count; ++i)
         m_allocationTotals[i] = 0;
 
-    // -- initialize our untracked hash table
+    // -- initialize our untracked hash tables
     for (int i = 0; i < k_trackedAllocationTableSize; ++i)
+    {
         m_allocationTable[i] = nullptr;
+        m_objectCreatedTable[i] = nullptr;
+        m_objectCreatedFileLineTable[i] = nullptr;
+    }
 }
 
+// ====================================================================================================================
+// Destructor
+// ====================================================================================================================
 CMemoryTracker::~CMemoryTracker()
 {
     // -- destroy the entries in the allocation table
@@ -70,30 +84,55 @@ CMemoryTracker::~CMemoryTracker()
             delete alloc_entry;
             alloc_entry = next;
         }
+
+        tObjectCreateEntry* object_entry = m_objectCreatedTable[i];
+        while (object_entry != nullptr)
+        {
+            tObjectCreateEntry* next = object_entry->next;
+            delete object_entry;
+            object_entry = next;
+        }
+
+        tObjectCreatedFileLine* object_file_line = m_objectCreatedFileLineTable[i];
+        while (object_file_line != nullptr)
+        {
+            tObjectCreatedFileLine* next = object_file_line->next;
+            delete object_file_line;
+            object_file_line = next;
+        }
     }
 }
 
+// ====================================================================================================================
+// Initialize():  Called on the first allocation, initializes the system (creates the thread singleton)
+// ====================================================================================================================
 void CMemoryTracker::Initialize()
 {
     // -- nothing to do if we've already initialized the tracker
-    if (sm_instance != nullptr)
+    if (g_memoryTrackerInstance != nullptr)
         return;
 
     // -- the memory tracker itself doesn't use allocations which would
     // -- interfere with what it is tracking...
-    sm_instance = new CMemoryTracker();
+    g_memoryTrackerInstance = new CMemoryTracker();
 }
 
+// ====================================================================================================================
+// Shutdown():  Shuts down the system, destroys the thread singleton
+// ====================================================================================================================
 void CMemoryTracker::Shutdown()
 {
     // -- if we had been initialized, destroy the tracker
-    if (sm_instance != nullptr)
+    if (g_memoryTrackerInstance != nullptr)
     {
-        TinFree(sm_instance);
-        sm_instance = nullptr;
+        delete g_memoryTrackerInstance;
+        g_memoryTrackerInstance = nullptr;
     }
 }
 
+// ====================================================================================================================
+// Alloc():  If the system is enabled, this is a wrapper to allocate memory, and add track it in the allocation tables.
+// ====================================================================================================================
 void* CMemoryTracker::Alloc(eAllocType alloc_type, int32 size)
 {
     // -- ensure we've been initialized
@@ -101,38 +140,44 @@ void* CMemoryTracker::Alloc(eAllocType alloc_type, int32 size)
 
     // -- if the memory tracker hasn't yet been initialized, it's because
     // -- we're performing allocations during context initialization
-    if (sm_instance == nullptr)
+    if (g_memoryTrackerInstance == nullptr)
         Initialize();
 
     // -- add the address to the table
     tAllocEntry* alloc_entry = new tAllocEntry(alloc_type, addr, size);
     uint32 hash = kPointerToUInt32(addr);
     int32 bucket = hash % k_trackedAllocationTableSize;
-    alloc_entry->next = sm_instance->m_allocationTable[bucket];
-    sm_instance->m_allocationTable[bucket] = alloc_entry;
+    alloc_entry->next = g_memoryTrackerInstance->m_allocationTable[bucket];
+    g_memoryTrackerInstance->m_allocationTable[bucket] = alloc_entry;
 
     // -- update the allocation total
-    sm_instance->m_allocationTotals[alloc_type] += size;
+    g_memoryTrackerInstance->m_allocationTotals[alloc_type] += size;
 
     return (addr);
 }
 
+// ====================================================================================================================
+// Free():  If enabled, this wrapper updates the allocation tables
+// ====================================================================================================================
 void CMemoryTracker::Free(void* addr)
 {
-    Assert_(sm_instance != nullptr);
+    // -- if we have no memory tracker, we're done
+    if (g_memoryTrackerInstance == nullptr)
+        return;
 
     // -- find and remove the allocation entry
     uint32 hash = kPointerToUInt32(addr);
     int32 bucket = hash % k_trackedAllocationTableSize;
     tAllocEntry* alloc_entry = nullptr;
-    if (kPointerToUInt32(sm_instance->m_allocationTable[bucket]->addr) == hash)
+    if (g_memoryTrackerInstance->m_allocationTable[bucket] != nullptr &&
+        kPointerToUInt32(g_memoryTrackerInstance->m_allocationTable[bucket]->addr) == hash)
     {
-        alloc_entry = sm_instance->m_allocationTable[bucket];
-        sm_instance->m_allocationTable[bucket] = alloc_entry->next;
+        alloc_entry = g_memoryTrackerInstance->m_allocationTable[bucket];
+        g_memoryTrackerInstance->m_allocationTable[bucket] = alloc_entry->next;
     }
     else
     {
-        tAllocEntry* alloc_prev = sm_instance->m_allocationTable[bucket];
+        tAllocEntry* alloc_prev = g_memoryTrackerInstance->m_allocationTable[bucket];
         while (alloc_prev != nullptr)
         {
             if (alloc_prev->next != nullptr && kPointerToUInt32(alloc_prev->next->addr))
@@ -147,20 +192,176 @@ void CMemoryTracker::Free(void* addr)
     }
 
     // -- we had better have found a matching entry
-    Assert_(alloc_entry != nullptr);
+    if (alloc_entry == nullptr)
+    {
+        printf("uh oh\n");
+        Assert_(alloc_entry != nullptr);
+    }
 
     // -- update the allocation total
-    sm_instance->m_allocationTotals[alloc_entry->type] -= alloc_entry->size;
-    Assert_(sm_instance->m_allocationTotals[alloc_entry->type] >= 0);
+    g_memoryTrackerInstance->m_allocationTotals[alloc_entry->type] -= alloc_entry->size;
+    Assert_(g_memoryTrackerInstance->m_allocationTotals[alloc_entry->type] >= 0);
 
     // -- delete the entry
     delete alloc_entry;
 }
 
+// ====================================================================================================================
+// CalculateFileLineHash():  Creates a hash value, for tracking the file/line origin where an object is created.
+// ====================================================================================================================
+uint32 CMemoryTracker::CalculateFileLineHash(uint32 codeblock_hash, int32 line_number)
+{
+    char buffer[kMaxArgLength];
+    sprintf_s(buffer, "%s:%d", UnHash(codeblock_hash), line_number);
+    uint32 file_line_hash = Hash(buffer);
+    return (file_line_hash);
+}
+
+// ====================================================================================================================
+// Constructor for the helper class, implementing a non-tracked simple hash table
+// ====================================================================================================================
+CMemoryTracker::tObjectCreateEntry::tObjectCreateEntry(uint32 _object_id, uint32 _codeblock_hash, int32 _line_number)
+{
+    object_id = _object_id;
+    codeblock_hash = _codeblock_hash;
+    line_number = _line_number;
+    file_line_hash = CMemoryTracker::CalculateFileLineHash(_codeblock_hash, _line_number);
+    next = nullptr;
+}
+
+// ====================================================================================================================
+// Constructor for the helper class, implementing a non-tracked simple hash table
+// ====================================================================================================================
+CMemoryTracker::tObjectCreatedFileLine::tObjectCreatedFileLine(uint32 _file_line_hash, uint32 _codeblock_hash,
+                                                               int32 _line_number)
+{
+    file_line_hash = _file_line_hash;
+    codeblock_hash = _codeblock_hash;
+    line_number = _line_number;
+
+    object_count = 0;
+    next = nullptr;
+}
+
+// ====================================================================================================================
+// NotifyObjectCreated():  Called from the virtual machine, when an object is created, tracking the file/line.
+// ====================================================================================================================
+void CMemoryTracker::NotifyObjectCreated(uint32 object_id, uint32 codeblock_hash, int32 line_number)
+{
+    Assert_(g_memoryTrackerInstance != nullptr);
+
+    // -- create the entry, and add it to the object created hash table
+    // -- add the address to the table
+    tObjectCreateEntry* object_entry = new tObjectCreateEntry(object_id, codeblock_hash, line_number);
+    int32 bucket = object_id % k_trackedAllocationTableSize;
+    object_entry->next = g_memoryTrackerInstance->m_objectCreatedTable[bucket];
+    g_memoryTrackerInstance->m_objectCreatedTable[bucket] = object_entry;
+
+    // -- now add the object entry to the file_line hashtable
+    int32 file_line_bucket = object_entry->file_line_hash % k_trackedAllocationTableSize;
+    tObjectCreatedFileLine* file_line_entry = g_memoryTrackerInstance->m_objectCreatedFileLineTable[file_line_bucket];
+    while (file_line_entry != nullptr && file_line_entry->file_line_hash != object_entry->file_line_hash)
+        file_line_entry = file_line_entry->next;
+
+    // -- if we found our file_line_entry, create one
+    if (file_line_entry == nullptr)
+    {
+        file_line_entry = new tObjectCreatedFileLine(object_entry->file_line_hash, codeblock_hash, line_number);
+        file_line_entry->next = g_memoryTrackerInstance->m_objectCreatedFileLineTable[file_line_bucket];
+        g_memoryTrackerInstance->m_objectCreatedFileLineTable[file_line_bucket] = file_line_entry;
+    }
+
+    // -- increment the count
+    ++file_line_entry->object_count;
+}
+
+// ====================================================================================================================
+// NotifyObjectDestroyed():  Called from the virtual machine, when an object is destroyed.
+// ====================================================================================================================
+void CMemoryTracker::NotifyObjectDestroyed(uint32 object_id)
+{
+    // -- if we have no memory tracker, we're done
+    if (g_memoryTrackerInstance == nullptr)
+        return;
+
+    // -- find the entry in the object creation table
+    tObjectCreateEntry* object_entry = nullptr;
+    int32 bucket = object_id % k_trackedAllocationTableSize;
+    if (g_memoryTrackerInstance->m_objectCreatedTable[bucket] != nullptr &&
+        g_memoryTrackerInstance->m_objectCreatedTable[bucket]->object_id == object_id)
+    {
+        object_entry = g_memoryTrackerInstance->m_objectCreatedTable[bucket];
+        g_memoryTrackerInstance->m_objectCreatedTable[bucket] = object_entry->next;
+    }
+    else
+    {
+        tObjectCreateEntry* object_prev_entry = g_memoryTrackerInstance->m_objectCreatedTable[bucket];
+        while (object_prev_entry != nullptr && object_prev_entry->next != nullptr &&
+            object_prev_entry->next->object_id != object_id)
+        {
+            object_prev_entry = object_prev_entry->next;
+        }
+
+        // -- if we found our prev entry, set the object entry, and remove it from the list
+        if (object_prev_entry != nullptr && object_prev_entry->next != nullptr)
+        {
+            object_entry = object_prev_entry->next;
+            object_prev_entry->next = object_entry->next;
+        }
+    }
+
+    // -- we had better have found a matching entry
+    Assert_(object_entry != nullptr);
+
+    //-- find the entry in the object file/line table
+    // -- in this case, we decriment the object count, and only remove if the count is zero
+    tObjectCreatedFileLine* file_line_entry = nullptr;
+    int32 file_line_bucket = object_entry->file_line_hash % k_trackedAllocationTableSize;
+    if (g_memoryTrackerInstance->m_objectCreatedFileLineTable[file_line_bucket] != nullptr &&
+        g_memoryTrackerInstance->m_objectCreatedFileLineTable[file_line_bucket]->file_line_hash == object_entry->file_line_hash)
+    {
+        file_line_entry = g_memoryTrackerInstance->m_objectCreatedFileLineTable[file_line_bucket];
+        --file_line_entry->object_count;
+        if (file_line_entry->object_count <= 0 )
+            g_memoryTrackerInstance->m_objectCreatedFileLineTable[file_line_bucket] = file_line_entry->next;
+    }
+    else
+    {
+        tObjectCreatedFileLine* prev_file_line_entry = g_memoryTrackerInstance->m_objectCreatedFileLineTable[file_line_bucket];
+        while (prev_file_line_entry != nullptr && prev_file_line_entry->next != nullptr &&
+               prev_file_line_entry->next->file_line_hash != object_entry->file_line_hash)
+        {
+            prev_file_line_entry = prev_file_line_entry->next;
+        }
+
+        // -- if we found our previous entry, set the current entry, and remove from the list
+        if (prev_file_line_entry != nullptr && prev_file_line_entry->next != nullptr)
+        {
+            file_line_entry = prev_file_line_entry->next;
+            --file_line_entry->object_count;
+            if (file_line_entry->object_count <= 0)
+                prev_file_line_entry->next = file_line_entry->next;
+        }
+    }
+
+    // -- we had better have found our entry
+    Assert_(file_line_entry != nullptr);
+
+    // -- delete the object entry
+    delete object_entry;
+
+    // -- if the count of the file_line entry is <= 0, delete it
+    if (file_line_entry->object_count <= 0)
+        delete file_line_entry;
+}
+
+// ====================================================================================================================
+// DumpTotals():  Registered method to dump the bytes allocated for each TinAlloc() allocation type.
+// ====================================================================================================================
 void CMemoryTracker::DumpTotals()
 {
     // -- nothing to do if the memory tracker isn't enabled
-    if (CMemoryTracker::sm_instance == nullptr)
+    if (g_memoryTrackerInstance == nullptr)
     {
         TinPrint(TinScript::GetContext(),
                  "Not available: #define MEMORY_TRACKER_ENABLE 1, in integration.h");
@@ -171,11 +372,74 @@ void CMemoryTracker::DumpTotals()
     for (int32 i = 0; i < AllocType_Count; ++i)
     {
         TinPrint(TinScript::GetContext(), "%s: %d\n", g_allocationTypeNames[i],
-                 CMemoryTracker::sm_instance->m_allocationTotals[i])
+                 g_memoryTrackerInstance->m_allocationTotals[i])
     }
 }
 
-REGISTER_FUNCTION_P0(MemoryDump, CMemoryTracker::DumpTotals, void);
+// ====================================================================================================================
+// DumpObjects():  List the number of objects created from each unique file/line location.
+// ====================================================================================================================
+void CMemoryTracker::DumpObjects()
+{
+    // -- nothing to do if the memory tracker isn't enabled
+    if (g_memoryTrackerInstance == nullptr)
+    {
+        TinPrint(TinScript::GetContext(),
+                 "Not available: #define MEMORY_TRACKER_ENABLE 1, in integration.h");
+        return;
+    }
+
+    // -- loop through the file/line created table, and dump the count from each location
+    for (int32 i = 0; i < k_trackedAllocationTableSize; ++i)
+    {
+        tObjectCreatedFileLine* file_line_entry = g_memoryTrackerInstance->m_objectCreatedFileLineTable[i];
+        while (file_line_entry != nullptr)
+        {
+            TinPrint(TinScript::GetContext(), "%3d objects from: %s @ %d\n", file_line_entry->object_count,
+                     UnHash(file_line_entry->codeblock_hash), file_line_entry->line_number);
+            file_line_entry = file_line_entry->next;
+        }
+    }
+}
+
+// ====================================================================================================================
+// FindObject():  Given a object_id, print the script file/line from which this object was created.
+// ====================================================================================================================
+void CMemoryTracker::FindObject(uint32 object_id)
+{
+    // -- nothing to do if the memory tracker isn't enabled
+    if (g_memoryTrackerInstance == nullptr)
+    {
+        TinPrint(TinScript::GetContext(),
+            "Not available: #define MEMORY_TRACKER_ENABLE 1, in integration.h");
+        return;
+    }
+
+    int32 bucket = object_id % k_trackedAllocationTableSize;
+    tObjectCreateEntry* object_entry = g_memoryTrackerInstance->m_objectCreatedTable[bucket];
+    while (object_entry != nullptr && object_entry->object_id != object_id)
+        object_entry = object_entry->next;
+
+    // -- if we found our entry, print out the file/line origin
+    if (object_entry != nullptr)
+    {
+        CObjectEntry* oe = TinScript::GetContext()->FindObjectEntry(object_id);
+        if (oe != nullptr)
+            TinScript::GetContext()->PrintObject(oe);
+        TinPrint(TinScript::GetContext(), "MemoryFindObject(): object %d created at %s: %d\n",
+                 object_id, UnHash(object_entry->codeblock_hash), object_entry->line_number);
+    }
+    else
+    {
+        TinPrint(TinScript::GetContext(), "MemoryFindObject(): object %d not found\n", object_id);
+    }
+}
+
+// == Function Registration ===========================================================================================
+
+REGISTER_FUNCTION_P0(MemoryDumpTotals, CMemoryTracker::DumpTotals, void);
+REGISTER_FUNCTION_P0(MemoryDumpObjects, CMemoryTracker::DumpObjects, void);
+REGISTER_FUNCTION_P1(MemoryFindObject, CMemoryTracker::FindObject, void, uint32);
 
 }
 

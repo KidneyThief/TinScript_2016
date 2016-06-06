@@ -86,9 +86,10 @@ CScriptContext* CreateContext(TinPrintHandler printhandler, TinAssertHandler ass
 // ====================================================================================================================
 void UpdateContext(uint32 current_time_msec)
 {
+    // -- during shutdown, the context may become null
     CScriptContext* script_context = GetContext();
-    assert(script_context != NULL);
-    script_context->Update(current_time_msec);
+    if (script_context != nullptr)
+        script_context->Update(current_time_msec);
 }
 
 // ====================================================================================================================
@@ -214,6 +215,9 @@ void CScriptContext::Destroy()
 {
     if (gThreadContext)
     {
+        // -- shutdown the memory tracker
+        CMemoryTracker::Shutdown();
+
 		// -- we clear the thread context first, so destructors can tell we're
 		// -- shutting down
 		CScriptContext* currentContext = gThreadContext;

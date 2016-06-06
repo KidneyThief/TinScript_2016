@@ -3016,6 +3016,14 @@ bool8 OpExecCreateObject(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CE
     // -- strings are already hashed, when pulled from the stack
     uint32 objid = cb->GetScriptContext()->CreateObject(classhash, *(uint32*)objnameaddr);
 
+#if MEMORY_TRACKER_ENABLE
+    uint32 codeblock_hash = cb->GetFilenameHash();
+    int32 cur_line = cb->CalcLineNumber(instrptr - 8);
+
+    // -- used by the memory tracker (if enabled)
+    TinObjectCreated(objid, codeblock_hash, cur_line);
+#endif
+
     // -- if we failed to create the object, assert
     if (objid == 0)
     {
@@ -3065,6 +3073,14 @@ bool8 OpExecDestroyObject(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, C
                         "Error - Unable to find object %d\n", objectid);
         return false;
     }
+
+#if MEMORY_TRACKER_ENABLE
+    uint32 codeblock_hash = cb->GetFilenameHash();
+    int32 cur_line = cb->CalcLineNumber(instrptr - 12);
+
+    // -- used by the memory tracker (if enabled)
+    TinObjectDestroyed(objectid);
+#endif
 
     // $$$TZA possible opportunity to ensure that if the current object on the function call stack
     // is this object, there are no further instructions referencing it...

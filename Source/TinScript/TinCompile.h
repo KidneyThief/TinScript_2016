@@ -823,10 +823,10 @@ class CCodeBlock
         {
 			mInstrBlock = NULL;
 			mInstrCount = _size;
-			if (_size > 0)
-				mInstrBlock = TinAllocInstrBlock(_size);
+            if (_size > 0)
+                mInstrBlock = TinAllocArray(ALLOC_CodeBlock, uint32, _size);
             if(_linecount > 0)
-                mLineNumbers = TinAllocInstrBlock(_linecount);
+                mLineNumbers = TinAllocArray(ALLOC_CodeBlock, uint32, _linecount);
         }
 
         const char* GetFileName() const { return (mFileName); }

@@ -38,6 +38,11 @@ enum eAllocType;
 namespace TinScript
 {
 
+// ====================================================================================================================
+// class CMemoryTracker:  Tracks the total bytes allocated, for each TinAlloc() type
+// -- and tracks the file/line location for every object created
+// ====================================================================================================================
+
 class CMemoryTracker
 {
     public:
@@ -47,12 +52,15 @@ class CMemoryTracker
         static void Initialize();
         static void Shutdown();
 
-        static CMemoryTracker* sm_instance;
-
         static void* Alloc(eAllocType alloc_type, int32 size);
         static void Free(void* addr);
 
+        static void NotifyObjectCreated(uint32 object_id, uint32 codeblock_hash, int32 line_number);
+        static void NotifyObjectDestroyed(uint32 object_id);
+
         static void DumpTotals();
+        static void DumpObjects();
+        static void FindObject(uint32 object_id);
 
     private:
         struct tAllocEntry
@@ -76,6 +84,34 @@ class CMemoryTracker
         // -- an untracked (minimal) hash table
         static const int k_trackedAllocationTableSize = 1553;
         tAllocEntry* m_allocationTable[k_trackedAllocationTableSize];
+
+        // -- a custom (non-tracked) hash table for object tracking (file/line where they were created)
+        static uint32 CalculateFileLineHash(uint32 codeblock_hash, int32 line_number);
+        struct tObjectCreateEntry
+        {
+            tObjectCreateEntry(uint32 object_id, uint32 codeblock_hash, int32 line_number);
+
+            uint32 object_id;
+            uint32 codeblock_hash;
+            int32 line_number;
+            uint32 file_line_hash;
+            tObjectCreateEntry* next;
+        };
+
+        struct tObjectCreatedFileLine
+        {
+            tObjectCreatedFileLine(uint32 file_line_hash, uint32 codeblock_hash, int32 line_number);
+
+            uint32 file_line_hash;
+            uint32 codeblock_hash;
+            int32 line_number;
+
+            int32 object_count;
+            tObjectCreatedFileLine* next;
+        };
+
+        tObjectCreateEntry* m_objectCreatedTable[k_trackedAllocationTableSize];
+        tObjectCreatedFileLine* m_objectCreatedFileLineTable[k_trackedAllocationTableSize];
 };
 
 }

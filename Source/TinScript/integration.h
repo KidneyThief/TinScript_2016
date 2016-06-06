@@ -133,6 +133,22 @@ namespace TinScript
         delete addr; \
     }
 
+#define TinAllocArray(alloctype, T, size) \
+        new (reinterpret_cast<T*>(TinScript::CMemoryTracker::Alloc(alloctype, sizeof(T) * size))) T[size];
+
+#define TinFreeArray(addr) \
+    { \
+        void* notify_addr = (void*)addr; \
+        TinScript::CMemoryTracker::Free(notify_addr); \
+        delete[] addr; \
+    }
+
+#define TinObjectCreated(object_id, codeblock_hash, line_number) \
+    TinScript::CMemoryTracker::NotifyObjectCreated(object_id, codeblock_hash, line_number);
+
+#define TinObjectDestroyed(object_id) \
+    TinScript::CMemoryTracker::NotifyObjectDestroyed(object_id);
+
 #else
 
 #define TinAlloc(alloctype, T, ...)                                         \
@@ -141,20 +157,17 @@ namespace TinScript
 #define TinFree(addr) \
     delete addr;
 
-#endif
-
-#define TinAllocVarContent(type) \
-    new char[gRegisteredTypeSize[_type]];
-
-#define TinAllocInstrBlock(_size) \
-    new uint32[_size];
-
 #define TinAllocArray(alloctype, T, size) \
     new T[size];
 
 
 #define TinFreeArray(addr) \
     delete [] addr;
+
+#define TinObjectCreated(object_id, codeblock_hash, line_number) ;
+#define TinObjectDestroyed(object_id);
+
+#endif
 
 // ------------------------------------------------------------------------------------------------
 // Misc hooks
