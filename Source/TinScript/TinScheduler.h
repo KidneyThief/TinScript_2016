@@ -98,6 +98,10 @@ class CScheduler
         CCommand* ScheduleCreate(uint32 objectid, int32 delay, uint32 funchash, bool8 immediate, bool8 repeat);
         CScheduler::CCommand* mCurrentSchedule;
 
+        // -- an optimized way of allowing a remote connection to execute a function locally, without having to
+        // -- parse/compile/run through the virtual machine - scheduled function calls will be inserted directly
+        CCommand* RemoteScheduleCreate(uint32 funchash);
+
     private:
         CScriptContext* mContextOwner;
 

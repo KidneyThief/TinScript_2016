@@ -29,10 +29,11 @@
 #include <vector>
 
 // -- includes
+#include "mathutil.h"
 #include "socket.h"
 
 // -- includes required by any system wanting access to TinScript
-#include "TinScript.h"
+#include "TinTypes.h"
 #include "TinRegistration.h"
 
 // -- use the DECLARE_FILE/REGISTER_FILE macros to prevent deadstripping
@@ -290,6 +291,127 @@ bool SendCommandf(const char* fmt, ...)
     #endif // WIN32
 
     return (result);
+}
+
+// ====================================================================================================================
+// SendExec():  send a function and args to a connected socket, to be executed directly
+// ====================================================================================================================
+bool SendExec(int32 func_hash, const char* arg0, const char* arg1, const char* arg2, const char* arg3,
+              const char* arg4, const char* arg5, const char* arg6)
+{
+    // -- create the packet data - convert each arg to a valid type, and serialize the values
+    char packet_buffer[k_MaxPacketSize];
+    int32 max_size = k_MaxPacketSize;
+    uint32* dataptr = (uint32*)packet_buffer;
+
+    // -- reserve space for the arg count
+    uint32* arg_count = dataptr;
+    *dataptr++ = 0;
+    max_size -= sizeof(uint32);
+
+    // -- the first arg is the function hash
+    *dataptr++ = (int32)TinScript::TYPE_int;
+    *dataptr++ = func_hash;
+    *arg_count += 1;
+    max_size -= sizeof(uint32);
+
+    // -- add the args
+    const char* args[7] = { arg0, arg1, arg2, arg3, arg4, arg5, arg6 };
+    for (int32 i = 0; i < 7; ++i)
+    {
+        // -- if the arg is null or empty, we're done
+        const char* arg_string = args[i];
+        if (arg_string == nullptr || arg_string[0] == '\0')
+            break;
+
+        // -- pass all arguments as strings, so the recipient can convert to the arg type
+        // -- required by the function being called...
+        int32 arg_length = (int32)strlen(arg_string);
+        *dataptr++ = (uint32)TinScript::TYPE_string;
+        TinScript::SafeStrcpy((char*)dataptr, arg_string, max_size);
+
+        // -- ensure we keep the data ptr aligned (include the string terminator)
+        int32 data_count = (arg_length / 4) + 1;
+        dataptr += data_count;
+        max_size -= data_count * sizeof(uint32);
+
+        // -- increment the arg count
+        *arg_count += 1;
+
+        // -- see if we can tokenize the contents of the string, into type
+        /*
+        int32 arg_length = (int32)strlen(arg_string);
+        const char* string_content = arg_string;
+        int32 content_length = arg_length;
+        TinScript::eTokenType token_type;
+        int32 line_number;
+        bool success = false;
+        const char* token_ptr = GetToken(string_content, content_length, token_type, nullptr, line_number, false);
+        if (token_ptr != nullptr)
+        {
+            TinScript::eVarType arg_type = token_type == TinScript::TOKEN_BOOL ? TinScript::TYPE_bool :
+                                            token_type == TinScript::TOKEN_INTEGER ? TinScript::TYPE_int :
+                                            token_type == TinScript::TOKEN_FLOAT ? TinScript::TYPE_float :
+                                            TinScript::TYPE_vector3f;
+
+            // -- if we have a valid type, we can convert using the registered string conversions
+            if (arg_type != TinScript::TYPE_void)
+            {
+                char value_buf[MAX_TYPE_SIZE * sizeof(uint32)];
+                success = TinScript::gRegisteredStringToType[arg_type]((void*)value_buf, (char*)token_ptr);
+
+                // -- if we were successful, write the type and the value
+                if (success)
+                {
+                    *dataptr++ = (uint32)arg_type;
+                    max_size -= sizeof(uint32);
+                    memcpy((void*)dataptr, (void*)value_buf, TinScript::gRegisteredTypeSize[arg_type]);
+                    max_size -= TinScript::gRegisteredTypeSize[arg_type];
+                    dataptr += TinScript::gRegisteredTypeSize[arg_type] / (int32)(sizeof(uint32));
+                }
+            }
+
+            // -- if not success, write the argument as a string
+            if (!success)
+            {
+                // -- copy the string, and terminate
+                *dataptr++ = (uint32)TinScript::TYPE_string;
+                TinScript::SafeStrcpy((char*)dataptr, arg_string, max_size);
+                ((char*)dataptr)[content_length + 1] = '\0';
+
+                // -- ensure we keep the data ptr aligned (include the string terminator)
+                int32 data_count = (content_length / 4) + 1;
+                dataptr += data_count;
+                max_size -= data_count * sizeof(uint32);
+            }
+
+            // -- increment the arg count
+            *arg_count += 1;
+        }
+        */
+    }
+
+    // -- at this point, we have the packet data ready to send
+    void* data_start = &packet_buffer[0];
+    int32 total_size = kPointerDiffUInt32(dataptr, data_start);
+
+    // -- create the packet header
+    SocketManager::tPacketHeader header(k_PacketVersion, SocketManager::tPacketHeader::SCRIPT_COMMAND, total_size);
+
+    // -- now create the packet to send
+    SocketManager::tDataPacket* newPacket = SocketManager::CreateDataPacket(&header, data_start);
+    if (!newPacket)
+    {
+        ScriptAssert_(TinScript::GetContext(), false, "<internal>", -1,
+                      "Error - SocketManager::SendExec():  unable to construct the packet\n");
+        return (false);
+    }
+
+    // -- send the packet
+    SocketManager::SendDataPacket(newPacket);
+
+    // -- success
+    return (true);
 }
 
 // ====================================================================================================================
@@ -909,7 +1031,7 @@ bool CSocket::ProcessRecvPackets()
         // -- set the bool to delete the packet
         deletePacket = true;
 
-        // -- if the packet contains a TinScript command
+        // -- if the packet contains a TinScript string to execute
         if (recvPacket->mHeader.mType == tPacketHeader::SCRIPT)
         {
             // -- execute whatever command we received
@@ -920,6 +1042,18 @@ bool CSocket::ProcessRecvPackets()
             {
                 mRecvQueue.Enqueue(recvPacket, true);
                 break;
+            }
+        }
+
+        // -- if the packet contains an immediate execution command
+        else if (recvPacket->mHeader.mType == tPacketHeader::SCRIPT_COMMAND)
+        {
+            // -- queue the immediate execution command
+            // -- success or fail, the packet is de-queued
+            if (!ScriptExec(recvPacket->mData))
+            {
+                ScriptAssert_(TinScript::GetContext(), false, "<internal>", -1,
+                              "Error - ProcessRecvPackets() - SCRIPT_COMMAND:  unable to process the packet\n");
             }
         }
 
@@ -1110,6 +1244,59 @@ bool8 CSocket::ScriptCommand(const char* fmt, ...)
 }
 
 // ====================================================================================================================
+// ScriptExec():  Unpack the packet data into an immediate execution command
+// ====================================================================================================================
+bool CSocket::ScriptExec(void* data)
+{
+    // -- get the arg count
+    uint32* dataptr = (uint32*)data;
+    int32 arg_count = (int32)*dataptr++;
+    if (arg_count < 0 || arg_count > TinScript::CFunctionContext::eMaxParameterCount)
+        return (false);
+
+    // -- the first arg is the function hash
+    if (*dataptr++ != (int32)TinScript::TYPE_int)
+        return (false);
+    uint32 func_hash = (uint32)*dataptr++;
+
+    // -- create the schedule
+    if (!mScriptContext->BeginThreadExec(func_hash))
+        return (false);
+
+    // -- add the parameters
+    for (int32 i = 1; i < arg_count; ++i)
+    {
+        // -- get the type
+        TinScript::eVarType arg_type = (TinScript::eVarType)*dataptr++;
+
+        // -- if the type is a string, add the argument
+        if (arg_type == TinScript::TYPE_string)
+        {
+            const char* string_ptr = (const char*)dataptr;
+            mScriptContext->AddThreadExecParam(arg_type, (void*)string_ptr);
+
+            // -- update the string ptr
+            int32 length = (int32)strlen(string_ptr);
+            int32 data_length = (length / 4) + 1;
+            dataptr += data_length;
+        }
+
+        // -- else add the argument by type
+        else
+        {
+            mScriptContext->AddThreadExecParam(arg_type, (void*)dataptr);
+            dataptr += TinScript::gRegisteredTypeSize[arg_type] / (int32)(sizeof(uint32));
+        }
+    }
+
+    // -- after all the arguments have been added, queue the command
+    mScriptContext->QueueThreadExec();
+
+    // -- success
+    return (true);
+}
+
+// ====================================================================================================================
 // ProcessRecvData():  Reconstitute a data stream back into packets
 // ====================================================================================================================
 bool CSocket::ProcessRecvData(void* data, int dataSize)
@@ -1249,6 +1436,7 @@ REGISTER_FUNCTION_P0(SocketDisconnect, SocketManager::Disconnect, void);
 REGISTER_FUNCTION_P0(SocketIsConnected, SocketManager::IsConnected, bool);
 REGISTER_FUNCTION_P1(SocketSend, SocketManager::SendCommand, bool, const char*);
 REGISTER_FUNCTION_P8(SocketCommand, SocketCommand, bool, const char*, const char*, const char*, const char*, const char*, const char*, const char*, const char*);
+REGISTER_FUNCTION_P8(SocketExec, SocketManager::SendExec, bool, int32, const char*, const char*, const char*, const char*, const char*, const char*, const char*);
 
 // ====================================================================================================================
 // EOF

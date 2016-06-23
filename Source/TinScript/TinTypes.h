@@ -293,8 +293,8 @@ struct convert_to_void_ptr<const T*>
 // ====================================================================================================================
 // -- typedefs for integrating the registered types
 enum eVarType;
-typedef bool8 (*TypeToString)(void* value, char* buf, int32 bufsize);
-typedef bool8 (*StringToType)(void* addr, char* value);
+typedef bool8 (*TypeToString)(TinScript::CScriptContext* script_context, void* value, char* buf, int32 bufsize);
+typedef bool8(*StringToType)(TinScript::CScriptContext* script_context, void* addr, char* value);
 
 // -- an extra configuration function provided for non-standard types
 // -- (e.g.  vector3f requires more initialization than a bool or float)
@@ -319,16 +319,16 @@ typedef CHashTable<tPODTypeMember> tPODTypeTable;
 
 // ====================================================================================================================
 // -- String conversion prototypes for standard types
-bool8 VoidToString(void* value, char* buf, int32 bufsize);
-bool8 StringToVoid(void* addr, char* value);
-bool8 STEToString(void* value, char* buf, int32 bufsize);
-bool8 StringToSTE(void* addr, char* value);
-bool8 IntToString(void* value, char* buf, int32 bufsize);
-bool8 StringToInt(void* addr, char* value);
-bool8 BoolToString(void* value, char* buf, int32 bufsize);
-bool8 StringToBool(void* addr, char* value);
-bool8 FloatToString(void* value, char* buf, int32 bufsize);
-bool8 StringToFloat(void* addr, char* value);
+bool8 VoidToString(TinScript::CScriptContext* script_context, void* value, char* buf, int32 bufsize);
+bool8 StringToVoid(TinScript::CScriptContext* script_context, void* addr, char* value);
+bool8 STEToString(TinScript::CScriptContext* script_context, void* value, char* buf, int32 bufsize);
+bool8 StringToSTE(TinScript::CScriptContext* script_context, void* addr, char* value);
+bool8 IntToString(TinScript::CScriptContext* script_context, void* value, char* buf, int32 bufsize);
+bool8 StringToInt(TinScript::CScriptContext* script_context, void* addr, char* value);
+bool8 BoolToString(TinScript::CScriptContext* script_context, void* value, char* buf, int32 bufsize);
+bool8 StringToBool(TinScript::CScriptContext* script_context, void* addr, char* value);
+bool8 FloatToString(TinScript::CScriptContext* script_context, void* value, char* buf, int32 bufsize);
+bool8 StringToFloat(TinScript::CScriptContext* script_context, void* addr, char* value);
 
 // ====================================================================================================================
 // -- Configuration functions for standard types
@@ -339,8 +339,8 @@ bool8 IntegerConfig(eVarType var_type, bool8 onInit);
 bool8 BoolConfig(eVarType var_type, bool8 onInit);
 
 // -- external type configuration
-bool8 Vector3fToString(void* value, char* buf, int32 bufsize);
-bool8 StringToVector3f(void* addr, char* value);
+bool8 Vector3fToString(TinScript::CScriptContext* script_context, void* value, char* buf, int32 bufsize);
+bool8 StringToVector3f(TinScript::CScriptContext* script_context, void* addr, char* value);
 bool8 Vector3fConfig(eVarType var_type, bool8 onInit);
 
 // ====================================================================================================================

@@ -34,6 +34,7 @@
 #include "TinMemory.h"
 #include "TinTypes.h"
 #include "TinNamespace.h"
+#include "TinScheduler.h"
 
 // --------------------------------------------------------------------------------------------------------------------
 // -- compile flags
@@ -534,6 +535,14 @@ class CScriptContext
         #ifdef WIN32
             bool8 AddThreadCommand(const char* command);
             void ProcessThreadCommands();
+
+            // -- we also support thread commands through the schedule - to bypass the parsing/compiling
+            CScheduler::CCommand* m_socketCommandList;
+            CScheduler::CCommand* m_socketCurrentCommand;
+            bool8 BeginThreadExec(uint32 func_hash);
+            void AddThreadExecParam(eVarType param_type, void* value);
+            void QueueThreadExec();
+
         #endif // WIN32
 
     private:

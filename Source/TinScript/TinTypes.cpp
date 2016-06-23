@@ -159,80 +159,81 @@ eVarType GetRegisteredType(uint32 id)
 
 // ====================================================================================================================
 // -- type void
-bool8 VoidToString(void*, char* buf, int32 bufsize)
+bool8 VoidToString(TinScript::CScriptContext* script_context, void*, char* buf, int32 bufsize)
 {
-	if (buf && bufsize > 0) {
+	if (buf && bufsize > 0)
+    {
 		*buf = '\0';
-		return true;
+		return (true);
 	}
-	return false;
+	return (false);
 }
 
-bool8 StringToVoid(void*, char*) {
-	return true;
+bool8 StringToVoid(TinScript::CScriptContext* script_context, void*, char*)
+{
+	return (true);
 }
 
 // ====================================================================================================================
 // -- type string table entry
-bool8 STEToString(void* value, char* buf, int32 bufsize)
+bool8 STEToString(TinScript::CScriptContext* script_context, void* value, char* buf, int32 bufsize)
 {
 	if (value && buf && bufsize > 0)
     {
-        sprintf_s(buf, bufsize, "%s",
-            TinScript::GetContext()->GetStringTable()->FindString(*(uint32*)value));
-		return true;
+        sprintf_s(buf, bufsize, "%s", script_context->GetStringTable()->FindString(*(uint32*)value));
+		return (true);
 	}
-	return false;
+	return (false);
 }
 
-bool8 StringToSTE(void* addr, char* value)
+bool8 StringToSTE(TinScript::CScriptContext* script_context, void* addr, char* value)
 {
     // -- an STE is simply an address, copy the 4x bytes verbatim
 	if (addr && value)
     {
 		uint32* varaddr = (uint32*)addr;
 		*varaddr = Hash(value, -1, false);
-		return true;
+		return (true);
 	}
-	return false;
+	return (false);
 }
 
 // ====================================================================================================================
 // -- type int
-bool8 IntToString(void* value, char* buf, int32 bufsize)
+bool8 IntToString(TinScript::CScriptContext* script_context, void* value, char* buf, int32 bufsize)
 {
 	if (value && buf && bufsize > 0)
     {
 		sprintf_s(buf, bufsize, "%d", *(int32*)(value));
-		return true;
+		return (true);
 	}
-	return false;
+	return (false);
 }
 
-bool8 StringToInt(void* addr, char* value)
+bool8 StringToInt(TinScript::CScriptContext* script_context, void* addr, char* value)
 {
 	if (addr && value)
     {
 		int32* varaddr = (int32*)addr;
 		*varaddr = Atoi(value);
-		return true;
+		return (true);
 	}
-	return false;
+	return (false);
 }
 
 // ====================================================================================================================
 // -- type bool
-bool8 BoolToString(void* value, char* buf, int32 bufsize)
+bool8 BoolToString(TinScript::CScriptContext* script_context, void* value, char* buf, int32 bufsize)
 {
 	if (value && buf && bufsize > 0)
     {
 		sprintf_s(buf, bufsize, "%s", *(bool8*)(value) ? "true" : "false");
-		return true;
+		return (true);
 	}
-	return false;
+	return (false);
 }
 
-bool8 StringToBool(void* addr, char* value)
+bool8 StringToBool(TinScript::CScriptContext* script_context, void* addr, char* value)
 {
 	if (addr && value)
     {
@@ -242,37 +243,38 @@ bool8 StringToBool(void* addr, char* value)
                     !Strncmp_(value, "", 1))
         {
 			*varaddr = false;
-			return true;
+			return (true);
 		}
-		else {
+		else
+        {
 			*varaddr = true;
-			return true;
+			return (true);
 		}
 	}
-	return false;
+	return (false);
 }
 
 // ====================================================================================================================
 // -- type float
-bool8 FloatToString(void* value, char* buf, int32 bufsize)
+bool8 FloatToString(TinScript::CScriptContext* script_context, void* value, char* buf, int32 bufsize)
 {
 	if (value && buf && bufsize > 0)
     {
 		sprintf_s(buf, bufsize, "%.4f", *(float32*)(value));
-		return true;
+		return (true);
 	}
-	return false;
+	return (false);
 }
 
-bool8 StringToFloat(void* addr, char* value)
+bool8 StringToFloat(TinScript::CScriptContext* script_context, void* addr, char* value)
 {
 	if (addr && value)
     {
 		float32* varaddr = (float32*)addr;
 		*varaddr = float32(atof(value));
-		return true;
+		return (true);
 	}
-	return false;
+	return (false);
 }
 
 // ====================================================================================================================
@@ -400,7 +402,7 @@ void* TypeConvert(CScriptContext* script_context, eVarType fromtype, void* froma
     // -- if the "to type" is a string, use the registered string conversion function
     if (totype == TYPE_string)
     {
-	    bool8 success = gRegisteredTypeToString[fromtype](fromaddr, bufferptr, kMaxTokenLength);
+        bool8 success = gRegisteredTypeToString[fromtype](script_context, fromaddr, bufferptr, kMaxTokenLength);
         if (!success)
         {
             ScriptAssert_(TinScript::GetContext(), false, "<internal>", -1,
@@ -410,7 +412,7 @@ void* TypeConvert(CScriptContext* script_context, eVarType fromtype, void* froma
 
         // -- Type_string actually stores an STE value, so we must convert the char* bufferptr to an STE
         char* stebuf = script_context->GetScratchBuffer();
-	    success = gRegisteredStringToType[TYPE_string]((void*)stebuf, (char*)bufferptr);
+        success = gRegisteredStringToType[TYPE_string](script_context, (void*)stebuf, (char*)bufferptr);
         if (!success)
         {
             ScriptAssert_(TinScript::GetContext(), false, "<internal>", -1,
@@ -428,7 +430,7 @@ void* TypeConvert(CScriptContext* script_context, eVarType fromtype, void* froma
         // -- note:  string variables are actually STE's, and need to be converted to char*
         // -- before converting to another type
         char* stringbuf = script_context->GetScratchBuffer();
-	    bool8 success = gRegisteredTypeToString[TYPE_string](fromaddr, stringbuf, kMaxTokenLength);
+        bool8 success = gRegisteredTypeToString[TYPE_string](script_context, fromaddr, stringbuf, kMaxTokenLength);
         if (!success)
         {
             ScriptAssert_(TinScript::GetContext(), false, "<internal>", -1,
@@ -437,7 +439,7 @@ void* TypeConvert(CScriptContext* script_context, eVarType fromtype, void* froma
         }
 
         // -- now convert from the actual char* to the requested type
-	    success = gRegisteredStringToType[totype]((void*)bufferptr, (char*)stringbuf);
+        success = gRegisteredStringToType[totype](script_context, (void*)bufferptr, (char*)stringbuf);
         if (!success)
         {
             ScriptAssert_(TinScript::GetContext(), false, "<internal>", -1,
@@ -480,7 +482,7 @@ const char* DebugPrintVar(void* addr, eVarType vartype)
         return "";
     char* convertbuf = TinScript::GetContext()->GetScratchBuffer();
     char* destbuf = TinScript::GetContext()->GetScratchBuffer();
-	gRegisteredTypeToString[vartype](addr, convertbuf, kMaxTokenLength);
+	gRegisteredTypeToString[vartype](TinScript::GetContext(), addr, convertbuf, kMaxTokenLength);
     sprintf_s(destbuf, kMaxTokenLength, "[%s] %s", GetRegisteredTypeName(vartype), convertbuf);
     return convertbuf;
 }

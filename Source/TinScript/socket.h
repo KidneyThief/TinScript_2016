@@ -39,7 +39,7 @@
 // ====================================================================================================================
 // -- constants
 // some random int32, just to ensure socket clients are compatible
-const int32 k_PacketVersion = 0xdeadbeef;  
+const int32 k_PacketVersion = 0xbeefdead;
 const int32 k_MaxPacketSize = 1024;
 
 const int32 k_DefaultPort = 27069;
@@ -111,6 +111,7 @@ struct tPacketHeader
 
         // -- client data types
         SCRIPT,
+        SCRIPT_COMMAND,
         DATA,
         DEBUGGER_BREAK,
 
@@ -255,6 +256,9 @@ class CSocket
 
         // -- Because sockets run in their own thread, they have to enqueue commands and statements through a mutex
         bool ScriptCommand(const char* fmt, ...);
+
+        // -- Similar to a ScriptCommand, we unpack the data into a function call, queued up in the scheduler
+        bool ScriptExec(void* data);
 
         // -- sets the "force break" bool in the script context
         void DebuggerBreak();

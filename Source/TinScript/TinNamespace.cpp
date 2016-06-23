@@ -946,7 +946,7 @@ const char* CScriptContext::ExportFormattedValue(eVarType type, void* addr)
 {
     char* convertbuf = GetScratchBuffer();
     char* formatbuf = GetScratchBuffer();
-	gRegisteredTypeToString[type](addr, convertbuf, kMaxTokenLength);
+	gRegisteredTypeToString[type](this, addr, convertbuf, kMaxTokenLength);
 
     // -- no change for int, float, or bool
     if (type == TYPE_int || type == TYPE_float || type== TYPE_bool)

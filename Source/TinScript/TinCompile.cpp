@@ -603,7 +603,7 @@ int32 CValueNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 countonly) 
 			// convert the value string to the appropriate type
 			// increment the instrptr by the number of 4-byte instructions
 			char valuebuf[kMaxTokenLength];
-			if (gRegisteredStringToType[pushtype]((void*)valuebuf, (char*)value))
+			if (gRegisteredStringToType[pushtype](TinScript::GetContext(), (void*)valuebuf, (char*)value))
             {
 				int32 resultsize = kBytesToWordCount(gRegisteredTypeSize[pushtype]);
     		    size += PushInstructionRaw(countonly, instrptr, (void*)valuebuf, resultsize,

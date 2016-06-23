@@ -82,7 +82,9 @@ void Player::SetDirection(int direction)
 
     // -- if we're the challenger, notify the host
     if (!gCurrentGame.m_isHost)
-        SocketCommand("Host_NotifyPlayerMove", direction);
+    {
+        SocketExec(hash("Host_NotifyPlayerMove"), direction);
+    }
 }
 
 void Player::OnUpdate(float deltaTime)
@@ -211,7 +213,7 @@ void Player::NotifyPosition()
             ++gCurrentGame.m_requireResponseID;
         else
             gCurrentGame.m_requireResponseID = current_time;
-        SocketCommand("Client_NotifyPlayerUpdate", gCurrentGame.m_requireResponseID, is_local_player, self.position, self.length);
+        SocketExec(hash("Client_NotifyPlayerUpdate"), gCurrentGame.m_requireResponseID, is_local_player, self.position, self.length);
     }
 }
 
@@ -342,11 +344,11 @@ void WormsGame::Restart()
         {
             int current_time = GetSimTime();
             gCurrentGame.m_requireResponseID = current_time + 1;
-            SocketCommand("Client_NotifyPlayerUpdate", current_time, false, local_player.position, 1);
-            SocketCommand("Client_NotifyPlayerUpdate", current_time + 1, true, challenger.position, 1);
+            SocketExec(hash("Client_NotifyPlayerUpdate"), current_time, false, local_player.position, 1);
+            SocketExec(hash("Client_NotifyPlayerUpdate"), current_time + 1, true, challenger.position, 1);
 
             // -- notify the challenger we're waiting for a re-match
-            SocketCommand("Client_NotifyRematchRequest");
+            SocketExec(hash("Client_NotifyRematchRequest"));
         }
     }
 }
@@ -440,22 +442,24 @@ void WormsGame::OnUpdate()
             if (collision_count == 1)
             {
                 host_wins = !gCurrentGame.m_localPlayer.m_hasCollided;
-                SocketCommand("NotifyGameOver", !host_wins, false);
+                SocketExec(hash("NotifyGameOver"), !host_wins, false);
                 NotifyGameOver(host_wins, false);
             }
             else if (collision_count == 2)
             {
-                SocketCommand("NotifyGameOver", false, true);
+                SocketExec(hash("NotifyGameOver"), false, true);
                 NotifyGameOver(false, true);
             }
 
             // -- notify the client of the updated apple positions
-            SocketCommand("Client_NotifyClearApples");
+            SocketExec(hash("Client_NotifyClearApples"));
             object apple = self.m_appleGroup.First();
             while (IsObject(apple))
             {
                 if (apple.m_spawned)
-                    SocketCommand("Client_NotifyApple", apple.m_position);
+                {
+                    SocketExec(hash("Client_NotifyApple"), apple.m_position);
+                }
                 apple = self.m_appleGroup.Next();
             }
         }
@@ -622,7 +626,9 @@ void WormsGame::DialogPressEnter()
     if (self.m_isHost)
         DrawText(8000, "320 240 0", "Waiting for challenger...", gCOLOR_BLUE);
     else
-        SocketCommand("Host_NotifyChallenge");
+    {
+        SocketExec(hash("Host_NotifyChallenge"));
+    }
 }
 
 // -- network related functions ----------------------------------------------------------------------------------
@@ -664,7 +670,7 @@ void ChallengeWorms(string player_name, string ip_address)
     if (!SocketIsConnected())
         SocketConnect(ip_address);
 
-    SocketCommand("Host_NotifyChallenge", player_name);
+    SocketExec(hash("Host_NotifyChallenge"), player_name);
 }
 
 void Host_NotifyChallenge(string challenger_name)
@@ -677,7 +683,7 @@ void Host_NotifyChallenge(string challenger_name)
     gCurrentGame.m_isConnected = true;
 
     // -- send the handshake
-    SocketCommand("Client_AcceptChallenge", gCurrentGame.m_localPlayer.GetObjectName());
+    SocketExec(hash("Client_AcceptChallenge"), gCurrentGame.m_localPlayer.GetObjectName());
 
     // -- set the bool to start the game
     gCurrentGame.m_gameStarted = true;
@@ -719,7 +725,7 @@ void Client_NotifyPlayerUpdate(int packet_index, bool is_local_player, vector3f 
     player.NotifyPosition();
 
     // -- let the host know we received the update
-    SocketCommand("Host_NotifyPlayerUpdateResponse", packet_index);
+    SocketExec(hash("Host_NotifyPlayerUpdateResponse"), packet_index);
 }
 
 void Host_NotifyPlayerUpdateResponse(int packet_index)

@@ -170,7 +170,7 @@ int32 CFunctionCallStack::DebuggerGetStackVarEntries(CScriptContext* script_cont
 
     // -- copy the value, as a string (to a max length)
 	if (funcReturnType >= FIRST_VALID_TYPE)
-        gRegisteredTypeToString[funcReturnType](funcReturnValue, cur_entry->mValue, kMaxNameLength);
+        gRegisteredTypeToString[funcReturnType](script_context, funcReturnValue, cur_entry->mValue, kMaxNameLength);
 	else
 		cur_entry->mValue[0] = '\0';
 
@@ -280,7 +280,7 @@ int32 CFunctionCallStack::DebuggerGetStackVarEntries(CScriptContext* script_cont
                 void* stack_var_addr = execstack.GetStackVarAddr(func_stacktop, var_stackoffset);
 
                 // -- copy the value, as a string (to a max length)
-              	gRegisteredTypeToString[ve->GetType()](stack_var_addr, cur_entry->mValue, kMaxNameLength);
+              	gRegisteredTypeToString[ve->GetType()](script_context, stack_var_addr, cur_entry->mValue, kMaxNameLength);
 
                 // -- fill in the hash of the var name, and if applicable, the var object ID
                 cur_entry->mVarHash = ve->GetHash();
@@ -394,7 +394,7 @@ bool CFunctionCallStack::DebuggerFindStackTopVar(CScriptContext* script_context,
 						void* stack_var_addr = execstack.GetStackVarAddr(func_stacktop, var_stackoffset);
 
 						// -- copy the value, as a string (to a max length)
-              			gRegisteredTypeToString[ve->GetType()](stack_var_addr, watch_entry.mValue, kMaxNameLength);
+              			gRegisteredTypeToString[ve->GetType()](script_context, stack_var_addr, watch_entry.mValue, kMaxNameLength);
 
 						// -- fill in the hash of the var name, and if applicable, the var object ID
 						watch_entry.mVarHash = ve->GetHash();
@@ -644,6 +644,15 @@ bool8 ExecuteScheduledFunction(CScriptContext* script_context, uint32 objectid, 
             srcaddr = TypeConvert(script_context, src->GetType(), src->GetAddr(NULL), dst->GetType());
         else
             srcaddr = nullvalue;
+
+        // -- if we were unable to convert, we're  done
+        if (srcaddr == nullptr)
+        {
+            ScriptAssert_(script_context, 0, "<internal>", -1,
+                          "Error - unable to assign parameter %d, calling function %s()\n",
+                          i, UnHash(funchash));
+            return false;
+        }
 
         // -- set the value - note stack parameters are always local variables, never members
         dst->SetValue(NULL, srcaddr);

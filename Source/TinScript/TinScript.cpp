@@ -302,6 +302,9 @@ CScriptContext::CScriptContext(TinPrintHandler printfunction, TinAssertHandler a
 
     // -- initialize the thread command
     mThreadBufPtr = NULL;
+
+    m_socketCommandList = nullptr;
+    m_socketCurrentCommand = nullptr;
 }
 
 // ====================================================================================================================
@@ -1273,7 +1276,7 @@ void CScriptContext::InitWatchEntryFromVarEntry(CVariableEntry& ve, CObjectEntry
 	// -- type, name, and value string
 	watch_entry.mType = ve.GetType();
 	SafeStrcpy(watch_entry.mVarName, UnHash(ve.GetHash()), kMaxNameLength);
-	gRegisteredTypeToString[ve.GetType()](value_addr, watch_entry.mValue, kMaxNameLength);
+	gRegisteredTypeToString[ve.GetType()](this, value_addr, watch_entry.mValue, kMaxNameLength);
 
     // -- fill in the array size
     watch_entry.mArraySize = ve.GetArraySize();
@@ -1561,7 +1564,7 @@ void CScriptContext::AddVariableWatch(int32 request_id, const char* variable_wat
 		        // -- type, name, and value string, and array size
 		        watch_result.mType = returnType;
 		        SafeStrcpy(watch_result.mVarName, variable_watch, kMaxNameLength);
-                gRegisteredTypeToString[returnType](returnValue, watch_result.mValue, kMaxNameLength);
+                gRegisteredTypeToString[returnType](this, returnValue, watch_result.mValue, kMaxNameLength);
                 watch_result.mArraySize = 1;
 
 		        watch_result.mVarHash = Hash(variable_watch);
@@ -1943,7 +1946,7 @@ bool8 CScriptContext::EvaluateWatchExpression(const char* expression, bool8 cond
                     if (returnValue)
                     {
                         char resultString[kMaxNameLength];
-                        gRegisteredTypeToString[returnType](returnValue, resultString, kMaxNameLength);
+                        gRegisteredTypeToString[returnType](this, returnValue, resultString, kMaxNameLength);
                         TinPrint(this, "*** EvaluateWatchExpression(): [%s] %s\n", GetRegisteredTypeName(returnType), resultString);
                     }
                 }
@@ -2544,7 +2547,7 @@ void CScriptContext::DebuggerSendObjectVarTable(CDebuggerWatchVarEntry* callingF
         SafeStrcpy(member_entry.mVarName, UnHash(member->GetHash()), kMaxNameLength);
 
         // -- copy the value, as a string (to a max length)
-        gRegisteredTypeToString[member->GetType()](member->GetAddr(oe->GetAddr()), member_entry.mValue,
+        gRegisteredTypeToString[member->GetType()](this, member->GetAddr(oe->GetAddr()), member_entry.mValue,
                                                    kMaxNameLength);
 
         // -- fill in the cached members
@@ -3565,27 +3568,163 @@ bool8 CScriptContext::AddThreadCommand(const char* command)
 void CScriptContext::ProcessThreadCommands()
 {
     // -- if there's nothing to process, we're done
-    if (mThreadBufPtr == NULL)
+    if (mThreadBufPtr == NULL && m_socketCommandList == nullptr)
         return;
 
     // -- we need to wrap access to the command buffer in a thread mutex, to prevent simultaneous access
     mThreadLock.Lock();
 
     // -- reset the bufPtr
+    bool has_script_commands = (mThreadBufPtr != NULL);
     mThreadBufPtr = NULL;
 
     // -- because the act of executing the command could trigger a breakpoint, we need to unlock this thread
     // -- *before* executing the command, or the run/step command will never actually be received.
     // -- this means, we copy current buffer so we can begin filling it again from the socket thread
     char local_exec_buffer[kThreadExecBufferSize];
-    int32 bytes_to_copy = (int32)strlen(mThreadExecBuffer) + 1;
-    memcpy(local_exec_buffer, mThreadExecBuffer, bytes_to_copy);
+    if (has_script_commands)
+    {
+        int32 bytes_to_copy = (int32)strlen(mThreadExecBuffer) + 1;
+        memcpy(local_exec_buffer, mThreadExecBuffer, bytes_to_copy);
+    }
+
+    // -- the current queue of socket commands (created directly) need to be inserted into the scheduler as well
+    while (m_socketCommandList != nullptr)
+    {
+        CScheduler::CCommand* socket_command = m_socketCommandList;
+        m_socketCommandList = socket_command->mNext;
+
+        GetScheduler()->InsertCommand(socket_command);
+    }
 
     // -- unlock the thread
     mThreadLock.Unlock();
 
     // -- execute the buffer
-    ExecCommand(local_exec_buffer);
+    if (has_script_commands)
+        ExecCommand(local_exec_buffer);
+}
+
+// ====================================================================================================================
+// BeginThreadExec():  This uses a mutex to lock the queued commands, and creates a CScheduler::CCommand.
+// ====================================================================================================================
+bool8 CScriptContext::BeginThreadExec(uint32 func_hash)
+{
+    // -- ensure we have a script context (that we're not shutting down), and the func_hash is valid
+    if (GetGlobalNamespace()->GetFuncTable()->FindItem(func_hash) == nullptr)
+    {
+        return (false);
+    }
+
+    // -- if we're already creating a thread command, assert
+    if (m_socketCurrentCommand != nullptr)
+    {
+        ScriptAssert_(this, 0, "<internal>", -1, "Error - socket exec command already being constructed: %s\n",
+                      UnHash(func_hash));
+        return (false);
+    }
+
+    // -- we to wrap access to the linked list of commands in a thread mutex, to prevent the socket thread from
+    // -- queueing, while the main thread is processing
+    mThreadLock.Lock();
+
+    m_socketCurrentCommand = GetScheduler()->RemoteScheduleCreate(func_hash);
+
+    // -- so far, so good
+    return (true);
+}
+
+// ====================================================================================================================
+// AddThreadExecParam():  Add a parameter to the thread command currently being constructed.
+// ====================================================================================================================
+void CScriptContext::AddThreadExecParam(eVarType param_type, void* value)
+{
+    // -- sanity check
+    if (m_socketCurrentCommand == nullptr || param_type == TYPE_void || value == nullptr)
+    {
+        ScriptAssert_(this, 0, "<internal>", -1, "Error - unable to construct a socket command\n");
+        return;
+    }
+
+    // -- if the param_type is a string, then the value* is a pointer to the (soon to be destructed) received packet
+    // -- we need to add the string to the string table, and use the hash value, like any other internal string value
+    uint32 string_hash = 0;
+    if (param_type == eVarType::TYPE_string)
+    {
+        // -- bump the ref count - we need to ensure the value doesn't disappear before the schedule is executed
+        // -- note:  the string should be cleaned up *after* the schedule has been executed - double check!
+        string_hash = Hash((const char*)value);
+        GetStringTable()->AddString((const char*)value, -1, string_hash, false);
+        value = (void*)(&string_hash);
+    }
+
+    // -- convert the value to the required type
+    int32 current_param = m_socketCurrentCommand->mFuncContext->GetParameterCount();
+    CFunctionEntry* fe = GetGlobalNamespace()->GetFuncTable()->FindItem(m_socketCurrentCommand->mFuncHash);
+    CVariableEntry* fe_param = current_param < fe->GetContext()->GetParameterCount()
+                               ? fe->GetContext()->GetParameter(current_param)
+                               : nullptr;
+    if (fe_param == nullptr)
+    {
+        ScriptAssert_(this, 0, "<internal>", -1, "Error - invalid parameter for function: %s()\n",
+                      UnHash(m_socketCurrentCommand->mFuncHash));
+        return;
+    }
+
+    // -- convert the received data to the type required by the function
+    void* convert_addr = TypeConvert(this, param_type, value, fe_param->GetType());
+    if (convert_addr == nullptr)
+    {
+        ScriptAssert_(this, 0, "<internal>", -1, "Error - invalid parameter for function: %s()\n",
+                      UnHash(m_socketCurrentCommand->mFuncHash));
+        return;
+    }
+
+    // -- add the parameter to the schedule context
+    char param_name[4] = "_px";
+    param_name[2] = '0' + current_param;
+    if (!m_socketCurrentCommand->mFuncContext->AddParameter(param_name, Hash(param_name), fe_param->GetType(), 1,
+                                                            current_param, 0))
+    {
+        ScriptAssert_(this, 0, "<internal>", -1, "Error - invalid parameter for function: %s()\n",
+                      UnHash(m_socketCurrentCommand->mFuncHash));
+        return;
+    }
+
+    // -- set the parameter value (use the literal, so strings are actual strings, not hash values)
+    CVariableEntry* ve = m_socketCurrentCommand->mFuncContext->GetParameter(current_param);
+    ve->SetValue(nullptr, convert_addr, 0);
+}
+
+// ====================================================================================================================
+// QueueThreadExec():  All command parameters have been set - add the current command to the end of the list.
+// ====================================================================================================================
+void CScriptContext::QueueThreadExec()
+{
+    // -- if we're already creating a thread command, assert
+    if (m_socketCurrentCommand == nullptr)
+    {
+        ScriptAssert_(this, 0, "<internal>", -1, "Error - socket exec command does not exist\n");
+        return;
+    }
+
+    // -- add the m_socketCurrentCommand to the end of the list
+    CScheduler::CCommand* prev_command = m_socketCommandList;
+    while (prev_command != nullptr && prev_command->mNext != nullptr)
+        prev_command = prev_command->mNext;
+
+    // -- add the command to the end of the list
+    m_socketCurrentCommand->mNext = nullptr;
+    if (prev_command == nullptr)
+        m_socketCommandList = m_socketCurrentCommand;
+    else
+        prev_command->mNext = m_socketCurrentCommand;
+
+    // -- clear the current command
+    m_socketCurrentCommand = nullptr;
+
+    // -- unlock the thread
+    mThreadLock.Unlock();
 }
 
 #endif // WIN32

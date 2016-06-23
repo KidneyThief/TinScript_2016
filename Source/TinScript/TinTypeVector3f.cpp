@@ -44,17 +44,21 @@ tPODTypeTable* gVector3fTable = NULL;
 
 // --------------------------------------------------------------------------------------------------------------------
 // External type - CVector3f is a POD type (aggregate, but no user-defined constructors)
-bool8 Vector3fToString(void* value, char* buf, int32 bufsize) {
-	if(value && buf && bufsize > 0) {
+bool8 Vector3fToString(TinScript::CScriptContext* script_context, void* value, char* buf, int32 bufsize)
+{
+	if(value && buf && bufsize > 0)
+    {
         CVector3f* c3vector = (CVector3f*)value;
 		sprintf_s(buf, bufsize, "%.4f %.4f %.4f", c3vector->x, c3vector->y, c3vector->z);
-		return true;
+		return (true);
 	}
-	return false;
+	return (false);
 }
 
-bool8 StringToVector3f(void* addr, char* value) {
-	if(addr && value) {
+bool8 StringToVector3f(TinScript::CScriptContext* script_context, void* addr, char* value)
+{
+	if (addr && value)
+    {
 		CVector3f* varaddr = (CVector3f*)addr;
 
         // -- handle an empty string
@@ -64,15 +68,17 @@ bool8 StringToVector3f(void* addr, char* value) {
             return (true);
         }
 
-        else if(sscanf_s(value, "%f %f %f", &varaddr->x, &varaddr->y, &varaddr->z) == 3) {
+        else if(sscanf_s(value, "%f %f %f", &varaddr->x, &varaddr->y, &varaddr->z) == 3)
+        {
 		    return (true);
         }
 
-        else if(sscanf_s(value, "%f, %f, %f", &varaddr->x, &varaddr->y, &varaddr->z) == 3) {
+        else if(sscanf_s(value, "%f, %f, %f", &varaddr->x, &varaddr->y, &varaddr->z) == 3)
+        {
 		    return (true);
         }
 	}
-	return false;
+	return (false);
 }
 
 // --------------------------------------------------------------------------------------------------------------------

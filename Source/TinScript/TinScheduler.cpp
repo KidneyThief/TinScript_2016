@@ -431,6 +431,21 @@ CScheduler::CCommand* CScheduler::ScheduleCreate(uint32 objectid, int32 delay, u
     return newcommand;
 }
 
+// ====================================================================================================================
+// RemoteScheduleCreate():  Called from the socket thread, to queue up schedules until the main thread can process.
+// ====================================================================================================================
+CScheduler::CCommand* CScheduler::RemoteScheduleCreate(uint32 funchash)
+{
+    // -- create the new commmand
+    CCommand* new_command = TinAlloc(ALLOC_SchedCmd, CCommand, GetScriptContext(), -1, 0, 0, 0, funchash, true);
+
+    // -- add space to store a return value
+    new_command->mFuncContext->AddParameter("__return", Hash("__return"), TYPE__resolve, 1, 0);
+
+    // -- return the command
+    return (new_command);
+}
+
 } // TinScript
 
 // ------------------------------------------------------------------------------------------------

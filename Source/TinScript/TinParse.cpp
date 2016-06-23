@@ -825,7 +825,8 @@ void DumpVarTable(CObjectEntry* oe)
 // ====================================================================================================================
 // DebugVarTable():  Debug function to print out the variables in a variable table.
 // ====================================================================================================================
-void DumpVarTable(CScriptContext* script_context, CObjectEntry* oe, const tVarTable* vartable) {
+void DumpVarTable(CScriptContext* script_context, CObjectEntry* oe, const tVarTable* vartable)
+{
 	// -- sanity check
 	if (!script_context || (!oe && !vartable))
 		return;
@@ -836,7 +837,7 @@ void DumpVarTable(CScriptContext* script_context, CObjectEntry* oe, const tVarTa
     while (ve)
     {
 		char valbuf[kMaxTokenLength];
-		gRegisteredTypeToString[ve->GetType()](ve->GetValueAddr(objaddr), valbuf, kMaxTokenLength);
+        gRegisteredTypeToString[ve->GetType()](script_context, ve->GetValueAddr(objaddr), valbuf, kMaxTokenLength);
 		TinPrint(script_context, "    [%s] %s: %s\n", gRegisteredTypeNames[ve->GetType()],
                     ve->GetName(), valbuf);
 		ve = vartable->Next();
