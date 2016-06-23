@@ -395,7 +395,7 @@ CDebugToolCheckBox::~CDebugToolCheckBox()
 void CDebugToolCheckBox::SetValue(const char* new_value)
 {
     bool bool_value = false;
-    TinScript::StringToBool(&bool_value, (char*)new_value);
+    TinScript::StringToBool(TinScript::GetContext(), &bool_value, (char*)new_value);
     mCheckBox->setCheckState(bool_value ? Qt::Checked : Qt::Unchecked);
 }
 
