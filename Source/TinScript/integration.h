@@ -38,7 +38,11 @@
 // -- Setting a stack size of 4Mb, Fibonacci(30) was successful, but prohibitively slow.
 #pragma comment(linker, "/STACK:4000000")
 
-#define MEMORY_TRACKER_ENABLE 0
+#ifdef _DEBUG
+    #define MEMORY_TRACKER_ENABLE 1
+#else
+    #define MEMORY_TRACKER_ENABLE 0
+#endif
 
 // ------------------------------------------------------------------------------------------------
 // -- TYPES

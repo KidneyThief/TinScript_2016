@@ -3018,7 +3018,7 @@ bool8 OpExecCreateObject(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CE
 
 #if MEMORY_TRACKER_ENABLE
     uint32 codeblock_hash = cb->GetFilenameHash();
-    int32 cur_line = cb->CalcLineNumber(instrptr - 8);
+    int32 cur_line = cb->CalcLineNumber(instrptr);
 
     // -- used by the memory tracker (if enabled)
     TinObjectCreated(objid, codeblock_hash, cur_line);

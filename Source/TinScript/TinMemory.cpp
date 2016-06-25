@@ -390,13 +390,14 @@ void CMemoryTracker::DumpObjects()
     }
 
     // -- loop through the file/line created table, and dump the count from each location
+    // -- note:  editors count from 1, TinScript counts line numbers from 0
     for (int32 i = 0; i < k_trackedAllocationTableSize; ++i)
     {
         tObjectCreatedFileLine* file_line_entry = g_memoryTrackerInstance->m_objectCreatedFileLineTable[i];
         while (file_line_entry != nullptr)
         {
             TinPrint(TinScript::GetContext(), "%3d objects from: %s @ %d\n", file_line_entry->object_count,
-                     UnHash(file_line_entry->codeblock_hash), file_line_entry->line_number);
+                     UnHash(file_line_entry->codeblock_hash), file_line_entry->line_number + 1);
             file_line_entry = file_line_entry->next;
         }
     }
@@ -420,14 +421,14 @@ void CMemoryTracker::FindObject(uint32 object_id)
     while (object_entry != nullptr && object_entry->object_id != object_id)
         object_entry = object_entry->next;
 
-    // -- if we found our entry, print out the file/line origin
+    // -- if we found our entry, print out the file/line origin  (add 1 since editors don't count from 0)
     if (object_entry != nullptr)
     {
         CObjectEntry* oe = TinScript::GetContext()->FindObjectEntry(object_id);
         if (oe != nullptr)
             TinScript::GetContext()->PrintObject(oe);
         TinPrint(TinScript::GetContext(), "MemoryFindObject(): object %d created at %s: %d\n",
-                 object_id, UnHash(object_entry->codeblock_hash), object_entry->line_number);
+                 object_id, UnHash(object_entry->codeblock_hash), object_entry->line_number + 1);
     }
     else
     {
