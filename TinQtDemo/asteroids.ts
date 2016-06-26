@@ -184,12 +184,24 @@ void Ship::OnCreate() : SceneObject
     
     // -- we can only fire so fast
     float self.fire_cd_time = 0.0f;
+
+    // SuperFire: b
+    //int self.superfire_count = 0;
+    //float self.superfire_cd_time = 0.0f;
 }
 
 void Ship::OnUpdate(float deltaTime)
 {
     // -- update the screen position - applies the velocity, and wraps
     UpdateScreenPosition(self, deltaTime);
+
+    // SuperFire: c
+    //if (self.superfire_count > 0)
+    //{
+    //    self.rotation -= g_rotateSpeed;
+    //    self.OnFire();
+    //}
+    //self.superfire_cd_time -= deltaTime;
     
     // -- update the CD times
     self.fire_cd_time -= deltaTime;
@@ -242,19 +254,41 @@ void Ship::ApplyThrust(float thrust)
     ApplyImpulse(self, heading * thrust);
 }
 
+// -- SuperFire: a
+/*
+void Ship::OnSuperFire()
+{
+    Print("superfire!");
+
+    // SuperFire: c
+    //Print(self.superfire_cd_time);
+    //if (self.superfire_cd_time > 0.0f)
+    //    return;
+
+    //self.superfire_count = 12;
+    //self.superfire_cd_time = 8.0f;
+    //Print(self.superfire_cd_time);
+}
+*/
+
 void Ship::OnFire()
 {
     // -- no shooting when we're dead
     if (self.lives <= 0)
         return;
         
-    // -- only 4x bullets at a time
-    if (gCurrentGame.bullet_set.Used() >= gMaxBullets)
-        return;
-    
     // -- only allow one bullet every X msec
     if (self.fire_cd_time > 0.0f)
         return;
+
+    // -- only 4x bullets at a time
+    if (gCurrentGame.bullet_set.Used() >= gMaxBullets)
+        return;
+
+    // SuperFire: b
+    //if (gCurrentGame.bullet_set.Used() >= gMaxBullets && self.superfire_count <= 0)
+    //    return;
+    //--self.superfire_count;
         
     // -- calculate our heading
     vector3f heading = '0 0 0';
@@ -490,9 +524,11 @@ void AsteroidsGame::UpdateKeys(int update_time)
     
     // -- fire
     if (KeyPressedSinceTime(KeyCode_space, update_time))
-    {
         self.ship.OnFire();
-    }
+
+    // -- SuperFire: a
+    //if (KeyPressedSinceTime(KeyCode_q, update_time))
+    //    self.ship.OnSuperFire();
 }
 
 void StartAsteroids()

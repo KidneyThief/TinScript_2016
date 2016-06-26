@@ -408,7 +408,7 @@ class CScriptContext
         bool8 FunctionExists(const char* function_name, const char* ns_name);
 
         uint32 GetNextObjectID();
-        uint32 CreateObject(uint32 classhash, uint32 objnamehash);
+        uint32 CreateObject(uint32 classhash, uint32 objnamehash, uint32 codeblock_hash, int32 line_number);
         uint32 RegisterObject(void* objaddr, const char* classname, const char* objectname);
         void UnregisterObject(void* objaddr);
         void DestroyObject(uint32 objectid);

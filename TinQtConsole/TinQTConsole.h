@@ -46,6 +46,7 @@ static const char* kLocalSendPrefix = "> ";
 
 const int kFontWidth = 12;
 const int kFontHeight = 28;
+const int kButtonSpace = 4;
 
 // --------------------------------------------------------------------------------------------------------------------
 // -- Forward declarations

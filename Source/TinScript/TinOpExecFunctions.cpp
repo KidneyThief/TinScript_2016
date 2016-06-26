@@ -3013,16 +3013,17 @@ bool8 OpExecCreateObject(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CE
         return false;
     }
 
-    // -- strings are already hashed, when pulled from the stack
-    uint32 objid = cb->GetScriptContext()->CreateObject(classhash, *(uint32*)objnameaddr);
+    uint32 codeblock_hash = 0;
+    int32 cur_line = -1;
 
 #if MEMORY_TRACKER_ENABLE
-    uint32 codeblock_hash = cb->GetFilenameHash();
-    int32 cur_line = cb->CalcLineNumber(instrptr);
-
-    // -- used by the memory tracker (if enabled)
-    TinObjectCreated(objid, codeblock_hash, cur_line);
+    codeblock_hash = cb->GetFilenameHash();
+    cur_line = cb->CalcLineNumber(instrptr);
 #endif
+
+    // -- strings are already hashed, when pulled from the stack
+    uint32 objid = cb->GetScriptContext()->CreateObject(classhash, *(uint32*)objnameaddr, codeblock_hash, cur_line);
+
 
     // -- if we failed to create the object, assert
     if (objid == 0)

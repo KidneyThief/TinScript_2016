@@ -356,6 +356,36 @@ void CMemoryTracker::NotifyObjectDestroyed(uint32 object_id)
 }
 
 // ====================================================================================================================
+// GetCreatedFileLine():  Given a object_id, find the script file/line from where this object was created.
+// ====================================================================================================================
+bool8 CMemoryTracker::GetCreatedFileLine(uint32 object_id, uint32& out_file_hash, int32& out_line_number)
+{
+    // -- nothing to do if the memory tracker isn't enabled
+    if (g_memoryTrackerInstance == nullptr)
+        return (false);
+
+    int32 bucket = object_id % k_trackedAllocationTableSize;
+    tObjectCreateEntry* object_entry = g_memoryTrackerInstance->m_objectCreatedTable[bucket];
+    while (object_entry != nullptr && object_entry->object_id != object_id)
+        object_entry = object_entry->next;
+
+    // -- if we found our entry, print out the file/line origin  (add 1 since editors don't count from 0)
+    if (object_entry != nullptr)
+    {
+        CObjectEntry* oe = TinScript::GetContext()->FindObjectEntry(object_id);
+        if (oe != nullptr)
+        {
+            out_file_hash = object_entry->codeblock_hash;
+            out_line_number = object_entry->line_number;
+            return (true);
+        }
+    }
+
+    // -- not found
+    return (false);
+}
+
+// ====================================================================================================================
 // DumpTotals():  Registered method to dump the bytes allocated for each TinAlloc() allocation type.
 // ====================================================================================================================
 void CMemoryTracker::DumpTotals()

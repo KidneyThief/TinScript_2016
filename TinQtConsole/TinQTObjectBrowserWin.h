@@ -43,7 +43,7 @@ class CBrowserEntry : public QTreeWidgetItem
 {
     public:
         CBrowserEntry(uint32 parent_id, uint32 object_id, bool8 owned, const char* object_name,
-                      const char* derivation);
+                      const char* derivation, uint32 created_file_hash, int32 created_line_number);
         virtual ~CBrowserEntry();
 
         uint32 mObjectID;
@@ -52,6 +52,8 @@ class CBrowserEntry : public QTreeWidgetItem
         char mName[TinScript::kMaxNameLength];
         char mFormattedName[TinScript::kMaxNameLength];
         char mDerivation[TinScript::kMaxNameLength];
+        uint32 mCreatedFileHash;
+        int32 mCreatedLineNumber;
 };
 
 // ------------------------------------------------------------------------------------------------
@@ -65,7 +67,8 @@ class CDebugObjectBrowserWin : public QTreeWidget
 
         void NotifyOnConnect();
 
-        void NotifyCreateObject(uint32 object_id, const char* object_name, const char* derivation);
+        void NotifyCreateObject(uint32 object_id, const char* object_name, const char* derivation,
+                                uint32 created_file_hash, int32 created_line_number);
         void NotifyDestroyObject(uint32 object_id);
 
         void RecursiveSetAddObject(CBrowserEntry* parent_entry, uint32 child_id, bool8 owned);
@@ -83,6 +86,10 @@ class CDebugObjectBrowserWin : public QTreeWidget
 
         // -- this is used by the FunctionAssist to allow it to search for objects by name
         void PopulateObjectIDList(QList<uint32>& object_id_list);
+
+        // -- used by the FUnctionAssist, to look up the script file/line for where an
+        // -- object was created, and to set that location in the source view
+        void DisplayCreatedFileLine(uint32 object_id);
 
         virtual void paintEvent(QPaintEvent* e)
         {

@@ -2918,9 +2918,27 @@ void CScriptContext::DebuggerNotifyCreateObject(CObjectEntry* oe)
     // -- ensure the buffer is null terminated
     derivation_buf[kMaxNameLength - 1] = '\0';
 
+    // -- get the file/line from where this object was created
+    uint32 created_file_hash = 0;
+    int32 created_line_number = 0;
+    if (!CMemoryTracker::GetCreatedFileLine(oe->GetID(), created_file_hash, created_line_number))
+    {
+        created_file_hash = 0;
+        created_line_number = 0;
+    }
+
+    // -- we're using SendExec() now, so the args must be sent as strings
+    char object_id_buf[16];
+    sprintf_s(object_id_buf, "%d", oe->GetID());
+    char created_hash_buf[16];
+    sprintf_s(created_hash_buf, "%d", created_file_hash);
+    char created_line_buf[16];
+    sprintf_s(created_line_buf, "%d", created_line_number);
+
     // -- send the entry
-    SocketManager::SendCommandf("DebuggerNotifyCreateObject(%d, `%s`, `%s`);", oe->GetID(),
-                                oe->GetNameHash() != 0 ? oe->GetName() : "", derivation_buf);
+    SocketManager::SendExec(Hash("DebuggerNotifyCreateObject"), object_id_buf,
+                            oe->GetNameHash() != 0 ? oe->GetName() : "", derivation_buf,
+                            created_hash_buf, created_line_buf, nullptr, nullptr);
 }
 
 // ====================================================================================================================

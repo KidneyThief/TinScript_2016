@@ -93,6 +93,7 @@ class CDebugFunctionAssistWin : public QWidget
     public slots:
 	void OnButtonMethodPressed();
 	void OnButtonBrowsePressed();
+    void OnButtonCreatedPressed();
 
     private:
         CFunctionAssistInput* mFunctionInput;

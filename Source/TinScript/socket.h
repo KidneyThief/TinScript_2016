@@ -78,6 +78,9 @@ void Disconnect();
 bool IsConnected();
 bool SendCommand(const char* command);
 bool SendCommandf(const char* fmt, ...);
+bool SendExec(int32 func_hash, const char* arg0, const char* arg1, const char* arg2, const char* arg3,
+              const char* arg4, const char* arg5, const char* arg6);
+
 
 // -- This is not technically thread safe, but the chances of a collision are remote,
 // -- and if you're using this, you're probably stuck in an infinte loop anyways

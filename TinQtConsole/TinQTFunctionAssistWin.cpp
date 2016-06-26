@@ -63,17 +63,22 @@ CDebugFunctionAssistWin::CDebugFunctionAssistWin(QWidget* parent)
 
     // -- create the object identifier
     QWidget* identifier_widget = new QWidget(this);
-    identifier_widget->setFixedHeight(48);
+    identifier_widget->setFixedHeight(kFontHeight * 2 + kButtonSpace * 3);
     identifier_widget->setMinimumWidth(80);
-    QHBoxLayout* identifier_layout = new QHBoxLayout(identifier_widget);
+    QGridLayout* identifier_layout = new QGridLayout(identifier_widget);
     mObjectIndentifier = new QLabel("<global scope>", identifier_widget);
 	mObjectIndentifier->setFixedHeight(kFontHeight);
 	QPushButton* method_button = new QPushButton("Method", identifier_widget);
 	QPushButton* browse_button = new QPushButton("Object", identifier_widget);
+    QPushButton* created_button = new QPushButton("Created", identifier_widget);
+    method_button->setFixedHeight(kFontHeight);
+    browse_button->setFixedHeight(kFontHeight);
+    created_button->setFixedHeight(kFontHeight);
 
-    identifier_layout->addWidget(mObjectIndentifier, 1);
-	identifier_layout->addWidget(method_button, 0);
-	identifier_layout->addWidget(browse_button, 0);
+    identifier_layout->addWidget(mObjectIndentifier, 0, 0, 1, 3);
+	identifier_layout->addWidget(method_button, 1, 0, 1, 1);
+    identifier_layout->addWidget(browse_button, 1, 1, 1, 1);
+    identifier_layout->addWidget(created_button, 1, 2, 1, 1);
 
     // -- create the function list
     mFunctionList = new CFunctionAssistList(this, this);
@@ -98,6 +103,7 @@ CDebugFunctionAssistWin::CDebugFunctionAssistWin(QWidget* parent)
     // -- hook up the method and browse button
 	QObject::connect(method_button, SIGNAL(clicked()), this, SLOT(OnButtonMethodPressed()));
 	QObject::connect(browse_button, SIGNAL(clicked()), this, SLOT(OnButtonBrowsePressed()));
+    QObject::connect(created_button, SIGNAL(clicked()), this, SLOT(OnButtonCreatedPressed()));
 }
 
 // ====================================================================================================================
@@ -565,6 +571,14 @@ void CDebugFunctionAssistWin::OnButtonMethodPressed()
 		TinScript::CDebuggerFunctionAssistEntry* entry = mFunctionEntryMap[mSelectedFunctionHash];
 		CConsoleWindow::GetInstance()->GetDebugSourceWin()->SetSourceView(entry->mCodeBlockHash, entry->mLineNumber);
 	}
+}
+
+// ====================================================================================================================
+// OnButtonCreatedPressed():  For the search object ID, find the file/line where the object was created.
+// ====================================================================================================================
+void CDebugFunctionAssistWin::OnButtonCreatedPressed()
+{
+    CConsoleWindow::GetInstance()->GetDebugObjectBrowserWin()->DisplayCreatedFileLine(mSearchObjectID);
 }
 
 // ====================================================================================================================

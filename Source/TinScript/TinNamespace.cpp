@@ -465,7 +465,7 @@ uint32 CScriptContext::GetNextObjectID()
 // ====================================================================================================================
 // CreateObject():  Create an object instance, given the hash of the class to use, and the hash of the object's name.
 // ====================================================================================================================
-uint32 CScriptContext::CreateObject(uint32 classhash, uint32 objnamehash)
+uint32 CScriptContext::CreateObject(uint32 classhash, uint32 objnamehash, uint32 codeblock_hash, int32 line_number)
 {
     uint32 objectid = GetNextObjectID();
 
@@ -558,6 +558,11 @@ uint32 CScriptContext::CreateObject(uint32 classhash, uint32 objnamehash)
         // $$$TZA Note:  names are not guaranteed unique...  warn?
         if (objnamehash != Hash(""))
             GetNameDictionary()->AddItem(*newobjectentry, objnamehash);
+
+#if MEMORY_TRACKER_ENABLE
+        // -- used by the memory tracker (if enabled)
+        TinObjectCreated(objectid, codeblock_hash, line_number);
+#endif
 
         // -- notify the debugger of the new object (before we call OnCreate(), as that may add the object to a set)
         DebuggerNotifyCreateObject(newobjectentry);

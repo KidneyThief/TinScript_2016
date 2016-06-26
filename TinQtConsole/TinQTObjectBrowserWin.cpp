@@ -32,6 +32,7 @@
 
 #include "TinQTObjectBrowserWin.h"
 #include "TinQTConsole.h"
+#include "TinQTSourceWin.h"
 #include "mainwindow.h"
 
 // == class CBrowserEntry =============================================================================================
@@ -40,7 +41,7 @@
 // Constructor
 // ====================================================================================================================
 CBrowserEntry::CBrowserEntry(uint32 parent_id, uint32 object_id, bool8 owned, const char* object_name,
-                             const char* derivation)
+                             const char* derivation, uint32 created_file_hash, int32 created_line_number)
     : QTreeWidgetItem()
 {
     mObjectID = object_id;
@@ -51,6 +52,10 @@ CBrowserEntry::CBrowserEntry(uint32 parent_id, uint32 object_id, bool8 owned, co
 
     // -- create and store the formatted name string
     sprintf_s(mFormattedName, TinScript::kMaxNameLength, "[%d] %s", object_id, mName);
+
+    //-- store the origin info
+    mCreatedFileHash = created_file_hash;
+    mCreatedLineNumber = created_line_number;
 
     // -- set the QT elements
     setText(0, mFormattedName);
@@ -102,7 +107,8 @@ void CDebugObjectBrowserWin::NotifyOnConnect()
 // ====================================================================================================================
 // NotifyCreateObject():  Notify a new object has been created.
 // ====================================================================================================================
-void CDebugObjectBrowserWin::NotifyCreateObject(uint32 object_id, const char* object_name, const char* derivation)
+void CDebugObjectBrowserWin::NotifyCreateObject(uint32 object_id, const char* object_name, const char* derivation,
+                                                uint32 created_file_hash, int32 created_line_number)
 {
     // -- if we already have an entry for this object, we're done
     if (mObjectDictionary.contains(object_id))
@@ -113,7 +119,8 @@ void CDebugObjectBrowserWin::NotifyCreateObject(uint32 object_id, const char* ob
     mObjectDictionary.insert(object_id, entry_list);
 
     // -- now create the actual entry, and add it to the list
-    CBrowserEntry* new_entry = new CBrowserEntry(0, object_id, false, object_name, derivation);
+    CBrowserEntry* new_entry = new CBrowserEntry(0, object_id, false, object_name, derivation, created_file_hash,
+                                                 created_line_number);
     entry_list->append(new_entry);
 
     // -- until we're parented, we want to display the entry
@@ -152,7 +159,8 @@ void CDebugObjectBrowserWin::RecursiveSetAddObject(CBrowserEntry* parent_entry, 
 
     // -- we need to duplicate the object entry, add add it as a child to the new parent entry
     CBrowserEntry* new_entry = new CBrowserEntry(parent_entry->mObjectID, child_id, owned, object_entry->mName,
-                                                 object_entry->mDerivation);
+                                                 object_entry->mDerivation, object_entry->mCreatedFileHash,
+                                                 object_entry->mCreatedLineNumber);
     // -- add the new entry as a child
     parent_entry->addChild(new_entry);
 
@@ -424,6 +432,28 @@ void CDebugObjectBrowserWin::PopulateObjectIDList(QList<uint32>& object_id_list)
         object_id_list.push_back(key_list[i]);
     }
 }
+
+// ====================================================================================================================
+// DisplayCreatedFileLine():  Display an objects created file/line in the source view
+// ====================================================================================================================
+void CDebugObjectBrowserWin::DisplayCreatedFileLine(uint32 object_id)
+{
+    if (mObjectDictionary.contains(object_id))
+    {
+        // -- dereference to get the List, and then again to get the first item in the list
+        CBrowserEntry* entry = (*(mObjectDictionary[object_id]))[0];
+        if (entry->mCreatedFileHash != 0 && entry->mCreatedLineNumber >= 0)
+        {
+            CConsoleWindow::GetInstance()->GetDebugSourceWin()->SetSourceView(entry->mCreatedFileHash,
+                                                                              entry->mCreatedLineNumber);
+            return;
+        }
+    }
+
+    // -- failed to find the object's created instruction
+    ConsolePrint("Failed to find the script file/line used to create object: %d\n", object_id);
+}
+
 
 // --------------------------------------------------------------------------------------------------------------------
 #include "TinQTObjectBrowserWinMoc.cpp"

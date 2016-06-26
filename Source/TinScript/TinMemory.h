@@ -58,9 +58,13 @@ class CMemoryTracker
         static void NotifyObjectCreated(uint32 object_id, uint32 codeblock_hash, int32 line_number);
         static void NotifyObjectDestroyed(uint32 object_id);
 
+        static bool8 GetCreatedFileLine(uint32 object_id, uint32& out_file_hash, int32& out_line_number);
+
+        // -- registered methods
         static void DumpTotals();
         static void DumpObjects();
         static void FindObject(uint32 object_id);
+
 
     private:
         struct tAllocEntry

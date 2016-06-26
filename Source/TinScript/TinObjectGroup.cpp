@@ -492,7 +492,8 @@ uint32 CObjectSet::CreateIterator()
     CHashTable<CObjectEntry>::CHashTableIterator* newIterator = mObjectList->CreateIterator();
 
     // -- the iterator is a scriptable object
-    uint32 iteratorID = TinScript::GetContext()->CreateObject(TinScript::Hash("CGroupIterator"), 0);
+    // $$$TZA the memory tracker records the script file/line for created objects - can we find that here?
+    uint32 iteratorID = TinScript::GetContext()->CreateObject(TinScript::Hash("CGroupIterator"), 0, 0, 0);
     if (iteratorID == 0)
         return (0);
 
