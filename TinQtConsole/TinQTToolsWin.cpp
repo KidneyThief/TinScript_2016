@@ -74,7 +74,7 @@ CDebugToolEntry::~CDebugToolEntry()
     // -- remove this entry from the named map
     if (mEntryNameHash != 0 && CDebugToolsWin::gDebugToolEntryNamedMap[mEntryNameHash] == this)
     {
-        CDebugToolsWin::gDebugToolEntryNamedMap[mEntryNameHash] = NULL;
+        CDebugToolsWin::gDebugToolEntryNamedMap.remove(mEntryNameHash);
     }
 }
 

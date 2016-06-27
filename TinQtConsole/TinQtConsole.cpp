@@ -124,6 +124,7 @@ CConsoleWindow::CConsoleWindow()
 
     // -- create the toolbar components
     QToolBar* toolbar = new QToolBar();
+    toolbar->setObjectName("Debug Toolbar");
 	toolbar->setWindowTitle("Debug Toolbar");
     QLabel* file_label = new QLabel("File:");
     QWidget* spacer_0a = new QWidget();

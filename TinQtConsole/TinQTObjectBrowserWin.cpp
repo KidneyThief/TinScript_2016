@@ -33,6 +33,7 @@
 #include "TinQTObjectBrowserWin.h"
 #include "TinQTConsole.h"
 #include "TinQTSourceWin.h"
+#include "TinQTFunctionAssistWin.h"
 #include "mainwindow.h"
 
 // == class CBrowserEntry =============================================================================================
@@ -85,6 +86,10 @@ CDebugObjectBrowserWin::CDebugObjectBrowserWin(QWidget* parent) : QTreeWidget(pa
     headers.append(tr("Object Hierarchy"));
     headers.append(tr("Derivation"));
     setHeaderLabels(headers);
+
+    // -- connect up both the double clicked slot
+    QObject::connect(this, SIGNAL(itemDoubleClicked(QTreeWidgetItem*, int)), this,
+                     SLOT(OnDoubleClicked(QTreeWidgetItem*)));
 }
 
 // ====================================================================================================================
@@ -438,6 +443,10 @@ void CDebugObjectBrowserWin::PopulateObjectIDList(QList<uint32>& object_id_list)
 // ====================================================================================================================
 void CDebugObjectBrowserWin::DisplayCreatedFileLine(uint32 object_id)
 {
+    // -- sanity check
+    if (object_id == 0)
+        return;
+
     if (mObjectDictionary.contains(object_id))
     {
         // -- dereference to get the List, and then again to get the first item in the list
@@ -454,6 +463,17 @@ void CDebugObjectBrowserWin::DisplayCreatedFileLine(uint32 object_id)
     ConsolePrint("Failed to find the script file/line used to create object: %d\n", object_id);
 }
 
+// ====================================================================================================================
+// OnDoubleClicked():  Slot handling when an entry in the object browser is double-clicked
+// ====================================================================================================================
+void CDebugObjectBrowserWin::OnDoubleClicked(QTreeWidgetItem* tree_entry)
+{
+    CBrowserEntry* entry = static_cast<CBrowserEntry*>(tree_entry);
+    if (entry != nullptr && entry->mObjectID != 0)
+    {
+        CConsoleWindow::GetInstance()->GetDebugFunctionAssistWin()->SetAssistObjectID(entry->mObjectID);
+    }
+}
 
 // --------------------------------------------------------------------------------------------------------------------
 #include "TinQTObjectBrowserWinMoc.cpp"

@@ -115,6 +115,9 @@ class CDebugObjectBrowserWin : public QTreeWidget
             updateGeometry();
         }
 
+        public slots:
+            void OnDoubleClicked(QTreeWidgetItem*);
+
     private:
         // -- the dictionary of objects, each list is another instance of the same entry, with a different object set
         // hierarchy

@@ -97,7 +97,7 @@ CDebugFunctionAssistWin::CDebugFunctionAssistWin(QWidget* parent)
 
     // -- ensure we start with a clean search
 	mSelectedFunctionHash = 0;
-	mSearchObjectID = -1;
+	mSearchObjectID = 0;
     mFilterString[0] = '\0';
 
     // -- hook up the method and browse button
@@ -288,7 +288,7 @@ void CDebugFunctionAssistWin::UpdateFilter(const char* filter)
     StringContainsFilter(filter_ptr, exact_match, new_object_search);
 
     // -- if our search object is invalid, then it's by definition, a new search every time the filter changes
-    if (mSearchObjectID == -1)
+    if (mSearchObjectID == 0)
     {
         new_object_search = true;
         exact_match = false;
@@ -501,7 +501,7 @@ void CDebugFunctionAssistWin::NotifyFunctionDoubleClicked(TinScript::CDebuggerFu
 	mSelectedFunctionHash = 0;
 
 	// -- ensure we have a valid search
-    if (mSearchObjectID == -1)
+    if (mSearchObjectID == 0)
         return;
 
     if (list_entry->mIsObjectEntry)
