@@ -138,6 +138,10 @@ void* CMemoryTracker::Alloc(eAllocType alloc_type, int32 size)
     // -- ensure we've been initialized
     void* addr = ::operator new(size);
 
+    // -- if this is not the main thread, don't track the allocation
+    if (TinScript::GetContext() == nullptr || !TinScript::GetContext()->IsMainThread())
+        return (addr);
+
     // -- if the memory tracker hasn't yet been initialized, it's because
     // -- we're performing allocations during context initialization
     if (g_memoryTrackerInstance == nullptr)
@@ -168,9 +172,15 @@ void CMemoryTracker::Free(void* addr)
     // -- find and remove the allocation entry
     uint32 hash = kPointerToUInt32(addr);
     int32 bucket = hash % k_trackedAllocationTableSize;
+
+    // -- note:  the CMemoryTracker lives in the main thread - however, any allocation from
+    // -- the socket thread will not be tracked - but it could be freed from the main thread
+    // -- causing alloc_entry to be null
+    if (g_memoryTrackerInstance->m_allocationTable[bucket] == nullptr)
+        return;
+
     tAllocEntry* alloc_entry = nullptr;
-    if (g_memoryTrackerInstance->m_allocationTable[bucket] != nullptr &&
-        kPointerToUInt32(g_memoryTrackerInstance->m_allocationTable[bucket]->addr) == hash)
+    if (kPointerToUInt32(g_memoryTrackerInstance->m_allocationTable[bucket]->addr) == hash)
     {
         alloc_entry = g_memoryTrackerInstance->m_allocationTable[bucket];
         g_memoryTrackerInstance->m_allocationTable[bucket] = alloc_entry->next;
@@ -178,29 +188,26 @@ void CMemoryTracker::Free(void* addr)
     else
     {
         tAllocEntry* alloc_prev = g_memoryTrackerInstance->m_allocationTable[bucket];
-        while (alloc_prev != nullptr)
-        {
-            if (alloc_prev->next != nullptr && kPointerToUInt32(alloc_prev->next->addr))
-            {
-                alloc_entry = alloc_prev->next;
-                alloc_prev->next = alloc_entry->next;
-                break;
-            }
-
+        while (alloc_prev->next != nullptr && kPointerToUInt32(alloc_prev->next->addr) != hash)
             alloc_prev = alloc_prev->next;
+
+        // -- if we found our allocation, remove it from the list
+        if (alloc_prev->next != nullptr)
+        {
+            alloc_entry = alloc_prev->next;
+            alloc_prev->next = alloc_prev->next->next;
         }
     }
 
-    // -- we had better have found a matching entry
     if (alloc_entry == nullptr)
-    {
-        printf("uh oh\n");
-        Assert_(alloc_entry != nullptr);
-    }
+        return;
 
     // -- update the allocation total
     g_memoryTrackerInstance->m_allocationTotals[alloc_entry->type] -= alloc_entry->size;
-    Assert_(g_memoryTrackerInstance->m_allocationTotals[alloc_entry->type] >= 0);
+    if (g_memoryTrackerInstance->m_allocationTotals[alloc_entry->type] < 0)
+    {
+        Assert_(g_memoryTrackerInstance->m_allocationTotals[alloc_entry->type] >= 0);
+    }
 
     // -- delete the entry
     delete alloc_entry;

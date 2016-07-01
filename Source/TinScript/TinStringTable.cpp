@@ -121,7 +121,7 @@ const char* CStringTable::AddString(const char* s, int length, uint32 hash, bool
         if (strncmp(exists, s, length) != 0)
         {
             ScriptAssert_(mContextOwner, 0, "<internal>", -1,
-                            "Error - Hash collision: '%s', '%s'\n", exists, s);
+                          "Error - Hash collision [0x%x]: '%s', '%s'\n", hash, exists, s);
         }
 
         // -- if this item is meant to persist, increment the ref count

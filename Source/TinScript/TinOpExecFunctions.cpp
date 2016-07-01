@@ -431,7 +431,8 @@ bool8 GetStackValue(CScriptContext* script_context, CExecStack& execstack,
     }
 
     // -- if the valtype wasn't either a var or a member, they remain unchanged
-    return true;
+    // -- we were successful, if we were able to find the valaddr
+    return (valaddr != nullptr);
 }
 
 // ====================================================================================================================

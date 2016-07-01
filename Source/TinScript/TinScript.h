@@ -367,6 +367,8 @@ class CScriptContext
 
         void Update(uint32 curtime);
 
+        bool8 IsMainThread() const { return (mIsMainThread); }
+
         CCodeBlock* CompileScript(const char* filename);
         bool8 ExecScript(const char* filename, bool8 must_exist, bool8 re_exec);
 
@@ -540,7 +542,7 @@ class CScriptContext
             CScheduler::CCommand* m_socketCommandList;
             CScheduler::CCommand* m_socketCurrentCommand;
             bool8 BeginThreadExec(uint32 func_hash);
-            void AddThreadExecParam(eVarType param_type, void* value);
+            bool8 AddThreadExecParam(eVarType param_type, void* value);
             void QueueThreadExec();
 
         #endif // WIN32

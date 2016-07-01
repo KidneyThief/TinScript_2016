@@ -20,6 +20,8 @@
 // ------------------------------------------------------------------------------------------------
 
 // -- system includes
+#include <map>
+
 // -- sockets are only implemented in WIN32
 #ifdef WIN32
     #include <winsock2.h>
@@ -61,6 +63,34 @@ namespace SocketManager
     bool mWSAInitialized = false;
     static WSADATA mWSAdata;
 #endif // WIN32
+
+// --------------------------------------------------------------------------------------------------------------------
+// class cSocketFunctionSignature
+// An optimization to cache the signatures of functions executed remotely - allows for proper argument conversion
+// locally, more efficient than sending strings, and saves the conversion on the remote end
+// --------------------------------------------------------------------------------------------------------------------
+class cSocketFunctionSignature
+{
+    public:
+        cSocketFunctionSignature(uint32 function_hash)
+        {
+            // -- note:  remotely executing functions uses the first argument as the function hash, so
+            // -- so we only allow 7x actual arguments
+            m_functionHash = function_hash;
+
+            // -- initialize all arg types to NULL
+            for (int32 i = 0; i < kMaxRegisteredParameterCount; ++i)
+                m_paramTypes[i] = TinScript::eVarType::TYPE_NULL;
+        }
+
+        uint32 m_functionHash;
+        TinScript::eVarType m_paramTypes[kMaxRegisteredParameterCount];
+};
+
+// -- because this dictionary is forever increasing in size, we can we only have one socket thread,
+// -- we can simply use a static global
+static std::map<uint32, cSocketFunctionSignature> m_socketExecFunctionList;
+typedef std::map<uint32, cSocketFunctionSignature>::iterator tSignatureIterator;
 
 // -- a custom data handler
 static ProcessRecvDataCallback mRecvDataCallback = NULL;
@@ -296,8 +326,8 @@ bool SendCommandf(const char* fmt, ...)
 // ====================================================================================================================
 // SendExec():  send a function and args to a connected socket, to be executed directly
 // ====================================================================================================================
-bool SendExec(int32 func_hash, const char* arg0, const char* arg1, const char* arg2, const char* arg3,
-              const char* arg4, const char* arg5, const char* arg6)
+bool SendExec(int32 func_hash, const char* arg1, const char* arg2, const char* arg3, const char* arg4,
+              const char* arg5, const char* arg6, const char* arg7)
 {
     // -- create the packet data - convert each arg to a valid type, and serialize the values
     char packet_buffer[k_MaxPacketSize];
@@ -315,80 +345,69 @@ bool SendExec(int32 func_hash, const char* arg0, const char* arg1, const char* a
     *arg_count += 1;
     max_size -= sizeof(uint32);
 
+    // -- see if we have a remote signature for this function
+    cSocketFunctionSignature* remote_signature = nullptr;
+    tSignatureIterator found = m_socketExecFunctionList.find(func_hash);
+    if (found != m_socketExecFunctionList.end())
+        remote_signature = &found->second;
+
+    // -- note:  the first argument of a remotely executed function is the function hash,
+    // -- therefore, we only have room for 7 actual arguments 
     // -- add the args
-    const char* args[7] = { arg0, arg1, arg2, arg3, arg4, arg5, arg6 };
-    for (int32 i = 0; i < 7; ++i)
+    const char* args[kMaxRegisteredParameterCount] = { "", arg1, arg2, arg3, arg4, arg5, arg6, arg7 };
+    for (int32 i = 1; i < kMaxRegisteredParameterCount; ++i)
     {
         // -- if the arg is null or empty, we're done
-        const char* arg_string = args[i];
+        char* arg_string = const_cast<char*>(args[i]);
         if (arg_string == nullptr || arg_string[0] == '\0')
             break;
 
-        // -- pass all arguments as strings, so the recipient can convert to the arg type
-        // -- required by the function being called...
-        int32 arg_length = (int32)strlen(arg_string);
-        *dataptr++ = (uint32)TinScript::TYPE_string;
-        TinScript::SafeStrcpy((char*)dataptr, arg_string, max_size);
+        // -- if we have a remote signature, and the argument type is convertable, send a properly typed argument
+        bool arg_added = false;
+        if (remote_signature != nullptr)
+        {
+            // -- get the type to which the arg is to be converted
+            TinScript::eVarType arg_type = remote_signature->m_paramTypes[i];
 
-        // -- ensure we keep the data ptr aligned (include the string terminator)
-        int32 data_count = (arg_length / 4) + 1;
-        dataptr += data_count;
-        max_size -= data_count * sizeof(uint32);
+            // -- if the remote signature indicates a NULL parameter, we're also done
+            if (arg_type == TinScript::eVarType::TYPE_NULL)
+                break;
+
+            // -- if the type is anything other than a string, try to convert and encode it
+            if (arg_type != TinScript::eVarType::TYPE_string)
+            {
+                char value_buf[MAX_TYPE_SIZE * sizeof(uint32)];
+                arg_added = TinScript::gRegisteredStringToType[arg_type](TinScript::GetContext(), (void*)value_buf, arg_string);
+
+                // -- if we were successful, write the type and the value
+                if (arg_added)
+                {
+                    // -- note:  bools are only 1 byte, but we want to ensure the dataptr is advance by a whole uint32
+                    *dataptr++ = (uint32)arg_type;
+                    max_size -= sizeof(uint32);
+                    int32 type_size = ((TinScript::gRegisteredTypeSize[arg_type] + 3) / 4) * 4;
+                    memcpy((void*)dataptr, (void*)value_buf, type_size);
+                    max_size -= type_size;
+                    dataptr += type_size / 4;
+                }
+            }
+        }
+
+        // -- if we were not able to encode the arg (or the arg is supposed to remain a string), send it directly
+        if (!arg_added)
+        {
+            int32 arg_length = (int32)strlen(arg_string);
+            *dataptr++ = (uint32)TinScript::TYPE_string;
+            TinScript::SafeStrcpy((char*)dataptr, arg_string, max_size);
+
+            // -- ensure we keep the data ptr aligned (include the string terminator)
+            int32 data_count = (arg_length / 4) + 1;
+            dataptr += data_count;
+            max_size -= data_count * sizeof(uint32);
+        }
 
         // -- increment the arg count
         *arg_count += 1;
-
-        // -- see if we can tokenize the contents of the string, into type
-        /*
-        int32 arg_length = (int32)strlen(arg_string);
-        const char* string_content = arg_string;
-        int32 content_length = arg_length;
-        TinScript::eTokenType token_type;
-        int32 line_number;
-        bool success = false;
-        const char* token_ptr = GetToken(string_content, content_length, token_type, nullptr, line_number, false);
-        if (token_ptr != nullptr)
-        {
-            TinScript::eVarType arg_type = token_type == TinScript::TOKEN_BOOL ? TinScript::TYPE_bool :
-                                            token_type == TinScript::TOKEN_INTEGER ? TinScript::TYPE_int :
-                                            token_type == TinScript::TOKEN_FLOAT ? TinScript::TYPE_float :
-                                            TinScript::TYPE_vector3f;
-
-            // -- if we have a valid type, we can convert using the registered string conversions
-            if (arg_type != TinScript::TYPE_void)
-            {
-                char value_buf[MAX_TYPE_SIZE * sizeof(uint32)];
-                success = TinScript::gRegisteredStringToType[arg_type]((void*)value_buf, (char*)token_ptr);
-
-                // -- if we were successful, write the type and the value
-                if (success)
-                {
-                    *dataptr++ = (uint32)arg_type;
-                    max_size -= sizeof(uint32);
-                    memcpy((void*)dataptr, (void*)value_buf, TinScript::gRegisteredTypeSize[arg_type]);
-                    max_size -= TinScript::gRegisteredTypeSize[arg_type];
-                    dataptr += TinScript::gRegisteredTypeSize[arg_type] / (int32)(sizeof(uint32));
-                }
-            }
-
-            // -- if not success, write the argument as a string
-            if (!success)
-            {
-                // -- copy the string, and terminate
-                *dataptr++ = (uint32)TinScript::TYPE_string;
-                TinScript::SafeStrcpy((char*)dataptr, arg_string, max_size);
-                ((char*)dataptr)[content_length + 1] = '\0';
-
-                // -- ensure we keep the data ptr aligned (include the string terminator)
-                int32 data_count = (content_length / 4) + 1;
-                dataptr += data_count;
-                max_size -= data_count * sizeof(uint32);
-            }
-
-            // -- increment the arg count
-            *arg_count += 1;
-        }
-        */
     }
 
     // -- at this point, we have the packet data ready to send
@@ -396,7 +415,7 @@ bool SendExec(int32 func_hash, const char* arg0, const char* arg1, const char* a
     int32 total_size = kPointerDiffUInt32(dataptr, data_start);
 
     // -- create the packet header
-    SocketManager::tPacketHeader header(k_PacketVersion, SocketManager::tPacketHeader::SCRIPT_COMMAND, total_size);
+    SocketManager::tPacketHeader header(k_PacketVersion, SocketManager::tPacketHeader::SCRIPT_FUNCTION_EXEC, total_size);
 
     // -- now create the packet to send
     SocketManager::tDataPacket* newPacket = SocketManager::CreateDataPacket(&header, data_start);
@@ -1046,14 +1065,26 @@ bool CSocket::ProcessRecvPackets()
         }
 
         // -- if the packet contains an immediate execution command
-        else if (recvPacket->mHeader.mType == tPacketHeader::SCRIPT_COMMAND)
+        else if (recvPacket->mHeader.mType == tPacketHeader::SCRIPT_FUNCTION_EXEC)
         {
             // -- queue the immediate execution command
             // -- success or fail, the packet is de-queued
-            if (!ScriptExec(recvPacket->mData))
+            if (!ReceiveScriptExec(recvPacket->mData))
             {
-                ScriptAssert_(TinScript::GetContext(), false, "<internal>", -1,
-                              "Error - ProcessRecvPackets() - SCRIPT_COMMAND:  unable to process the packet\n");
+                ScriptAssert_(mScriptContext, false, "<internal>", -1,
+                              "Error - ProcessRecvPackets() - SCRIPT_FUNCTION_EXEC:  unable to process the packet\n");
+            }
+        }
+
+        // -- if the packet contains an immediate execution command
+        else if (recvPacket->mHeader.mType == tPacketHeader::SCRIPT_FUNCTION_SIGNATURE)
+        {
+            // -- queue the immediate execution command
+            // -- success or fail, the packet is de-queued
+            if (!ReceiveScriptSignature(recvPacket->mData))
+            {
+                ScriptAssert_(mScriptContext, false, "<internal>", -1,
+                              "Error - ProcessRecvPackets() - SCRIPT_FUNCTION_SIGNATURE:  unable to process the packet\n");
             }
         }
 
@@ -1244,9 +1275,9 @@ bool8 CSocket::ScriptCommand(const char* fmt, ...)
 }
 
 // ====================================================================================================================
-// ScriptExec():  Unpack the packet data into an immediate execution command
+// ReceiveScriptExec():  Unpack the packet data into an immediate execution command
 // ====================================================================================================================
-bool CSocket::ScriptExec(void* data)
+bool CSocket::ReceiveScriptExec(void* data)
 {
     // -- get the arg count
     uint32* dataptr = (uint32*)data;
@@ -1263,6 +1294,10 @@ bool CSocket::ScriptExec(void* data)
     if (!mScriptContext->BeginThreadExec(func_hash))
         return (false);
 
+    // -- if we receive parameters that are not correctly typed,  send the function signature
+    // -- back to the sender
+    bool paramTypesOptimal = true;
+
     // -- add the parameters
     for (int32 i = 1; i < arg_count; ++i)
     {
@@ -1273,7 +1308,8 @@ bool CSocket::ScriptExec(void* data)
         if (arg_type == TinScript::TYPE_string)
         {
             const char* string_ptr = (const char*)dataptr;
-            mScriptContext->AddThreadExecParam(arg_type, (void*)string_ptr);
+            if (!mScriptContext->AddThreadExecParam(arg_type, (void*)string_ptr))
+                paramTypesOptimal = false;
 
             // -- update the string ptr
             int32 length = (int32)strlen(string_ptr);
@@ -1284,13 +1320,116 @@ bool CSocket::ScriptExec(void* data)
         // -- else add the argument by type
         else
         {
-            mScriptContext->AddThreadExecParam(arg_type, (void*)dataptr);
-            dataptr += TinScript::gRegisteredTypeSize[arg_type] / (int32)(sizeof(uint32));
+            if (!mScriptContext->AddThreadExecParam(arg_type, (void*)dataptr))
+                paramTypesOptimal = false;
+
+            int32 type_size = ((TinScript::gRegisteredTypeSize[arg_type] + 3) / 4) * 4;
+            dataptr += type_size / 4;
         }
     }
 
     // -- after all the arguments have been added, queue the command
     mScriptContext->QueueThreadExec();
+
+    // -- if the parameter types were not optimal, send back the actual function signature
+    if (!paramTypesOptimal)
+    {
+        TinScript::CFunctionEntry* fe = mScriptContext->GetGlobalNamespace()->GetFuncTable()->FindItem(func_hash);
+        if (fe != nullptr &&  fe->GetContext() != nullptr)
+        {
+            SendScriptSignature(func_hash, fe->GetContext());
+        }
+    }
+
+    // -- success
+    return (true);
+}
+
+// ====================================================================================================================
+// SendScriptSignature():  Send a data packet containing the function signature
+// ====================================================================================================================
+bool CSocket::SendScriptSignature(uint32 func_hash, TinScript::CFunctionContext* func_context)
+{
+    // -- sanity check
+    if (func_hash == 0 || func_context == nullptr)
+        return (false);
+
+    // -- we pack the function hash, then the arg count, and then the type of each arg
+    uint32 packet_buffer[kMaxRegisteredParameterCount + 2];
+    uint32* data_ptr = (uint32*)packet_buffer;
+
+    // -- function hash
+    *data_ptr++ = func_hash;
+
+    // -- arg count
+    int32 arg_count = func_context->GetParameterCount();
+    if (arg_count > kMaxRegisteredParameterCount)
+        arg_count = kMaxRegisteredParameterCount;
+    *data_ptr++ = arg_count;
+
+    // -- loop through the args, add the type of each
+    for (int i = 0; i < arg_count; ++i)
+    {
+        *data_ptr++ = (uint32)func_context->GetParameter(i)->GetType();
+    }
+
+    // -- create the header
+    // -- at this point, we have the packet data ready to send
+    void* data_start = &packet_buffer[0];
+    int32 total_size = kPointerDiffUInt32(data_ptr, data_start);
+
+    // -- create the packet header
+    SocketManager::tPacketHeader header(k_PacketVersion, SocketManager::tPacketHeader::SCRIPT_FUNCTION_SIGNATURE, total_size);
+
+    // -- now create the packet to send
+    SocketManager::tDataPacket* newPacket = SocketManager::CreateDataPacket(&header, data_start);
+    if (!newPacket)
+    {
+        ScriptAssert_(mScriptContext, false, "<internal>", -1,
+                      "Error - SendScriptSignature():  unable to construct the packet\n");
+        return (false);
+    }
+
+    // -- send the packet
+    SocketManager::SendDataPacket(newPacket);
+
+    // -- success
+    return (true);
+}
+
+// ====================================================================================================================
+// ReceiveScriptSignature():  Unpack the packet data and store the argument list for the function signature
+// ====================================================================================================================
+bool CSocket::ReceiveScriptSignature(void* data)
+{
+    // -- get the function hash, then the arg count
+    uint32* dataptr = (uint32*)data;
+    uint32 func_hash = (uint32)*dataptr++;
+    int32 arg_count = (int32)*dataptr++;
+
+    // -- using SocketExec(), the first arg is the function hash, so we can only support signatures with one less arg
+    if (arg_count < 0 || arg_count > TinScript::CFunctionContext::eMaxParameterCount)
+        return (false);
+
+    tSignatureIterator found = m_socketExecFunctionList.find(func_hash);
+    if (found == m_socketExecFunctionList.end())
+        m_socketExecFunctionList.insert(std::make_pair(func_hash, cSocketFunctionSignature(func_hash)));
+
+    // -- clear the existing function args
+    found = m_socketExecFunctionList.find(func_hash);
+    for (int i = 0; i < kMaxRegisteredParameterCount; ++i)
+        found->second.m_paramTypes[i] = TinScript::eVarType::TYPE_NULL;
+
+    // -- set the arg types we received
+    for (int i = 0; i < arg_count; ++i)
+    {
+        int32 arg_type_int = (int32)*dataptr++;
+        if (arg_type_int < 0 || arg_type_int >= (int32)TinScript::eVarType::TYPE_COUNT)
+            return (false);
+
+        // -- set the type
+        found->second.m_paramTypes[i] = (TinScript::eVarType)arg_type_int;
+    }
 
     // -- success
     return (true);
@@ -1392,50 +1531,12 @@ bool CSocket::ProcessRecvData(void* data, int dataSize)
 } // namespace SocketManager
 
 // ====================================================================================================================
-// SocketCommand():  Creates a command string for to send through the socket
-// ====================================================================================================================
-bool SocketCommand(const char* str0, const char* str1, const char* str2, const char* str3, const char* str4,
-                   const char* str5, const char* str6, const char* str7)
-{
-    // -- ensure we have at least one arg
-    if (!str0)
-        return ("");
-
-    // -- concatenate the arguments
-    // -- stop as soon as we have an empty string
-    char buf[2048];
-    if (!str1 || !str1[0])
-        sprintf_s(buf, "%s();", str0, str1);
-    else if (!str2 || !str2[0])
-        sprintf_s(buf, "%s(`%s`);", str0, str1);
-    else if (!str3 || !str3[0])
-        sprintf_s(buf, "%s(`%s`, `%s`);", str0, str1, str2);
-    else if (!str4 || !str4[0])
-        sprintf_s(buf, "%s(`%s`, `%s`, `%s`);", str0, str1, str2, str3);
-    else if (!str5 || !str5[0])
-        sprintf_s(buf, "%s(`%s`, `%s`, `%s`, `%s`);", str0, str1, str2, str3, str4);
-    else if (!str6 || !str6[0])
-        sprintf_s(buf, "%s(`%s`, `%s`, `%s`, `%s`, `%s`);", str0, str1, str2, str3, str4, str5);
-    else if (!str7 || !str7[0])
-        sprintf_s(buf, "%s(`%s`, `%s`, `%s`, `%s`, `%s`, `%s`);", str0, str1, str2, str3, str4, str5, str6);
-    else
-        sprintf_s(buf, "%s(`%s`, `%s`, `%s`, `%s`, `%s`, `%s`, `%s`);", str0, str1, str2, str3, str4, str5, str6, str7);
-
-    // -- send the command
-    bool result = SocketManager::SendCommand(buf);
-
-    // -- return the result
-    return (result);
-}
-
-// ====================================================================================================================
 // -- TinScript Registration
 REGISTER_FUNCTION_P0(SocketListen, SocketManager::Listen, bool);
 REGISTER_FUNCTION_P1(SocketConnect, SocketManager::Connect, bool, const char*);
 REGISTER_FUNCTION_P0(SocketDisconnect, SocketManager::Disconnect, void);
 REGISTER_FUNCTION_P0(SocketIsConnected, SocketManager::IsConnected, bool);
 REGISTER_FUNCTION_P1(SocketSend, SocketManager::SendCommand, bool, const char*);
-REGISTER_FUNCTION_P8(SocketCommand, SocketCommand, bool, const char*, const char*, const char*, const char*, const char*, const char*, const char*, const char*);
 REGISTER_FUNCTION_P8(SocketExec, SocketManager::SendExec, bool, int32, const char*, const char*, const char*, const char*, const char*, const char*, const char*);
 
 // ====================================================================================================================

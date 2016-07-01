@@ -3631,6 +3631,8 @@ bool8 CScriptContext::BeginThreadExec(uint32 func_hash)
     // -- ensure we have a script context (that we're not shutting down), and the func_hash is valid
     if (GetGlobalNamespace()->GetFuncTable()->FindItem(func_hash) == nullptr)
     {
+        ScriptAssert_(this, 0, "<internal>", -1, "Error - unable to find registered function: %s\n",
+                      UnHash(func_hash));
         return (false);
     }
 
@@ -3653,15 +3655,16 @@ bool8 CScriptContext::BeginThreadExec(uint32 func_hash)
 }
 
 // ====================================================================================================================
-// AddThreadExecParam():  Add a parameter to the thread command currently being constructed.
+// AddThreadExecParam():  Add a parameter to the thread command, returns 'true' if the parameter type was correct.
 // ====================================================================================================================
-void CScriptContext::AddThreadExecParam(eVarType param_type, void* value)
+bool8 CScriptContext::AddThreadExecParam(eVarType param_type, void* value)
 {
     // -- sanity check
     if (m_socketCurrentCommand == nullptr || param_type == TYPE_void || value == nullptr)
     {
+        // -- note:  we return 'true', since we dont' want to plug up traffic with RemoteSignature() calls
         ScriptAssert_(this, 0, "<internal>", -1, "Error - unable to construct a socket command\n");
-        return;
+        return (true);
     }
 
     // -- if the param_type is a string, then the value* is a pointer to the (soon to be destructed) received packet
@@ -3686,8 +3689,11 @@ void CScriptContext::AddThreadExecParam(eVarType param_type, void* value)
     {
         ScriptAssert_(this, 0, "<internal>", -1, "Error - invalid parameter for function: %s()\n",
                       UnHash(m_socketCurrentCommand->mFuncHash));
-        return;
+        return (true);
     }
+
+    // -- see if the paramter type matches
+    bool8 paramTypeMatches = (param_type == fe_param->GetType());
 
     // -- convert the received data to the type required by the function
     void* convert_addr = TypeConvert(this, param_type, value, fe_param->GetType());
@@ -3695,7 +3701,7 @@ void CScriptContext::AddThreadExecParam(eVarType param_type, void* value)
     {
         ScriptAssert_(this, 0, "<internal>", -1, "Error - invalid parameter for function: %s()\n",
                       UnHash(m_socketCurrentCommand->mFuncHash));
-        return;
+        return (true);
     }
 
     // -- add the parameter to the schedule context
@@ -3706,12 +3712,15 @@ void CScriptContext::AddThreadExecParam(eVarType param_type, void* value)
     {
         ScriptAssert_(this, 0, "<internal>", -1, "Error - invalid parameter for function: %s()\n",
                       UnHash(m_socketCurrentCommand->mFuncHash));
-        return;
+        return (true);
     }
 
     // -- set the parameter value (use the literal, so strings are actual strings, not hash values)
     CVariableEntry* ve = m_socketCurrentCommand->mFuncContext->GetParameter(current_param);
     ve->SetValue(nullptr, convert_addr, 0);
+
+    // -- return if the parameter type matches
+    return (paramTypeMatches);
 }
 
 // ====================================================================================================================
