@@ -3667,18 +3667,6 @@ bool8 CScriptContext::AddThreadExecParam(eVarType param_type, void* value)
         return (true);
     }
 
-    // -- if the param_type is a string, then the value* is a pointer to the (soon to be destructed) received packet
-    // -- we need to add the string to the string table, and use the hash value, like any other internal string value
-    uint32 string_hash = 0;
-    if (param_type == eVarType::TYPE_string)
-    {
-        // -- bump the ref count - we need to ensure the value doesn't disappear before the schedule is executed
-        // -- note:  the string should be cleaned up *after* the schedule has been executed - double check!
-        string_hash = Hash((const char*)value);
-        GetStringTable()->AddString((const char*)value, -1, string_hash, false);
-        value = (void*)(&string_hash);
-    }
-
     // -- convert the value to the required type
     int32 current_param = m_socketCurrentCommand->mFuncContext->GetParameterCount();
     CFunctionEntry* fe = GetGlobalNamespace()->GetFuncTable()->FindItem(m_socketCurrentCommand->mFuncHash);
@@ -3694,6 +3682,20 @@ bool8 CScriptContext::AddThreadExecParam(eVarType param_type, void* value)
 
     // -- see if the paramter type matches
     bool8 paramTypeMatches = (param_type == fe_param->GetType());
+
+    // -- if the param_type is a string, then the value* is a pointer to the (soon to be destructed) received packet
+    // -- we need to add the string to the string table, and use the hash value, like any other internal string value
+    uint32 string_hash = 0;
+    if (param_type == eVarType::TYPE_string)
+    {
+        // -- bump the ref count - we need to ensure the value doesn't disappear before the schedule is executed
+        // -- note:  the string should be cleaned up *after* the schedule has been executed - double check!
+        // -- note:  if the parameter is meant to be a string, then we increment the ref count - otherwise,
+        // -- it'll be converted, and the string is no longer needed
+        string_hash = Hash((const char*)value);
+        GetStringTable()->AddString((const char*)value, -1, string_hash, paramTypeMatches);
+        value = (void*)(&string_hash);
+    }
 
     // -- convert the received data to the type required by the function
     void* convert_addr = TypeConvert(this, param_type, value, fe_param->GetType());
