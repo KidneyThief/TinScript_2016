@@ -82,7 +82,7 @@ public:
 
     bool8 IsArray() const
     {
-        return ((mArraySize != 0 && mArraySize != 1) || (mArraySize == -1 && mIsParameter));
+        return ((mArraySize > 1) || (mArraySize == -1 && mIsParameter && mType != TYPE_hashtable));
     }
 
     // -- strings being special...

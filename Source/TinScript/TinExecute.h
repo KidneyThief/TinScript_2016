@@ -57,7 +57,7 @@ class CExecStack
 
 		void Push(void* content, eVarType contenttype)
 		{
-			assert(content != NULL);
+			Assert_(content != NULL);
 			uint32 contentsize = kBytesToWordCount(gRegisteredTypeSize[contenttype]);
 
             uint32 stacksize = kPointerDiffUInt32(mStackTop, mStack) / sizeof(uint32);
@@ -112,9 +112,9 @@ class CExecStack
                 ++mStackTop;
                 return (NULL);
             }
-			uint32 contentsize = kBytesToWordCount(gRegisteredTypeSize[contenttype]);
 
 			// -- ensure we have enough data on the stack, both the content, and the type
+            uint32 contentsize = kBytesToWordCount(gRegisteredTypeSize[contenttype]);
             Assert_(stacksize >= contentsize + 1);
 			mStackTop -= contentsize;
 
@@ -128,10 +128,10 @@ class CExecStack
             // -- for hashtables, match the Push(), where the address was assigned directly to the contents
             else if (contenttype == TYPE_hashtable)
             {
-                return (void*)(*mStackTop);
+                return ((void*)(*mStackTop));
             }
 
-			return (void*)mStackTop;
+			return ((void*)mStackTop);
 		}
 
         // -- doesn't remove the top of the stack, and doesn't assert if the stack is empty
@@ -151,10 +151,8 @@ class CExecStack
                 if (contenttype < 0 || contenttype >= TYPE_COUNT)
                     return (NULL);
 
-
-			    uint32 contentsize = kBytesToWordCount(gRegisteredTypeSize[contenttype]);
-
 			    // -- ensure we have enough data on the stack, both the content, and the type
+                uint32 contentsize = kBytesToWordCount(gRegisteredTypeSize[contenttype]);
                 Assert_(stacksize >= contentsize + 1);
 			    cur_stack_top -= contentsize;
 
@@ -257,9 +255,9 @@ class CFunctionCallStack
         struct tFunctionCallEntry;
 		CFunctionCallStack()
         {
-            funcentrystack = (tFunctionCallEntry*)mFunctionStackStorage;
-            size = kExecFuncCallDepth;
-			stacktop = 0;
+            m_functionEntryStack = (tFunctionCallEntry*)m_functionStackStorage;
+            m_size = kExecFuncCallDepth;
+			m_stacktop = 0;
 
             // -- debugger members
             mDebuggerBreakStep = false;
@@ -276,25 +274,25 @@ class CFunctionCallStack
 		void Push(CFunctionEntry* functionentry, CObjectEntry* objentry, int32 varoffset)
 		{
 			assert(functionentry != NULL);
-            assert(stacktop < size);
-            funcentrystack[stacktop].objentry = objentry;
-            funcentrystack[stacktop].funcentry = functionentry;
-            funcentrystack[stacktop].stackvaroffset = varoffset;
-            funcentrystack[stacktop].isexecuting = false;
-			funcentrystack[stacktop].mLocalObjectCount = 0;
-            ++stacktop;
+            assert(m_stacktop < m_size);
+            m_functionEntryStack[m_stacktop].objentry = objentry;
+            m_functionEntryStack[m_stacktop].funcentry = functionentry;
+            m_functionEntryStack[m_stacktop].stackvaroffset = varoffset;
+            m_functionEntryStack[m_stacktop].isexecuting = false;
+            m_functionEntryStack[m_stacktop].mLocalObjectCount = 0;
+            ++m_stacktop;
 		}
 
 		CFunctionEntry* Pop(CObjectEntry*& objentry, int32& var_offset)
         {
-			assert(stacktop > 0);
-            objentry = funcentrystack[stacktop - 1].objentry;
-            var_offset = funcentrystack[stacktop - 1].stackvaroffset;
+            assert(m_stacktop > 0);
+            objentry = m_functionEntryStack[m_stacktop - 1].objentry;
+            var_offset = m_functionEntryStack[m_stacktop - 1].stackvaroffset;
 
 			// -- any time we pop a function call, we auto-destroy the local objects
-			CFunctionEntry* function_entry = funcentrystack[stacktop - 1].funcentry;
-			uint32* local_object_id_ptr = funcentrystack[stacktop - 1].mLocalObjectIDList;
-			for (int32 i = 0; i < funcentrystack[stacktop - 1].mLocalObjectCount; ++i)
+            CFunctionEntry* function_entry = m_functionEntryStack[m_stacktop - 1].funcentry;
+            uint32* local_object_id_ptr = m_functionEntryStack[m_stacktop - 1].mLocalObjectIDList;
+            for (int32 i = 0; i < m_functionEntryStack[m_stacktop - 1].mLocalObjectCount; ++i)
 			{
 				// -- if the object still exists, destroy it
 				CObjectEntry* local_object =
@@ -305,20 +303,20 @@ class CFunctionCallStack
 				}
 			}
 
-            return (funcentrystack[--stacktop].funcentry);
+            return (m_functionEntryStack[--m_stacktop].funcentry);
 		}
 
 		void NotifyLocalObjectID(uint32 local_object_id)
 		{
 			// -- ensure we're actually in a function call
-			if (stacktop <= 0)
+            if (m_stacktop <= 0)
 			{
 				ScriptAssert_(TinScript::GetContext(), 0, "<internal>", -1,
 		                      "Error - createlocal called outside a function definition\n");
 				return;
 			}
 
-			if (funcentrystack[stacktop - 1].mLocalObjectCount >= kExecFuncCallMaxLocalObjects)
+            if (m_functionEntryStack[m_stacktop - 1].mLocalObjectCount >= kExecFuncCallMaxLocalObjects)
 			{
 				ScriptAssert_(TinScript::GetContext(), 0, "<internal>", -1,
 						      "Error - max local vars exceeded (size: %d)\n", kExecFuncCallMaxLocalObjects);
@@ -326,27 +324,29 @@ class CFunctionCallStack
 			}
 
 			// -- push the ID into the list of local objects
-			funcentrystack[stacktop - 1].mLocalObjectIDList[funcentrystack[stacktop - 1].mLocalObjectCount++] = local_object_id;
+            m_functionEntryStack[m_stacktop - 1].mLocalObjectIDList[m_functionEntryStack[m_stacktop - 1].mLocalObjectCount++] =
+                local_object_id;
 		}
 
    		CFunctionEntry* GetTop(CObjectEntry*& objentry, int32& varoffset)
         {
-            if (stacktop > 0)
+            if (m_stacktop > 0)
             {
-                objentry = funcentrystack[stacktop - 1].objentry;
-                varoffset = funcentrystack[stacktop - 1].stackvaroffset;
-                return funcentrystack[stacktop - 1].funcentry;
+                objentry = m_functionEntryStack[m_stacktop - 1].objentry;
+                varoffset = m_functionEntryStack[m_stacktop - 1].stackvaroffset;
+                return (m_functionEntryStack[m_stacktop - 1].funcentry);
             }
-            else {
+            else
+            {
                 objentry = NULL;
                 varoffset = -1;
-                return NULL;
+                return (NULL);
             }
         }
 
         int32 GetStackDepth() const
         {
-            return (stacktop);
+            return (m_stacktop);
         }
 
         int32 DebuggerGetCallstack(uint32* codeblock_array, uint32* objid_array,
@@ -364,43 +364,45 @@ class CFunctionCallStack
         void BeginExecution(const uint32* instrptr);
         void BeginExecution();
 
-        CFunctionEntry* GetExecuting(CObjectEntry*& objentry, int32& varoffset) {
-            int32 temp = stacktop - 1;
+        CFunctionEntry* GetExecuting(CObjectEntry*& objentry, int32& varoffset)
+        {
+            int32 temp = m_stacktop - 1;
             while (temp >= 0)
             {
-                if (funcentrystack[temp].isexecuting)
+                if (m_functionEntryStack[temp].isexecuting)
                 {
-                    objentry = funcentrystack[temp].objentry;
-                    varoffset = funcentrystack[temp].stackvaroffset;
-                    return funcentrystack[temp].funcentry;
+                    objentry = m_functionEntryStack[temp].objentry;
+                    varoffset = m_functionEntryStack[temp].stackvaroffset;
+                    return m_functionEntryStack[temp].funcentry;
                 }
                 --temp;
             }
-            return NULL;
+            return (NULL);
         }
 
    		CFunctionEntry* GetTopMethod(CObjectEntry*& objentry)
         {
             int32 depth = 0;
-            while (stacktop - depth > 0)
+            while (m_stacktop - depth > 0)
             {
                 ++depth;
-                if (funcentrystack[stacktop - depth].objentry)
+                if (m_functionEntryStack[m_stacktop - depth].objentry)
                 {
-                    objentry = funcentrystack[stacktop - depth].objentry;
-                    return funcentrystack[stacktop - depth].funcentry;
+                    objentry = m_functionEntryStack[m_stacktop - depth].objentry;
+                    return m_functionEntryStack[m_stacktop - depth].funcentry;
                 }
             }
 
             // -- no methods
             objentry = NULL;
-            return NULL;
+            return (NULL);
         }
 
         struct tFunctionCallEntry
         {
             tFunctionCallEntry(CFunctionEntry* _funcentry = NULL, CObjectEntry* _objentry = NULL,
-                               int32 _varoffset = -1) {
+                               int32 _varoffset = -1)
+            {
                 funcentry = _funcentry;
                 objentry = _objentry;
                 stackvaroffset = _varoffset;
@@ -429,10 +431,10 @@ class CFunctionCallStack
         int32 mDebuggerBreakOnStackDepth;
 
 	private:
-        char mFunctionStackStorage[sizeof(tFunctionCallEntry) * kExecFuncCallDepth];
-        tFunctionCallEntry* funcentrystack;
-		int32 size;
-		int32 stacktop;
+        char m_functionStackStorage[sizeof(tFunctionCallEntry) * kExecFuncCallDepth];
+        tFunctionCallEntry* m_functionEntryStack;
+		int32 m_size;
+		int32 m_stacktop;
 };
 
 bool8 ExecuteCodeBlock(CCodeBlock& codeblock);

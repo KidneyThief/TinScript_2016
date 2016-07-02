@@ -431,8 +431,12 @@ bool8 GetStackValue(CScriptContext* script_context, CExecStack& execstack,
     }
 
     // -- if the valtype wasn't either a var or a member, they remain unchanged
-    // -- we were successful, if we were able to find the valaddr
-    return (valaddr != nullptr);
+    // -- we were successful, if we were able to find either the valaddr, or the variable entry
+    // $$$TZA not 100% convinced this is the correct "success" condition...
+    // -- during dev of SocketExec(), a bad packet caused a crash because a null valaddr was returned
+    // -- this was added to lead to an assert instead, *but*, if the variable is a parameter, of Type_hashtable
+    // -- then it won't have an mAddr of its own, so valaddr is legitimately nullptr.
+    return (valaddr != nullptr || ve != nullptr);
 }
 
 // ====================================================================================================================

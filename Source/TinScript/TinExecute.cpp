@@ -105,18 +105,18 @@ int32 CFunctionCallStack::DebuggerGetCallstack(uint32* codeblock_array, uint32* 
                                                uint32* linenumber_array, int32 max_array_size)
 {
     int32 entry_count = 0;
-    int32 temp = stacktop - 1;
+    int32 temp = m_stacktop - 1;
     while(temp >= 0 && entry_count < max_array_size)
     {
-        if (funcentrystack[temp].isexecuting)
+        if (m_functionEntryStack[temp].isexecuting)
         {
             CCodeBlock* codeblock = NULL;
-            funcentrystack[temp].funcentry->GetCodeBlockOffset(codeblock);
+            m_functionEntryStack[temp].funcentry->GetCodeBlockOffset(codeblock);
             uint32 codeblock_hash = codeblock->GetFilenameHash();
-            uint32 objid = funcentrystack[temp].objentry ? funcentrystack[temp].objentry->GetID() : 0;
-            uint32 namespace_hash = funcentrystack[temp].funcentry->GetNamespaceHash();
-            uint32 func_hash = funcentrystack[temp].funcentry->GetHash();
-            uint32 linenumber = funcentrystack[temp].linenumberfunccall;
+            uint32 objid = m_functionEntryStack[temp].objentry ? m_functionEntryStack[temp].objentry->GetID() : 0;
+            uint32 namespace_hash = m_functionEntryStack[temp].funcentry->GetNamespaceHash();
+            uint32 func_hash = m_functionEntryStack[temp].funcentry->GetHash();
+            uint32 linenumber = m_functionEntryStack[temp].linenumberfunccall;
 
             codeblock_array[entry_count] = codeblock_hash;
             objid_array[entry_count] = objid;
@@ -189,13 +189,13 @@ int32 CFunctionCallStack::DebuggerGetStackVarEntries(CScriptContext* script_cont
         }
     }
 
-    int32 stack_index = stacktop - 1;
+    int32 stack_index = m_stacktop - 1;
     while (stack_index >= 0 && entry_count < max_array_size)
     {
-        if (funcentrystack[stack_index].isexecuting)
+        if (m_functionEntryStack[stack_index].isexecuting)
         {
             // -- if this function call is a method, send the "self" variable
-            if (funcentrystack[stack_index].objentry != NULL)
+            if (m_functionEntryStack[stack_index].objentry != NULL)
             {
                 // -- limit of kDebuggerWatchWindowSize
                 if (entry_count >= max_array_size)
@@ -210,9 +210,9 @@ int32 CFunctionCallStack::DebuggerGetStackVarEntries(CScriptContext* script_cont
                 cur_entry->mStackLevel = stack_index;
 
                 // -- copy the calling function info
-                cur_entry->mFuncNamespaceHash = funcentrystack[stack_index].funcentry->GetNamespaceHash();
-                cur_entry->mFunctionHash = funcentrystack[stack_index].funcentry->GetHash();
-                cur_entry->mFunctionObjectID = funcentrystack[stack_index].objentry->GetID();
+                cur_entry->mFuncNamespaceHash = m_functionEntryStack[stack_index].funcentry->GetNamespaceHash();
+                cur_entry->mFunctionHash = m_functionEntryStack[stack_index].funcentry->GetHash();
+                cur_entry->mFunctionObjectID = m_functionEntryStack[stack_index].objentry->GetID();
 
                 // -- this isn't a member of an object
                 cur_entry->mObjectID = 0;
@@ -230,7 +230,7 @@ int32 CFunctionCallStack::DebuggerGetStackVarEntries(CScriptContext* script_cont
             }
 
             // -- get the variable table
-            tVarTable* func_vt = funcentrystack[stack_index].funcentry->GetLocalVarTable();
+            tVarTable* func_vt = m_functionEntryStack[stack_index].funcentry->GetLocalVarTable();
             CVariableEntry* ve = func_vt->First();
             while (ve)
             {
@@ -257,10 +257,10 @@ int32 CFunctionCallStack::DebuggerGetStackVarEntries(CScriptContext* script_cont
                 cur_entry->mStackLevel = stack_index;
 
                 // -- copy the calling function info
-                cur_entry->mFuncNamespaceHash = funcentrystack[stack_index].funcentry->GetNamespaceHash();
-                cur_entry->mFunctionHash = funcentrystack[stack_index].funcentry->GetHash();
-                cur_entry->mFunctionObjectID = funcentrystack[stack_index].objentry
-                                               ? funcentrystack[stack_index].objentry->GetID()
+                cur_entry->mFuncNamespaceHash = m_functionEntryStack[stack_index].funcentry->GetNamespaceHash();
+                cur_entry->mFunctionHash = m_functionEntryStack[stack_index].funcentry->GetHash();
+                cur_entry->mFunctionObjectID = m_functionEntryStack[stack_index].objentry
+                                               ? m_functionEntryStack[stack_index].objentry->GetID()
                                                : 0;
 
                 // -- this isn't a member of an object
@@ -275,7 +275,7 @@ int32 CFunctionCallStack::DebuggerGetStackVarEntries(CScriptContext* script_cont
                 SafeStrcpy(cur_entry->mVarName, UnHash(ve->GetHash()), kMaxNameLength);
 
                 // -- get the address on the stack, where this local var is stored
-                int32 func_stacktop = funcentrystack[stack_index].stackvaroffset;
+                int32 func_stacktop = m_functionEntryStack[stack_index].stackvaroffset;
                 int32 var_stackoffset = ve->GetStackOffset();
                 void* stack_var_addr = execstack.GetStackVarAddr(func_stacktop, var_stackoffset);
 
@@ -315,13 +315,13 @@ bool CFunctionCallStack::DebuggerFindStackTopVar(CScriptContext* script_context,
 												 CVariableEntry*& found_ve)
 {
 	found_ve = NULL;
-    int32 stack_index = stacktop - 1;
+    int32 stack_index = m_stacktop - 1;
     while (stack_index >= 0)
     {
-        if (funcentrystack[stack_index].isexecuting)
+        if (m_functionEntryStack[stack_index].isexecuting)
         {
             // -- if this function call is a method, and we're requesting the "self" variable
-            if (funcentrystack[stack_index].objentry != NULL && var_hash == Hash("self"))
+            if (m_functionEntryStack[stack_index].objentry != NULL && var_hash == Hash("self"))
             {
 				// -- clear the dynamic watch request ID
 				watch_entry.mWatchRequestID = 0;
@@ -330,10 +330,10 @@ bool CFunctionCallStack::DebuggerFindStackTopVar(CScriptContext* script_context,
                 watch_entry.mStackLevel = stack_index;
 
 				// -- copy the calling function info
-				watch_entry.mFuncNamespaceHash = funcentrystack[stack_index].funcentry->GetNamespaceHash();
-				watch_entry.mFunctionHash = funcentrystack[stack_index].funcentry->GetHash();
-				watch_entry.mFunctionObjectID = funcentrystack[stack_index].objentry
-												? funcentrystack[stack_index].objentry->GetID()
+				watch_entry.mFuncNamespaceHash = m_functionEntryStack[stack_index].funcentry->GetNamespaceHash();
+				watch_entry.mFunctionHash = m_functionEntryStack[stack_index].funcentry->GetHash();
+				watch_entry.mFunctionObjectID = m_functionEntryStack[stack_index].objentry
+												? m_functionEntryStack[stack_index].objentry->GetID()
 												: 0;
 
 				// -- this isn't a member of an object
@@ -343,11 +343,11 @@ bool CFunctionCallStack::DebuggerFindStackTopVar(CScriptContext* script_context,
 				// -- copy the var type, name and value
 				watch_entry.mType = TYPE_object;
 				strcpy_s(watch_entry.mVarName, "self");
-				sprintf_s(watch_entry.mValue, "%d", funcentrystack[stack_index].objentry->GetID());
+				sprintf_s(watch_entry.mValue, "%d", m_functionEntryStack[stack_index].objentry->GetID());
 
 				// -- copy the var type
 				watch_entry.mVarHash = var_hash;
-				watch_entry.mVarObjectID = funcentrystack[stack_index].objentry->GetID();
+				watch_entry.mVarObjectID = m_functionEntryStack[stack_index].objentry->GetID();
 
 				return (true);
 			}
@@ -356,7 +356,7 @@ bool CFunctionCallStack::DebuggerFindStackTopVar(CScriptContext* script_context,
 			else
 			{
 				// -- get the variable table
-				tVarTable* func_vt = funcentrystack[stack_index].funcentry->GetLocalVarTable();
+				tVarTable* func_vt = m_functionEntryStack[stack_index].funcentry->GetLocalVarTable();
 				CVariableEntry* ve = func_vt->First();
 				while (ve)
 				{
@@ -372,10 +372,10 @@ bool CFunctionCallStack::DebuggerFindStackTopVar(CScriptContext* script_context,
                         watch_entry.mStackLevel = stack_index;
 
 						// -- copy the calling function info
-						watch_entry.mFuncNamespaceHash = funcentrystack[stack_index].funcentry->GetNamespaceHash();
-						watch_entry.mFunctionHash = funcentrystack[stack_index].funcentry->GetHash();
-						watch_entry.mFunctionObjectID = funcentrystack[stack_index].objentry
-														? funcentrystack[stack_index].objentry->GetID()
+						watch_entry.mFuncNamespaceHash = m_functionEntryStack[stack_index].funcentry->GetNamespaceHash();
+						watch_entry.mFunctionHash = m_functionEntryStack[stack_index].funcentry->GetHash();
+						watch_entry.mFunctionObjectID = m_functionEntryStack[stack_index].objentry
+														? m_functionEntryStack[stack_index].objentry->GetID()
 														: 0;
 
 						// -- this isn't a member of an object
@@ -389,7 +389,7 @@ bool CFunctionCallStack::DebuggerFindStackTopVar(CScriptContext* script_context,
 						SafeStrcpy(watch_entry.mVarName, UnHash(ve->GetHash()), kMaxNameLength);
 
 						// -- get the address on the stack, where this local var is stored
-						int32 func_stacktop = funcentrystack[stack_index].stackvaroffset;
+						int32 func_stacktop = m_functionEntryStack[stack_index].stackvaroffset;
 						int32 var_stackoffset = ve->GetStackOffset();
 						void* stack_var_addr = execstack.GetStackVarAddr(func_stacktop, var_stackoffset);
 
@@ -441,10 +441,10 @@ bool CFunctionCallStack::DebuggerFindStackTopVar(CScriptContext* script_context,
 void CFunctionCallStack::DebuggerNotifyFunctionDeleted(CObjectEntry* oe, CFunctionEntry* fe)
 {
     // -- if this function is anywhere on the current execution stack, we need to abort the debugger break loop
-    int32 stack_index = stacktop - 1;
+    int32 stack_index = m_stacktop - 1;
     while (stack_index >= 0)
     {
-        if ((oe && funcentrystack[stack_index].objentry == oe) || funcentrystack[stack_index].funcentry == fe)
+        if ((oe && m_functionEntryStack[stack_index].objentry == oe) || m_functionEntryStack[stack_index].funcentry == fe)
         {
             mDebuggerObjectDeleted = oe ? oe->GetID() : 0;
             mDebuggerFunctionReload = fe->GetHash();
@@ -462,13 +462,13 @@ void CFunctionCallStack::DebuggerNotifyFunctionDeleted(CObjectEntry* oe, CFuncti
 void CFunctionCallStack::BeginExecution(const uint32* instrptr)
 {
     // -- the top entry on the function stack is what we're about to call...
-    // -- the stacktop - 2, therefore, is the calling function (if it exists)...
+    // -- the m_stacktop - 2, therefore, is the calling function (if it exists)...
     // -- tag it with the offset into the codeblock, for a debugger callstack
-    if (stacktop >= 2 && funcentrystack[stacktop - 2].funcentry->GetType() == eFuncTypeScript)
+    if (m_stacktop >= 2 && m_functionEntryStack[m_stacktop - 2].funcentry->GetType() == eFuncTypeScript)
     {
         CCodeBlock* callingfunc_cb = NULL;
-        funcentrystack[stacktop - 2].funcentry->GetCodeBlockOffset(callingfunc_cb);
-        funcentrystack[stacktop - 2].linenumberfunccall = callingfunc_cb->CalcLineNumber(instrptr);
+        m_functionEntryStack[m_stacktop - 2].funcentry->GetCodeBlockOffset(callingfunc_cb);
+        m_functionEntryStack[m_stacktop - 2].linenumberfunccall = callingfunc_cb->CalcLineNumber(instrptr);
     }
 
     BeginExecution();
@@ -479,9 +479,9 @@ void CFunctionCallStack::BeginExecution(const uint32* instrptr)
 // ====================================================================================================================
 void CFunctionCallStack::BeginExecution()
 {
-	assert(stacktop > 0);
-    assert(funcentrystack[stacktop - 1].isexecuting == false);
-    funcentrystack[stacktop - 1].isexecuting = true;
+	assert(m_stacktop > 0);
+    assert(m_functionEntryStack[m_stacktop - 1].isexecuting == false);
+    m_functionEntryStack[m_stacktop - 1].isexecuting = true;
 }
 
 // ====================================================================================================================
