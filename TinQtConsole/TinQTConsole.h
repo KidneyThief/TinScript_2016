@@ -91,6 +91,8 @@ class CConsoleWindow
         QLineEdit* GetFileLineEdit() { return (mFileLineEdit); }
         QLineEdit* GetFindLineEdit() { return (mFindLineEdit); }
         QLabel* GetFindResult() { return (mFindResult); }
+        QLineEdit* GetUnhashLineEdit() { return (mUnhashLineEdit); }
+        QLabel* GetUnhashResult() { return (mUnhashResult); }
         CDebugSourceWin* GetDebugSourceWin() { return (mDebugSourceWin); }
         CDebugBreakpointsWin* GetDebugBreakpointsWin() { return (mBreakpointsWin); }
         CDebugCallstackWin* GetDebugCallstackWin() { return (mCallstackWin); }
@@ -140,6 +142,8 @@ class CConsoleWindow
         QPushButton* mButtonStepIn;
         QLineEdit* mFindLineEdit;
         QLabel* mFindResult;
+        QLineEdit* mUnhashLineEdit;
+        QLabel* mUnhashResult;
 
         // -- notifications
         bool8 IsConnected() const
@@ -251,6 +255,8 @@ class CConsoleInput : public QLineEdit
         void RequestTabComplete();
         void NotifyTabComplete(int32 request_id, const char* tab_completed_string, int32 tab_complete_index);
 
+        void NotifyStringUnhash(uint32 string_hash, const char* string_result);
+
         typedef struct { char text[TinScript::kMaxTokenLength]; } tHistoryEntry;
         void GetHistory(QStringList& history) const;
 
@@ -267,6 +273,7 @@ class CConsoleInput : public QLineEdit
         void OnButtonStepOutPressed();
         void OnFindEditFocus();
         void OnFindEditReturnPressed();
+        void OnUnhashEditReturnPressed();
         void OnFunctionAssistPressed();
 
     protected:

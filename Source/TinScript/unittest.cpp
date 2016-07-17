@@ -513,6 +513,7 @@ uint32 PerformUnitTests(bool8 results_only, const char* specific_test)
     // -- loop through and perform the unit tests
     uint32 error_test_hash = 0;
     uint32 current_test_hash = 0;
+    int32 test_number = 0;
     const CUnitTest* current_test = CUnitTest::gUnitTests->First(&current_test_hash);
     while (current_test)
     {
@@ -527,8 +528,11 @@ uint32 PerformUnitTests(bool8 results_only, const char* specific_test)
         // -- clear the script and code results
         ClearResults();
 
+        // -- increment the count
+        ++test_number;
+
         // -- Print the name and description
-        results_only ? 0 : MTPrint("\nUnit test: %s\nDesc: %s\nScript result: %s\nCode result: %s\n",
+        results_only ? 0 : MTPrint("\n[%d] Unit test: %s\nDesc: %s\nScript result: %s\nCode result: %s\n", test_number,
                                    current_test->mName, current_test->mDescription,
                                    current_test->mScriptResult[0] ? current_test->mScriptResult : "\"\"",
                                    current_test->mCodeResult[0] ? current_test->mCodeResult : "\"\"");

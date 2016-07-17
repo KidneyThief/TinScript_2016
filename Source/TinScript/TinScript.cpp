@@ -4043,6 +4043,27 @@ void DebuggerRequestTabComplete(int32 request_id, const char* partial_input, int
     }
 }
 
+// --------------------------------------------------------------------------------------------------------------------
+// DebuggerRequestStringUnhash():  Query the connected target for the actual string value from a hash
+// --------------------------------------------------------------------------------------------------------------------
+void DebuggerRequestStringUnhash(uint32 string_hash)
+{
+    // -- sanity check
+    if (TinScript::GetContext() == nullptr)
+        return;
+
+    //-- ensure we find a result
+    const char* string_value = TinScript::GetContext()->GetStringTable()->FindString(string_hash);
+    if (string_value == nullptr || string_value[0] == '\0')
+        return;
+
+    // -- notify the debugger of the result
+    char hash_as_string[16];
+    sprintf_s(hash_as_string, "%d", string_hash);
+    SocketManager::SendExec(Hash("DebuggerNotifyStringUnhash"), hash_as_string, string_value, nullptr,
+                            nullptr, nullptr, nullptr, nullptr);
+}
+
 // -------------------------------------------------------------------------------------------------------------------
 // -- Registration
 REGISTER_FUNCTION_P1(DebuggerSetConnected, DebuggerSetConnected, void, bool8);
@@ -4057,6 +4078,8 @@ REGISTER_FUNCTION_P0(DebuggerBreakRun, DebuggerBreakRun, void);
 REGISTER_FUNCTION_P3(DebuggerAddVariableWatch, DebuggerAddVariableWatch, void, int32, const char*, bool8);
 REGISTER_FUNCTION_P7(DebuggerToggleVarWatch, DebuggerToggleVarWatch, void, int32, uint32, int32, bool8, const char*, const char*, bool8);
 REGISTER_FUNCTION_P3(DebuggerModifyVariableWatch, DebuggerModifyVariableWatch, void, int32, const char*, const char*);
+
+REGISTER_FUNCTION_P1(DebuggerRequestStringUnhash, DebuggerRequestStringUnhash, void, uint32);
 
 REGISTER_FUNCTION_P1(DebuggerListObjects, DebuggerListObjects, void, int32);
 REGISTER_FUNCTION_P1(DebuggerInspectObject, DebuggerInspectObject, void, int32);

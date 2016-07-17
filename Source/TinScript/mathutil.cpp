@@ -53,7 +53,7 @@ void CVector3f::Set(float32 _x, float32 _y, float32 _z)
 // ====================================================================================================================
 float32 CVector3f::Length()
 {
-    float32 length = sqrt(x*x + y*y + z*z);
+    float32 length = (float32)sqrt(x*x + y*y + z*z);
     return (length);
 }
 
@@ -62,7 +62,7 @@ float32 CVector3f::Length()
 // ====================================================================================================================
 float32 CVector3f::Normalize()
 {
-    float32 length = sqrt(x*x + y*y + z*z);
+    float32 length = (float32)sqrt(x*x + y*y + z*z);
     if (length > 0.0f)
     {
         x /= length;
@@ -231,7 +231,7 @@ float32 Sin(float32 degrees)
 
 float32 Atan2(float32 y, float32 x)
 {
-    float32 angle = atan2(y, x);
+    float32 angle = (float32)atan2(y, x);
 
     // -- convert the angle back to degrees
     angle *= (180.0f / kPI);

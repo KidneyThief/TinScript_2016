@@ -249,7 +249,7 @@ void CDebugSchedulesWin::RemoveSchedule(uint32 sched_id)
     CScheduleEntry* entry = mEntryMap[sched_id];
     if (entry)
     {
-        mEntryMap.remove(entry->GetScheduleID());
+        mEntryMap.remove(sched_id);
         delete entry;
         SortSchedules();
     }
@@ -261,10 +261,10 @@ void CDebugSchedulesWin::RemoveSchedule(uint32 sched_id)
 void CDebugSchedulesWin::RemoveAll()
 {
     QList<uint32>& keys = mEntryMap.keys();
-    for (int i = 0; i < keys.size(); ++i)
+    while (keys.size() > 0)
     {
-        CScheduleEntry* entry = mEntryMap[keys[i]];
-        mEntryMap.remove(entry->GetScheduleID());
+        CScheduleEntry* entry = mEntryMap[keys[0]];
+        mEntryMap.remove(keys[0]);
         delete entry;
     }
 
@@ -330,7 +330,11 @@ void CDebugSchedulesWin::Update(int32 delta_ms)
     for (int i = 0; i < keys.size(); ++i)
     {
         CScheduleEntry* entry = mEntryMap[keys[i]];
-        entry->Update(scaled_delta_ms);
+        // $$$TZA Find out why we have an entry in the keys, but not in the map!!
+        if (entry != nullptr)
+        {
+            entry->Update(scaled_delta_ms);
+        }
     }
 }
 

@@ -157,6 +157,18 @@ CConsoleWindow::CConsoleWindow()
     mFindResult->setFixedWidth(120);
     mFindResult->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
 
+    QWidget* spacer_3 = new QWidget();
+    spacer_3->setFixedWidth(8);
+    QLabel* unhash_label = new QLabel("Hash/Unhash:");
+    unhash_label->setFixedWidth(105);
+    unhash_label->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+    mUnhashLineEdit = new QLineEdit();
+    mUnhashLineEdit->setFixedWidth(200);
+    QWidget* spacer_4 = new QWidget();
+    spacer_4->setFixedWidth(8);
+    mUnhashResult = new QLabel("<unhash result>");
+    mUnhashResult->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+
     toolbar->addWidget(file_label);
     toolbar->addWidget(spacer_0a);
     toolbar->addWidget(mFileLineEdit);
@@ -171,6 +183,12 @@ CConsoleWindow::CConsoleWindow()
     toolbar->addWidget(mFindLineEdit);
     toolbar->addWidget(spacer_2);
     toolbar->addWidget(mFindResult);
+    toolbar->addWidget(spacer_3);
+    toolbar->addWidget(unhash_label);
+    toolbar->addWidget(mUnhashLineEdit);
+    toolbar->addWidget(spacer_4);
+    toolbar->addWidget(mUnhashResult);
+
     mMainWindow->addToolBar(toolbar);
 
     // -- create the source window
@@ -240,6 +258,9 @@ CConsoleWindow::CConsoleWindow()
 
     QObject::connect(mFindLineEdit, SIGNAL(returnPressed()), mConsoleInput,
                                     SLOT(OnFindEditReturnPressed()));
+
+    QObject::connect(mUnhashLineEdit, SIGNAL(returnPressed()), mConsoleInput,
+                                      SLOT(OnUnhashEditReturnPressed()));
 
     QObject::connect(mCallstackWin, SIGNAL(itemDoubleClicked(QListWidgetItem*)), mCallstackWin,
                                     SLOT(OnDoubleClicked(QListWidgetItem*)));
@@ -1191,6 +1212,30 @@ void CConsoleInput::NotifyTabComplete(int32 request_id, const char* result, int3
     }
 }
 
+void CConsoleInput::NotifyStringUnhash(uint32 string_hash, const char* string_result)
+{
+    // -- clear the result label
+    QLabel* unhash_result = CConsoleWindow::GetInstance()->GetUnhashResult();
+    unhash_result->setText("");
+
+    // -- if we got no result, we're done
+    if (string_result == nullptr)
+        return;
+
+    QLineEdit* unhash_edit = CConsoleWindow::GetInstance()->GetUnhashLineEdit();
+    QString unhash_string = unhash_edit->text();
+    QByteArray unhash_byte_array = unhash_string.toUtf8();
+    const char* unhash_str = unhash_byte_array.data();
+
+    // -- make sure the string hash in the line edit matches the hash requested
+    uint32 current_hash = TinScript::Atoi(unhash_str, -1);
+    if (current_hash == 0 || current_hash != string_hash)
+        return;
+
+    // -- see if this string hash is in our current string table
+    unhash_result->setText(string_result);
+}
+
 // ====================================================================================================================
 // GetHistory():  Returns the array of command input strings stored in the ConsoleInput history.
 // ====================================================================================================================
@@ -1340,6 +1385,49 @@ void CConsoleInput::OnFindEditReturnPressed()
     QLineEdit* find_edit = CConsoleWindow::GetInstance()->GetFindLineEdit();
     QString search_string = find_edit->text();
     CConsoleWindow::GetInstance()->GetDebugSourceWin()->FindInFile(search_string.toUtf8());
+}
+
+void CConsoleInput::OnUnhashEditReturnPressed()
+{
+    QLineEdit* unhash_edit = CConsoleWindow::GetInstance()->GetUnhashLineEdit();
+    QString unhash_string = unhash_edit->text();
+    QByteArray unhash_byte_array = unhash_string.toUtf8();
+    const char* unhash_str = unhash_byte_array.data();
+
+    // -- get the string hash
+    uint32 string_hash = TinScript::Atoi(unhash_str, -1);
+
+    // -- if the string doesn't contain a number, then assume we're trying to hash it, not unhash
+    if (string_hash == 0)
+    {
+        if (unhash_str != nullptr && unhash_str[0] != '\0')
+        {
+            string_hash = TinScript::Hash(unhash_str);
+            char hash_as_string[16];
+            sprintf_s(hash_as_string, "0x%x", string_hash);
+            QLabel* unhash_result = CConsoleWindow::GetInstance()->GetUnhashResult();
+            unhash_result->setText(hash_as_string);
+        }
+        return;
+    }
+
+    // -- see if this string hash is in our current string table
+    const char* unhash_found = TinScript::GetContext()->GetStringTable()->FindString(string_hash);
+    if (unhash_found != nullptr)
+    {
+        QLabel* unhash_result = CConsoleWindow::GetInstance()->GetUnhashResult();
+        unhash_result->setText(unhash_found);
+    }
+    // -- not found locally - send the request to the target
+    else
+    {
+
+        // -- request the string unhash from the taqrget
+        char hash_as_string[16];
+        sprintf_s(hash_as_string, "%d", string_hash);
+        SocketManager::SendExec(TinScript::Hash("DebuggerRequestStringUnhash"), hash_as_string, nullptr, nullptr,
+                                nullptr, nullptr, nullptr, nullptr);
+    }
 }
 
 void CConsoleInput::OnFunctionAssistPressed()
@@ -2191,6 +2279,14 @@ void DebuggerNotifyTabComplete(int32 request_id, const char* tab_completed_strin
     CConsoleWindow::GetInstance()->GetInput()->NotifyTabComplete(request_id, tab_completed_string, tab_complete_index);
 }
 
+// ====================================================================================================================
+// DebuggerNotifyStringUnhash():  Receive the result of a string unhash request
+// ====================================================================================================================
+void DebuggerNotifyStringUnhash(uint32 string_hash, const char* string_result)
+{
+    CConsoleWindow::GetInstance()->GetInput()->NotifyStringUnhash(string_hash, string_result);
+}
+
 // == ObjectBrowser Registration ======================================================================================
 
 REGISTER_FUNCTION_P0(DebuggerClearObjectBrowser, DebuggerClearObjectBrowser, void);
@@ -2207,6 +2303,9 @@ REGISTER_FUNCTION_P1(DebuggerRemoveSchedule, DebuggerRemoveSchedule, void, int32
 
 // == TabComplete Registration ========================================================================================
 REGISTER_FUNCTION_P3(DebuggerNotifyTabComplete, DebuggerNotifyTabComplete, void, int32, const char*, int32);
+
+// == StringUnhash Registration =======================================================================================
+REGISTER_FUNCTION_P2(DebuggerNotifyStringUnhash, DebuggerNotifyStringUnhash, void, uint32, const char*);
 
 // --------------------------------------------------------------------------------------------------------------------
 int _tmain(int argc, _TCHAR* argv[])
