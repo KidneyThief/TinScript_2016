@@ -143,5 +143,8 @@
     <ClInclude Include="TinVariableEntry.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="variadicclasses.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

@@ -1,7 +1,7 @@
 // ------------------------------------------------------------------------------------------------
 //  The MIT License
 //  
-//  Copyright (c) 2013 Tim Andersen
+//  Copyright (c) 2016 Tim Andersen
 //  
 //  Permission is hereby granted, free of charge, to any person obtaining a copy of this software
 //  and associated documentation files (the "Software"), to deal in the Software without
@@ -150,7 +150,7 @@ public:
 
     // -- registration method
     virtual void Register(CScriptContext* script_context) {
-        uint32 classname_hash = Hash(C::GetClassName());
+        uint32 classname_hash = Hash(C::_GetClassName());
         CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
@@ -194,7 +194,7 @@ public:
 
     // -- registration method
     virtual void Register(CScriptContext* script_context) {
-        uint32 classname_hash = Hash(C::GetClassName());
+        uint32 classname_hash = Hash(C::_GetClassName());
         CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
@@ -341,7 +341,7 @@ public:
 
     // -- registration method
     virtual void Register(CScriptContext* script_context) {
-        uint32 classname_hash = Hash(C::GetClassName());
+        uint32 classname_hash = Hash(C::_GetClassName());
         CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
@@ -388,7 +388,7 @@ public:
 
     // -- registration method
     virtual void Register(CScriptContext* script_context) {
-        uint32 classname_hash = Hash(C::GetClassName());
+        uint32 classname_hash = Hash(C::_GetClassName());
         CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
@@ -544,7 +544,7 @@ public:
 
     // -- registration method
     virtual void Register(CScriptContext* script_context) {
-        uint32 classname_hash = Hash(C::GetClassName());
+        uint32 classname_hash = Hash(C::_GetClassName());
         CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
@@ -594,7 +594,7 @@ public:
 
     // -- registration method
     virtual void Register(CScriptContext* script_context) {
-        uint32 classname_hash = Hash(C::GetClassName());
+        uint32 classname_hash = Hash(C::_GetClassName());
         CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
@@ -759,7 +759,7 @@ public:
 
     // -- registration method
     virtual void Register(CScriptContext* script_context) {
-        uint32 classname_hash = Hash(C::GetClassName());
+        uint32 classname_hash = Hash(C::_GetClassName());
         CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
@@ -812,7 +812,7 @@ public:
 
     // -- registration method
     virtual void Register(CScriptContext* script_context) {
-        uint32 classname_hash = Hash(C::GetClassName());
+        uint32 classname_hash = Hash(C::_GetClassName());
         CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
@@ -986,7 +986,7 @@ public:
 
     // -- registration method
     virtual void Register(CScriptContext* script_context) {
-        uint32 classname_hash = Hash(C::GetClassName());
+        uint32 classname_hash = Hash(C::_GetClassName());
         CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
@@ -1042,7 +1042,7 @@ public:
 
     // -- registration method
     virtual void Register(CScriptContext* script_context) {
-        uint32 classname_hash = Hash(C::GetClassName());
+        uint32 classname_hash = Hash(C::_GetClassName());
         CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
@@ -1225,7 +1225,7 @@ public:
 
     // -- registration method
     virtual void Register(CScriptContext* script_context) {
-        uint32 classname_hash = Hash(C::GetClassName());
+        uint32 classname_hash = Hash(C::_GetClassName());
         CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
@@ -1284,7 +1284,7 @@ public:
 
     // -- registration method
     virtual void Register(CScriptContext* script_context) {
-        uint32 classname_hash = Hash(C::GetClassName());
+        uint32 classname_hash = Hash(C::_GetClassName());
         CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
@@ -1476,7 +1476,7 @@ public:
 
     // -- registration method
     virtual void Register(CScriptContext* script_context) {
-        uint32 classname_hash = Hash(C::GetClassName());
+        uint32 classname_hash = Hash(C::_GetClassName());
         CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
@@ -1538,7 +1538,7 @@ public:
 
     // -- registration method
     virtual void Register(CScriptContext* script_context) {
-        uint32 classname_hash = Hash(C::GetClassName());
+        uint32 classname_hash = Hash(C::_GetClassName());
         CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
@@ -1739,7 +1739,7 @@ public:
 
     // -- registration method
     virtual void Register(CScriptContext* script_context) {
-        uint32 classname_hash = Hash(C::GetClassName());
+        uint32 classname_hash = Hash(C::_GetClassName());
         CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
@@ -1804,7 +1804,7 @@ public:
 
     // -- registration method
     virtual void Register(CScriptContext* script_context) {
-        uint32 classname_hash = Hash(C::GetClassName());
+        uint32 classname_hash = Hash(C::_GetClassName());
         CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
@@ -2014,7 +2014,7 @@ public:
 
     // -- registration method
     virtual void Register(CScriptContext* script_context) {
-        uint32 classname_hash = Hash(C::GetClassName());
+        uint32 classname_hash = Hash(C::_GetClassName());
         CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
@@ -2082,7 +2082,7 @@ public:
 
     // -- registration method
     virtual void Register(CScriptContext* script_context) {
-        uint32 classname_hash = Hash(C::GetClassName());
+        uint32 classname_hash = Hash(C::_GetClassName());
         CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
@@ -2301,7 +2301,7 @@ public:
 
     // -- registration method
     virtual void Register(CScriptContext* script_context) {
-        uint32 classname_hash = Hash(C::GetClassName());
+        uint32 classname_hash = Hash(C::_GetClassName());
         CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
@@ -2372,7 +2372,7 @@ public:
 
     // -- registration method
     virtual void Register(CScriptContext* script_context) {
-        uint32 classname_hash = Hash(C::GetClassName());
+        uint32 classname_hash = Hash(C::_GetClassName());
         CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
@@ -2600,7 +2600,7 @@ public:
 
     // -- registration method
     virtual void Register(CScriptContext* script_context) {
-        uint32 classname_hash = Hash(C::GetClassName());
+        uint32 classname_hash = Hash(C::_GetClassName());
         CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
@@ -2674,7 +2674,7 @@ public:
 
     // -- registration method
     virtual void Register(CScriptContext* script_context) {
-        uint32 classname_hash = Hash(C::GetClassName());
+        uint32 classname_hash = Hash(C::_GetClassName());
         CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
@@ -2911,7 +2911,7 @@ public:
 
     // -- registration method
     virtual void Register(CScriptContext* script_context) {
-        uint32 classname_hash = Hash(C::GetClassName());
+        uint32 classname_hash = Hash(C::_GetClassName());
         CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
@@ -2988,7 +2988,7 @@ public:
 
     // -- registration method
     virtual void Register(CScriptContext* script_context) {
-        uint32 classname_hash = Hash(C::GetClassName());
+        uint32 classname_hash = Hash(C::_GetClassName());
         CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
@@ -3234,7 +3234,7 @@ public:
 
     // -- registration method
     virtual void Register(CScriptContext* script_context) {
-        uint32 classname_hash = Hash(C::GetClassName());
+        uint32 classname_hash = Hash(C::_GetClassName());
         CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
@@ -3314,7 +3314,7 @@ public:
 
     // -- registration method
     virtual void Register(CScriptContext* script_context) {
-        uint32 classname_hash = Hash(C::GetClassName());
+        uint32 classname_hash = Hash(C::_GetClassName());
         CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());

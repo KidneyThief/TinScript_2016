@@ -69,8 +69,8 @@ const int32 kCompilerVersion = 12;
 // ====================================================================================================================
 // -- Registration macros
 #define DECLARE_SCRIPT_CLASS(classname, parentclass)                                              \
-    static const char* GetParentName() { return #parentclass; }                                   \
-    static const char* GetClassName() { return #classname; }                                      \
+    static const char* _GetParentName() { return #parentclass; }                                  \
+    static const char* _GetClassName() { return #classname; }                                     \
     static classname* Create() {                                                                  \
         classname* newobj = TinAlloc(ALLOC_CreateObj, classname);                                 \
         return newobj;                                                                            \

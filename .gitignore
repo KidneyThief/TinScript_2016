@@ -42,3 +42,9 @@ TinQtDemo/test.ts
 TinQtDemo/hi_kenny.ts
 TinQtDemo/TinQtDemo_r.v12.suo
 TinQtDemo/TinQtDemo_d.v12.suo
+*.tlog
+StringTablePlugin/obj/
+StringTablePlugin/bin/
+StringTablePlugin/packages/
+StringTablePlugin/stylesheet.css
+*.db

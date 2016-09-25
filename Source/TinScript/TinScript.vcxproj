@@ -115,6 +115,7 @@
     <ClInclude Include="TinStringTable.h" />
     <ClInclude Include="TinTypes.h" />
     <ClInclude Include="TinVariableEntry.h" />
+    <ClInclude Include="variadicclasses.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

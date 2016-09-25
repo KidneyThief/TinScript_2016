@@ -28,6 +28,9 @@
 
 // -- includes
 
+#include <tuple>
+#include <type_traits>
+
 #include "TinNamespace.h"
 #include "TinStringTable.h"
 #include "TinInterface.h"
@@ -192,6 +195,7 @@ class CFunctionEntry
 // -- these classes are generated from the python script genregclasses.py
 // -- default usage is:  python genregclasses.py -maxparams 8
 #include "registrationclasses.h"
+#include "variadicclasses.h"
 
 }  // TinScript
 
