@@ -114,8 +114,13 @@ class CBase {
 
         int32 TestP1(int32 a)
         {
-            MTPrint("CBase P3: %d", a);
+            MTPrint("CBase P1: %d\n", a);
             return (a);
+        }
+
+        void VoidP1(int32 a)
+        {
+            MTPrint("CBase void1: %d\n", a);
         }
 
         float32 floatvalue;
@@ -147,8 +152,6 @@ REGISTER_METHOD_P0(CBase, GetBoolValue, GetBoolValue, bool8);
 REGISTER_METHOD_P1(CBase, SetFloatValue, SetFloatValue, void, float32);
 REGISTER_METHOD_P1(CBase, SetIntValue, SetIntValue, void, int32);
 REGISTER_METHOD_P1(CBase, SetBoolValue, SetBoolValue, void, bool8);
-
-//REGISTER_METHOD_P1(CBase, TestP1, TestP1, int32, int32);
 
 class CChild : public CBase {
     public:
@@ -1084,20 +1087,15 @@ int TestArg3(float arg1, bool arg2, int arg3)
     return (69);
 }
 
-/*
-#include <tuple>
-#include <type_traits>
-
-template<typename S>
-class SignatureArgCount;
-
-template<typename R, typename... Args>
-class SignatureArgCount<R(Args...)>
+void VoidArg1(float arg1)
 {
-    public:
-        static const int arg_count = sizeof...(Args);
-};
-*/
+    printf("%2f\n", arg1);
+}
+
+void VoidStr1(const char* in_str)
+{
+    printf("In String: %s\n", in_str);
+}
 
 namespace TinScript
 {
@@ -1182,7 +1180,7 @@ class Signature<3, R(Args...)>
 #define PRINT_SIGNATURE(Func) \
 {   \
     const int n = SignatureArgCount<decltype(Func)>::arg_count; \
-    /*Signature<n, decltype(Func)>(); */ \
+    Signature<n, decltype(Func)>(); \
 }
 
 void TestB()
@@ -1195,187 +1193,14 @@ void TestB()
 
 REGISTER_FUNCTION_P0(TestB, TestB, void);
 
-
-//REGISTER_FUNCTION_P3(TestArg3, TestArg3, int, float32, bool8, int32);
-
 // -- NEW REGISTRATION ------------------------------------------------------------------------------------------------
 
-/*
-template<int N, typename S>
-class CRegisterFunction;
-
-template<int N, typename R, typename... Args>
-class CRegisterFunction<N, R(Args...)>
-{
-    public:
-        using argument_types = std::tuple<Args...>;
-
-        CRegisterFunction() { }
-        void PrintArgs() { }
-};
-
-
-template<typename R, typename... Args>
-class CRegisterFunction<3, R(Args...)> : public CRegFunctionBase {
-public:
-
-    typedef R (*funcsignature)(Args...);
-    using argument_types = std::tuple<Args...>;
-
-    // -- CRegisterFunctionP3
-    CRegisterFunction(const char* _funcname, funcsignature _funcptr)
-        : CRegFunctionBase(_funcname)
-    {
-        funcptr = _funcptr;
-    }
-
-    // -- virtual DispatchFunction wrapper
-    void DispatchFunction(void*)
-    {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
-
-        T1 p1 = ConvertVariableForDispatch<T1>(ve1);
-        T2 p2 = ConvertVariableForDispatch<T2>(ve2);
-        T3 p3 = ConvertVariableForDispatch<T3>(ve3);
-        Dispatch(&p1, &p2, &p3);
-    }
-
-    // -- dispatch method
-    R Dispatch(void* _p1, void* _p2, void* _p3)
-    {
-        using return_type = R;
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-
-        T1* p1 = (T1*)_p1;
-        T2* p2 = (T2*)_p2;
-        T3* p3 = (T3*)_p3;
-
-        R r = funcptr(*p1, *p2, *p3);
-        assert(GetContext()->GetParameter(0));
-        CVariableEntry* returnval = GetContext()->GetParameter(0);
-        returnval->SetValueAddr(NULL, convert_to_void_ptr<R>::Convert(r));
-        return (r);
-    }
-
-    // -- registration method
-    virtual void Register(TinScript::CScriptContext* script_context)
-    {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-
-        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
-        SetScriptContext(script_context);
-        SetContext(fe->GetContext());
-        GetContext()->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());
-        GetContext()->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>());
-        GetContext()->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>());
-        GetContext()->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>());
-
-        uint32 hash = fe->GetHash();
-        tFuncTable* globalfunctable = script_context->FindNamespace(0)->GetFuncTable();
-        globalfunctable->AddItem(*fe, hash);
-    }
-
-private:
-    funcsignature funcptr;
-};
-
-*/
-
-#define REGISTER_FUNCTION(name, funcptr) \
-    static const int gArgCount_##name = SignatureArgCount<decltype(funcptr)>::arg_count; \
-    static CRegisterFunction<gArgCount_##name, decltype(funcptr)> gReg_##name(#name, funcptr);  \
-
 REGISTER_FUNCTION(TestArg3, TestArg3)
-
-// ---------------------------
-
-template<int N, typename C, typename S>
-class CRegisterMethod;
-
-template<int N, typename C, typename R, typename... Args>
-class CRegisterMethod<N, C, R(Args...)>
-{
-    public:
-        using return_type = R;
-        using argument_types = std::tuple<Args...>;
-        CRegisterMethod() { }
-};
-
-template<typename C, typename R, typename... Args>
-class CRegisterMethod<1, C, R(Args...)> : public CRegFunctionBase {
-public:
-
-    using argument_types = std::tuple<Args...>;
-    typedef R (C::*methodsignature)(Args...);
-
-    // -- CRegisterMethod
-    CRegisterMethod(const char* _methodname, methodsignature _methodptr) :
-                  CRegFunctionBase(_methodname) {
-        methodptr = _methodptr;
-    }
-
-    // -- virtual DispatchFunction wrapper
-    virtual void DispatchFunction(void* objaddr) {
-
-        using T1 = std::tuple_element<0, argument_types>::type;
-
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-
-        T1 p1 = ConvertVariableForDispatch<T1>(ve1);
-        Dispatch(objaddr, &p1);
-    }
-
-    // -- dispatch method
-    R Dispatch(void* objaddr, void* _p1)
-    {
-        using T1 = std::tuple_element<0, argument_types>::type;
-
-        T1* p1 = (T1*)_p1;
-
-        C* object = (C*)(objaddr);
-        R r = (object->*methodptr)(*p1);
-        assert(GetContext()->GetParameter(0));
-        TinScript::CVariableEntry* returnval = this->GetContext()->GetParameter(0);
-        returnval->SetValueAddr(NULL, convert_to_void_ptr<R>::Convert(r));
-        return (r);
-    }
-
-    // -- registration method
-    virtual void Register(TinScript::CScriptContext* script_context)
-    {
-        using T1 = std::tuple_element<0, argument_types>::type;
-
-        uint32 classname_hash = Hash(C::_GetClassName());
-        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
-        SetScriptContext(script_context);
-        SetContext(fe->GetContext());
-        GetContext()->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());
-        GetContext()->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>());
-
-        uint32 hash = fe->GetHash();
-        tFuncTable* methodtable = script_context->FindNamespace(classname_hash)->GetFuncTable();
-        methodtable->AddItem(*fe, hash);
-    }
-
-private:
-    methodsignature methodptr;
-};
-
-#define REGISTER_METHOD(classname, name, methodptr) \
-    static const int gArgCount_classname##_##name = SignatureArgCount<decltype(std::declval<classname>().methodptr)>::arg_count; \
-    static CRegisterMethod<gArgCount_classname##_##name, classname, decltype(std::declval<classname>().methodptr)> gReg_##classname##_##name(#name, &classname::methodptr);  \
+REGISTER_FUNCTION(VoidArg1, VoidArg1)
+REGISTER_FUNCTION(VoidStr1, VoidStr1)
 
 REGISTER_METHOD(CBase, TestP1, TestP1)
+REGISTER_METHOD(CBase, VoidP1, VoidP1)
 
 } // namespace TinScript
 

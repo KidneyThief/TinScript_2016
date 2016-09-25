@@ -610,6 +610,16 @@ def GenerateVariadicClasses(maxparamcount, outputfilename):
     outputfile.write("// ------------------------------------------------------------------------------------------------\n");
     outputfile.write("\n");
 
+    outputfile.write('#define REGISTER_FUNCTION(name, funcptr) \\\n');
+    outputfile.write('    static const int gArgCount_##name = SignatureArgCount<decltype(funcptr)>::arg_count; \\\n');
+    outputfile.write('    static CRegisterFunction<gArgCount_##name, decltype(funcptr)> gReg_##name(#name, funcptr);\n');
+    outputfile.write("\n");
+
+    outputfile.write('#define REGISTER_METHOD(classname, name, methodptr) \\\n');
+    outputfile.write('static const int gArgCount_classname##_##name = SignatureArgCount<decltype(std::declval<classname>().methodptr)>::arg_count; \\\n');
+    outputfile.write('static CRegisterMethod<gArgCount_classname##_##name, classname, decltype(std::declval<classname>().methodptr)> gReg_##classname##_##name(#name, &classname::methodptr);\n');
+    outputfile.write("\n");
+
     outputfile.write('template<typename S>\n');
     outputfile.write('class SignatureArgCount;\n\n');
 
@@ -633,6 +643,16 @@ def GenerateVariadicClasses(maxparamcount, outputfilename):
     outputfile.write('        void PrintArgs() { }\n');
     outputfile.write('};\n');
 
+    outputfile.write('template<int N, typename C, typename S>\n');
+    outputfile.write('class CRegisterMethod;\n');
+    outputfile.write('\n');
+    outputfile.write('template<int N, typename C, typename R, typename... Args>\n');
+    outputfile.write('class CRegisterMethod<N, C, R(Args...)>\n');
+    outputfile.write('{\n');
+    outputfile.write('    public:\n');
+    outputfile.write('        CRegisterMethod() { }\n');
+    outputfile.write('};\n');
+
     paramcount = 0;
     while (paramcount <= maxparamcount):
         outputfile.write("\n");
@@ -641,7 +661,8 @@ def GenerateVariadicClasses(maxparamcount, outputfilename):
         outputfile.write("// -------------------\n");
         outputfile.write("\n");
 
-        outputfile.write("template<typename R, typename... Args>");
+        outputfile.write("// -- class CRegisterFunction<%d, R(Args...)> ----------------------------------------\n\n" % paramcount);
+        outputfile.write("template<typename R, typename... Args>\n");
         outputfile.write("class CRegisterFunction<%d, R(Args...)> : public CRegFunctionBase\n{\n" % paramcount);
         outputfile.write("public:\n");
         outputfile.write("\n");
@@ -745,7 +766,6 @@ def GenerateVariadicClasses(maxparamcount, outputfilename):
             i = i + 1;
         outputfile.write("\n");
 
-
         outputfile.write("        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFuncTypeGlobal, this);\n");
         outputfile.write("        SetScriptContext(script_context);\n");
         outputfile.write("        SetContext(fe->GetContext());\n");
@@ -762,10 +782,373 @@ def GenerateVariadicClasses(maxparamcount, outputfilename):
         outputfile.write("\n");
         outputfile.write("private:\n");
         outputfile.write("    funcsignature funcptr;\n");
-        outputfile.write("};\n");
+        outputfile.write("};\n\n");
         
         # -----------------------------------------------------------------------------------------
         # repeat for the void specialized template
+
+        outputfile.write("// -- class CRegisterFunction<%d, void(Args...)> ----------------------------------------\n\n" % paramcount);
+        outputfile.write("template<typename... Args>\n");
+        outputfile.write("class CRegisterFunction<%d, void(Args...)> : public CRegFunctionBase\n{\n" % paramcount);
+        outputfile.write("public:\n");
+        outputfile.write("\n");
+
+        outputfile.write('    typedef void (*funcsignature)(Args...);\n');
+        outputfile.write('    using argument_types = std::tuple<Args...>;\n\n');
+
+        outputfile.write("    // -- constructor\n");
+        outputfile.write('    CRegisterFunction(const char* _funcname, funcsignature _funcptr)\n');
+        outputfile.write('        : CRegFunctionBase(_funcname)\n');
+        outputfile.write('    {\n');
+        outputfile.write('        funcptr = _funcptr;\n');
+        outputfile.write('    }\n');
+       
+        outputfile.write("    // -- virtual DispatchFunction wrapper\n");
+        outputfile.write("    virtual void DispatchFunction(void*)\n    {\n");
+
+        i = 1;
+        while (i <= paramcount):
+            outputfile.write("        using T%d = std::tuple_element<%d, argument_types>::type;\n" % (i, i - 1));
+            i = i + 1;
+        outputfile.write("\n");
+
+        i = 1;
+        while (i <= paramcount):
+            outputfile.write("        CVariableEntry* ve%d = GetContext()->GetParameter(%d);\n" % (i, i));
+            i = i + 1;
+        outputfile.write("\n");
+
+        i = 1;
+        while (i <= paramcount):
+            outputfile.write("        T%d p%d = ConvertVariableForDispatch<T%d>(ve%d);\n" % (i, i, i, i));
+            i = i + 1;
+        outputfile.write("\n");
+            
+        dispatch_string = "        Dispatch(";
+        if(paramcount == 0):
+            dispatch_string = dispatch_string + ");\n"
+        else:
+            i = 1;
+            while (i <= paramcount):
+                if (i > 1):
+                    dispatch_string = dispatch_string + ",\n                 ";
+                dispatch_string = dispatch_string + "&p%d" % (i);
+                i = i + 1;
+            dispatch_string = dispatch_string + ");\n";
+        outputfile.write(dispatch_string);
+        outputfile.write("    }\n");
+        outputfile.write("\n");
+
+        outputfile.write("    // -- dispatch method\n");
+        dispatch_string = "    void Dispatch(";
+        i = 1;
+        while (i <= paramcount):
+            if (i > 1):
+                dispatch_string = dispatch_string + ", ";
+            dispatch_string = dispatch_string + "void* _p%d" % (i);
+            i = i + 1;
+        dispatch_string = dispatch_string + ")\n    {\n";
+        outputfile.write(dispatch_string);
+
+        i = 1;
+        while (i <= paramcount):
+            outputfile.write("        using T%d = std::tuple_element<%d, argument_types>::type;\n" % (i, i - 1));
+            i = i + 1;
+        outputfile.write("\n");
+
+        i = 1;
+        while (i <= paramcount):
+            outputfile.write("        T%d* p%d = (T%d*)_p%d;\n" % (i, i, i, i));
+            i = i + 1;
+        outputfile.write("\n");
+        
+        functioncall = "        funcptr(";
+        i = 1;
+        while (i <= paramcount):
+            if (i > 1):
+                functioncall = functioncall + ", ";
+            functioncall = functioncall + "*p%d" % i;
+            i = i + 1;
+        functioncall = functioncall + ");\n";
+        outputfile.write(functioncall);
+        outputfile.write("\n");
+
+        outputfile.write("    }\n");
+        outputfile.write("\n");
+        
+        outputfile.write("    // -- registration method\n");
+        outputfile.write("    virtual void Register(CScriptContext* script_context)\n    {\n");
+
+        i = 1;
+        while (i <= paramcount):
+            outputfile.write("        using T%d = std::tuple_element<%d, argument_types>::type;\n" % (i, i - 1));
+            i = i + 1;
+        outputfile.write("\n");
+
+
+        outputfile.write("        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFuncTypeGlobal, this);\n");
+        outputfile.write("        SetScriptContext(script_context);\n");
+        outputfile.write("        SetContext(fe->GetContext());\n");
+        outputfile.write("        GetContext()->AddParameter(\"__return\", Hash(\"__return\"), TYPE_void, 1, 0);\n");
+        i = 1;
+        while (i <= paramcount):
+            outputfile.write("        GetContext()->AddParameter(\"_p%d\", Hash(\"_p%d\"), GetRegisteredType(GetTypeID<T%d>()), 1, GetTypeID<T%d>());\n" % (i, i, i, i));
+            i = i + 1;
+        outputfile.write("\n");
+        outputfile.write("        uint32 hash = fe->GetHash();\n");
+        outputfile.write("        tFuncTable* globalfunctable = script_context->FindNamespace(0)->GetFuncTable();\n");
+        outputfile.write("        globalfunctable->AddItem(*fe, hash);\n");
+        outputfile.write("    }\n");
+        outputfile.write("\n");
+        outputfile.write("private:\n");
+        outputfile.write("    funcsignature funcptr;\n");
+        outputfile.write("};\n");
+        outputfile.write("\n");
+
+
+        # -----------------------------------------------------------------------------------------
+        # repeat for the methods templates
+
+        outputfile.write("// -- class CRegisterMethod<%d, R(Args...)> ----------------------------------------\n\n" % paramcount);
+        outputfile.write('template<typename C, typename R, typename... Args>\n');
+        outputfile.write('class CRegisterMethod<%d, C, R(Args...)> : public CRegFunctionBase\n{\n' % paramcount);
+        outputfile.write('public:\n');
+        outputfile.write('\n');
+        outputfile.write('    using argument_types = std::tuple<Args...>;\n');
+        outputfile.write('    typedef R (C::*methodsignature)(Args...);\n');
+        outputfile.write('\n');
+        outputfile.write('    // -- CRegisterMethod\n');
+        outputfile.write('    CRegisterMethod(const char* _methodname, methodsignature _methodptr) :\n');
+        outputfile.write('                  CRegFunctionBase(_methodname) {\n');
+        outputfile.write('        methodptr = _methodptr;\n');
+        outputfile.write('    }\n');
+        outputfile.write('\n');
+        outputfile.write('    // -- virtual DispatchFunction wrapper\n');
+        outputfile.write('    virtual void DispatchFunction(void* objaddr)\n    {\n');
+        outputfile.write('\n');
+
+        i = 1;
+        while (i <= paramcount):
+            outputfile.write("        using T%d = std::tuple_element<%d, argument_types>::type;\n" % (i, i - 1));
+            i = i + 1;
+        outputfile.write("\n");
+
+        i = 1;
+        while (i <= paramcount):
+            outputfile.write("        CVariableEntry* ve%d = GetContext()->GetParameter(%d);\n" % (i, i));
+            i = i + 1;
+
+        i = 1;
+        while (i <= paramcount):
+            outputfile.write("        T%d p%d = ConvertVariableForDispatch<T%d>(ve%d);\n" % (i, i, i, i));
+            i = i + 1;
+
+
+        dispatch_string = "        Dispatch(objaddr";
+        i = 1;
+        while (i <= paramcount):
+            dispatch_string = dispatch_string + ", &p%d" % (i);
+            i = i + 1;
+        dispatch_string = dispatch_string + ");\n";
+        outputfile.write(dispatch_string);
+        outputfile.write('    }\n\n');
+
+
+        outputfile.write('    // -- dispatch method\n');
+
+        dispatch_string = "    R Dispatch(void* objaddr";
+        i = 1;
+        while (i <= paramcount):
+            dispatch_string = dispatch_string + ", void* _p%d" % (i);
+            i = i + 1;
+        dispatch_string = dispatch_string + ")\n";
+        outputfile.write(dispatch_string);
+        outputfile.write('    {\n');
+
+        i = 1;
+        while (i <= paramcount):
+            outputfile.write("        using T%d = std::tuple_element<%d, argument_types>::type;\n" % (i, i - 1));
+            i = i + 1;
+        outputfile.write("\n");
+
+        i = 1;
+        while (i <= paramcount):
+            outputfile.write("        T%d* p%d = (T1*)_p%d;\n" % (i, i, i));
+            i = i + 1;
+        outputfile.write("\n");
+
+        outputfile.write('        C* object = (C*)(objaddr);\n');
+
+        dispatch_string = "        R r = (object->*methodptr)(";
+        i = 1;
+        while (i <= paramcount):
+            if (i > 1):
+                dispatch_string = dispatch_string + ", ";
+            dispatch_string = dispatch_string + "*p%d" % (i);
+            i = i + 1;
+        dispatch_string = dispatch_string + ");\n";
+        outputfile.write(dispatch_string);
+        outputfile.write('\n');
+
+        outputfile.write('        assert(GetContext()->GetParameter(0));\n');
+        outputfile.write('        TinScript::CVariableEntry* returnval = this->GetContext()->GetParameter(0);\n');
+        outputfile.write('        returnval->SetValueAddr(NULL, convert_to_void_ptr<R>::Convert(r));\n');
+        outputfile.write('        return (r);\n');
+        outputfile.write('    }\n');
+        outputfile.write('\n');
+
+        outputfile.write('    // -- registration method\n');
+        outputfile.write('    virtual void Register(TinScript::CScriptContext* script_context)\n');
+        outputfile.write('    {\n');
+
+        i = 1;
+        while (i <= paramcount):
+            outputfile.write("        using T%d = std::tuple_element<%d, argument_types>::type;\n" % (i, i - 1));
+            i = i + 1;
+        outputfile.write("\n");
+
+        outputfile.write('\n');
+        outputfile.write('        uint32 classname_hash = Hash(C::_GetClassName());\n');
+        outputfile.write('        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFuncTypeGlobal, this);\n');
+        outputfile.write('        SetScriptContext(script_context);\n');
+        outputfile.write('        SetContext(fe->GetContext());\n');
+        outputfile.write('        GetContext()->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());\n');
+
+        i = 1;
+        while (i <= paramcount):
+            outputfile.write('        GetContext()->AddParameter("_p%d", Hash("_p%d"), GetRegisteredType(GetTypeID<T%d>()), 1, GetTypeID<T%d>());\n' % (i, i, i, i));
+            i = i + 1;
+        outputfile.write("\n");
+
+        outputfile.write('\n');
+        outputfile.write('        uint32 hash = fe->GetHash();\n');
+        outputfile.write('        tFuncTable* methodtable = script_context->FindNamespace(classname_hash)->GetFuncTable();\n');
+        outputfile.write('        methodtable->AddItem(*fe, hash);\n');
+        outputfile.write('    }\n');
+        outputfile.write('\n');
+        outputfile.write('private:\n');
+        outputfile.write('    methodsignature methodptr;\n');
+        outputfile.write('};\n');
+
+        # -----------------------------------------------------------------------------------------
+        # repeat for the void methods templates
+
+        outputfile.write("// -- class CRegisterMethod<%d, void(Args...)> ----------------------------------------\n\n" % paramcount);
+        outputfile.write('template<typename C, typename... Args>\n');
+        outputfile.write('class CRegisterMethod<%d, C, void(Args...)> : public CRegFunctionBase\n{\n' % paramcount);
+        outputfile.write('public:\n');
+        outputfile.write('\n');
+        outputfile.write('    using argument_types = std::tuple<Args...>;\n');
+        outputfile.write('    typedef void (C::*methodsignature)(Args...);\n');
+        outputfile.write('\n');
+        outputfile.write('    // -- CRegisterMethod\n');
+        outputfile.write('    CRegisterMethod(const char* _methodname, methodsignature _methodptr) :\n');
+        outputfile.write('                  CRegFunctionBase(_methodname) {\n');
+        outputfile.write('        methodptr = _methodptr;\n');
+        outputfile.write('    }\n');
+        outputfile.write('\n');
+        outputfile.write('    // -- virtual DispatchFunction wrapper\n');
+        outputfile.write('    virtual void DispatchFunction(void* objaddr)\n    {\n');
+        outputfile.write('\n');
+
+        i = 1;
+        while (i <= paramcount):
+            outputfile.write("        using T%d = std::tuple_element<%d, argument_types>::type;\n" % (i, i - 1));
+            i = i + 1;
+        outputfile.write("\n");
+
+        i = 1;
+        while (i <= paramcount):
+            outputfile.write("        CVariableEntry* ve%d = GetContext()->GetParameter(%d);\n" % (i, i));
+            i = i + 1;
+
+        i = 1;
+        while (i <= paramcount):
+            outputfile.write("        T%d p%d = ConvertVariableForDispatch<T%d>(ve%d);\n" % (i, i, i, i));
+            i = i + 1;
+
+
+        dispatch_string = "        Dispatch(objaddr";
+        i = 1;
+        while (i <= paramcount):
+            dispatch_string = dispatch_string + ", &p%d" % (i);
+            i = i + 1;
+        dispatch_string = dispatch_string + ");\n";
+        outputfile.write(dispatch_string);
+        outputfile.write('    }\n\n');
+
+
+        outputfile.write('    // -- dispatch method\n');
+
+        dispatch_string = "    void Dispatch(void* objaddr";
+        i = 1;
+        while (i <= paramcount):
+            dispatch_string = dispatch_string + ", void* _p%d" % (i);
+            i = i + 1;
+        dispatch_string = dispatch_string + ")\n";
+        outputfile.write(dispatch_string);
+        outputfile.write('    {\n');
+
+        i = 1;
+        while (i <= paramcount):
+            outputfile.write("        using T%d = std::tuple_element<%d, argument_types>::type;\n" % (i, i - 1));
+            i = i + 1;
+        outputfile.write("\n");
+
+        i = 1;
+        while (i <= paramcount):
+            outputfile.write("        T%d* p%d = (T1*)_p%d;\n" % (i, i, i));
+            i = i + 1;
+        outputfile.write("\n");
+
+        outputfile.write('        C* object = (C*)(objaddr);\n');
+
+        dispatch_string = "        (object->*methodptr)(";
+        i = 1;
+        while (i <= paramcount):
+            if (i > 1):
+                dispatch_string = dispatch_string + ", ";
+            dispatch_string = dispatch_string + "*p%d" % (i);
+            i = i + 1;
+        dispatch_string = dispatch_string + ");\n";
+        outputfile.write(dispatch_string);
+        outputfile.write('\n');
+
+        outputfile.write('    }\n');
+        outputfile.write('\n');
+
+        outputfile.write('    // -- registration method\n');
+        outputfile.write('    virtual void Register(TinScript::CScriptContext* script_context)\n');
+        outputfile.write('    {\n');
+
+        i = 1;
+        while (i <= paramcount):
+            outputfile.write("        using T%d = std::tuple_element<%d, argument_types>::type;\n" % (i, i - 1));
+            i = i + 1;
+        outputfile.write("\n");
+
+        outputfile.write('\n');
+        outputfile.write('        uint32 classname_hash = Hash(C::_GetClassName());\n');
+        outputfile.write('        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFuncTypeGlobal, this);\n');
+        outputfile.write('        SetScriptContext(script_context);\n');
+        outputfile.write('        SetContext(fe->GetContext());\n');
+        outputfile.write("        GetContext()->AddParameter(\"__return\", Hash(\"__return\"), TYPE_void, 1, 0);\n");
+
+        i = 1;
+        while (i <= paramcount):
+            outputfile.write('        GetContext()->AddParameter("_p%d", Hash("_p%d"), GetRegisteredType(GetTypeID<T%d>()), 1, GetTypeID<T%d>());\n' % (i, i, i, i));
+            i = i + 1;
+        outputfile.write("\n");
+
+        outputfile.write('\n');
+        outputfile.write('        uint32 hash = fe->GetHash();\n');
+        outputfile.write('        tFuncTable* methodtable = script_context->FindNamespace(classname_hash)->GetFuncTable();\n');
+        outputfile.write('        methodtable->AddItem(*fe, hash);\n');
+        outputfile.write('    }\n');
+        outputfile.write('\n');
+        outputfile.write('private:\n');
+        outputfile.write('    methodsignature methodptr;\n');
+        outputfile.write('};\n');
 
 #        template_string = "template<";
 #        i = 1;
