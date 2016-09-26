@@ -611,13 +611,13 @@ def GenerateVariadicClasses(maxparamcount, outputfilename):
     outputfile.write("\n");
 
     outputfile.write('#define REGISTER_FUNCTION(name, funcptr) \\\n');
-    outputfile.write('    static const int gArgCount_##name = SignatureArgCount<decltype(funcptr)>::arg_count; \\\n');
-    outputfile.write('    static CRegisterFunction<gArgCount_##name, decltype(funcptr)> gReg_##name(#name, funcptr);\n');
+    outputfile.write('    static const int gArgCount_##name = ::TinScript::SignatureArgCount<decltype(funcptr)>::arg_count; \\\n');
+    outputfile.write('    static ::TinScript::CRegisterFunction<gArgCount_##name, decltype(funcptr)> gReg_##name(#name, funcptr);\n');
     outputfile.write("\n");
 
     outputfile.write('#define REGISTER_METHOD(classname, name, methodptr) \\\n');
-    outputfile.write('static const int gArgCount_classname##_##name = SignatureArgCount<decltype(std::declval<classname>().methodptr)>::arg_count; \\\n');
-    outputfile.write('static CRegisterMethod<gArgCount_classname##_##name, classname, decltype(std::declval<classname>().methodptr)> gReg_##classname##_##name(#name, &classname::methodptr);\n');
+    outputfile.write('static const int gArgCount_classname##_##name = ::TinScript::SignatureArgCount<decltype(std::declval<classname>().methodptr)>::arg_count; \\\n');
+    outputfile.write('static ::TinScript::CRegisterMethod<gArgCount_classname##_##name, classname, decltype(std::declval<classname>().methodptr)> gReg_##classname##_##name(#name, &classname::methodptr);\n');
     outputfile.write("\n");
 
     outputfile.write('template<typename S>\n');

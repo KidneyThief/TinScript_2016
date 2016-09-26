@@ -1097,9 +1097,6 @@ void VoidStr1(const char* in_str)
     printf("In String: %s\n", in_str);
 }
 
-namespace TinScript
-{
-
 template<int N, typename S>
 class Signature;
 
@@ -1179,7 +1176,7 @@ class Signature<3, R(Args...)>
 
 #define PRINT_SIGNATURE(Func) \
 {   \
-    const int n = SignatureArgCount<decltype(Func)>::arg_count; \
+    const int n = TinScript::SignatureArgCount<decltype(Func)>::arg_count; \
     Signature<n, decltype(Func)>(); \
 }
 
@@ -1201,8 +1198,6 @@ REGISTER_FUNCTION(VoidStr1, VoidStr1)
 
 REGISTER_METHOD(CBase, TestP1, TestP1)
 REGISTER_METHOD(CBase, VoidP1, VoidP1)
-
-} // namespace TinScript
 
 // ------------------------------------------------------------------------------------------------
 // eof
