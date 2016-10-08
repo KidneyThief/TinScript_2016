@@ -63,9 +63,9 @@ void UnPause() {
     gPaused = false;
 }
 
-REGISTER_FUNCTION_P0(Quit, Quit, void);
-REGISTER_FUNCTION_P0(Pause, Pause, void);
-REGISTER_FUNCTION_P0(UnPause, UnPause, void);
+REGISTER_FUNCTION(Quit, Quit);
+REGISTER_FUNCTION(Pause, Pause);
+REGISTER_FUNCTION(UnPause, UnPause);
 
 uint32 GetCurrentSimTime() {
     return gCurrentTime;
@@ -75,7 +75,7 @@ float32 GetSimTime() {
     float32 curtime = (float32)(GetCurrentSimTime()) / 1000.0f;
     return curtime;
 }
-REGISTER_FUNCTION_P0(GetSimTime, GetSimTime, float32);
+REGISTER_FUNCTION(GetSimTime, GetSimTime);
 
 int32 _tmain(int32 argc, _TCHAR* argv[])
 {

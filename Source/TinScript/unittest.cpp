@@ -145,13 +145,13 @@ IMPLEMENT_SCRIPT_CLASS_BEGIN(CBase, VOID)
     REGISTER_MEMBER(CBase, stringArray, stringArray);
 IMPLEMENT_SCRIPT_CLASS_END()
 
-REGISTER_METHOD_P0(CBase, GetFloatValue, GetFloatValue, float32);
-REGISTER_METHOD_P0(CBase, GetIntValue, GetIntValue, int32);
-REGISTER_METHOD_P0(CBase, GetBoolValue, GetBoolValue, bool8);
+REGISTER_METHOD(CBase, GetFloatValue, GetFloatValue);
+REGISTER_METHOD(CBase, GetIntValue, GetIntValue);
+REGISTER_METHOD(CBase, GetBoolValue, GetBoolValue);
 
-REGISTER_METHOD_P1(CBase, SetFloatValue, SetFloatValue, void, float32);
-REGISTER_METHOD_P1(CBase, SetIntValue, SetIntValue, void, int32);
-REGISTER_METHOD_P1(CBase, SetBoolValue, SetBoolValue, void, bool8);
+REGISTER_METHOD(CBase, SetFloatValue, SetFloatValue);
+REGISTER_METHOD(CBase, SetIntValue, SetIntValue);
+REGISTER_METHOD(CBase, SetBoolValue, SetBoolValue);
 
 class CChild : public CBase {
     public:
@@ -176,7 +176,8 @@ class CChild : public CBase {
 IMPLEMENT_SCRIPT_CLASS_BEGIN(CChild, CBase)
 IMPLEMENT_SCRIPT_CLASS_END()
 
-REGISTER_METHOD_P1(CChild, SetIntValue, SetIntValue, void, int32);
+// -- SetIntValue already registered in the base class
+//REGISTER_METHOD(CChild, SetIntValue, SetIntValue);
 
 // --------------------------------------------------------------------------------------------------------------------
 // class CUnitTest:  A generic way of specifying unit tests, allowing both scripted and code functions
@@ -280,11 +281,11 @@ CVector3f UnitTest_V3fNormalize(CVector3f v0)
     return (result);
 }
 
-REGISTER_FUNCTION_P1(UnitTest_MultiplyBy2, UnitTest_MultiplyBy2, int32, int32);
-REGISTER_FUNCTION_P1(UnitTest_DivideBy3, UnitTest_DivideBy3, float32, float32);
-REGISTER_FUNCTION_P2(UnitTest_IsGreaterThan, UnitTest_IsGreaterThan, bool8, float32, float32);
-REGISTER_FUNCTION_P1(UnitTest_AnimalType, UnitTest_AnimalType, const char*, const char*);
-REGISTER_FUNCTION_P1(UnitTest_V3fNormalize, UnitTest_V3fNormalize, CVector3f, CVector3f);
+REGISTER_FUNCTION(UnitTest_MultiplyBy2, UnitTest_MultiplyBy2);
+REGISTER_FUNCTION(UnitTest_DivideBy3, UnitTest_DivideBy3);
+REGISTER_FUNCTION(UnitTest_IsGreaterThan, UnitTest_IsGreaterThan);
+REGISTER_FUNCTION(UnitTest_AnimalType, UnitTest_AnimalType);
+REGISTER_FUNCTION(UnitTest_V3fNormalize, UnitTest_V3fNormalize);
 
 // -- these functions contain calls to scripted functions to test reliably receiving return values
 void UnitTest_GetScriptReturnInt()
@@ -1005,8 +1006,8 @@ void BeginMultiThreadTest()
 
 #endif
 
-REGISTER_FUNCTION_P2(BeginUnitTests, BeginUnitTests, void, bool8, const char*);
-REGISTER_FUNCTION_P0(BeginMultiThreadTest, BeginMultiThreadTest, void);
+REGISTER_FUNCTION(BeginUnitTests, BeginUnitTests);
+REGISTER_FUNCTION(BeginMultiThreadTest, BeginMultiThreadTest);
 
 // -- useful for profiling
 #ifdef WIN32
@@ -1031,7 +1032,7 @@ REGISTER_FUNCTION_P0(BeginMultiThreadTest, BeginMultiThreadTest, void);
         printf("TinScript time: %d\n", elapsed);
 	}
 
-	REGISTER_FUNCTION_P0(BeginProfilingTests, BeginProfilingTests, void);
+	REGISTER_FUNCTION(BeginProfilingTests, BeginProfilingTests);
 #endif
 
 // --------------------------------------------
@@ -1188,7 +1189,7 @@ void TestB()
     PRINT_SIGNATURE(TestArg3);
 }
 
-REGISTER_FUNCTION_P0(TestB, TestB, void);
+REGISTER_FUNCTION(TestB, TestB);
 
 // -- NEW REGISTRATION ------------------------------------------------------------------------------------------------
 

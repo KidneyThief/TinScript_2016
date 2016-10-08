@@ -91,7 +91,7 @@ public:
 
     static CVector3f Cross(CVector3f v0, CVector3f v1);
     static float32 Dot(CVector3f v0, CVector3f v1);
-    static float32 Length(CVector3f v0);
+    static float32 V3fLength(CVector3f v0);
     static CVector3f Normalized(CVector3f v0);
 
     static const CVector3f zero;

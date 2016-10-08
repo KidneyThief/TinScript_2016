@@ -58,7 +58,7 @@ float32 CVector3f::Length()
 }
 
 // ====================================================================================================================
-// Length():  Normalizes the vector, returns the length
+// Normalize():  Normalizes the vector, returns the length
 // ====================================================================================================================
 float32 CVector3f::Normalize()
 {
@@ -106,7 +106,7 @@ CVector3f CVector3f::Normalized(CVector3f v0)
 // ====================================================================================================================
 // Length():  Returns the length of the input vector
 // ====================================================================================================================
-float32 CVector3f::Length(CVector3f v0)
+float32 CVector3f::V3fLength(CVector3f v0)
 {
     return (v0.Length());
 }
@@ -170,8 +170,10 @@ IMPLEMENT_SCRIPT_CLASS_BEGIN(CVector3f, VOID)
     REGISTER_MEMBER(CVector3f, z, z);
 IMPLEMENT_SCRIPT_CLASS_END()
 
+
 REGISTER_METHOD_P3(CVector3f, Set, Set, void, float32, float32, float32);
-REGISTER_METHOD_P0(CVector3f, Length, Length, float32);
+//REGISTER_METHOD_P0(CVector3f, Length, Length, float32);
+REGISTER_METHOD(CVector3f, Length, Length);
 REGISTER_METHOD_P0(CVector3f, Normalize, Normalize, float32);
 
 REGISTER_FUNCTION_P3(ObjCross, TS_Cross, bool8, CVector3f*, CVector3f*, CVector3f*);
@@ -180,7 +182,7 @@ REGISTER_FUNCTION_P2(ObjNormalized, TS_Normalized, float32, CVector3f*, CVector3
 
 // --------------------------------------------------------------------------------------------------------------------
 // -- Re-registered using the registered type, instead of having to find an object
-REGISTER_FUNCTION_P1(V3fLength, CVector3f::Length, float32, CVector3f);
+REGISTER_FUNCTION_P1(V3fLength, CVector3f::V3fLength, float32, CVector3f);
 REGISTER_FUNCTION_P2(V3fCross, CVector3f::Cross, CVector3f, CVector3f, CVector3f);
 REGISTER_FUNCTION_P2(V3fDot, CVector3f::Dot, float32, CVector3f, CVector3f);
 REGISTER_FUNCTION_P1(V3fNormalized, CVector3f::Normalized, CVector3f, CVector3f);
