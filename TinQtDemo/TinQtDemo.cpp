@@ -569,7 +569,7 @@ void DrawRect(int32 id, CVector3f position, float32 width, float32 height, int32
     }
 }
 
-void DrawText(int32 id, CVector3f position, const char* text, int32 color)
+void DrawScreenText(int32 id, CVector3f position, const char* text, int32 color)
 {
     if (gCanvas)
     {
@@ -588,7 +588,7 @@ void CancelDrawRequests(int32 id)
 REGISTER_FUNCTION(DrawLine, DrawLine);
 REGISTER_FUNCTION(DrawCircle, DrawCircle);
 REGISTER_FUNCTION(DrawRect, DrawRect);
-REGISTER_FUNCTION_P4(DrawText, DrawText, void, int32, CVector3f, const char*, int32);
+REGISTER_FUNCTION(DrawText, DrawScreenText);
 
 REGISTER_FUNCTION(CancelDrawRequests, CancelDrawRequests);
 
