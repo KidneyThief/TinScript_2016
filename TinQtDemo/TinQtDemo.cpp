@@ -585,12 +585,12 @@ void CancelDrawRequests(int32 id)
     }
 }
 
-REGISTER_FUNCTION_P4(DrawLine, DrawLine, void, int32, CVector3f, CVector3f, int32);
-REGISTER_FUNCTION_P4(DrawCircle, DrawCircle, void, int32, CVector3f, float32, int32);
-REGISTER_FUNCTION_P5(DrawRect, DrawRect, void, int32, CVector3f, float32, float32, int32);
+REGISTER_FUNCTION(DrawLine, DrawLine);
+REGISTER_FUNCTION(DrawCircle, DrawCircle);
+REGISTER_FUNCTION(DrawRect, DrawRect);
 REGISTER_FUNCTION_P4(DrawText, DrawText, void, int32, CVector3f, const char*, int32);
 
-REGISTER_FUNCTION_P1(CancelDrawRequests, CancelDrawRequests, void, int32);
+REGISTER_FUNCTION(CancelDrawRequests, CancelDrawRequests);
 
 // --------------------------------------------------------------------------------------------------------------------
 // Event Handlers
@@ -627,11 +627,11 @@ void SimSetTimeScale(float scale)
     TinScript::SetTimeScale(scale);
 }
 
-REGISTER_FUNCTION_P0(SimPause, SimPause, void);
-REGISTER_FUNCTION_P0(SimUnpause, SimUnpause, void);
-REGISTER_FUNCTION_P0(SimIsPaused, SimIsPaused, bool8);
-REGISTER_FUNCTION_P0(GetSimTime, GetSimTime, int32);
-REGISTER_FUNCTION_P1(SimSetTimeScale, SimSetTimeScale, void, float);
+REGISTER_FUNCTION(SimPause, SimPause);
+REGISTER_FUNCTION(SimUnpause, SimUnpause);
+REGISTER_FUNCTION(SimIsPaused, SimIsPaused);
+REGISTER_FUNCTION(GetSimTime, GetSimTime);
+REGISTER_FUNCTION(SimSetTimeScale, SimSetTimeScale);
 
 // -- register the enum class KeyCode 
 CREATE_ENUM_CLASS(KeyCode, KeyCodes);
