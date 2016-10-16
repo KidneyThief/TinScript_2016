@@ -4604,6 +4604,154 @@ CCodeBlock* LoadBinary(CScriptContext* script_context, const char* filename, con
 }
 
 // ====================================================================================================================
+// ParseFile_CompileToC():  Parse and compile a given file into a compileable 'source C' version
+// ====================================================================================================================
+const char* ParseFile_CompileToC(CScriptContext* script_context, const char* filename, int32& source_length)
+{
+	// -- see if we can open the file
+	const char* filebuf = ReadFileAllocBuf(filename);
+    return (ParseText_CompileToC(script_context, filename, filebuf, source_length));
+}
+
+// ====================================================================================================================
+// ParseText_CompileToC();  Parse a text block, and return a text block with the 'source C' equivalent.
+// ====================================================================================================================
+const char* ParseText_CompileToC(CScriptContext* script_context, const char* filename, const char* filebuf,
+                                 int32& source_length)
+{
+    // -- ensure at the start of parsing any text, we reset the paren depth
+    gGlobalExprParenDepth = 0;
+
+    // -- sanity check
+    if (!filebuf)
+        return (NULL);
+
+    CCodeBlock* codeblock = TinAlloc(ALLOC_CodeBlock, CCodeBlock, script_context, filename);
+
+	// create the starting root, initial token, and parse the existing statements
+	CCompileTreeNode* root = CCompileTreeNode::CreateTreeRoot(codeblock);
+	tReadToken parsetoken(filebuf, 0);
+	if (!ParseStatementBlock(codeblock, root->next, parsetoken, false))
+    {
+		ScriptAssert_(script_context, 0, codeblock->GetFileName(), parsetoken.linenumber,
+                      "Error - failed to ParseStatementBlock()\n");
+        codeblock->SetFinishedParsing();
+        return (NULL);
+	}
+
+    // -- allocate a buffer large enough to contain the source
+    const int k_maxFileLength = 1024 * 245;
+    int32 max_size = k_maxFileLength;
+    char* compile_to_source_c = new char[k_maxFileLength];
+    char* compile_ptr = compile_to_source_c;
+    
+    // -- run through the tree again, this time actually compiling it
+    if (!codeblock->CompileTreeToSourceC(*root, compile_ptr, max_size))
+    {
+		ScriptAssert_(script_context, 0, codeblock->GetFileName(), -1,
+                      "Error - failed to compile tree for file: %s", codeblock->GetFileName());
+        // -- failed
+        codeblock->SetFinishedParsing();
+        DestroyTree(root);
+        return (NULL);
+    }
+
+    // -- finish parsing and destroy the tree
+    codeblock->SetFinishedParsing();
+    DestroyTree(root);
+
+    // -- return the buffer containing the compiled source C, and the length
+    source_length = k_maxFileLength - max_size;
+	return (compile_to_source_c);
+}
+
+// ====================================================================================================================
+// SaveToSourceC():  Writes out the compiled 'source C' to a file.
+// ====================================================================================================================
+bool8 SaveToSourceC(const char* script_filename, const char* source_C_filename, const char* source_c,
+                    int32 source_length)
+{
+    if (!source_c || !source_C_filename || source_length == 0)
+        return (false);
+
+  	// -- open the file
+	FILE* filehandle = NULL;
+	if (source_C_filename)
+    {
+		 int32 result = fopen_s(&filehandle, source_C_filename, "w");
+		 if (result != 0)
+         {
+             ScriptAssert_(TinScript::GetContext(), 0, script_filename, -1,
+                           "Error - unable to write file %s\n", source_C_filename);
+			 return (false);
+         }
+	}
+
+	if (!filehandle)
+    {
+        ScriptAssert_(TinScript::GetContext(), 0, script_filename, -1,
+                      "Error - unable to write file %s\n", source_C_filename);
+		return (false);
+    }
+    setvbuf(filehandle, NULL, _IOFBF, BUFSIZ);
+
+    // -- write the header
+    const char* comment = "// ====================================================================================================================\n";
+    int32 instrwritten = (int32)fwrite((void*)comment, sizeof(char), strlen(comment), filehandle);
+    if (instrwritten != strlen(comment))
+    {
+        ScriptAssert_(TinScript::GetContext(), 0, script_filename, -1,
+                      "Error - unable to write file %s\n", source_C_filename);
+        return (false);
+    }
+
+    // -- write the filename
+    char fn_buffer[kMaxArgLength];
+    sprintf_s(fn_buffer, "// Comile To C: %s\n", source_C_filename);
+    instrwritten = (int32)fwrite((void*)fn_buffer, sizeof(char), strlen(fn_buffer), filehandle);
+    if (instrwritten != strlen(fn_buffer))
+    {
+        ScriptAssert_(TinScript::GetContext(), 0, script_filename, -1,
+                      "Error - unable to write file %s\n", source_C_filename);
+        return (false);
+    }
+
+    // -- write the version
+    char version_buffer[kMaxArgLength];
+    sprintf_s(version_buffer, "// version: %d\n", kCompilerVersion);
+    instrwritten = (int32)fwrite((void*)&version_buffer, sizeof(char), strlen(version_buffer), filehandle);
+    if (instrwritten != strlen(version_buffer))
+    {
+        ScriptAssert_(TinScript::GetContext(), 0, script_filename, -1,
+                      "Error - unable to write file %s\n", source_C_filename);
+        return (false);
+    }
+
+    // -- close the header
+    instrwritten = (int32)fwrite((void*)comment, sizeof(char), strlen(comment), filehandle);
+    if (instrwritten != strlen(comment))
+    {
+        ScriptAssert_(TinScript::GetContext(), 0, script_filename, -1,
+                      "Error - unable to write file %s\n", source_C_filename);
+        return (false);
+    }
+
+    // -- write the source C
+    instrwritten = (int32)fwrite((void*)source_c, sizeof(char), source_length, filehandle);
+    if (instrwritten != source_length)
+    {
+        ScriptAssert_(TinScript::GetContext(), 0, script_filename, -1,
+                      "Error - unable to write file %s\n", source_C_filename);
+        return (false);
+    }
+
+    // -- close the file
+    fclose(filehandle);
+    // -- success
+    return (true);
+}
+
+// ====================================================================================================================
 // AddVariable():  Adds an entry to a variable table (global, or local to a function)
 // ====================================================================================================================
 CVariableEntry* AddVariable(CScriptContext* script_context, tVarTable* curglobalvartable,

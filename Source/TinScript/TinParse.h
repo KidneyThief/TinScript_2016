@@ -262,6 +262,12 @@ bool8 SaveBinary(CCodeBlock* codeblock, const char* binfilename);
 CCodeBlock* LoadBinary(CScriptContext* script_context, const char* filename, const char* binfilename, bool8 must_exist,
                        bool8& old_version);
 
+const char* ParseFile_CompileToC(CScriptContext* script_context, const char* filename, int32& source_length);
+const char* ParseText_CompileToC(CScriptContext* script_context, const char* filename, const char* filebuf,
+                                 int32& source_length);
+bool8 SaveToSourceC(const char* script_filename, const char* source_C_filename, const char* source_C,
+                    int32 source_length);
+
 bool8 TryParseVarDeclaration(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link);
 bool8 TryParseBreakContinue(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link);
 bool8 TryParseReturn(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link);

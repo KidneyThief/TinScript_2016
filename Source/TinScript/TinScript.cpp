@@ -130,6 +130,17 @@ bool8 CompileScript(const char* filename)
 }
 
 // ====================================================================================================================
+// CompileToC():  Compile a script to a 'C source header 
+// ====================================================================================================================
+bool8 CompileToC(const char* filename)
+{
+    CScriptContext* script_context = GetContext();
+    assert(script_context != NULL);
+    bool8 result = script_context->CompileToC(filename);
+    return (true);
+}
+
+// ====================================================================================================================
 // ExecScript():  Executes a text file containing script code
 // ====================================================================================================================
 bool8 ExecScript(const char* filename)
@@ -159,9 +170,12 @@ void SetTimeScale(float time_scale)
     script_context->GetScheduler()->SetSimTimeScale(time_scale);
 }
 
-REGISTER_FUNCTION_P1(Compile, CompileScript, bool8, const char*);
-REGISTER_FUNCTION_P1(Exec, ExecScript, bool8, const char*);
-REGISTER_FUNCTION_P1(Include, IncludeScript, bool8, const char*);
+// -- Registration ----------------------------------------------------------------------------------------------------
+
+REGISTER_FUNCTION(Compile, CompileScript);
+REGISTER_FUNCTION(Exec, ExecScript);
+REGISTER_FUNCTION(Include, IncludeScript);
+REGISTER_FUNCTION(CompileToC, CompileToC);
 
 // ====================================================================================================================
 // NullAssertHandler():  Default assert handler called, if one isn't provided
@@ -846,6 +860,28 @@ bool8 NeedToCompile(const char* filename, const char* binfilename)
 }
 
 // ====================================================================================================================
+// GetSourceCFileName():  Given a source filename, return the file to write the source 'C'.
+// ====================================================================================================================
+bool8 GetSourceCFileName(const char* filename, char* source_C_name, int32 maxnamelength)
+{
+    if (!filename)
+        return false;
+
+    // -- a script file should end in ".ts"
+    const char* extptr = strrchr(filename, '.');
+    if (!extptr || Strncmp_(extptr, ".ts", 4) != 0)
+        return false;
+
+    // -- copy the root name
+    uint32 length = kPointerDiffUInt32(extptr, filename);
+    SafeStrcpy(source_C_name, filename, maxnamelength);
+    SafeStrcpy(&source_C_name[length], ".h", maxnamelength - length);
+
+    return true;
+}
+
+
+// ====================================================================================================================
 // CompileScript():  Compile a source script.
 // ====================================================================================================================
 CCodeBlock* CScriptContext::CompileScript(const char* filename)
@@ -998,6 +1034,45 @@ bool8 CScriptContext::ExecCommand(const char* statement)
 
     // -- failed
     return false;
+}
+
+// ====================================================================================================================
+// CompileToC():  Compile a source script to a valid 'C' source file.
+// ====================================================================================================================
+bool8 CScriptContext::CompileToC(const char* filename)
+{
+    // -- get the name of the output binary file
+    char source_C_name[kMaxNameLength];
+    if (!GetSourceCFileName(filename, source_C_name, kMaxNameLength))
+    {
+        ScriptAssert_(this, 0, "<internal>", -1, "Error - invalid script filename: %s\n", filename ? filename : "");
+        return (false);
+    }
+
+    // -- compile the source
+    int32 source_length = 0;
+    const char* source_C = ParseFile_CompileToC(this, filename, source_length);
+    if (source_C == nullptr)
+    {
+        ScriptAssert_(this, 0, "<internal>", -1, "Error - unable to parse file: %s\n", filename);
+        return NULL;
+    }
+
+    // -- convert the codeblock to a valid source 'C' file 
+    if (!SaveToSourceC(filename, source_C_name, source_C, source_length))
+        return (false);
+
+    // -- save the string table - *if* we're the main thread
+    if (mIsMainThread)
+        SaveStringTable();
+
+    // -- reset the assert stack
+    ResetAssertStack();
+
+    // $$$TZA ensure the codeblock is deleted after the conversion
+    // -- also, we need to ensure the codeblock doesn't add function entries
+    // -- to the namespace hashtables (or that they're now registered 'C' functions)
+    return (true);
 }
 
 // ====================================================================================================================

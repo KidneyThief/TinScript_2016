@@ -375,6 +375,9 @@ class CScriptContext
         CCodeBlock* CompileCommand(const char* statement);
         bool8 ExecCommand(const char* statement);
 
+        // -- Compile to "C" methods
+        bool8 CompileToC(const char* filename);
+
         // -- if the command contains a function call, we need to be able to access the result
         void SetFunctionReturnValue(void* value, eVarType valueType);
         bool8 GetFunctionReturnValue(void*& value, eVarType& valueType);

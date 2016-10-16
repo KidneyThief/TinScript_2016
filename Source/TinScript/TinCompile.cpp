@@ -305,6 +305,33 @@ int32 CompileFunctionContext(CFunctionEntry* fe, uint32*& instrptr, bool8 counto
     return size;
 }
 
+// -- Compile To C Helper Functions -----------------------------------------------------------------------------------
+
+bool8 OutputToBuffer(char*& out_buffer, int32& max_size, const char* format, ...)
+{
+    // -- sanity check
+    if (format == nullptr)
+        return (true);
+
+    va_list args;
+    va_start(args, format);
+    char temp[kMaxTokenLength];
+    vsprintf_s(temp, kMaxTokenLength, format, args);
+    va_end(args);
+
+    int32 length = strlen(temp);
+    if (length > max_size)
+        return (false);
+
+    strcpy_s(out_buffer, max_size, temp);
+    out_buffer += length;
+    max_size -= length;
+
+    // -- success
+    return (true);
+}
+
+
 // == class CCompileTreeNode ==========================================================================================
 
 // ====================================================================================================================
@@ -390,6 +417,29 @@ void CCompileTreeNode::Dump(char*& output, int32& length) const
 	length -= debuglength;
 }
 
+// ====================================================================================================================
+// CompileToC(): Convert the parse tree to valid C, to compile directly to the executable. 
+// ====================================================================================================================
+bool8 CCompileTreeNode::CompileToC(char*& out_buffer, int32& max_size) const
+{
+	// -- NOP nodes have no children, but loop through and evaluate the chain of siblings
+	const CCompileTreeNode* rootptr = next;
+	while (rootptr)
+    {
+        bool result = rootptr->CompileToC(out_buffer, max_size);
+        if (!result)
+            return (false);
+
+        // -- we're done if the rootptr is a NOP, as it would have already evaluated
+        // -- the rest of the linked list
+        if (rootptr->GetType() == eNOP)
+            break;
+
+		rootptr = rootptr->next;
+	}
+    return (true);
+}
+
 // == class CDebugNode ================================================================================================
 
 // ====================================================================================================================
@@ -418,6 +468,15 @@ int32 CDebugNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 countonly) 
     size += PushInstruction(countonly, instrptr, hash, DBG_value, "debug message");
 
     return (size);
+}
+
+// ====================================================================================================================
+// CompileToC(): Convert the parse tree to valid C, to compile directly to the executable. 
+// ====================================================================================================================
+bool8 CDebugNode::CompileToC(char*& out_buffer, int32& max_size) const
+{
+    TinPrint(TinScript::GetContext(), "CDebugNode::CompileToC() not implemented.");
+    return (true);
 }
 
 // == class CBinaryTreeNode =============================================================================================
@@ -469,6 +528,15 @@ int32 CBinaryTreeNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 counto
     size += tree_size;
 
     return (size);
+}
+
+// ====================================================================================================================
+// CompileToC(): Convert the parse tree to valid C, to compile directly to the executable. 
+// ====================================================================================================================
+bool8 CBinaryTreeNode::CompileToC(char*& out_buffer, int32& max_size) const
+{
+    TinPrint(TinScript::GetContext(), "CBinaryTreeNode::CompileToC() not implemented.");
+    return (true);
 }
 
 // == class CValueNode ================================================================================================
@@ -645,6 +713,15 @@ void CValueNode::Dump(char*& output, int32& length) const
 	length -= debuglength;
 }
 
+// ====================================================================================================================
+// CompileToC(): Convert the parse tree to valid C, to compile directly to the executable. 
+// ====================================================================================================================
+bool8 CValueNode::CompileToC(char*& out_buffer, int32& max_size) const
+{
+    TinPrint(TinScript::GetContext(), "CValueNode::CompileToC() not implemented.");
+    return (true);
+}
+
 // == class CSelfNode =================================================================================================
 
 // ====================================================================================================================
@@ -670,6 +747,15 @@ int32 CSelfNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 countonly) c
 	}
 
 	return size;
+}
+
+// ====================================================================================================================
+// CompileToC(): Convert the parse tree to valid C, to compile directly to the executable. 
+// ====================================================================================================================
+bool8 CSelfNode::CompileToC(char*& out_buffer, int32& max_size) const
+{
+    TinPrint(TinScript::GetContext(), "CValueNode::CompileToC() not implemented.");
+    return (true);
 }
 
 // == class CObjMemberNode ============================================================================================
@@ -755,6 +841,15 @@ void CObjMemberNode::Dump(char*& output, int32& length) const
 	length -= debuglength;
 }
 
+// ====================================================================================================================
+// CompileToC(): Convert the parse tree to valid C, to compile directly to the executable. 
+// ====================================================================================================================
+bool8 CObjMemberNode::CompileToC(char*& out_buffer, int32& max_size) const
+{
+    TinPrint(TinScript::GetContext(), "CObjMemberNode::CompileToC() not implemented.");
+    return (true);
+}
+
 // == class CPODMemberNode ============================================================================================
 
 // ====================================================================================================================
@@ -838,6 +933,15 @@ void CPODMemberNode::Dump(char*& output, int32& length) const
 	int32 debuglength = (int32)strlen(output);
 	output += debuglength;
 	length -= debuglength;
+}
+
+// ====================================================================================================================
+// CompileToC(): Convert the parse tree to valid C, to compile directly to the executable. 
+// ====================================================================================================================
+bool8 CPODMemberNode::CompileToC(char*& out_buffer, int32& max_size) const
+{
+    TinPrint(TinScript::GetContext(), "CPODMemberNode::CompileToC() not implemented.");
+    return (true);
 }
 
 // == class CBinaryOpNode =============================================================================================
@@ -982,6 +1086,15 @@ void CBinaryOpNode::Dump(char*& output, int32& length) const
 	length -= debuglength;
 }
 
+// ====================================================================================================================
+// CompileToC(): Convert the parse tree to valid C, to compile directly to the executable. 
+// ====================================================================================================================
+bool8 CBinaryOpNode::CompileToC(char*& out_buffer, int32& max_size) const
+{
+    TinPrint(TinScript::GetContext(), "CBinaryOpNode::CompileToC() not implemented.");
+    return (true);
+}
+
 // == class CUnaryOpNode ==============================================================================================
 
 // ====================================================================================================================
@@ -1025,6 +1138,15 @@ int32 CUnaryOpNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 countonly
 	size += PushInstruction(countonly, instrptr, unaryopcode, DBG_instr);
 
 	return size;
+}
+
+// ====================================================================================================================
+// CompileToC(): Convert the parse tree to valid C, to compile directly to the executable. 
+// ====================================================================================================================
+bool8 CUnaryOpNode::CompileToC(char*& out_buffer, int32& max_size) const
+{
+    TinPrint(TinScript::GetContext(), "CUnaryOpNode::CompileToC() not implemented.");
+    return (true);
 }
 
 // == class CLoopJumpNode =============================================================================================
@@ -1116,6 +1238,15 @@ void CLoopJumpNode::NotifyLoopInstr(uint32* continue_instr, uint32* break_instr)
         // -- fill in the offset
         *mJumpOffset = jump_offset;
     }
+}
+
+// ====================================================================================================================
+// CompileToC(): Convert the parse tree to valid C, to compile directly to the executable. 
+// ====================================================================================================================
+bool8 CLoopJumpNode::CompileToC(char*& out_buffer, int32& max_size) const
+{
+    TinPrint(TinScript::GetContext(), "CLoopJumpNode::CompileToC() not implemented.");
+    return (true);
 }
 
 // == class CCaseStatementNode ========================================================================================
@@ -1215,6 +1346,15 @@ int32 CCaseStatementNode::EvalStatements(uint32*& instrptr, bool countonly)
 
     // -- return the size
     return (size);
+}
+
+// ====================================================================================================================
+// CompileToC(): Convert the parse tree to valid C, to compile directly to the executable. 
+// ====================================================================================================================
+bool8 CCaseStatementNode::CompileToC(char*& out_buffer, int32& max_size) const
+{
+    TinPrint(TinScript::GetContext(), "CCaseStatementNode::CompileToC() not implemented.");
+    return (true);
 }
 
 // == class CSwitchStatementNode ======================================================================================
@@ -1372,6 +1512,15 @@ bool8 CSwitchStatementNode::AddLoopJumpNode(CLoopJumpNode* jump_node)
     return (true);
 }
 
+// ====================================================================================================================
+// CompileToC(): Convert the parse tree to valid C, to compile directly to the executable. 
+// ====================================================================================================================
+bool8 CSwitchStatementNode::CompileToC(char*& out_buffer, int32& max_size) const
+{
+    TinPrint(TinScript::GetContext(), "CSwitchStatementNode::CompileToC() not implemented.");
+    return (true);
+}
+
 // == class CIfStatementNode ==========================================================================================
 
 // ====================================================================================================================
@@ -1419,6 +1568,15 @@ int32 CIfStatementNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 count
     size += tree_size;
 
 	return size;
+}
+
+// ====================================================================================================================
+// CompileToC(): Convert the parse tree to valid C, to compile directly to the executable. 
+// ====================================================================================================================
+bool8 CIfStatementNode::CompileToC(char*& out_buffer, int32& max_size) const
+{
+    TinPrint(TinScript::GetContext(), "CIfStatementNode::CompileToC() not implemented.");
+    return (true);
 }
 
 // == class CCondBranchNode ===========================================================================================
@@ -1499,6 +1657,15 @@ int32 CCondBranchNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 counto
 	}
 
 	return size;
+}
+
+// ====================================================================================================================
+// CompileToC(): Convert the parse tree to valid C, to compile directly to the executable. 
+// ====================================================================================================================
+bool8 CCondBranchNode::CompileToC(char*& out_buffer, int32& max_size) const
+{
+    TinPrint(TinScript::GetContext(), "CCondBranchNode::CompileToC() not implemented.");
+    return (true);
 }
 
 // == class CWhileLoopNode ============================================================================================
@@ -1657,6 +1824,15 @@ bool8 CWhileLoopNode::AddLoopJumpNode(CLoopJumpNode* jump_node)
     return (true);
 }
 
+// ====================================================================================================================
+// CompileToC(): Convert the parse tree to valid C, to compile directly to the executable. 
+// ====================================================================================================================
+bool8 CWhileLoopNode::CompileToC(char*& out_buffer, int32& max_size) const
+{
+    TinPrint(TinScript::GetContext(), "CWhileLoopNode::CompileToC() not implemented.");
+    return (true);
+}
+
 // == class CParenOpenNode ============================================================================================
 
 // ====================================================================================================================
@@ -1677,6 +1853,15 @@ int32 CParenOpenNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 counton
 	int32 size = 0;
 
 	return size;
+}
+
+// ====================================================================================================================
+// CompileToC(): Convert the parse tree to valid C, to compile directly to the executable. 
+// ====================================================================================================================
+bool8 CParenOpenNode::CompileToC(char*& out_buffer, int32& max_size) const
+{
+    TinPrint(TinScript::GetContext(), "CParenOpenNode::CompileToC() not implemented.");
+    return (true);
 }
 
 // == class CFuncDeclNode =============================================================================================
@@ -1829,6 +2014,39 @@ void CFuncDeclNode::Dump(char*& output, int32& length) const
 	length -= debuglength;
 }
 
+// ====================================================================================================================
+// CompileToC(): Convert the parse tree to valid C, to compile directly to the executable. 
+// ====================================================================================================================
+bool8 CFuncDeclNode::CompileToC(char*& out_buffer, int32& max_size) const
+{
+    // -- output the function signature
+    const char* return_type_name =
+        TinScript::GetRegisteredTypeName(functionentry->GetContext()->GetParameter(0)->GetType());
+    if (!OutputToBuffer(out_buffer, max_size, "%s %s(", return_type_name, funcname))
+        return (false);
+
+    // -- output the signature
+    for (int i = 1; i < functionentry->GetContext()->GetParameterCount(); ++i)
+    {
+        // -- add the comma separator
+        if (i > 1 && !OutputToBuffer(out_buffer, max_size, ", "))
+            return (false);
+
+        const char* arg_type_name =
+            TinScript::GetRegisteredTypeName(functionentry->GetContext()->GetParameter(i)->GetType());
+        const char* arg_name = functionentry->GetContext()->GetParameter(i)->GetName();
+        if (!OutputToBuffer(out_buffer, max_size, "%s %s", arg_type_name, arg_name))
+            return (false);
+    }
+
+    // -- close the function declaration
+    if (!OutputToBuffer(out_buffer, max_size, ")\n"))
+        return (false);
+
+    // -- success
+    return (true);
+}
+
 // == class CFuncCallNode =============================================================================================
 
 // ====================================================================================================================
@@ -1923,6 +2141,15 @@ void CFuncCallNode::Dump(char*& output, int32& length) const
 	length -= debuglength;
 }
 
+// ====================================================================================================================
+// CompileToC(): Convert the parse tree to valid C, to compile directly to the executable. 
+// ====================================================================================================================
+bool8 CFuncCallNode::CompileToC(char*& out_buffer, int32& max_size) const
+{
+    TinPrint(TinScript::GetContext(), "CFuncCallNode::CompileToC() not implemented.");
+    return (true);
+}
+
 // == class CFuncReturnNode ===========================================================================================
 
 // ====================================================================================================================
@@ -1972,6 +2199,15 @@ int32 CFuncReturnNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 counto
 	size += PushInstruction(countonly, instrptr, OP_FuncReturn, DBG_instr);
 
 	return size;
+}
+
+// ====================================================================================================================
+// CompileToC(): Convert the parse tree to valid C, to compile directly to the executable. 
+// ====================================================================================================================
+bool8 CFuncReturnNode::CompileToC(char*& out_buffer, int32& max_size) const
+{
+    TinPrint(TinScript::GetContext(), "CFuncReturnNode::CompileToC() not implemented.");
+    return (true);
 }
 
 // == class CObjMethodNode ============================================================================================
@@ -2025,6 +2261,15 @@ void CObjMethodNode::Dump(char*& output, int32& length) const
 	int32 debuglength = (int32)strlen(output);
 	output += debuglength;
 	length -= debuglength;
+}
+
+// ====================================================================================================================
+// CompileToC(): Convert the parse tree to valid C, to compile directly to the executable. 
+// ====================================================================================================================
+bool8 CObjMethodNode::CompileToC(char*& out_buffer, int32& max_size) const
+{
+    TinPrint(TinScript::GetContext(), "CObjMethodNode::CompileToC() not implemented.");
+    return (true);
 }
 
 // == class CArrayHashNode ============================================================================================
@@ -2086,6 +2331,15 @@ int32 CArrayHashNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 counton
 	size += PushInstruction(countonly, instrptr, OP_ArrayHash, DBG_instr);
 
 	return size;
+}
+
+// ====================================================================================================================
+// CompileToC(): Convert the parse tree to valid C, to compile directly to the executable. 
+// ====================================================================================================================
+bool8 CArrayHashNode::CompileToC(char*& out_buffer, int32& max_size) const
+{
+    TinPrint(TinScript::GetContext(), "CArrayHashNode::CompileToC() not implemented.");
+    return (true);
 }
 
 // == class CArrayVarNode =============================================================================================
@@ -2156,6 +2410,15 @@ int32 CArrayVarNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 countonl
 	return size;
 }
 
+// ====================================================================================================================
+// CompileToC(): Convert the parse tree to valid C, to compile directly to the executable. 
+// ====================================================================================================================
+bool8 CArrayVarNode::CompileToC(char*& out_buffer, int32& max_size) const
+{
+    TinPrint(TinScript::GetContext(), "CArrayVarNode::CompileToC() not implemented.");
+    return (true);
+}
+
 // == class CArrayVarDeclNode =========================================================================================
 
 // ====================================================================================================================
@@ -2206,6 +2469,15 @@ int32 CArrayVarDeclNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 coun
 	size += PushInstruction(countonly, instrptr, type, DBG_vartype);
 
 	return size;
+}
+
+// ====================================================================================================================
+// CompileToC(): Convert the parse tree to valid C, to compile directly to the executable. 
+// ====================================================================================================================
+bool8 CArrayVarDeclNode::CompileToC(char*& out_buffer, int32& max_size) const
+{
+    TinPrint(TinScript::GetContext(), "CArrayVarDeclNode::CompileToC() not implemented.");
+    return (true);
 }
 
 // == class CArrayDeclNode ============================================================================================
@@ -2275,6 +2547,15 @@ int32 CArrayDeclNode::Eval(uint32*& instrptr, eVarType pushresult, bool countonl
     return (size);
 }
 
+// ====================================================================================================================
+// CompileToC(): Convert the parse tree to valid C, to compile directly to the executable. 
+// ====================================================================================================================
+bool8 CArrayDeclNode::CompileToC(char*& out_buffer, int32& max_size) const
+{
+    TinPrint(TinScript::GetContext(), "CArrayDeclNode::CompileToC() not implemented.");
+    return (true);
+}
+
 // == class CArrayCountNode ===========================================================================================
 
 // ====================================================================================================================
@@ -2313,6 +2594,15 @@ int32 CArrayCountNode::Eval(uint32*& instrptr, eVarType pushresult, bool counton
 
 	// -- success
 	return (size);
+}
+
+// ====================================================================================================================
+// CompileToC(): Convert the parse tree to valid C, to compile directly to the executable. 
+// ====================================================================================================================
+bool8 CArrayCountNode::CompileToC(char*& out_buffer, int32& max_size) const
+{
+    TinPrint(TinScript::GetContext(), "CArrayCountNode::CompileToC() not implemented.");
+    return (true);
 }
 
 // == class CSelfVarDeclNode ==========================================================================================
@@ -2359,6 +2649,15 @@ void CSelfVarDeclNode::Dump(char*& output, int32& length) const
 	int32 debuglength = (int32)strlen(output);
 	output += debuglength;
 	length -= debuglength;
+}
+
+// ====================================================================================================================
+// CompileToC(): Convert the parse tree to valid C, to compile directly to the executable. 
+// ====================================================================================================================
+bool8 CSelfVarDeclNode::CompileToC(char*& out_buffer, int32& max_size) const
+{
+    TinPrint(TinScript::GetContext(), "CSelfVarDeclNode::CompileToC() not implemented.");
+    return (true);
 }
 
 // == class CObjMemberDeclNode ========================================================================================
@@ -2422,6 +2721,15 @@ void CObjMemberDeclNode::Dump(char*& output, int32& length) const
 	length -= debuglength;
 }
 
+// ====================================================================================================================
+// CompileToC(): Convert the parse tree to valid C, to compile directly to the executable. 
+// ====================================================================================================================
+bool8 CObjMemberDeclNode::CompileToC(char*& out_buffer, int32& max_size) const
+{
+    TinPrint(TinScript::GetContext(), "CObjMemberDeclNode::CompileToC() not implemented.");
+    return (true);
+}
+
 // == class CScheduleNode =============================================================================================
 
 // ====================================================================================================================
@@ -2476,7 +2784,16 @@ int32 CScheduleNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 countonl
 	return size;
 }
 
-// == class CScheduleNode =============================================================================================
+// ====================================================================================================================
+// CompileToC(): Convert the parse tree to valid C, to compile directly to the executable. 
+// ====================================================================================================================
+bool8 CScheduleNode::CompileToC(char*& out_buffer, int32& max_size) const
+{
+    TinPrint(TinScript::GetContext(), "CScheduleNode::CompileToC() not implemented.");
+    return (true);
+}
+
+// == class CSchedFuncNode ============================================================================================
 
 // ====================================================================================================================
 // Constructor
@@ -2538,6 +2855,15 @@ int32 CSchedFuncNode::Eval(uint32*& instrptr, eVarType pushresult, bool countonl
 	return size;
 }
 
+// ====================================================================================================================
+// CompileToC(): Convert the parse tree to valid C, to compile directly to the executable. 
+// ====================================================================================================================
+bool8 CSchedFuncNode::CompileToC(char*& out_buffer, int32& max_size) const
+{
+    TinPrint(TinScript::GetContext(), "CSchedFuncNode::CompileToC() not implemented.");
+    return (true);
+}
+
 // == class CSchedParamNode ===========================================================================================
 
 // ====================================================================================================================
@@ -2580,6 +2906,15 @@ int32 CSchedParamNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 counto
     return size;
 };
 
+// ====================================================================================================================
+// CompileToC(): Convert the parse tree to valid C, to compile directly to the executable. 
+// ====================================================================================================================
+bool8 CSchedParamNode::CompileToC(char*& out_buffer, int32& max_size) const
+{
+    TinPrint(TinScript::GetContext(), "CSchedParamNode::CompileToC() not implemented.");
+    return (true);
+}
+
 // == class CCreateObjectNode =========================================================================================
 
 // ====================================================================================================================
@@ -2620,6 +2955,15 @@ int32 CCreateObjectNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 coun
 	return size;
 }
 
+// ====================================================================================================================
+// CompileToC(): Convert the parse tree to valid C, to compile directly to the executable. 
+// ====================================================================================================================
+bool8 CCreateObjectNode::CompileToC(char*& out_buffer, int32& max_size) const
+{
+    TinPrint(TinScript::GetContext(), "CCreateObjectNode::CompileToC() not implemented.");
+    return (true);
+}
+
 // == class CDestroyObjectNode ========================================================================================
 
 // ====================================================================================================================
@@ -2648,6 +2992,15 @@ int32 CDestroyObjectNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 cou
 	size += PushInstruction(countonly, instrptr, OP_DestroyObject, DBG_instr);
 
 	return size;
+}
+
+// ====================================================================================================================
+// CompileToC(): Convert the parse tree to valid C, to compile directly to the executable. 
+// ====================================================================================================================
+bool8 CDestroyObjectNode::CompileToC(char*& out_buffer, int32& max_size) const
+{
+    TinPrint(TinScript::GetContext(), "CDestroyObjectNode::CompileToC() not implemented.");
+    return (true);
 }
 
 // == class CCodeBlock ================================================================================================
@@ -2771,6 +3124,20 @@ bool8 CCodeBlock::CompileTree(const CCompileTreeNode& root)
                       "Error - Unable to compile: %s\n", GetFileName());
         return (false);
     }
+
+	return true;
+}
+
+// ====================================================================================================================
+// CompileTreeToSourceC():  Recursively compile the nodes of the parse tree to 'source C'
+// ====================================================================================================================
+bool8 CCodeBlock::CompileTreeToSourceC(const CCompileTreeNode& root, char*& out_buffer, int32& max_size)
+{
+    // -- write out the instructions to populate the global variables needed
+    //CompileVarTable(smCurrentGlobalVarTable, instrptr, false);
+
+    // -- compile the tree through the 
+	root.CompileToC(out_buffer, max_size);
 
 	return true;
 }
