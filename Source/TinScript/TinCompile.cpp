@@ -462,8 +462,12 @@ bool8 CCompileTreeNode::CompileToC(int32 indent, char*& out_buffer, int32& max_s
         // -- complete the statement
         if (is_root_node)
         {
-            if (!OutputToBuffer(0, out_buffer, max_size, ";\n"))
-                return (false);
+            // -- we need a way to determine which root nodes are actually statements
+            if (rootptr->GetType() != eComment)
+            {
+                if (!OutputToBuffer(0, out_buffer, max_size, ";\n"))
+                    return (false);
+            }
         }
 
         // -- get the next rootptr in the linked list
@@ -510,6 +514,44 @@ int32 CDebugNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 countonly) 
 bool8 CDebugNode::CompileToC(int32 indent, char*& out_buffer, int32& max_size, bool root_node) const
 {
     TinPrint(TinScript::GetContext(), "CDebugNode::CompileToC() not implemented.\n");
+    return (true);
+}
+
+// == class CCommentNode ================================================================================================
+
+// ====================================================================================================================
+// Constructor
+// ====================================================================================================================
+CCommentNode::CCommentNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber, const char* _comment, int32 _length)
+    : CCompileTreeNode(_codeblock, _link, eComment, _linenumber)
+{
+	SafeStrcpy(m_comment, _comment, _length + 1);
+}
+
+// ====================================================================================================================
+// Eval():  Has no operations of its own, used to compile left, then right children.
+// ====================================================================================================================
+int32 CCommentNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 countonly) const
+{
+    DebugEvaluateNode(*this, countonly, instrptr);
+
+    // -- comment nodes preserve the comment for compileToC, and have no functionality
+    return (0);
+}
+
+// ====================================================================================================================
+// CompileToC(): Convert the parse tree to valid C, to compile directly to the executable. 
+// ====================================================================================================================
+bool8 CCommentNode::CompileToC(int32 indent, char*& out_buffer, int32& max_size, bool root_node) const
+{
+    // -- comments start on a new line
+    if (!OutputToBuffer(indent, out_buffer, max_size, "\n"))
+        return (false);
+
+    // -- output the comment (preserving the indent)
+    if (!OutputToBuffer(indent, out_buffer, max_size, "%s", m_comment))
+        return (false);
+
     return (true);
 }
 
@@ -2350,7 +2392,12 @@ bool8 CFuncReturnNode::CompileToC(int32 indent, char*& out_buffer, int32& max_si
 
     // -- if the return type is void, we're done
     if (returntype->GetType() <= TYPE_void)
+    {
+        if (!OutputToBuffer(indent, out_buffer, max_size, "return;"))
+            return (false);
+        
         return (true);
+    }
 
     // -- output the return keyword, with the contents enclosed on parenthesis
     if (!OutputToBuffer(indent, out_buffer, max_size, "return ("))

@@ -52,6 +52,7 @@ class CWhileLoopNode;
 // compile tree node types
 #define CompileNodeTypesTuple \
 	CompileNodeTypeEntry(NOP)					\
+	CompileNodeTypeEntry(Comment)				\
 	CompileNodeTypeEntry(BinaryNOP)			    \
 	CompileNodeTypeEntry(DebugNOP)			    \
 	CompileNodeTypeEntry(Value)					\
@@ -254,6 +255,24 @@ class CDebugNode : public CCompileTreeNode
 
     protected:
         CDebugNode() { }
+};
+
+// ====================================================================================================================
+// class CCommentNode:  An inoccuous node that will store a comment string for compiling to C
+// ====================================================================================================================
+class CCommentNode : public CCompileTreeNode
+{
+    public:
+        CCommentNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber,
+                     const char* _comment, int32 _length);
+
+        virtual int32 Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
+
+        virtual bool8 CompileToC(int32 indent, char*& out_buffer, int32& max_size, bool root_node) const;
+
+    protected:
+        CCommentNode() { }
+        char m_comment[kMaxTokenLength];
 };
 
 // ====================================================================================================================

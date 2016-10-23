@@ -56,6 +56,7 @@ typedef CHashTable<CFunctionEntry> tFuncTable;
 
 #define TokenTypeTuple \
 	TokenTypeEntry(NULL)			\
+	TokenTypeEntry(COMMENT)			\
 	TokenTypeEntry(STRING)			\
 	TokenTypeEntry(BINOP)			\
 	TokenTypeEntry(ASSOP)			\
@@ -268,6 +269,7 @@ const char* ParseText_CompileToC(CScriptContext* script_context, const char* fil
 bool8 SaveToSourceC(const char* script_filename, const char* source_C_filename, const char* source_C,
                     int32 source_length);
 
+bool8 TryParseComment(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link);
 bool8 TryParseVarDeclaration(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link);
 bool8 TryParseBreakContinue(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link);
 bool8 TryParseReturn(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link);

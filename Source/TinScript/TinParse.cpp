@@ -300,6 +300,91 @@ bool8 SkipWhiteSpace(tReadToken& token)
 }
 
 // ====================================================================================================================
+// GetCommentToken(): Updates the read token if the next token is a comment. 
+// ====================================================================================================================
+bool8 GetCommentToken(tReadToken& token)
+{
+    token.type = TOKEN_NULL;
+
+    const char* comment_start = token.inbufptr;
+    int32 comment_length = 0;
+    const char*& inbuf = token.inbufptr;
+    int32 linenumber = token.linenumber;
+	if (!inbuf)
+		return (false);
+
+    // -- we're going to count comments as whitespace
+    bool8 first_whitespace = true;
+    bool8 found_comment = false;
+    bool8 loop_comment = false;
+    do
+    {
+        // -- reset the flag at the start of the loop - we handle multiple comments
+        loop_comment = false;
+
+        // -- first skip actual whitespace
+	    while (*inbuf == ' ' || *inbuf == '\t' || *inbuf == '\r' || *inbuf == '\n')
+        {
+		    if (*inbuf == '\n')
+			    ++linenumber;
+		    ++inbuf;
+
+            // -- if we haven't yet found a comment, update the comment_start
+            if (!found_comment)
+                ++comment_start;
+	    }
+
+        // -- next comes block comments
+	    if (inbuf[0] == '/' && inbuf[1] == '*')
+        {
+            found_comment = true;
+            loop_comment = true;
+            inbuf += 2;
+		    while (inbuf[0] != '\0' && inbuf[1] != '\0')
+            {
+                if (inbuf[0] == '*' && inbuf[1] == '/')
+                {
+                    inbuf += 2;
+                    comment_length += 2;
+                    break;
+                }
+
+                if (inbuf[0] == '\n')
+                    ++linenumber;
+                ++inbuf;
+                ++comment_length;
+            }
+	    }
+
+	    // -- skip line comments
+	    if (inbuf[0] == '/' && inbuf[1] == '/')
+        {
+            found_comment = true;
+            loop_comment = true;
+            inbuf += 2;
+            comment_length += 2;
+		    while (*inbuf != '\0' && *inbuf != '\n')
+            {
+			    ++inbuf;
+                ++comment_length;
+            }
+	    }
+    } while (loop_comment);
+
+    // -- if we found a comment, update the token
+    if (found_comment)
+    {
+        token.tokenptr = comment_start;
+        //token.length = kPointerDiffUInt32(inbuf, comment_start);
+        token.length = comment_length + 1;
+        token.type = TOKEN_COMMENT;        
+    }
+
+    // -- success
+	return (true);
+}
+
+// ====================================================================================================================
 // IsIdentifierChar():  Returns true, if the character can be part of an identifier.
 // ====================================================================================================================
 bool8 IsIdentifierChar(const char c, bool8 allownumerics)
@@ -939,6 +1024,28 @@ CCompileTreeNode* FindChildNode(CCompileTreeNode& root, ECompileNodeType node_ty
 // -- Functions to parse more complicated expressions
 
 // ====================================================================================================================
+// TryParseComment():  Parse a comment (block), used for CompileToC()
+// ====================================================================================================================
+bool8 TryParseComment(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link)
+{
+    tReadToken firsttoken(filebuf);
+    if (!GetCommentToken(firsttoken))
+        return (false);
+
+    // -- if we actually found a comment, return true
+    if (firsttoken.type == TOKEN_COMMENT)
+    {
+        TinAlloc(ALLOC_TreeNode, CCommentNode, codeblock, link, filebuf.linenumber,
+                 firsttoken.tokenptr, firsttoken.length);
+        filebuf = firsttoken;
+        return (true);
+    }
+
+    // -- no comment found
+    return (false);
+}
+
+// ====================================================================================================================
 // TryParseVarDeclaration():  Parse a variable declaration, global, local, member, array, ...
 // ====================================================================================================================
 bool8 TryParseVarDeclaration(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link)
@@ -1461,6 +1568,17 @@ bool8 TryParseStatement(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTree
 	// -- an expression followed by a binary operator, followed by an expression
 
 	tReadToken firsttoken(filebuf);
+
+    // -- if this is a root statement, see if we can preserve the comment
+    if (is_root_statement)
+    {
+        if (TryParseComment(codeblock, firsttoken, link))
+        {
+            filebuf = firsttoken;
+            return (true);
+        }
+    }
+
 	if (!GetToken(firsttoken))
 		return (false);
 
@@ -4192,6 +4310,15 @@ bool8 ParseStatementBlock(CCodeBlock* codeblock, CCompileTreeNode*& link, tReadT
 	// build the compile tree
 	bool8 foundtoken = true;
 	do {
+        // -- preserve comments at the start of the statement block
+        tReadToken comment_token(filetokenbuf);
+        if (TryParseComment(codeblock, comment_token, curroot->next))
+        {
+            filetokenbuf = comment_token;
+            curroot = curroot->next;
+            continue;
+        }
+
         // -- a small optimization, skip whitespace and comments at the start of the loop
         if (!SkipWhiteSpace(filetokenbuf))
         {
@@ -4242,6 +4369,7 @@ bool8 ParseStatementBlock(CCodeBlock* codeblock, CCompileTreeNode*& link, tReadT
 
 		// -- parsing node priority
 		bool8 found = false;
+		found = found || TryParseComment(codeblock, filetokenbuf, curroot->next);
 		found = found || TryParseVarDeclaration(codeblock, filetokenbuf, curroot->next);
         found = found || TryParseFuncDefinition(codeblock, filetokenbuf, curroot->next);
 		found = found || TryParseStatement(codeblock, filetokenbuf, curroot->next, true);
