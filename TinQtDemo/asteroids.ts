@@ -135,6 +135,8 @@ object SpawnAsteroid()
     
     // -- random 
     ApplyImpulse(new_asteroid, impulse);
+
+    return (new_asteroid);
 }
 
 void ApplyImpulse(object obj, vector3f impulse)
@@ -377,6 +379,8 @@ object SpawnBullet(vector3f position, vector3f direction)
     // -- add the bullet to the game's bullet set
     if (IsObject(gCurrentGame))
         gCurrentGame.bullet_set.AddObject(bullet);
+
+    return (bullet);
 }
 
 // ====================================================================================================================

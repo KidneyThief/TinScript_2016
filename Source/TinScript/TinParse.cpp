@@ -76,6 +76,11 @@ static const char* gBinOperatorString[] =
 	#undef BinaryOperatorEntry
 };
 
+const char* GetBinOperatorString(eBinaryOpType bin_op)
+{
+	return gBinOperatorString[bin_op];
+}
+
 eBinaryOpType GetBinaryOpType(const char* token, int32 length)
 {
 	for (eBinaryOpType i = BINOP_NULL; i < BINOP_COUNT; i = (eBinaryOpType)(i + 1))
@@ -731,6 +736,9 @@ bool8 DumpFile(const char* filename)
 // ====================================================================================================================
 void DumpTree(const CCompileTreeNode* root, int32 indent, bool8 isleft, bool8 isright)
 {
+    // -- if this is the start of a tree (with an indent of 0), write out a label
+    if (indent == 0)
+        printf("\n*** DUMP TREE:\n");
 
 	while (root)
     {
@@ -904,6 +912,27 @@ void DumpFuncTable(CScriptContext* script_context, const tFuncTable* functable)
     // -- print out the function names
     for (int i = 0; i < function_count; ++i)
         TinPrint(script_context, "    %s()\n", UnHash(function_list[i]->GetHash()));
+}
+// ====================================================================================================================
+// AppendToRoot():  Parse tree nodes have left/right children, but they also form a linked list at the root level.
+// ====================================================================================================================
+CCompileTreeNode*& AppendToRoot(CCompileTreeNode& root)
+{
+	CCompileTreeNode* curroot = &root;
+	while (curroot && curroot->next)
+		curroot = curroot->next;
+	return curroot->next;
+}
+
+// ====================================================================================================================
+// AppendToRoot():  Parse tree nodes have left/right children, but they also form a linked list at the root level.
+// ====================================================================================================================
+CCompileTreeNode* FindChildNode(CCompileTreeNode& root, ECompileNodeType node_type)
+{
+	CCompileTreeNode* curroot = &root;
+	while (curroot && curroot->GetType() != node_type)
+		curroot = curroot->next;
+	return (curroot);
 }
 
 // ====================================================================================================================
@@ -3337,17 +3366,34 @@ bool8 TryParseFuncDefinition(CCodeBlock* codeblock, tReadToken& filebuf, CCompil
         return (false);
     }
 
-    // -- we're going to force every script function to have a return value, to ensure
-    // -- we can consistently pop the stack after every function call regardless of return type
-    // -- this node will never be hit, if a "real" return statement was found
-    CFuncReturnNode* funcreturnnode = TinAlloc(ALLOC_TreeNode, CFuncReturnNode, codeblock,
-                                               AppendToRoot(*funcdeclnode->leftchild),
-                                               filebuf.linenumber);
+    // $$$TZA ideally, we'd like to validate every path to ensure if a return() is required,
+    // -- all paths return a value - however, for now, just ensure there's at least *one* return
+    // -- node in the body of the function definition
+    if (regreturntype > TYPE_void)
+    {
+        if (!FindChildNode(*funcdeclnode->leftchild, ECompileNodeType::eFuncReturn))
+        {
+            ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
+                            filebuf.linenumber,
+                            "Error - function requires a return statement\n");
+            return (false);
+        }
+    }
 
-    CValueNode* nullreturn = TinAlloc(ALLOC_TreeNode, CValueNode, codeblock,
-                                      funcreturnnode->leftchild, filebuf.linenumber, "", 0, false,
-                                      TYPE_int);
-    Unused_(nullreturn);
+    else
+    {
+        // -- we're going to force every script function to have a return value, to ensure
+        // -- we can consistently pop the stack after every function call regardless of return type
+        // -- this node will never be hit, if a "real" return statement was found
+        CFuncReturnNode* funcreturnnode = TinAlloc(ALLOC_TreeNode, CFuncReturnNode, codeblock,
+                                                   AppendToRoot(*funcdeclnode->leftchild),
+                                                   filebuf.linenumber);
+
+        CValueNode* nullreturn = TinAlloc(ALLOC_TreeNode, CValueNode, codeblock,
+                                          funcreturnnode->leftchild, filebuf.linenumber, "", 0, false,
+                                          TYPE_int);
+        Unused_(nullreturn);
+    }
 
     // -- clear the active function definition
     CObjectEntry* dummy = NULL;
@@ -4126,17 +4172,6 @@ bool8 TryParseDestroyObject(CCodeBlock* codeblock, tReadToken& filebuf, CCompile
 }
 
 // ====================================================================================================================
-// AppendToRoot():  Parse tree nodes have left/right children, but they also form a linked list at the root level.
-// ====================================================================================================================
-CCompileTreeNode*& AppendToRoot(CCompileTreeNode& root)
-{
-	CCompileTreeNode* curroot = &root;
-	while (curroot && curroot->next)
-		curroot = curroot->next;
-	return curroot->next;
-}
-
-// ====================================================================================================================
 // ParseStatementBlocK():  Parse a sequence of (any type of) statements, delineated by {}'s.
 // ====================================================================================================================
 bool8 ParseStatementBlock(CCodeBlock* codeblock, CCompileTreeNode*& link, tReadToken& filebuf,
@@ -4649,11 +4684,17 @@ const char* ParseText_CompileToC(CScriptContext* script_context, const char* fil
     if (!codeblock->CompileTreeToSourceC(*root, compile_ptr, max_size))
     {
 		ScriptAssert_(script_context, 0, codeblock->GetFileName(), -1,
-                      "Error - failed to compile tree for file: %s", codeblock->GetFileName());
+                      "Error - failed to compile tree for file: %s\n", codeblock->GetFileName());
         // -- failed
         codeblock->SetFinishedParsing();
         DestroyTree(root);
         return (NULL);
+    }
+
+    	// dump the tree
+    if (gDebugParseTree)
+    {
+	    DumpTree(root, 0, false, false);
     }
 
     // -- finish parsing and destroy the tree
