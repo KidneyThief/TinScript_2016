@@ -799,6 +799,13 @@ bool8 CValueNode::CompileToC(int32 indent, char*& out_buffer, int32& max_size, b
     {
         if (!OutputToBuffer(indent, out_buffer, max_size, value))
             return (false);
+
+        // -- if there's a post unary op, output it
+        if (m_unaryDelta != 0)
+        {
+            if (!OutputToBuffer(0, out_buffer, max_size, "%s", m_unaryDelta > 0 ? "++" : "--"))
+                return (false);
+        }
     }
 
     //-- otherwise, it's a value - conveniently, the value is already stored as a string
@@ -814,8 +821,16 @@ bool8 CValueNode::CompileToC(int32 indent, char*& out_buffer, int32& max_size, b
         {
             if (!OutputToBuffer(indent, out_buffer, max_size, value))
                 return (false);
+
+            // -- if there's a post unary op, output it
+            if (m_unaryDelta != 0)
+            {
+                if (!OutputToBuffer(0, out_buffer, max_size, "%s", m_unaryDelta > 0 ? "++" : "--"))
+                    return (false);
+            }
         }
     }
+
 
     return (true);
 }
@@ -1255,6 +1270,7 @@ CUnaryOpNode::CUnaryOpNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int
     : CCompileTreeNode(_codeblock, _link, eUnaryOp, _linenumber)
 {
 	unaryopcode = GetUnaryOpInstructionType(_unaryoptype);
+    m_unaryOpType = _unaryoptype;
 }
 
 // ====================================================================================================================
@@ -1295,7 +1311,15 @@ int32 CUnaryOpNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 countonly
 // ====================================================================================================================
 bool8 CUnaryOpNode::CompileToC(int32 indent, char*& out_buffer, int32& max_size, bool root_node) const
 {
-    TinPrint(TinScript::GetContext(), "CUnaryOpNode::CompileToC() not implemented.\n");
+    // -- output the unary operator string
+    const char* unary_op_name = GetUnaryOperatorString(m_unaryOpType);
+    if (!OutputToBuffer(root_node ? indent : 0, out_buffer, max_size, unary_op_name))
+        return (false);
+
+    // -- compile the left child
+    if (!leftchild->CompileToC(0, out_buffer, max_size, false))
+        return (false);
+
     return (true);
 }
 

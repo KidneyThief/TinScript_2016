@@ -376,6 +376,7 @@ class CUnaryOpNode : public CCompileTreeNode
 	protected:
 		CUnaryOpNode() { }
         eOpCode unaryopcode;
+        eUnaryOpType m_unaryOpType;
 };
 
 // ====================================================================================================================

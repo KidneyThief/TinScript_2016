@@ -313,6 +313,7 @@ CFunctionEntry* FuncDeclaration(CScriptContext* script_context, CNamespace* nsen
 // -- debugging methods
 const char* GetAssOperatorString(eAssignOpType assop);
 const char* GetBinOperatorString(eBinaryOpType bin_op);
+const char* GetUnaryOperatorString(eUnaryOpType unary_op);
 
 bool8 DumpFile(const char* filename);
 
