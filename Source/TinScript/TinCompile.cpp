@@ -2207,6 +2207,45 @@ bool8 CFuncDeclNode::CompileToC(int32 indent, char*& out_buffer, int32& max_size
         if (!OutputToBuffer(indent, out_buffer, max_size, "\n{\n"))
             return (false);
 
+        // -- declare all local variables
+        bool first_local_var = true;
+        CVariableEntry* local_var = functionentry->GetLocalVarTable()->First();
+        while (local_var != nullptr)
+        {
+            const char* arg_type_name = TinScript::GetRegisteredTypeName(local_var->GetType());
+            const char* arg_name = local_var->GetName();
+            if (!local_var->IsParameter())
+            {
+                // -- output the comment
+                if (first_local_var)
+                {
+                    // -- set the flag and output the comment
+                    first_local_var = false;
+                    if (!OutputToBuffer(1, out_buffer, max_size, "// -- local vars -- //\n"))
+                        return (false);
+                }
+
+                // -- output the local var declaration
+                if (!OutputToBuffer(1, out_buffer, max_size, "%s %s;\n", arg_type_name, arg_name))
+                    return (false);
+            }
+
+            // -- next local var
+            local_var = functionentry->GetLocalVarTable()->Next();
+        }
+        
+        // -- if we output any local vars, add a space
+        if (!first_local_var)
+        {
+            if (!OutputToBuffer(0, out_buffer, max_size, "\n"))
+                return (false);
+        }
+
+        // -- output the comment
+        if (!OutputToBuffer(1, out_buffer, max_size, "// -- function implementation -- //\n"))
+            return (false);
+
+        // -- output the function body instructions
         if (!leftchild->CompileToC(indent + 1, out_buffer, max_size, true))
             return (false);
 
