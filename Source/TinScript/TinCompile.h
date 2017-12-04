@@ -208,6 +208,7 @@ class CCompileTreeNode
 		virtual int32 Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
 		virtual void Dump(char*& output, int32& length) const;
 
+        bool8 OutputIndentToBuffer(int32 indent, char*& out_buffer, int32& max_size) const;
         bool8 OutputToBuffer(int32 indent, char*& out_buffer, int32& max_size, const char* format, ...) const;
         virtual bool8 CompileToC(int32 indent, char*& out_buffer, int32& max_size, bool8 root_node = false) const;
 

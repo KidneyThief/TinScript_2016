@@ -391,6 +391,32 @@ void CCompileTreeNode::Dump(char*& output, int32& length) const
 }
 
 // ====================================================================================================================
+// OutputIndentToBuffer():  Write out spaces to align the output to a given indent level
+// ====================================================================================================================
+bool8 CCompileTreeNode::OutputIndentToBuffer(int32 indent, char*& out_buffer, int32& max_size) const
+{
+    // -- write the indent
+    const char* indent_buffer = "    ";
+    if (indent * (int)strlen(indent_buffer) > max_size)
+    {
+        ScriptAssert_(TinScript::GetContext(), 0, codeblock->GetFileName(), linenumber,
+                      "Error - CompileToC - max buffer size reached.\n");
+        return (false);
+    }
+
+    // -- prepend the indent
+    for (int i = 0; i < indent; ++i)
+    {
+        strcpy_s(out_buffer, max_size, "    ");
+        out_buffer += strlen(indent_buffer);
+        max_size -= strlen(indent_buffer);
+    }
+
+    // -- success
+    return (true);
+}
+
+// ====================================================================================================================
 // OutputToBuffer():  Write out the 'source C' for the node instruction.
 // ====================================================================================================================
 bool8 CCompileTreeNode::OutputToBuffer(int32 indent, char*& out_buffer, int32& max_size, const char* format, ...) const
@@ -406,33 +432,54 @@ bool8 CCompileTreeNode::OutputToBuffer(int32 indent, char*& out_buffer, int32& m
     va_end(args);
     
     // -- write the indent
-    const char* indent_buffer = "    ";
-    if (indent * (int)strlen(indent_buffer) > max_size)
-    {
-        ScriptAssert_(TinScript::GetContext(), 0, codeblock->GetFileName(), linenumber,
-                      "Error - CompileToC - max buffer size reached.\n");
-    }
-
-    // -- prepend the indent
-    for (int i = 0; i < indent; ++i)
-    {
-        strcpy_s(out_buffer, max_size, "    ");
-        out_buffer += strlen(indent_buffer);
-        max_size -= strlen(indent_buffer);
-    }
-
-    // -- now append the actual text
-    int32 length = strlen(temp);
-    if (length > max_size)
-    {
-        ScriptAssert_(TinScript::GetContext(), 0, codeblock->GetFileName(), linenumber,
-                      "Error - CompileToC - max buffer size reached.\n");
+    if (!OutputIndentToBuffer(indent, out_buffer, max_size))
         return (false);
-    }
 
-    strcpy_s(out_buffer, max_size, temp);
-    out_buffer += length;
-    max_size -= length;
+    // -- now append the actual text, indenting after every newline
+    const char* out_ptr = temp;
+    const char* new_line = strchr(temp, '\n');
+    do
+    {
+        int32 length = new_line != nullptr ? kPointerDiffUInt32(new_line, out_ptr)
+                                           : strlen(out_ptr);
+        if (length > max_size)
+        {
+            ScriptAssert_(TinScript::GetContext(), 0, codeblock->GetFileName(), linenumber,
+                          "Error - CompileToC - max buffer size reached.\n");
+            return (false);
+        }
+
+        // -- copy to the out_buffer
+        if (length > 0)
+        {
+            strncpy_s(out_buffer, max_size, out_ptr, length);
+            out_buffer += length;
+            max_size -= length;
+        }
+        
+        // -- see if there's a new_line
+        if (new_line != nullptr)
+        {
+            if (max_size == 0)
+            {
+                ScriptAssert_(TinScript::GetContext(), 0, codeblock->GetFileName(), linenumber,
+                              "Error - CompileToC - max buffer size reached.\n");
+                return (false);
+            }
+
+            // -- output the newline
+            *out_buffer++ = '\n';
+            --max_size;
+
+            // -- update the out_ptr
+            out_ptr = new_line + 1;
+            new_line = strchr(out_ptr, '\n');
+
+            // -- indent, only if we're not at the end of the string
+            if (*out_ptr != '\0' && !OutputIndentToBuffer(indent, out_buffer, max_size))
+                return (false);
+        }
+    } while (new_line != nullptr);
 
     // -- success
     return (true);
@@ -1749,7 +1796,68 @@ int32 CIfStatementNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 count
 // ====================================================================================================================
 bool8 CIfStatementNode::CompileToC(int32 indent, char*& out_buffer, int32& max_size, bool root_node) const
 {
-    TinPrint(TinScript::GetContext(), "CIfStatementNode::CompileToC() not implemented.\n");
+	// -- ensure we have a left child
+	if (!leftchild)
+    {
+		printf("Error - CIfStatementNode with no left child\n");
+		return (false);
+	}
+
+	// -- ensure we have a right child
+	if (!rightchild || rightchild->GetType() != eCondBranch || rightchild->leftchild == nullptr)
+    {
+		printf("Error - CIfStatementNode with invald right child\n");
+		return (false);
+	}
+
+    // -- output the 'if' statement
+    if (!OutputToBuffer(indent, out_buffer, max_size, "if ("))
+        return (false);
+
+    // -- output the condition
+    if (!leftchild->CompileToC(0, out_buffer, max_size, false))
+        return (false);
+
+    // -- close the condition
+    if (!OutputToBuffer(0, out_buffer, max_size, ")\n"))
+        return (false);
+
+    // -- open the statement block
+    if (!OutputToBuffer(indent, out_buffer, max_size, "{\n"))
+        return (false);
+
+    // -- Compile to C, the statement block
+    if (!rightchild->leftchild->CompileToC(indent + 1, out_buffer, max_size, true))
+        return (false);
+
+    // -- close the statement block
+    if (!OutputToBuffer(indent, out_buffer, max_size, "\n}\n"))
+        return (false);
+
+    // -- see if there's an else statment block
+    if (rightchild->rightchild != nullptr)
+    {
+        // -- output the else and the statment block open
+        if (!OutputToBuffer(indent, out_buffer, max_size, "else\n"))
+            return (false);
+
+        if (!OutputToBuffer(indent, out_buffer, max_size, "{\n"))
+            return (false);
+
+        // -- Compile the else statement block
+        if (!rightchild->rightchild->CompileToC(indent + 1, out_buffer, max_size, true))
+            return (false);
+
+        // -- close the else statement block
+        if (!OutputToBuffer(indent, out_buffer, max_size, "\n}\n"))
+            return (false);
+    }
+
+    // -- add a newline after an if statement
+    if (!OutputToBuffer(indent, out_buffer, max_size, "\n"))
+        return (false);
+
+    // success
     return (true);
 }
 
