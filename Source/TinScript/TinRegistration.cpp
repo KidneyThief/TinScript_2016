@@ -782,6 +782,36 @@ void CFunctionContext::InitStackVarOffsets(CFunctionEntry* fe)
 	}
 }
 
+// ====================================================================================================================
+// CalcHash():  Calculate the hash based on the parameter types, to support overloading 
+// ====================================================================================================================
+uint32 CFunctionContext::CalcHash()
+{
+    // -- the strategy here is, each paremeter causes the current hash to be multiplied
+    // -- by 3x the number of valid types...  then we add the current type, multiplied by 2 if
+    // -- it's an array...  there should be no numerical collisions based on this
+    const uint32 next_hash_multiplier = 3 * (uint32)LAST_VALID_TYPE;
+    uint32 param_hash = 0;
+
+    // -- note:  we don't inclue the return value
+    int param_count = GetParameterCount();
+    for (int i = 1; i < param_count; ++i)
+    {
+        // -- get the type for the parameter
+        CVariableEntry* param = GetParameter(i);
+        eVarType param_type = param->GetType();
+
+        // -- first multiply the current hash by the number of parameter types, times 2
+        param_hash *= next_hash_multiplier;
+
+        // -- now add the current type
+        param_hash += (uint32)param_type;
+    }
+
+    // -- return the result
+    return param_hash;
+}
+
 // == class CFunctionEntry ============================================================================================
 
 // ====================================================================================================================

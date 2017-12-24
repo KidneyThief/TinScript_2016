@@ -85,6 +85,50 @@ class CFunctionContext
 
         enum { eMaxParameterCount = 16, eMaxLocalVarCount = 37 };
 
+        // -- for overloading, we want to hash the signature
+        uint32 CalcHash();
+
+        // -- use a variadic template to calculate the hash of a variable signature
+        template <typename... T>
+        struct SignatureHash;
+
+        template <>
+        struct SignatureHash <>
+        {
+            static uint32 calculate(uint32 cur_hash)
+            {
+                return cur_hash;
+            }
+        };
+
+        template <typename H, typename... T>
+        struct SignatureHash <H, T...>
+        {
+            static uint32 calculate(uint32 cur_hash)
+            {
+                // -- the strategy here is, each paremeter causes the current hash to be multiplied
+                // -- by 3x the number of valid types...  then we add the current type, multiplied by 2 if
+                // -- it's an array...  there should be no numerical collisions based on this
+                const uint32 next_hash_multiplier = 3 * (uint32)LAST_VALID_TYPE;
+
+                // -- first bump the current hash to the next multiplied value
+                cur_hash *= next_hash_multiplier;
+
+                // -- now add to the hash, the value of the "head", plus
+                // -- the calculated value of the tail
+                eVarType type = GetRegisteredType(GetTypeID<H>());
+                uint32 hash = (uint32)type;
+
+                return SignatureHash<T...>::calculate(cur_hash + hash);
+            }
+        };
+
+        template <typename... T>
+        static uint32 CalcSignatureHash()
+        {
+            return SignatureHash<T...>::calculate(0);
+        }
+
     private:
         CScriptContext* mContextOwner;
         tVarTable* localvartable;

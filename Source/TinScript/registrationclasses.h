@@ -351,6 +351,10 @@ public:
         uint32 hash = fe->GetHash();
         tFuncTable* methodtable = script_context->FindNamespace(classname_hash)->GetFuncTable();
         methodtable->AddItem(*fe, hash);
+
+        // $$$TZA Overload
+        printf("### DEBUG reg: %s, has: 0x%x\n", GetName(), GetContext()->CalcHash());
+        printf("### DEBUG verify: 0x%x\n", CFunctionContext::CalcSignatureHash<T1>());
     }
 
 private:
