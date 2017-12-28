@@ -193,7 +193,7 @@ const int32 kThreadExecBufferSize = 32 * 1024;
 // ====================================================================================================================
 // -- debugger constants
 const int32 k_DebuggerCurrentWorkingDirPacketID     = 0x01;
-const int32 k_DebuggerCodeblockLoadedPacketID       = 0x02;
+const int32 k_DebuggerCodeBlockLoadedPacketID       = 0x02;
 const int32 k_DebuggerBreakpointHitPacketID         = 0x03;
 const int32 k_DebuggerBreakpointConfirmPacketID     = 0x04;
 const int32 k_DebuggerVarWatchConfirmPacketID       = 0x05;
@@ -497,7 +497,7 @@ class CScriptContext
 
         // -- communication with the debugger
         void DebuggerCurrentWorkingDir(const char* cwd);
-        void DebuggerCodeblockLoaded(uint32 codeblock_hash);
+        void DebuggerCodeBlockLoaded(uint32 codeblock_hash);
         void DebuggerBreakpointHit(int32 watch_var_request_id, uint32 codeblock_hash, int32 line_number);
         void DebuggerBreakpointConfirm(uint32 codeblock_hash, int32 line_number, int32 actual_line_number);
         void DebuggerVarWatchConfirm(int32 request_id, uint32 watch_object_id, uint32 var_name_hash);

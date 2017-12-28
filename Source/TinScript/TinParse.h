@@ -305,9 +305,9 @@ CVariableEntry* GetObjectMember(CScriptContext* script_context, CObjectEntry*& o
                                 uint32 func_or_obj, uint32 var_hash, uint32 array_hash);
 
 CFunctionEntry* FuncDeclaration(CScriptContext* script_context, uint32 namespacehash,
-                                const char* funcname, uint32 funchash, EFunctionType type);
+                                const char* funcname, uint32 funchash, eFunctionType type);
 CFunctionEntry* FuncDeclaration(CScriptContext* script_context, CNamespace* nsentry,
-                                const char* funcname, uint32 funchash, EFunctionType type);
+                                const char* funcname, uint32 funchash, eFunctionType type);
 
 // ====================================================================================================================
 // -- debugging methods

@@ -818,35 +818,34 @@ uint32 CFunctionContext::CalcHash()
 // Constructor
 // ====================================================================================================================
 CFunctionEntry::CFunctionEntry(CScriptContext* script_context, uint32 _nshash, const char* _name, uint32 _hash,
-                               EFunctionType _type, void* _addr)
-    : mContext(script_context)
+                               eFunctionType _type, void* _addr)
 {
     mContextOwner = script_context;
 	SafeStrcpy(mName, _name, kMaxNameLength);
-	mType = _type;
 	mHash = _hash;
     mNamespaceHash = _nshash;
-	mAddr = _addr;
-    mCodeblock = NULL;
-    mInstrOffset = 0;
-    mRegObject = NULL;
+
+    // -- initially we have one overload, with an unspecified signature (not yet known)
+    CFunctionOverload* new_overload = TinAlloc(ALLOC_FuncOverload, CFunctionOverload, 0xffffffff, _type, _addr,
+                                                                                      nullptr);
+    mOverloadTable.AddItem(*new_overload, 0xffffffff);
 }
 
 // ====================================================================================================================
 // Constructor
 // ====================================================================================================================
 CFunctionEntry::CFunctionEntry(CScriptContext* script_context, uint32 _nshash, const char* _name, uint32 _hash,
-                               EFunctionType _type, CRegFunctionBase* _func)
-    : mContext(script_context)
+                               eFunctionType _type, CRegFunctionBase* _func)
 {
     mContextOwner = script_context;
 	SafeStrcpy(mName, _name, kMaxNameLength);
-	mType = _type;
 	mHash = _hash;
     mNamespaceHash = _nshash;
-    mCodeblock = NULL;
-	mInstrOffset = 0;
-    mRegObject = _func;
+
+    // -- initially we have one overload, with an unspecified signature (not yet known)
+    CFunctionOverload* new_overload = TinAlloc(ALLOC_FuncOverload, CFunctionOverload, 0xffffffff, _type, nullptr,
+                                                                                      _func);
+    mOverloadTable.AddItem(*new_overload, 0xffffffff);
 }
 
 // ====================================================================================================================
@@ -854,84 +853,105 @@ CFunctionEntry::CFunctionEntry(CScriptContext* script_context, uint32 _nshash, c
 // ====================================================================================================================
 CFunctionEntry::~CFunctionEntry()
 {
+    // $$$TZA overload - will the overload table already have removed its entries from codeblocks?
     // -- notify the codeblock that this entry no longer exists
-    if (mCodeblock)
+    /*
+    if (mCodeBlock)
     {
 #if TIN_DEBUGGER
         // -- if we're currently broken in the debugger, on this function, we need to exit the VM cleanly
         if (GetScriptContext()->mDebuggerBreakFuncCallStack)
             GetScriptContext()->mDebuggerBreakFuncCallStack->DebuggerNotifyFunctionDeleted(0, this);
 #endif
-        mCodeblock->RemoveFunction(this);
+        mCodeBlock->RemoveFunction(this);
     }
+*/
 }
 
 // ====================================================================================================================
 // GetAddr():  Return the address of a registered (non scripted) function.
 // ====================================================================================================================
-void* CFunctionEntry::GetAddr() const
+void* CFunctionEntry::GetAddr(uint32 signature_hash) const
 {
-    assert(mType != eFuncTypeScript);
-	return mAddr;
+    // $$$TZA overload - support failure
+    // -- find the overload
+    CFunctionOverload* overload = findOverload(signature_hash);
+    assert(overload != nullptr);
+
+    assert(overload->GetType() != eFunctionType::Script);
+	return (overload->GetAddr());
 }
 
 // ====================================================================================================================
 // SetCodeBlockOffset():  Set the offset where the byte code begins for a scripted function.
 // ====================================================================================================================
-void CFunctionEntry::SetCodeBlockOffset(CCodeBlock* _codeblock, uint32 _offset)
+void CFunctionEntry::SetCodeBlockOffset(uint32 signature_hash, CCodeBlock* _codeblock, uint32 _offset)
 {
-    // -- if we're switching codeblocks (recompiling...) change owners
-    if (mCodeblock && mCodeblock != _codeblock)
-        mCodeblock->RemoveFunction(this);
+    CFunctionOverload* overload = findOverload(signature_hash);
+    assert(overload != nullptr);
 
-    mCodeblock = _codeblock;
-    mInstrOffset = _offset;
-    if (mCodeblock)
-        mCodeblock->AddFunction(this);
+    // -- if we're switching codeblocks (recompiling...) change owners
+    // $$$TZA overload
+    //if (mCodeBlock && mCodeBlock != _codeblock)
+    //    mCodeBlock->RemoveFunction(this);
+    overload->SetCodeBlockOffset(_codeblock, _offset);
+    //if (mCodeBlock)
+    //    mCodeBlock->AddFunction(this);
 }
 
 // ====================================================================================================================
 // GetCodeBlockOffset():  Get the offset from within a codeblock for the start of the byte code.
 // ====================================================================================================================
-uint32 CFunctionEntry::GetCodeBlockOffset(CCodeBlock*& _codeblock) const
+int32 CFunctionEntry::GetCodeBlockOffset(uint32 signature_hash, CCodeBlock*& _codeblock) const
 {
-    assert(mType == eFuncTypeScript);
-    _codeblock = mCodeblock;
-    return mInstrOffset;
+    CFunctionOverload* overload = findOverload(signature_hash);
+    assert(overload != nullptr);
+    return (overload->GetCodeBlockOffset(_codeblock));
 }
 
 // ====================================================================================================================
 // GetContext():  Return the function context.
 // ====================================================================================================================
-CFunctionContext* CFunctionEntry::GetContext()
+CFunctionContext* CFunctionEntry::GetContext(uint32 signature_hash)
 {
-    return &mContext;
+    CFunctionOverload* overload = findOverload(signature_hash);
+    assert(overload != nullptr);
+    return (overload->GetContext());
 }
 
 // ====================================================================================================================
 // GetReturnType():  Get the value type returned by the function.
 // ====================================================================================================================
-eVarType CFunctionEntry::GetReturnType()
+eVarType CFunctionEntry::GetReturnType(uint32 signature_hash)
 {
+    CFunctionOverload* overload = findOverload(signature_hash);
+    assert(overload != nullptr);
+    CFunctionContext* context = overload->GetContext();
+
     // -- return value is always the first var entry in the array
-    assert(mContext.GetParameterCount() > 0);
-    return (mContext.GetParameter(0)->GetType());
+    assert(context->GetParameterCount() > 0);
+    return (context->GetParameter(0)->GetType());
 }
 
 // ====================================================================================================================
 // GetLocalVarTable():  Get the variable table for all local variables and parameters for the function.
 // ====================================================================================================================
-tVarTable* CFunctionEntry::GetLocalVarTable()
+tVarTable* CFunctionEntry::GetLocalVarTable(uint32 signature_hash)
 {
-    return mContext.GetLocalVarTable();
+    CFunctionOverload* overload = findOverload(signature_hash);
+    assert(overload != nullptr);
+    CFunctionContext* context = overload->GetContext();
+    return context->GetLocalVarTable();
 }
 
 // ====================================================================================================================
 // GetRegObject():  Get the registration 
 // ====================================================================================================================
-CRegFunctionBase* CFunctionEntry::GetRegObject()
+CRegFunctionBase* CFunctionEntry::GetRegObject(uint32 signature_hash)
 {
-    return mRegObject;
+    CFunctionOverload* overload = findOverload(signature_hash);
+    assert(overload != nullptr);
+    return (overload->GetRegObject());
 }
 
 }  // TinScript

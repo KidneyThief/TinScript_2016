@@ -2243,7 +2243,7 @@ int32 CFuncDeclNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 countonl
         uint32 offset = codeblock->CalcOffset(instrptr);
 
         // -- note, there's a possibility we're stomping a registered code function here
-        if (fe->GetType() != eFuncTypeScript)
+        if (fe->GetType() != eFunctionType::Script)
         {
             ScriptAssert_(codeblock->GetScriptContext(), false, codeblock->GetFileName(), linenumber,
                           "Error - there is already a code dregistered function %s()\n"

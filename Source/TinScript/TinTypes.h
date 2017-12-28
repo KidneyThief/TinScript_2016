@@ -415,16 +415,17 @@ const char* DebugPrintVar(void* addr, eVarType vartype);
 // ====================================================================================================================
 // -- three types of registered functions: script, global, and method
 #define FunctionTypeTuple \
-	FunctionTypeEntry(NULL)		    	\
+	FunctionTypeEntry(None)		    	\
 	FunctionTypeEntry(Script)			\
 	FunctionTypeEntry(Global)			\
 	FunctionTypeEntry(Method)			\
 
-enum EFunctionType {
-	#define FunctionTypeEntry(a) eFuncType##a,
+enum class eFunctionType
+{
+	#define FunctionTypeEntry(a) a,
 	FunctionTypeTuple
 	#undef FunctionTypeEntry
-	eFuncTypeCount
+	Count
 };
 
 // ====================================================================================================================

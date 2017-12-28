@@ -2156,7 +2156,7 @@ bool8 OpExecFuncDecl(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExecS
     uint32 parent_ns_hash = *instrptr++;
     uint32 funcoffset = *instrptr++;
     CFunctionEntry* fe = FuncDeclaration(cb->GetScriptContext(), namespacehash, UnHash(funchash),
-                                         funchash, eFuncTypeScript);
+                                         funchash, eFunctionType::Script);
     if (!fe)
     {
         ScriptAssert_(cb->GetScriptContext(), 0, cb->GetFileName(), cb->CalcLineNumber(instrptr),
@@ -2244,7 +2244,7 @@ bool8 OpExecFuncCallArgs(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CE
     DebugTrace(op, "%s", UnHash(fe->GetHash()));
 
     // -- create space on the execstack, if this is a script function
-    if (fe->GetType() != eFuncTypeGlobal)
+    if (fe->GetType() != eFunctionType::Global)
     {
         int32 localvarcount = fe->GetContext()->CalculateLocalVarStackSize();
         execstack.Reserve(localvarcount * MAX_TYPE_SIZE);
@@ -2352,7 +2352,7 @@ bool8 OpExecMethodCallArgs(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, 
     funccallstack.Push(fe, oe, execstack.GetStackTop());
 
     // -- create space on the execstack, if this is a script function
-    if (fe->GetType() != eFuncTypeGlobal)
+    if (fe->GetType() != eFunctionType::Global)
     {
         int32 localvarcount = fe->GetContext()->CalculateLocalVarStackSize();
         execstack.Reserve(localvarcount * MAX_TYPE_SIZE);

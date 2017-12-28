@@ -3213,7 +3213,7 @@ bool8 TryParseFuncDefinition(CCodeBlock* codeblock, tReadToken& filebuf, CCompil
     if (! exists)
     {
 	    curfunction = FuncDeclaration(codeblock->GetScriptContext(), nshash, TokenPrint(idtoken),
-                                      Hash(TokenPrint(idtoken)), eFuncTypeScript);
+                                      Hash(TokenPrint(idtoken)), eFunctionType::Script);
         codeblock->smFuncDefinitionStack->Push(curfunction, NULL, 0);
     }
 
@@ -5140,7 +5140,7 @@ CVariableEntry* GetVariable(CScriptContext* script_context, tVarTable* globalVar
 // FuncDeclaration():  Add a function entry to a given namespace.
 // ====================================================================================================================
 CFunctionEntry* FuncDeclaration(CScriptContext* script_context, uint32 namespacehash,
-                                const char* funcname, uint32 funchash, EFunctionType type)
+                                const char* funcname, uint32 funchash, eFunctionType type)
 {
     const char* ns_string = NULL;
     CNamespace* nsentry = script_context->FindNamespace(namespacehash);
@@ -5178,7 +5178,7 @@ CFunctionEntry* FuncDeclaration(CScriptContext* script_context, uint32 namespace
 // FuncDeclaration():  Add a function entry to a given namespace.
 // ====================================================================================================================
 CFunctionEntry* FuncDeclaration(CScriptContext* script_context, CNamespace* nsentry,
-                                const char* funcname, uint32 funchash, EFunctionType type)
+                                const char* funcname, uint32 funchash, eFunctionType type)
 {
     // -- no namespace means by definition this is a global function
     if (!nsentry)

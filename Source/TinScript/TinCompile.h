@@ -1011,7 +1011,7 @@ class CCodeBlock
                 mFunctionList->AddItem(*_func, _func->GetHash());
 
             // $$$TZA Overload
-            printf("### DEBUG: 0x%x\n", _func->GetContext()->CalcHash());
+            //printf("### DEBUG: 0x%x\n", _func->GetContext()->CalcHash());
         }
 
         void RemoveFunction(CFunctionEntry* _func)

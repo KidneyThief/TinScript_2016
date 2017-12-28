@@ -109,7 +109,7 @@ public:
     virtual void Register(CScriptContext* script_context)
     {
 
-        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
+        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
         GetContext()->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());
@@ -161,7 +161,7 @@ public:
     virtual void Register(CScriptContext* script_context)
     {
 
-        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
+        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
         GetContext()->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0);
@@ -219,7 +219,7 @@ public:
 
 
         uint32 classname_hash = Hash(C::_GetClassName());
-        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
+        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
         GetContext()->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());
@@ -273,7 +273,7 @@ public:
 
 
         uint32 classname_hash = Hash(C::_GetClassName());
-        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
+        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
         GetContext()->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0);
@@ -340,7 +340,7 @@ public:
     {
         using T1 = std::tuple_element<0, argument_types>::type;
 
-        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
+        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
         GetContext()->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());
@@ -399,7 +399,7 @@ public:
     {
         using T1 = std::tuple_element<0, argument_types>::type;
 
-        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
+        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
         GetContext()->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0);
@@ -464,7 +464,7 @@ public:
 
 
         uint32 classname_hash = Hash(C::_GetClassName());
-        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
+        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
         GetContext()->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());
@@ -525,7 +525,7 @@ public:
 
 
         uint32 classname_hash = Hash(C::_GetClassName());
-        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
+        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
         GetContext()->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0);
@@ -600,7 +600,7 @@ public:
         using T1 = std::tuple_element<0, argument_types>::type;
         using T2 = std::tuple_element<1, argument_types>::type;
 
-        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
+        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
         GetContext()->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());
@@ -667,7 +667,7 @@ public:
         using T1 = std::tuple_element<0, argument_types>::type;
         using T2 = std::tuple_element<1, argument_types>::type;
 
-        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
+        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
         GetContext()->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0);
@@ -739,7 +739,7 @@ public:
 
 
         uint32 classname_hash = Hash(C::_GetClassName());
-        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
+        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
         GetContext()->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());
@@ -807,7 +807,7 @@ public:
 
 
         uint32 classname_hash = Hash(C::_GetClassName());
-        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
+        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
         GetContext()->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0);
@@ -890,7 +890,7 @@ public:
         using T2 = std::tuple_element<1, argument_types>::type;
         using T3 = std::tuple_element<2, argument_types>::type;
 
-        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
+        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
         GetContext()->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());
@@ -965,7 +965,7 @@ public:
         using T2 = std::tuple_element<1, argument_types>::type;
         using T3 = std::tuple_element<2, argument_types>::type;
 
-        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
+        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
         GetContext()->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0);
@@ -1044,7 +1044,7 @@ public:
 
 
         uint32 classname_hash = Hash(C::_GetClassName());
-        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
+        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
         GetContext()->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());
@@ -1119,7 +1119,7 @@ public:
 
 
         uint32 classname_hash = Hash(C::_GetClassName());
-        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
+        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
         GetContext()->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0);
@@ -1210,7 +1210,7 @@ public:
         using T3 = std::tuple_element<2, argument_types>::type;
         using T4 = std::tuple_element<3, argument_types>::type;
 
-        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
+        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
         GetContext()->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());
@@ -1293,7 +1293,7 @@ public:
         using T3 = std::tuple_element<2, argument_types>::type;
         using T4 = std::tuple_element<3, argument_types>::type;
 
-        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
+        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
         GetContext()->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0);
@@ -1379,7 +1379,7 @@ public:
 
 
         uint32 classname_hash = Hash(C::_GetClassName());
-        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
+        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
         GetContext()->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());
@@ -1461,7 +1461,7 @@ public:
 
 
         uint32 classname_hash = Hash(C::_GetClassName());
-        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
+        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
         GetContext()->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0);
@@ -1560,7 +1560,7 @@ public:
         using T4 = std::tuple_element<3, argument_types>::type;
         using T5 = std::tuple_element<4, argument_types>::type;
 
-        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
+        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
         GetContext()->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());
@@ -1651,7 +1651,7 @@ public:
         using T4 = std::tuple_element<3, argument_types>::type;
         using T5 = std::tuple_element<4, argument_types>::type;
 
-        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
+        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
         GetContext()->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0);
@@ -1744,7 +1744,7 @@ public:
 
 
         uint32 classname_hash = Hash(C::_GetClassName());
-        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
+        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
         GetContext()->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());
@@ -1833,7 +1833,7 @@ public:
 
 
         uint32 classname_hash = Hash(C::_GetClassName());
-        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
+        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
         GetContext()->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0);
@@ -1940,7 +1940,7 @@ public:
         using T5 = std::tuple_element<4, argument_types>::type;
         using T6 = std::tuple_element<5, argument_types>::type;
 
-        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
+        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
         GetContext()->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());
@@ -2039,7 +2039,7 @@ public:
         using T5 = std::tuple_element<4, argument_types>::type;
         using T6 = std::tuple_element<5, argument_types>::type;
 
-        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
+        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
         GetContext()->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0);
@@ -2139,7 +2139,7 @@ public:
 
 
         uint32 classname_hash = Hash(C::_GetClassName());
-        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
+        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
         GetContext()->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());
@@ -2235,7 +2235,7 @@ public:
 
 
         uint32 classname_hash = Hash(C::_GetClassName());
-        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
+        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
         GetContext()->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0);
@@ -2350,7 +2350,7 @@ public:
         using T6 = std::tuple_element<5, argument_types>::type;
         using T7 = std::tuple_element<6, argument_types>::type;
 
-        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
+        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
         GetContext()->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());
@@ -2457,7 +2457,7 @@ public:
         using T6 = std::tuple_element<5, argument_types>::type;
         using T7 = std::tuple_element<6, argument_types>::type;
 
-        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
+        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
         GetContext()->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0);
@@ -2564,7 +2564,7 @@ public:
 
 
         uint32 classname_hash = Hash(C::_GetClassName());
-        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
+        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
         GetContext()->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());
@@ -2667,7 +2667,7 @@ public:
 
 
         uint32 classname_hash = Hash(C::_GetClassName());
-        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
+        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
         GetContext()->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0);
@@ -2790,7 +2790,7 @@ public:
         using T7 = std::tuple_element<6, argument_types>::type;
         using T8 = std::tuple_element<7, argument_types>::type;
 
-        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
+        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
         GetContext()->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());
@@ -2905,7 +2905,7 @@ public:
         using T7 = std::tuple_element<6, argument_types>::type;
         using T8 = std::tuple_element<7, argument_types>::type;
 
-        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
+        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
         GetContext()->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0);
@@ -3019,7 +3019,7 @@ public:
 
 
         uint32 classname_hash = Hash(C::_GetClassName());
-        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
+        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
         GetContext()->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());
@@ -3129,7 +3129,7 @@ public:
 
 
         uint32 classname_hash = Hash(C::_GetClassName());
-        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
+        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
         GetContext()->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0);
@@ -3260,7 +3260,7 @@ public:
         using T8 = std::tuple_element<7, argument_types>::type;
         using T9 = std::tuple_element<8, argument_types>::type;
 
-        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
+        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
         GetContext()->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());
@@ -3383,7 +3383,7 @@ public:
         using T8 = std::tuple_element<7, argument_types>::type;
         using T9 = std::tuple_element<8, argument_types>::type;
 
-        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
+        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
         GetContext()->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0);
@@ -3504,7 +3504,7 @@ public:
 
 
         uint32 classname_hash = Hash(C::_GetClassName());
-        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
+        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
         GetContext()->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());
@@ -3621,7 +3621,7 @@ public:
 
 
         uint32 classname_hash = Hash(C::_GetClassName());
-        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
+        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
         GetContext()->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0);
@@ -3760,7 +3760,7 @@ public:
         using T9 = std::tuple_element<8, argument_types>::type;
         using T10 = std::tuple_element<9, argument_types>::type;
 
-        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
+        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
         GetContext()->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());
@@ -3891,7 +3891,7 @@ public:
         using T9 = std::tuple_element<8, argument_types>::type;
         using T10 = std::tuple_element<9, argument_types>::type;
 
-        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
+        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
         GetContext()->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0);
@@ -4019,7 +4019,7 @@ public:
 
 
         uint32 classname_hash = Hash(C::_GetClassName());
-        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
+        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
         GetContext()->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());
@@ -4143,7 +4143,7 @@ public:
 
 
         uint32 classname_hash = Hash(C::_GetClassName());
-        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
+        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
         GetContext()->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0);
@@ -4290,7 +4290,7 @@ public:
         using T10 = std::tuple_element<9, argument_types>::type;
         using T11 = std::tuple_element<10, argument_types>::type;
 
-        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
+        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
         GetContext()->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());
@@ -4429,7 +4429,7 @@ public:
         using T10 = std::tuple_element<9, argument_types>::type;
         using T11 = std::tuple_element<10, argument_types>::type;
 
-        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
+        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
         GetContext()->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0);
@@ -4564,7 +4564,7 @@ public:
 
 
         uint32 classname_hash = Hash(C::_GetClassName());
-        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
+        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
         GetContext()->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());
@@ -4695,7 +4695,7 @@ public:
 
 
         uint32 classname_hash = Hash(C::_GetClassName());
-        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
+        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
         GetContext()->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0);
@@ -4850,7 +4850,7 @@ public:
         using T11 = std::tuple_element<10, argument_types>::type;
         using T12 = std::tuple_element<11, argument_types>::type;
 
-        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
+        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
         GetContext()->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());
@@ -4997,7 +4997,7 @@ public:
         using T11 = std::tuple_element<10, argument_types>::type;
         using T12 = std::tuple_element<11, argument_types>::type;
 
-        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
+        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
         GetContext()->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0);
@@ -5139,7 +5139,7 @@ public:
 
 
         uint32 classname_hash = Hash(C::_GetClassName());
-        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
+        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
         GetContext()->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());
@@ -5277,7 +5277,7 @@ public:
 
 
         uint32 classname_hash = Hash(C::_GetClassName());
-        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
+        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
         GetContext()->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0);

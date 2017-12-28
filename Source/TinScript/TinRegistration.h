@@ -63,7 +63,7 @@ typedef CHashTable<CFunctionEntry> tFuncTable;
 class CFunctionContext
 {
     public:
-        CFunctionContext(CScriptContext* script_context);
+        CFunctionContext(CScriptContext* script_context = nullptr);
         virtual ~CFunctionContext();
 
         CScriptContext* GetScriptContext() { return mContextOwner; }
@@ -185,15 +185,22 @@ class CFunctionEntry
 {
 	public:
 		CFunctionEntry(CScriptContext* script_context, uint32 _nshash, const char* _name,
-                       uint32 _hash, EFunctionType _type, void* _addr);
+                       uint32 _hash, eFunctionType _type, void* _addr);
 		CFunctionEntry(CScriptContext* script_context, uint32 _nshash, const char* _name,
-                       uint32 _hash, EFunctionType _type, CRegFunctionBase* _func);
+                       uint32 _hash, eFunctionType _type, CRegFunctionBase* _func);
 		virtual ~CFunctionEntry();
 
         CScriptContext* GetScriptContext() { return (mContextOwner); }
 
 		const char* GetName() const { return (mName); }
-		EFunctionType GetType() const { return (mType); }
+
+        // $$$TZA overload
+		eFunctionType GetType(uint32 signature_hash) const
+        {
+            const CFunctionOverload* overload = findOverload(signature_hash);
+            assert(overload != nullptr);
+            return (overload->GetType());
+        }
 
 		uint32 GetNamespaceHash() const
         {
@@ -204,33 +211,98 @@ class CFunctionEntry
 		}
 
 		uint32 GetHash() const { return (mHash); }
-		void* GetAddr() const;
 
-        void SetCodeBlockOffset(CCodeBlock* _codeblock, uint32 _offset);
-        uint32 GetCodeBlockOffset(CCodeBlock*& _codeblock) const;
-        CFunctionContext* GetContext();
+        // -- to support function overloads, we now use a hashed signature to differentiate
+        // -- the different implementations, still supporting mixing script with registered code
+        class CFunctionOverload
+        {
+            public:
+                CFunctionOverload(uint32 _signature_hash = 0xffffffff, eFunctionType _type = eFunctionType::None,
+                                  void* _addr = nullptr, CRegFunctionBase* reg_object = nullptr)
+                {
+                    // -- set the signature hash - initially this will be "unassigned", until the
+                    // -- signature has actually been parsed
+                    mSignatureHash = _signature_hash;
 
-        CCodeBlock* GetCodeBlock() const { return (mCodeblock); }
+                    // -- the type is either Script, or if it's registered code, Global or Method
+                    mType = _type;
 
-        eVarType GetReturnType();
-        tVarTable* GetLocalVarTable();
-        CRegFunctionBase* GetRegObject();
+                    // -- either the overload is a code function (with and address), or the codeblock
+                    // -- and instruction offset will be set once the script is compiled
+                    assert(_addr == nullptr || reg_object == nullptr);
+	                mAddr = _addr;
+                    mRegObject = reg_object;
+
+                    mCodeBlock = NULL;
+                    mInstrOffset = 0;
+                }
+
+                ~CFunctionOverload();
+
+                // -- accessors
+                CFunctionContext* GetContext() { return (&mContext); }
+                eFunctionType GetType() const { return (mType); }
+                void* GetAddr() const { return (mAddr); }
+                CCodeBlock* GetCodeBlock() const { return mCodeBlock; }
+                int32 GetCodeBlockOffset(CCodeBlock*& _codeblock) const
+                {
+                    _codeblock = mCodeBlock;
+                    return (mInstrOffset); 
+                }
+                CRegFunctionBase* GetRegObject() const { return (mRegObject); }
+
+                void SetCodeBlockOffset(CCodeBlock* _codeblock, uint32 _offset)
+                {
+                    assert(_codeblock != nullptr);
+                    mCodeBlock = _codeblock;
+                    mInstrOffset = _offset;
+                }
+
+            private:
+                uint32 mSignatureHash;
+
+		        eFunctionType mType;
+                void* mAddr;
+		        uint32 mInstrOffset;
+                CCodeBlock* mCodeBlock;
+                CFunctionContext mContext;
+                CRegFunctionBase* mRegObject;
+        };
+
+        CFunctionOverload* findOverload(uint32 signature_hash) const
+        {
+            // -- if there are no overloads, then...  invalid function entry
+            assert(mOverloadTable.Used() > 0);
+            if (mOverloadTable.Used() == 0)
+            {
+                return mOverloadTable.First();
+            }
+            else
+            {
+                CFunctionOverload* found = mOverloadTable.FindItem(signature_hash);
+                return (found);
+            }
+        }
+
+		void* GetAddr(uint32 signature_hash) const;
+
+        void SetCodeBlockOffset(uint32 signature_hash, CCodeBlock* _codeblock, uint32 _offset);
+        int32 GetCodeBlockOffset(uint32 signature_hash, CCodeBlock*& _codeblock) const;
+        CFunctionContext* GetContext(uint32 signature_hash);
+
+        eVarType GetReturnType(uint32 signature_hash);
+        tVarTable* GetLocalVarTable(uint32 signature_hash);
+        CRegFunctionBase* GetRegObject(uint32 signature_hash);
 
 	private:
         CScriptContext* mContextOwner;
 
 		char mName[kMaxNameLength];
 		uint32 mHash;
-		EFunctionType mType;
         uint32 mNamespaceHash;
 
-        void* mAddr;
-		uint32 mInstrOffset;
-        CCodeBlock* mCodeblock;
-
-        CFunctionContext mContext;
-
-        CRegFunctionBase* mRegObject;
+        // -- store the hash dictionary of overloads
+        CHashTable<CFunctionOverload> mOverloadTable;
 };
 
 // ====================================================================================================================

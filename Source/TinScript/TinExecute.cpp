@@ -464,7 +464,7 @@ void CFunctionCallStack::BeginExecution(const uint32* instrptr)
     // -- the top entry on the function stack is what we're about to call...
     // -- the m_stacktop - 2, therefore, is the calling function (if it exists)...
     // -- tag it with the offset into the codeblock, for a debugger callstack
-    if (m_stacktop >= 2 && m_functionEntryStack[m_stacktop - 2].funcentry->GetType() == eFuncTypeScript)
+    if (m_stacktop >= 2 && m_functionEntryStack[m_stacktop - 2].funcentry->GetType() == eFunctionType::Script)
     {
         CCodeBlock* callingfunc_cb = NULL;
         m_functionEntryStack[m_stacktop - 2].funcentry->GetCodeBlockOffset(callingfunc_cb);
@@ -495,7 +495,7 @@ bool8 CodeBlockCallFunction(CFunctionEntry* fe, CObjectEntry* oe, CExecStack& ex
     // -- for registered 'C' functions, or to the execstack for scripted functions
 
     // -- scripted function
-    if (fe->GetType() == eFuncTypeScript)
+    if (fe->GetType() == eFunctionType::Script)
     {
         // -- for scheduled function calls, the stack parameters are still stored in the context
         // -- for regular function calls, GetStackVarAddr() will already have used the stack
@@ -527,7 +527,7 @@ bool8 CodeBlockCallFunction(CFunctionEntry* fe, CObjectEntry* oe, CExecStack& ex
     }
 
     // -- registered 'C' function
-    else if (fe->GetType() == eFuncTypeGlobal)
+    else if (fe->GetType() == eFunctionType::Global)
     {
         fe->GetRegObject()->DispatchFunction(oe ? oe->GetAddr() : NULL);
 
@@ -670,7 +670,7 @@ bool8 ExecuteScheduledFunction(CScriptContext* script_context, uint32 objectid, 
     funccallstack.Push(fe, oe, 0);
     
     // -- create space on the execstack, if this is a script function
-    if (fe->GetType() != eFuncTypeGlobal)
+    if (fe->GetType() != eFunctionType::Global)
     {
         int32 localvarcount = fe->GetContext()->CalculateLocalVarStackSize();
         execstack.Reserve(localvarcount * MAX_TYPE_SIZE);

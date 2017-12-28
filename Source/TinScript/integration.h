@@ -101,6 +101,7 @@ typedef float               float32;
     AllocTypeEntry(Namespace)       \
     AllocTypeEntry(SchedCmd)        \
     AllocTypeEntry(FuncCallEntry)   \
+    AllocTypeEntry(FuncOverload)    \
     AllocTypeEntry(CreateObj)       \
     AllocTypeEntry(StringTable)     \
     AllocTypeEntry(ObjectGroup)     \
