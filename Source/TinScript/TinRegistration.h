@@ -45,10 +45,12 @@ namespace TinScript
 
 class CVariableEntry;
 class CFunctionEntry;
+class CFunctionOverload;
 class CCodeBlock;
 
 typedef CHashTable<CVariableEntry> tVarTable;
 typedef CHashTable<CFunctionEntry> tFuncTable;
+typedef CHashTable<CFunctionOverload> tOverloadTable;
 
 // ====================================================================================================================
 // registration macros
@@ -185,22 +187,15 @@ class CFunctionEntry
 {
 	public:
 		CFunctionEntry(CScriptContext* script_context, uint32 _nshash, const char* _name,
-                       uint32 _hash, eFunctionType _type, void* _addr);
+                       uint32 _hash, eFunctionType _type, void* _addr, uint32 sig_hash = kFunctionSignatureUndefined);
 		CFunctionEntry(CScriptContext* script_context, uint32 _nshash, const char* _name,
-                       uint32 _hash, eFunctionType _type, CRegFunctionBase* _func);
+                       uint32 _hash, eFunctionType _type, CRegFunctionBase* _func,
+                       uint32 sig_hash = kFunctionSignatureUndefined);
 		virtual ~CFunctionEntry();
 
         CScriptContext* GetScriptContext() { return (mContextOwner); }
 
 		const char* GetName() const { return (mName); }
-
-        // $$$TZA overload
-		eFunctionType GetType(uint32 signature_hash) const
-        {
-            const CFunctionOverload* overload = findOverload(signature_hash);
-            assert(overload != nullptr);
-            return (overload->GetType());
-        }
 
 		uint32 GetNamespaceHash() const
         {
@@ -212,68 +207,19 @@ class CFunctionEntry
 
 		uint32 GetHash() const { return (mHash); }
 
-        // -- to support function overloads, we now use a hashed signature to differentiate
-        // -- the different implementations, still supporting mixing script with registered code
-        class CFunctionOverload
-        {
-            public:
-                CFunctionOverload(uint32 _signature_hash = 0xffffffff, eFunctionType _type = eFunctionType::None,
-                                  void* _addr = nullptr, CRegFunctionBase* reg_object = nullptr)
-                {
-                    // -- set the signature hash - initially this will be "unassigned", until the
-                    // -- signature has actually been parsed
-                    mSignatureHash = _signature_hash;
+        void SetActiveOverload(uint32 sig_hash) { mDefineOverload = sig_hash; }
+        uint32 GetActiveOverload() const { return (mDefineOverload); }
 
-                    // -- the type is either Script, or if it's registered code, Global or Method
-                    mType = _type;
+        bool8 NoOverloads() const { return (mOverloadTable.Used() == 1); }
 
-                    // -- either the overload is a code function (with and address), or the codeblock
-                    // -- and instruction offset will be set once the script is compiled
-                    assert(_addr == nullptr || reg_object == nullptr);
-	                mAddr = _addr;
-                    mRegObject = reg_object;
-
-                    mCodeBlock = NULL;
-                    mInstrOffset = 0;
-                }
-
-                ~CFunctionOverload();
-
-                // -- accessors
-                CFunctionContext* GetContext() { return (&mContext); }
-                eFunctionType GetType() const { return (mType); }
-                void* GetAddr() const { return (mAddr); }
-                CCodeBlock* GetCodeBlock() const { return mCodeBlock; }
-                int32 GetCodeBlockOffset(CCodeBlock*& _codeblock) const
-                {
-                    _codeblock = mCodeBlock;
-                    return (mInstrOffset); 
-                }
-                CRegFunctionBase* GetRegObject() const { return (mRegObject); }
-
-                void SetCodeBlockOffset(CCodeBlock* _codeblock, uint32 _offset)
-                {
-                    assert(_codeblock != nullptr);
-                    mCodeBlock = _codeblock;
-                    mInstrOffset = _offset;
-                }
-
-            private:
-                uint32 mSignatureHash;
-
-		        eFunctionType mType;
-                void* mAddr;
-		        uint32 mInstrOffset;
-                CCodeBlock* mCodeBlock;
-                CFunctionContext mContext;
-                CRegFunctionBase* mRegObject;
-        };
-
-        CFunctionOverload* findOverload(uint32 signature_hash) const
+        CFunctionOverload* FindOverload(uint32 signature_hash) const
         {
             // -- if there are no overloads, then...  invalid function entry
             assert(mOverloadTable.Used() > 0);
-            if (mOverloadTable.Used() == 0)
+
+            // -- if there's only one entry, and we're not looking for the undefined overload
+            // -- return it - as all arguments will be coerced as needed
+            if (mOverloadTable.Used() == 1 && signature_hash != kFunctionSignatureUndefined)
             {
                 return mOverloadTable.First();
             }
@@ -284,6 +230,18 @@ class CFunctionEntry
             }
         }
 
+        // -- if there's an existing overload with the same signature, this replaces it
+        void AddOverload(CFunctionOverload* _overload);
+
+        // -- additional bool to remove the owning function entry, if there are no other overloads
+        void RemoveOverload(CFunctionOverload* _overload, bool remove_function);
+
+        // -- the overload signature might not match *exactly*, so given a CFunctionContext*, see
+        // -- if we can find a signel overload that matches without ambiguity
+        uint32 FindMatchingSignature(CFunctionContext* caller) const;
+
+        // accessors that return the details of a specific overload
+		eFunctionType GetType(uint32 signature_hash) const;
 		void* GetAddr(uint32 signature_hash) const;
 
         void SetCodeBlockOffset(uint32 signature_hash, CCodeBlock* _codeblock, uint32 _offset);
@@ -303,6 +261,54 @@ class CFunctionEntry
 
         // -- store the hash dictionary of overloads
         CHashTable<CFunctionOverload> mOverloadTable;
+
+        // -- track which overload is currently being defined
+        uint32 mDefineOverload;
+};
+
+// ====================================================================================================================
+// class CFunctionOverload:  Stores the implementations for a registered function with different signatures
+// ====================================================================================================================
+class CFunctionOverload
+{
+    public:
+        CFunctionOverload(CFunctionEntry* fe = nullptr, uint32 _signature_hash = kFunctionSignatureUndefined,
+                            eFunctionType _type = eFunctionType::None, void* _addr = nullptr,
+                            CRegFunctionBase* reg_object = nullptr);
+        ~CFunctionOverload();
+
+        // -- an overload belongs to the same script context as its owner
+        CScriptContext* GetScriptContext() { return (mFunctionEntry->GetScriptContext()); }
+
+        // -- the overload is declared befor the signature has been parsed
+        bool8 FinalizeSignature();
+
+        // -- accessors
+        CFunctionContext* GetContext() { return (&mContext); }
+        uint32 GetHash() const { return (mSignatureHash); }
+        eFunctionType GetType() const { return (mType); }
+        CFunctionEntry* GetFunctionEntry() { return (mFunctionEntry); }
+        void* GetAddr() const { return (mAddr); }
+        CCodeBlock* GetCodeBlock() const { return mCodeBlock; }
+        int32 GetCodeBlockOffset(CCodeBlock*& _codeblock) const
+        {
+            _codeblock = mCodeBlock;
+            return (mInstrOffset); 
+        }
+        CRegFunctionBase* GetRegObject() const { return (mRegObject); }
+
+        void SetCodeBlockOffset(CCodeBlock* _codeblock, uint32 _offset);
+
+    private:
+        uint32 mSignatureHash;
+        CFunctionEntry* mFunctionEntry;
+
+		eFunctionType mType;
+        void* mAddr;
+		uint32 mInstrOffset;
+        CCodeBlock* mCodeBlock;
+        CFunctionContext mContext;
+        CRegFunctionBase* mRegObject;
 };
 
 // ====================================================================================================================

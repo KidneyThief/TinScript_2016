@@ -362,7 +362,8 @@ bool8 GetStackValue(CScriptContext* script_context, CExecStack& execstack,
             return (false);
 
         // -- would be better to have random access to a hash table
-        tVarTable* var_table = fe->GetContext()->GetLocalVarTable();
+        // $$$TZA overload - getting a stack variable - the signature should be known
+        tVarTable* var_table = fe->GetContext(0)->GetLocalVarTable();
         ve = var_table->FindItemByIndex(local_var_index);
 
         // -- if we're pulling a stack var of type_hashtable, then the hash table isn't a "value" that can be
@@ -383,11 +384,13 @@ bool8 GetStackValue(CScriptContext* script_context, CExecStack& execstack,
 		    {
 			    int32 stacktop = 0;
 			    CObjectEntry* oe = NULL;
+                // $$$TZA overload - GetExecuting should return the signature as well!
 			    CFunctionEntry* fe = funccallstack.GetExecuting(oe, stacktop);
-			    if (fe && fe->GetLocalVarTable())
+			    if (fe && fe->GetLocalVarTable(0))
 			    {
 				    // -- find the variable with the matching stackvaroffset
-				    tVarTable* vartable = fe->GetLocalVarTable();
+                    // $$$TZA
+				    tVarTable* vartable = fe->GetLocalVarTable(0);
 				    CVariableEntry* test_ve = vartable->First();
 				    while (test_ve)
 				    {
@@ -406,7 +409,8 @@ bool8 GetStackValue(CScriptContext* script_context, CExecStack& execstack,
         else
         {
             // -- ensure the offset is within range of the local variable stack space
-            if (stackvaroffset >= fe->GetContext()->CalculateLocalVarStackSize())
+            // $$$TZA overload - the stack var for the executing function - check the signature
+            if (stackvaroffset >= fe->GetContext(0)->CalculateLocalVarStackSize())
                 return (false);
 
             // -- ensure the variable we found *is* a hash table
@@ -880,7 +884,8 @@ bool8 OpExecParamDecl(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExec
     CFunctionEntry* fe = funccallstack.GetTop(oe, stacktop);
     assert(fe != NULL);
 
-    fe->GetContext()->AddParameter(UnHash(varhash), varhash, vartype, array_size, 0);
+    // -- get the overload we're currently defining
+    fe->GetContext(fe->GetActiveOverload())->AddParameter(UnHash(varhash), varhash, vartype, array_size, 0);
     DebugTrace(op, "Var: %s", UnHash(varhash));
     return (true);
 }
@@ -2154,9 +2159,10 @@ bool8 OpExecFuncDecl(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExecS
     uint32 funchash = *instrptr++;
     uint32 namespacehash = *instrptr++;
     uint32 parent_ns_hash = *instrptr++;
+    uint32 sig_hash = *instrptr++;
     uint32 funcoffset = *instrptr++;
     CFunctionEntry* fe = FuncDeclaration(cb->GetScriptContext(), namespacehash, UnHash(funchash),
-                                         funchash, eFunctionType::Script);
+                                         funchash, sig_hash, eFunctionType::Script);
     if (!fe)
     {
         ScriptAssert_(cb->GetScriptContext(), 0, cb->GetFileName(), cb->CalcLineNumber(instrptr),
@@ -2178,9 +2184,15 @@ bool8 OpExecFuncDecl(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExecS
         }
     }
 
+    // -- add the overload to the function entry
+    CFunctionOverload* new_overload = TinAlloc(ALLOC_FuncOverload, CFunctionOverload, fe, sig_hash,
+                                                                                      eFunctionType::Script, nullptr);
+    fe->AddOverload(new_overload);
+
+
     // -- this being a script function, set the offset, and add this function
     // -- to the list of functions this codeblock implements
-    fe->SetCodeBlockOffset(cb, funcoffset);
+    fe->SetCodeBlockOffset(sig_hash, cb, funcoffset);
 
     // -- push the function entry onto the call stack, so all var declarations
     // -- will be associated with this function
@@ -2199,7 +2211,14 @@ bool8 OpExecFuncDeclEnd(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CEx
     CObjectEntry* oe = NULL;
     int32 var_offset = 0;
     CFunctionEntry* fe = funccallstack.Pop(oe, var_offset);
-    fe->GetContext()->InitStackVarOffsets(fe);
+
+    // -- get the overload that we're currently defining
+    CFunctionOverload* current_overload = fe->FindOverload(fe->GetActiveOverload());
+    assert(current_overload != nullptr);
+    current_overload->FinalizeSignature();
+    current_overload->GetContext()->InitStackVarOffsets(fe);
+
+
     DebugTrace(op, "%s", UnHash(fe->GetHash()));
     return (true);
 }
@@ -2235,19 +2254,45 @@ bool8 OpExecFuncCallArgs(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CE
     }
 
     // -- push the function entry onto the call stack
-    // -- we're also going to zero out all parameters - by default, calling
-    // -- a function without passing a parameter value is the same as that
-    // -- passing 0
-    fe->GetContext()->ClearParameters();
-
-    funccallstack.Push(fe, NULL, execstack.GetStackTop());
+    // -- to support overloads, we fill in the prepareContext with the arguments pulled
+    // -- from the stack, then just before actually calling the function, we determine
+    // -- first which overload to execute, and then to clear and copy the parameters
+    CFunctionContext* prepare_context = funccallstack.Push(fe, NULL, execstack.GetStackTop());
     DebugTrace(op, "%s", UnHash(fe->GetHash()));
 
-    // -- create space on the execstack, if this is a script function
-    if (fe->GetType() != eFunctionType::Global)
+    // $$$TZA overload - calling a function - match the signature!
+    // $$$TZA overload - this stuff must be moved to when the signature is known
+    /*
+    fe->GetContext(0)->ClearParameters();
+    if (fe->GetType(0) != eFunctionType::Global)
     {
-        int32 localvarcount = fe->GetContext()->CalculateLocalVarStackSize();
+        int32 localvarcount = fe->GetContext(0)->CalculateLocalVarStackSize();
         execstack.Reserve(localvarcount * MAX_TYPE_SIZE);
+    }
+    */
+
+    // -- if we have overloads, we'll need to ensure add the "return value" parameter to
+    // -- the preparation context
+    if (!fe->NoOverloads())
+    {
+        // $$$TZA overload - we don't know what's going to be assigned, so... array size, var type,
+        // -- need to peek at the what's about to be assigned???
+        if (!prepare_context->AddParameter("__return", Hash("__return"), TYPE__var, 1, 0, 0))
+        {
+            assert(0);
+            return (false);
+        }
+    }
+
+    // -- create space on the stack for local (non-parameter) variables
+    else
+    {
+        fe->GetContext(0)->ClearParameters();
+        if (fe->GetType(0) != eFunctionType::Global)
+        {
+            int32 localvarcount = fe->GetContext(0)->CalculateLocalVarStackSize();
+            execstack.Reserve(localvarcount * MAX_TYPE_SIZE);
+        }
     }
 
     return (true);
@@ -2273,17 +2318,42 @@ bool8 OpExecPushParam(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExec
         return false;
     }
 
-    uint32 paramcount = fe->GetContext()->GetParameterCount();
-    if (paramindex >= paramcount)
+    // -- if there are no overloads, we can check here to ensure we're with the param count
+    if (fe->NoOverloads())
     {
-        DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
-                        "Error - too many parameters calling function: %s\n",
-                        UnHash(fe->GetHash()));
-        return false;
+        uint32 paramcount = fe->GetContext(0)->GetParameterCount();
+        if (paramindex >= paramcount)
+        {
+            DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
+                            "Error - too many parameters calling function: %s\n",
+                            UnHash(fe->GetHash()));
+            return false;
+        }
     }
 
-    // -- get the parameter
-    CVariableEntry* ve = fe->GetContext()->GetParameter(paramindex);
+    // -- fill in the parameter - if the function only has a single implementation,
+    // -- fill it in directly - otherwise we add a parameter to the preparation context
+    // $$$TZA overload - do we know yet which overload we're about to call?
+    CVariableEntry* ve = nullptr;
+    if (fe->NoOverloads())
+        ve = fe->GetContext(0)->GetParameter(paramindex);
+    else
+    {
+        // -- without knowing which overload we're about to call, all param assignments go to the
+        // -- preparation context
+        CFunctionContext* prepare_context = funccallstack.GetPrepareContext();
+
+        // $$$TZA overload - we don't know what's going to be assigned, so... array size, var type,
+        // -- need to peek at the what's about to be assigned???
+        char param_name[16];
+        sprintf_s(param_name, "_p%d", paramindex);
+        if (!prepare_context->AddParameter(param_name, Hash(param_name), TYPE__var, 1, paramindex, 0))
+        {
+            assert(0);
+            return (false);
+        }
+        ve = prepare_context->GetParameter(paramindex);
+    }
 
     // -- push the variable onto the stack
     uint32 varbuf[3];
@@ -2346,15 +2416,17 @@ bool8 OpExecMethodCallArgs(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, 
     // -- we're also going to zero out all parameters - by default, calling
     // -- a function without passing a parameter value is the same as that
     // -- passing 0
-    fe->GetContext()->ClearParameters();
+    // $$$TZA overload - calling a function - match the signature!
+    fe->GetContext(0)->ClearParameters();
 
     // -- push the function entry onto the call stack
     funccallstack.Push(fe, oe, execstack.GetStackTop());
 
     // -- create space on the execstack, if this is a script function
-    if (fe->GetType() != eFunctionType::Global)
+    // $$$TZA overload - calling a function - match the signature!
+    if (fe->GetType(0) != eFunctionType::Global)
     {
-        int32 localvarcount = fe->GetContext()->CalculateLocalVarStackSize();
+        int32 localvarcount = fe->GetContext(0)->CalculateLocalVarStackSize();
         execstack.Reserve(localvarcount * MAX_TYPE_SIZE);
     }
 
@@ -2384,6 +2456,8 @@ bool8 OpExecFuncCall(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExecS
 
     DebugTrace(op, "func: %s", UnHash(fe->GetHash()));
 
+    // -- we don't yet know which overload we're calling - set the active to be undefined
+    fe->SetActiveOverload(kFunctionSignatureUndefined);
     bool8 result = CodeBlockCallFunction(fe, oe, execstack, funccallstack, false);
     if (!result)
     {
@@ -2442,7 +2516,8 @@ bool8 OpExecFuncReturn(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExe
     memcpy(stacktopcontent, content, MAX_TYPE_SIZE * sizeof(uint32));
 
     // -- unreserve space from the exec stack
-    int32 localvarcount = fe->GetContext()->CalculateLocalVarStackSize();
+    // $$$TZA overload - we should know which overload we're executing
+    int32 localvarcount = fe->GetContext(0)->CalculateLocalVarStackSize();
     execstack.UnReserve(localvarcount * MAX_TYPE_SIZE);
 
     // -- ensure our current stack top is what it was before we reserved
@@ -2463,7 +2538,8 @@ bool8 OpExecFuncReturn(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExe
 
     // -- clear all parameters for the function - this will ensure all
     // -- strings are decremented, keeping the string table clear of unassigned values
-    fe->GetContext()->ClearParameters();
+    // $$$TZA overload - we should know which function we're executing
+    fe->GetContext(0)->ClearParameters();
 
     // -- in addition, all post-unary ops had better have been applied
     if (g_postOpEntryCount > 0)

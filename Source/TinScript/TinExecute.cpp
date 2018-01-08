@@ -59,7 +59,8 @@ OpExecuteFunction gOpExecFunctions[OP_COUNT] =
 bool8 CopyStackParameters(CFunctionEntry* fe, CExecStack& execstack, CFunctionCallStack& funccallstack)
 {
     // -- sanity check
-    if (fe == NULL || !fe->GetContext())
+    // -- for the currently executing signature
+    if (fe == NULL || !fe->GetContext(fe->GetActiveOverload()))
     {
         ScriptAssert_(fe->GetScriptContext(), 0, "<internal>", -1,
                       "Error - invalid function entry\n");
@@ -67,7 +68,8 @@ bool8 CopyStackParameters(CFunctionEntry* fe, CExecStack& execstack, CFunctionCa
     }
 
     // -- initialize the parameters of our fe with the function context
-    CFunctionContext* parameters = fe->GetContext();
+    // -- for the currently executing signature
+    CFunctionContext* parameters = fe->GetContext(fe->GetActiveOverload());
     int32 srcparamcount = parameters->GetParameterCount();
     for (int32 i = 0; i < srcparamcount; ++i)
     {
@@ -111,7 +113,8 @@ int32 CFunctionCallStack::DebuggerGetCallstack(uint32* codeblock_array, uint32* 
         if (m_functionEntryStack[temp].isexecuting)
         {
             CCodeBlock* codeblock = NULL;
-            m_functionEntryStack[temp].funcentry->GetCodeBlockOffset(codeblock);
+            // $$$TZA overload - signature of the currently executing function
+            m_functionEntryStack[temp].funcentry->GetCodeBlockOffset(0, codeblock);
             uint32 codeblock_hash = codeblock->GetFilenameHash();
             uint32 objid = m_functionEntryStack[temp].objentry ? m_functionEntryStack[temp].objentry->GetID() : 0;
             uint32 namespace_hash = m_functionEntryStack[temp].funcentry->GetNamespaceHash();
@@ -230,7 +233,8 @@ int32 CFunctionCallStack::DebuggerGetStackVarEntries(CScriptContext* script_cont
             }
 
             // -- get the variable table
-            tVarTable* func_vt = m_functionEntryStack[stack_index].funcentry->GetLocalVarTable();
+            // $$$TZA overload - the currently executing function entry signature - probably needs to be part of the stack!
+            tVarTable* func_vt = m_functionEntryStack[stack_index].funcentry->GetLocalVarTable(0);
             CVariableEntry* ve = func_vt->First();
             while (ve)
             {
@@ -356,7 +360,8 @@ bool CFunctionCallStack::DebuggerFindStackTopVar(CScriptContext* script_context,
 			else
 			{
 				// -- get the variable table
-				tVarTable* func_vt = m_functionEntryStack[stack_index].funcentry->GetLocalVarTable();
+                // $$$TZA the currently executing signature
+				tVarTable* func_vt = m_functionEntryStack[stack_index].funcentry->GetLocalVarTable(0);
 				CVariableEntry* ve = func_vt->First();
 				while (ve)
 				{
@@ -464,10 +469,11 @@ void CFunctionCallStack::BeginExecution(const uint32* instrptr)
     // -- the top entry on the function stack is what we're about to call...
     // -- the m_stacktop - 2, therefore, is the calling function (if it exists)...
     // -- tag it with the offset into the codeblock, for a debugger callstack
-    if (m_stacktop >= 2 && m_functionEntryStack[m_stacktop - 2].funcentry->GetType() == eFunctionType::Script)
+    // $$$TZA overload - we should know which overload we're executing
+    if (m_stacktop >= 2 && m_functionEntryStack[m_stacktop - 2].funcentry->GetType(0) == eFunctionType::Script)
     {
         CCodeBlock* callingfunc_cb = NULL;
-        m_functionEntryStack[m_stacktop - 2].funcentry->GetCodeBlockOffset(callingfunc_cb);
+        m_functionEntryStack[m_stacktop - 2].funcentry->GetCodeBlockOffset(0, callingfunc_cb);
         m_functionEntryStack[m_stacktop - 2].linenumberfunccall = callingfunc_cb->CalcLineNumber(instrptr);
     }
 
@@ -495,7 +501,8 @@ bool8 CodeBlockCallFunction(CFunctionEntry* fe, CObjectEntry* oe, CExecStack& ex
     // -- for registered 'C' functions, or to the execstack for scripted functions
 
     // -- scripted function
-    if (fe->GetType() == eFunctionType::Script)
+    // $$$TZA overload -do swe know the signature?
+    if (fe->GetType(0) == eFunctionType::Script)
     {
         // -- for scheduled function calls, the stack parameters are still stored in the context
         // -- for regular function calls, GetStackVarAddr() will already have used the stack
@@ -503,7 +510,7 @@ bool8 CodeBlockCallFunction(CFunctionEntry* fe, CObjectEntry* oe, CExecStack& ex
             CopyStackParameters(fe, execstack, funccallstack);
 
         CCodeBlock* funccb = NULL;
-        uint32 funcoffset = fe->GetCodeBlockOffset(funccb);
+        uint32 funcoffset = fe->GetCodeBlockOffset(0, funccb);
         if (!funccb)
         {
             ScriptAssert_(fe->GetScriptContext(), 0, "<internal>", -1,
@@ -527,15 +534,16 @@ bool8 CodeBlockCallFunction(CFunctionEntry* fe, CObjectEntry* oe, CExecStack& ex
     }
 
     // -- registered 'C' function
-    else if (fe->GetType() == eFunctionType::Global)
+    // $$$TZA overload - do we know the signature?
+    else if (fe->GetType(0) == eFunctionType::Global)
     {
-        fe->GetRegObject()->DispatchFunction(oe ? oe->GetAddr() : NULL);
+        fe->GetRegObject(0)->DispatchFunction(oe ? oe->GetAddr() : NULL);
 
         // -- if the function has a return type, push it on the stack
-        if (fe->GetReturnType() > TYPE_void)
+        if (fe->GetReturnType(0) > TYPE_void)
         {
-            assert(fe->GetContext() && fe->GetContext()->GetParameterCount() > 0);
-            CVariableEntry* returnval = fe->GetContext()->GetParameter(0);
+            assert(fe->GetContext(0) && fe->GetContext(0)->GetParameterCount() > 0);
+            CVariableEntry* returnval = fe->GetContext(0)->GetParameter(0);
             assert(returnval);
             execstack.Push(returnval->GetAddr(NULL), returnval->GetType());
         }
@@ -549,7 +557,8 @@ bool8 CodeBlockCallFunction(CFunctionEntry* fe, CObjectEntry* oe, CExecStack& ex
 
         // -- clear all parameters for the function - this will ensure all
         // -- strings are decremented, keeping the string table clear of unassigned values
-        fe->GetContext()->ClearParameters();
+        // $$$TZA overload - do we know the signature?
+        fe->GetContext(0)->ClearParameters();
         fe->GetScriptContext()->GetStringTable()->RemoveUnreferencedStrings();
         
         // -- since we called a 'C' function, there's no OP_FuncReturn - pop the function call stack
@@ -628,8 +637,9 @@ bool8 ExecuteScheduledFunction(CScriptContext* script_context, uint32 objectid, 
     int32 srcparamcount = parameters->GetParameterCount();
     for (int32 i = 0; i < srcparamcount; ++i)
     {
+        // $$$TZA overload - find the overload from the given src parameters
         CVariableEntry* src = parameters->GetParameter(i);
-        CVariableEntry* dst = fe->GetContext()->GetParameter(i);
+        CVariableEntry* dst = fe->GetContext(0)->GetParameter(i);
         if (!dst)
         {
             ScriptAssert_(script_context, 0, "<internal>", -1,
@@ -658,11 +668,20 @@ bool8 ExecuteScheduledFunction(CScriptContext* script_context, uint32 objectid, 
         dst->SetValue(NULL, srcaddr);
     }
 
+    // -- get the overload that matches the arguments provided by the scheduled function call
+    uint32 signature_hash = fe->FindMatchingSignature(parameters);
+    if (signature_hash == kFunctionSignatureUndefined)
+    {
+        // $$$TZA overload - handle this - error?  compile error?
+        assert(0);
+        return (false);
+    }
+
     // -- initialize any remaining parameters
-    int32 dstparamcount = fe->GetContext()->GetParameterCount();
+    int32 dstparamcount = fe->GetContext(signature_hash)->GetParameterCount();
     for (int32 i = srcparamcount; i < dstparamcount; ++i)
     {
-        CVariableEntry* dst = fe->GetContext()->GetParameter(i);
+        CVariableEntry* dst = fe->GetContext(0)->GetParameter(i);
         dst->SetValue(NULL, nullvalue);
     }
 
@@ -670,9 +689,9 @@ bool8 ExecuteScheduledFunction(CScriptContext* script_context, uint32 objectid, 
     funccallstack.Push(fe, oe, 0);
     
     // -- create space on the execstack, if this is a script function
-    if (fe->GetType() != eFunctionType::Global)
+    if (fe->GetType(signature_hash) != eFunctionType::Global)
     {
-        int32 localvarcount = fe->GetContext()->CalculateLocalVarStackSize();
+        int32 localvarcount = fe->GetContext(0)->CalculateLocalVarStackSize();
         execstack.Reserve(localvarcount * MAX_TYPE_SIZE);
     }
 

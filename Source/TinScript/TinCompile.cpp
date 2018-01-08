@@ -265,7 +265,8 @@ int32 CompileVarTable(tVarTable* vartable, uint32*& instrptr, bool8 countonly)
 int32 CompileFunctionContext(CFunctionEntry* fe, uint32*& instrptr, bool8 countonly)
 {
     // -- get the context for the function
-    CFunctionContext* funccontext = fe->GetContext();
+    // -- called when the func decl node is compiled, for the given overload
+    CFunctionContext* funccontext = fe->GetContext(fe->GetActiveOverload());
     int32 size = 0;
 
     // -- push the parameters
@@ -761,10 +762,12 @@ int32 CValueNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 countonly) 
 
                 // -- push the local var index as well
                 int32 var_index = 0;
-                CVariableEntry* local_ve = var->GetFunctionEntry()->GetLocalVarTable()->First();
+                // -- var table from the current overload
+                CFunctionEntry* var_fe = var->GetFunctionEntry();
+                CVariableEntry* local_ve = var_fe->GetLocalVarTable(var_fe->GetActiveOverload())->First();
                 while (local_ve && local_ve != var)
                 {
-                    local_ve = var->GetFunctionEntry()->GetLocalVarTable()->Next();
+                    local_ve = var_fe->GetLocalVarTable(var_fe->GetActiveOverload())->Next();
                     ++var_index;
                 }
         		size += PushInstruction(countonly, instrptr, var_index, DBG_var);
@@ -2153,7 +2156,7 @@ bool8 CParenOpenNode::CompileToC(int32 indent, char*& out_buffer, int32& max_siz
 // ====================================================================================================================
 CFuncDeclNode::CFuncDeclNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber,
                              const char* _funcname, int32 _length, const char* _funcns,
-                             int32 _funcnslength, uint32 derived_ns)
+                             int32 _funcnslength, uint32 derived_ns, uint32 sig_hash)
     : CCompileTreeNode(_codeblock, _link, eFuncDecl, _linenumber)
 {
     SafeStrcpy(funcname, _funcname, _length + 1);
@@ -2163,6 +2166,7 @@ CFuncDeclNode::CFuncDeclNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, i
     CObjectEntry* dummy = NULL;
     functionentry = codeblock->smFuncDefinitionStack->GetTop(dummy, stacktopdummy);
     mDerivedNamespace = derived_ns;
+    mSignatureHash = sig_hash;
 }
 
 // ====================================================================================================================
@@ -2204,8 +2208,10 @@ int32 CFuncDeclNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 countonl
 
     // -- set the current function definition
     codeblock->smFuncDefinitionStack->Push(fe, NULL, 0);
+    fe->SetActiveOverload(mSignatureHash);
 
-    eVarType returntype = fe->GetReturnType();
+    // -- signature from the currently defined function
+    eVarType returntype = fe->GetReturnType(mSignatureHash);
 
     // -- recreate the function entry - first the instruction 
     size += PushInstruction(countonly, instrptr, OP_FuncDecl, DBG_instr);
@@ -2218,6 +2224,9 @@ int32 CFuncDeclNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 countonl
 
     // -- after we declare the function namespace, specify the derived namespace (only ever valid for OnCreate())
     size += PushInstruction(countonly, instrptr, mDerivedNamespace, DBG_hash); 
+
+    // -- after we declare the function namespace, specify the derived namespace (only ever valid for OnCreate())
+    size += PushInstruction(countonly, instrptr, mSignatureHash, DBG_hash); 
 
     // -- push the function offset placeholder
 	uint32* funcoffset = instrptr;
@@ -2243,7 +2252,7 @@ int32 CFuncDeclNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 countonl
         uint32 offset = codeblock->CalcOffset(instrptr);
 
         // -- note, there's a possibility we're stomping a registered code function here
-        if (fe->GetType() != eFunctionType::Script)
+        if (fe->GetType(mSignatureHash) != eFunctionType::Script)
         {
             ScriptAssert_(codeblock->GetScriptContext(), false, codeblock->GetFileName(), linenumber,
                           "Error - there is already a code dregistered function %s()\n"
@@ -2257,12 +2266,12 @@ int32 CFuncDeclNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 countonl
             return (-1);
         }
 
-        fe->SetCodeBlockOffset(codeblock, offset);
+        fe->SetCodeBlockOffset(mSignatureHash, codeblock, offset);
         *funcoffset = offset;
     }
 
     // -- before the function body, we need to dump out the dictionary of local vars
-    size += CompileVarTable(fe->GetLocalVarTable(), instrptr, countonly);
+    size += CompileVarTable(fe->GetLocalVarTable(mSignatureHash), instrptr, countonly);
 
     // -- compile the function body
     int32 tree_size = leftchild->Eval(instrptr, returntype, countonly);
@@ -2303,20 +2312,20 @@ bool8 CFuncDeclNode::CompileToC(int32 indent, char*& out_buffer, int32& max_size
 {
     // -- output the function signature
     const char* return_type_name =
-        TinScript::GetRegisteredTypeName(functionentry->GetContext()->GetParameter(0)->GetType());
+        TinScript::GetRegisteredTypeName(functionentry->GetContext(mSignatureHash)->GetParameter(0)->GetType());
     if (!OutputToBuffer(indent, out_buffer, max_size, "%s %s(", return_type_name, funcname))
         return (false);
 
     // -- output the signature
-    for (int i = 1; i < functionentry->GetContext()->GetParameterCount(); ++i)
+    for (int i = 1; i < functionentry->GetContext(mSignatureHash)->GetParameterCount(); ++i)
     {
         // -- add the comma separator
         if (i > 1 && !OutputToBuffer(0, out_buffer, max_size, ", "))
             return (false);
 
         const char* arg_type_name =
-            TinScript::GetRegisteredTypeName(functionentry->GetContext()->GetParameter(i)->GetType());
-        const char* arg_name = functionentry->GetContext()->GetParameter(i)->GetName();
+            TinScript::GetRegisteredTypeName(functionentry->GetContext(mSignatureHash)->GetParameter(i)->GetType());
+        const char* arg_name = functionentry->GetContext(mSignatureHash)->GetParameter(i)->GetName();
         if (!OutputToBuffer(0, out_buffer, max_size, "%s %s", arg_type_name, arg_name))
             return (false);
     }
@@ -2341,7 +2350,8 @@ bool8 CFuncDeclNode::CompileToC(int32 indent, char*& out_buffer, int32& max_size
 
         // -- declare all local variables
         bool first_local_var = true;
-        CVariableEntry* local_var = functionentry->GetLocalVarTable()->First();
+        // -- currently defined overload signature
+        CVariableEntry* local_var = functionentry->GetLocalVarTable(mSignatureHash)->First();
         while (local_var != nullptr)
         {
             const char* arg_type_name = TinScript::GetRegisteredTypeName(local_var->GetType());
@@ -2363,7 +2373,8 @@ bool8 CFuncDeclNode::CompileToC(int32 indent, char*& out_buffer, int32& max_size
             }
 
             // -- next local var
-            local_var = functionentry->GetLocalVarTable()->Next();
+            // currently defined overload signature
+            local_var = functionentry->GetLocalVarTable(mSignatureHash)->Next();
         }
         
         // -- if we output any local vars, add a space
@@ -2522,7 +2533,8 @@ int32 CFuncReturnNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 counto
 
     // -- get the context, which will contain the return parameter (type)..
     assert(functionentry != NULL);
-    CFunctionContext* context = functionentry->GetContext();
+    // -- currently defined overload signature
+    CFunctionContext* context = functionentry->GetContext(functionentry->GetActiveOverload());
     assert(context != NULL && context->GetParameterCount() > 0);
     CVariableEntry* returntype = context->GetParameter(0);
 
@@ -2557,7 +2569,8 @@ bool8 CFuncReturnNode::CompileToC(int32 indent, char*& out_buffer, int32& max_si
 {
     // -- get the context, which will contain the return parameter (type)..
     assert(functionentry != NULL);
-    CFunctionContext* context = functionentry->GetContext();
+    // -- currently defined overload signature
+    CFunctionContext* context = functionentry->GetContext(functionentry->GetActiveOverload());
     assert(context != NULL && context->GetParameterCount() > 0);
     CVariableEntry* returntype = context->GetParameter(0);
 
@@ -3385,6 +3398,7 @@ bool8 CDestroyObjectNode::CompileToC(int32 indent, char*& out_buffer, int32& max
 // ====================================================================================================================
 CCodeBlock::CCodeBlock(CScriptContext* script_context, const char* _filename)
 {
+    assert(script_context != nullptr);
     mContextOwner = script_context;
 
     mIsParsing = true;
@@ -3394,7 +3408,7 @@ CCodeBlock::CCodeBlock(CScriptContext* script_context, const char* _filename)
 
     smFuncDefinitionStack = TinAlloc(ALLOC_FuncCallStack, CFunctionCallStack);
     smCurrentGlobalVarTable = TinAlloc(ALLOC_VarTable, tVarTable, kLocalVarTableSize);
-    mFunctionList = TinAlloc(ALLOC_FuncTable, tFuncTable, kLocalFuncTableSize);
+    mOverloadList = TinAlloc(ALLOC_FuncTable, tOverloadTable, kLocalOverloadTableSize);
     mBreakpoints = TinAlloc(ALLOC_Debugger, CHashTable<CDebuggerWatchExpression>, kBreakpointTableSize);
 
     // -- add to the resident list of codeblocks, if a name was given
@@ -3429,8 +3443,18 @@ CCodeBlock::~CCodeBlock()
 	smCurrentGlobalVarTable->DestroyAll();
     TinFree(smCurrentGlobalVarTable);
 
-    mFunctionList->DestroyAll();
-    TinFree(mFunctionList);
+    // -- iterate through each overload, and remove it from the function entry,
+    // -- if it's the last overload defined, delete the function entry as well
+    // note:  this is a good example of iterating through a hash table, resiliant
+    // -- to changes in the table during iteration
+    CFunctionOverload* overload = mOverloadList->First();
+    while (overload != nullptr)
+    {
+        mOverloadList->RemoveItem(overload->GetHash());
+        overload->GetFunctionEntry()->RemoveOverload(overload, true);
+        overload = mOverloadList->Next();
+    }
+    TinFree(mOverloadList);
 
     // -- free the function definition stack, and the global var table
     TinFree(smFuncDefinitionStack);

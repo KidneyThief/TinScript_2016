@@ -61,9 +61,9 @@ public:
 
     // -- registration method
     virtual void Register(CScriptContext* script_context) {
-        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFunctionType::Global, this);
+        CFunctionEntry* fe =  TinAlloc(ALLOC_FuncEntry, CFunctionEntry, script_context, 0, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
-        SetContext(fe->GetContext());
+        SetContext(fe->GetContext(0));
         GetContext()->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());
 
         uint32 hash = fe->GetHash();
@@ -103,7 +103,7 @@ public:
 
     // -- registration method
     virtual void Register(CScriptContext* script_context) {
-        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFunctionType::Global, this);
+        CFunctionEntry* fe = TinAlloc(ALLOC_FuncEntry, CFunctionEntry, script_context, 0, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext(0));
         GetContext()->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0);
@@ -151,9 +151,9 @@ public:
     // -- registration method
     virtual void Register(CScriptContext* script_context) {
         uint32 classname_hash = Hash(C::_GetClassName());
-        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFunctionType::Global, this);
+        CFunctionEntry* fe = TinAlloc(ALLOC_FuncEntry, CFunctionEntry, script_context, classname_hash, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
-        SetContext(fe->GetContext());
+        SetContext(fe->GetContext(0));
         GetContext()->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());
 
         uint32 hash = fe->GetHash();
@@ -195,9 +195,9 @@ public:
     // -- registration method
     virtual void Register(CScriptContext* script_context) {
         uint32 classname_hash = Hash(C::_GetClassName());
-        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFunctionType::Global, this);
+        CFunctionEntry* fe = TinAlloc(ALLOC_FuncEntry, CFunctionEntry, script_context, classname_hash, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
-        SetContext(fe->GetContext());
+        SetContext(fe->GetContext(0));
         GetContext()->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0);
 
         uint32 hash = fe->GetHash();
@@ -247,9 +247,9 @@ public:
 
     // -- registration method
     virtual void Register(CScriptContext* script_context) {
-        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFunctionType::Global, this);
+        CFunctionEntry* fe =  TinAlloc(ALLOC_FuncEntry, CFunctionEntry, script_context, 0, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
-        SetContext(fe->GetContext());
+        SetContext(fe->GetContext(0));
         GetContext()->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());
         GetContext()->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>());
 
@@ -291,9 +291,9 @@ public:
 
     // -- registration method
     virtual void Register(CScriptContext* script_context) {
-        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFunctionType::Global, this);
+        CFunctionEntry* fe = TinAlloc(ALLOC_FuncEntry, CFunctionEntry, script_context, 0, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
-        SetContext(fe->GetContext());
+        SetContext(fe->GetContext(0));
         GetContext()->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0);
         GetContext()->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>());
 
@@ -342,19 +342,15 @@ public:
     // -- registration method
     virtual void Register(CScriptContext* script_context) {
         uint32 classname_hash = Hash(C::_GetClassName());
-        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFunctionType::Global, this);
+        CFunctionEntry* fe = TinAlloc(ALLOC_FuncEntry, CFunctionEntry, script_context, classname_hash, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
-        SetContext(fe->GetContext());
+        SetContext(fe->GetContext(0));
         GetContext()->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());
         GetContext()->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>());
 
         uint32 hash = fe->GetHash();
         tFuncTable* methodtable = script_context->FindNamespace(classname_hash)->GetFuncTable();
         methodtable->AddItem(*fe, hash);
-
-        // $$$TZA Overload
-        printf("### DEBUG reg: %s, has: 0x%x\n", GetName(), GetContext()->CalcHash());
-        printf("### DEBUG verify: 0x%x\n", CFunctionContext::CalcSignatureHash<T1>());
     }
 
 private:
@@ -393,9 +389,9 @@ public:
     // -- registration method
     virtual void Register(CScriptContext* script_context) {
         uint32 classname_hash = Hash(C::_GetClassName());
-        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFunctionType::Global, this);
+        CFunctionEntry* fe = TinAlloc(ALLOC_FuncEntry, CFunctionEntry, script_context, classname_hash, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
-        SetContext(fe->GetContext());
+        SetContext(fe->GetContext(0));
         GetContext()->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0);
         GetContext()->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>());
 
@@ -448,9 +444,9 @@ public:
 
     // -- registration method
     virtual void Register(CScriptContext* script_context) {
-        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFunctionType::Global, this);
+        CFunctionEntry* fe =  TinAlloc(ALLOC_FuncEntry, CFunctionEntry, script_context, 0, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
-        SetContext(fe->GetContext());
+        SetContext(fe->GetContext(0));
         GetContext()->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());
         GetContext()->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>());
         GetContext()->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>());
@@ -495,9 +491,9 @@ public:
 
     // -- registration method
     virtual void Register(CScriptContext* script_context) {
-        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFunctionType::Global, this);
+        CFunctionEntry* fe = TinAlloc(ALLOC_FuncEntry, CFunctionEntry, script_context, 0, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
-        SetContext(fe->GetContext());
+        SetContext(fe->GetContext(0));
         GetContext()->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0);
         GetContext()->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>());
         GetContext()->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>());
@@ -549,9 +545,9 @@ public:
     // -- registration method
     virtual void Register(CScriptContext* script_context) {
         uint32 classname_hash = Hash(C::_GetClassName());
-        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFunctionType::Global, this);
+        CFunctionEntry* fe = TinAlloc(ALLOC_FuncEntry, CFunctionEntry, script_context, classname_hash, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
-        SetContext(fe->GetContext());
+        SetContext(fe->GetContext(0));
         GetContext()->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());
         GetContext()->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>());
         GetContext()->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>());
@@ -599,9 +595,9 @@ public:
     // -- registration method
     virtual void Register(CScriptContext* script_context) {
         uint32 classname_hash = Hash(C::_GetClassName());
-        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFunctionType::Global, this);
+        CFunctionEntry* fe = TinAlloc(ALLOC_FuncEntry, CFunctionEntry, script_context, classname_hash, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
-        SetContext(fe->GetContext());
+        SetContext(fe->GetContext(0));
         GetContext()->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0);
         GetContext()->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>());
         GetContext()->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>());
@@ -657,9 +653,9 @@ public:
 
     // -- registration method
     virtual void Register(CScriptContext* script_context) {
-        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFunctionType::Global, this);
+        CFunctionEntry* fe =  TinAlloc(ALLOC_FuncEntry, CFunctionEntry, script_context, 0, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
-        SetContext(fe->GetContext());
+        SetContext(fe->GetContext(0));
         GetContext()->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());
         GetContext()->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>());
         GetContext()->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>());
@@ -707,9 +703,9 @@ public:
 
     // -- registration method
     virtual void Register(CScriptContext* script_context) {
-        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFunctionType::Global, this);
+        CFunctionEntry* fe = TinAlloc(ALLOC_FuncEntry, CFunctionEntry, script_context, 0, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
-        SetContext(fe->GetContext());
+        SetContext(fe->GetContext(0));
         GetContext()->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0);
         GetContext()->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>());
         GetContext()->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>());
@@ -764,9 +760,9 @@ public:
     // -- registration method
     virtual void Register(CScriptContext* script_context) {
         uint32 classname_hash = Hash(C::_GetClassName());
-        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFunctionType::Global, this);
+        CFunctionEntry* fe = TinAlloc(ALLOC_FuncEntry, CFunctionEntry, script_context, classname_hash, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
-        SetContext(fe->GetContext());
+        SetContext(fe->GetContext(0));
         GetContext()->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());
         GetContext()->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>());
         GetContext()->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>());
@@ -817,9 +813,9 @@ public:
     // -- registration method
     virtual void Register(CScriptContext* script_context) {
         uint32 classname_hash = Hash(C::_GetClassName());
-        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFunctionType::Global, this);
+        CFunctionEntry* fe = TinAlloc(ALLOC_FuncEntry, CFunctionEntry, script_context, classname_hash, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
-        SetContext(fe->GetContext());
+        SetContext(fe->GetContext(0));
         GetContext()->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0);
         GetContext()->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>());
         GetContext()->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>());
@@ -878,9 +874,9 @@ public:
 
     // -- registration method
     virtual void Register(CScriptContext* script_context) {
-        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFunctionType::Global, this);
+        CFunctionEntry* fe =  TinAlloc(ALLOC_FuncEntry, CFunctionEntry, script_context, 0, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
-        SetContext(fe->GetContext());
+        SetContext(fe->GetContext(0));
         GetContext()->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());
         GetContext()->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>());
         GetContext()->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>());
@@ -931,9 +927,9 @@ public:
 
     // -- registration method
     virtual void Register(CScriptContext* script_context) {
-        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFunctionType::Global, this);
+        CFunctionEntry* fe = TinAlloc(ALLOC_FuncEntry, CFunctionEntry, script_context, 0, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
-        SetContext(fe->GetContext());
+        SetContext(fe->GetContext(0));
         GetContext()->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0);
         GetContext()->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>());
         GetContext()->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>());
@@ -991,9 +987,9 @@ public:
     // -- registration method
     virtual void Register(CScriptContext* script_context) {
         uint32 classname_hash = Hash(C::_GetClassName());
-        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFunctionType::Global, this);
+        CFunctionEntry* fe = TinAlloc(ALLOC_FuncEntry, CFunctionEntry, script_context, classname_hash, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
-        SetContext(fe->GetContext());
+        SetContext(fe->GetContext(0));
         GetContext()->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());
         GetContext()->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>());
         GetContext()->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>());
@@ -1047,9 +1043,9 @@ public:
     // -- registration method
     virtual void Register(CScriptContext* script_context) {
         uint32 classname_hash = Hash(C::_GetClassName());
-        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFunctionType::Global, this);
+        CFunctionEntry* fe = TinAlloc(ALLOC_FuncEntry, CFunctionEntry, script_context, classname_hash, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
-        SetContext(fe->GetContext());
+        SetContext(fe->GetContext(0));
         GetContext()->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0);
         GetContext()->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>());
         GetContext()->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>());
@@ -1111,9 +1107,9 @@ public:
 
     // -- registration method
     virtual void Register(CScriptContext* script_context) {
-        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFunctionType::Global, this);
+        CFunctionEntry* fe =  TinAlloc(ALLOC_FuncEntry, CFunctionEntry, script_context, 0, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
-        SetContext(fe->GetContext());
+        SetContext(fe->GetContext(0));
         GetContext()->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());
         GetContext()->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>());
         GetContext()->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>());
@@ -1167,9 +1163,9 @@ public:
 
     // -- registration method
     virtual void Register(CScriptContext* script_context) {
-        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFunctionType::Global, this);
+        CFunctionEntry* fe = TinAlloc(ALLOC_FuncEntry, CFunctionEntry, script_context, 0, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
-        SetContext(fe->GetContext());
+        SetContext(fe->GetContext(0));
         GetContext()->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0);
         GetContext()->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>());
         GetContext()->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>());
@@ -1230,9 +1226,9 @@ public:
     // -- registration method
     virtual void Register(CScriptContext* script_context) {
         uint32 classname_hash = Hash(C::_GetClassName());
-        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFunctionType::Global, this);
+        CFunctionEntry* fe = TinAlloc(ALLOC_FuncEntry, CFunctionEntry, script_context, classname_hash, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
-        SetContext(fe->GetContext());
+        SetContext(fe->GetContext(0));
         GetContext()->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());
         GetContext()->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>());
         GetContext()->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>());
@@ -1289,9 +1285,9 @@ public:
     // -- registration method
     virtual void Register(CScriptContext* script_context) {
         uint32 classname_hash = Hash(C::_GetClassName());
-        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFunctionType::Global, this);
+        CFunctionEntry* fe = TinAlloc(ALLOC_FuncEntry, CFunctionEntry, script_context, classname_hash, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
-        SetContext(fe->GetContext());
+        SetContext(fe->GetContext(0));
         GetContext()->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0);
         GetContext()->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>());
         GetContext()->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>());
@@ -1356,9 +1352,9 @@ public:
 
     // -- registration method
     virtual void Register(CScriptContext* script_context) {
-        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFunctionType::Global, this);
+        CFunctionEntry* fe =  TinAlloc(ALLOC_FuncEntry, CFunctionEntry, script_context, 0, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
-        SetContext(fe->GetContext());
+        SetContext(fe->GetContext(0));
         GetContext()->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());
         GetContext()->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>());
         GetContext()->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>());
@@ -1415,9 +1411,9 @@ public:
 
     // -- registration method
     virtual void Register(CScriptContext* script_context) {
-        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFunctionType::Global, this);
+        CFunctionEntry* fe = TinAlloc(ALLOC_FuncEntry, CFunctionEntry, script_context, 0, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
-        SetContext(fe->GetContext());
+        SetContext(fe->GetContext(0));
         GetContext()->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0);
         GetContext()->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>());
         GetContext()->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>());
@@ -1481,9 +1477,9 @@ public:
     // -- registration method
     virtual void Register(CScriptContext* script_context) {
         uint32 classname_hash = Hash(C::_GetClassName());
-        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFunctionType::Global, this);
+        CFunctionEntry* fe = TinAlloc(ALLOC_FuncEntry, CFunctionEntry, script_context, classname_hash, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
-        SetContext(fe->GetContext());
+        SetContext(fe->GetContext(0));
         GetContext()->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());
         GetContext()->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>());
         GetContext()->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>());
@@ -1543,9 +1539,9 @@ public:
     // -- registration method
     virtual void Register(CScriptContext* script_context) {
         uint32 classname_hash = Hash(C::_GetClassName());
-        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFunctionType::Global, this);
+        CFunctionEntry* fe = TinAlloc(ALLOC_FuncEntry, CFunctionEntry, script_context, classname_hash, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
-        SetContext(fe->GetContext());
+        SetContext(fe->GetContext(0));
         GetContext()->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0);
         GetContext()->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>());
         GetContext()->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>());
@@ -1613,9 +1609,9 @@ public:
 
     // -- registration method
     virtual void Register(CScriptContext* script_context) {
-        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFunctionType::Global, this);
+        CFunctionEntry* fe =  TinAlloc(ALLOC_FuncEntry, CFunctionEntry, script_context, 0, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
-        SetContext(fe->GetContext());
+        SetContext(fe->GetContext(0));
         GetContext()->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());
         GetContext()->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>());
         GetContext()->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>());
@@ -1675,9 +1671,9 @@ public:
 
     // -- registration method
     virtual void Register(CScriptContext* script_context) {
-        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFunctionType::Global, this);
+        CFunctionEntry* fe = TinAlloc(ALLOC_FuncEntry, CFunctionEntry, script_context, 0, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
-        SetContext(fe->GetContext());
+        SetContext(fe->GetContext(0));
         GetContext()->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0);
         GetContext()->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>());
         GetContext()->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>());
@@ -1744,9 +1740,9 @@ public:
     // -- registration method
     virtual void Register(CScriptContext* script_context) {
         uint32 classname_hash = Hash(C::_GetClassName());
-        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFunctionType::Global, this);
+        CFunctionEntry* fe = TinAlloc(ALLOC_FuncEntry, CFunctionEntry, script_context, classname_hash, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
-        SetContext(fe->GetContext());
+        SetContext(fe->GetContext(0));
         GetContext()->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());
         GetContext()->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>());
         GetContext()->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>());
@@ -1809,9 +1805,9 @@ public:
     // -- registration method
     virtual void Register(CScriptContext* script_context) {
         uint32 classname_hash = Hash(C::_GetClassName());
-        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFunctionType::Global, this);
+        CFunctionEntry* fe = TinAlloc(ALLOC_FuncEntry, CFunctionEntry, script_context, classname_hash, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
-        SetContext(fe->GetContext());
+        SetContext(fe->GetContext(0));
         GetContext()->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0);
         GetContext()->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>());
         GetContext()->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>());
@@ -1882,9 +1878,9 @@ public:
 
     // -- registration method
     virtual void Register(CScriptContext* script_context) {
-        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFunctionType::Global, this);
+        CFunctionEntry* fe =  TinAlloc(ALLOC_FuncEntry, CFunctionEntry, script_context, 0, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
-        SetContext(fe->GetContext());
+        SetContext(fe->GetContext(0));
         GetContext()->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());
         GetContext()->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>());
         GetContext()->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>());
@@ -1947,9 +1943,9 @@ public:
 
     // -- registration method
     virtual void Register(CScriptContext* script_context) {
-        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFunctionType::Global, this);
+        CFunctionEntry* fe = TinAlloc(ALLOC_FuncEntry, CFunctionEntry, script_context, 0, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
-        SetContext(fe->GetContext());
+        SetContext(fe->GetContext(0));
         GetContext()->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0);
         GetContext()->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>());
         GetContext()->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>());
@@ -2019,9 +2015,9 @@ public:
     // -- registration method
     virtual void Register(CScriptContext* script_context) {
         uint32 classname_hash = Hash(C::_GetClassName());
-        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFunctionType::Global, this);
+        CFunctionEntry* fe = TinAlloc(ALLOC_FuncEntry, CFunctionEntry, script_context, classname_hash, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
-        SetContext(fe->GetContext());
+        SetContext(fe->GetContext(0));
         GetContext()->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());
         GetContext()->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>());
         GetContext()->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>());
@@ -2087,9 +2083,9 @@ public:
     // -- registration method
     virtual void Register(CScriptContext* script_context) {
         uint32 classname_hash = Hash(C::_GetClassName());
-        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFunctionType::Global, this);
+        CFunctionEntry* fe = TinAlloc(ALLOC_FuncEntry, CFunctionEntry, script_context, classname_hash, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
-        SetContext(fe->GetContext());
+        SetContext(fe->GetContext(0));
         GetContext()->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0);
         GetContext()->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>());
         GetContext()->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>());
@@ -2163,9 +2159,9 @@ public:
 
     // -- registration method
     virtual void Register(CScriptContext* script_context) {
-        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFunctionType::Global, this);
+        CFunctionEntry* fe =  TinAlloc(ALLOC_FuncEntry, CFunctionEntry, script_context, 0, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
-        SetContext(fe->GetContext());
+        SetContext(fe->GetContext(0));
         GetContext()->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());
         GetContext()->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>());
         GetContext()->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>());
@@ -2231,9 +2227,9 @@ public:
 
     // -- registration method
     virtual void Register(CScriptContext* script_context) {
-        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFunctionType::Global, this);
+        CFunctionEntry* fe = TinAlloc(ALLOC_FuncEntry, CFunctionEntry, script_context, 0, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
-        SetContext(fe->GetContext());
+        SetContext(fe->GetContext(0));
         GetContext()->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0);
         GetContext()->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>());
         GetContext()->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>());
@@ -2306,9 +2302,9 @@ public:
     // -- registration method
     virtual void Register(CScriptContext* script_context) {
         uint32 classname_hash = Hash(C::_GetClassName());
-        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFunctionType::Global, this);
+        CFunctionEntry* fe = TinAlloc(ALLOC_FuncEntry, CFunctionEntry, script_context, classname_hash, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
-        SetContext(fe->GetContext());
+        SetContext(fe->GetContext(0));
         GetContext()->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());
         GetContext()->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>());
         GetContext()->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>());
@@ -2377,9 +2373,9 @@ public:
     // -- registration method
     virtual void Register(CScriptContext* script_context) {
         uint32 classname_hash = Hash(C::_GetClassName());
-        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFunctionType::Global, this);
+        CFunctionEntry* fe = TinAlloc(ALLOC_FuncEntry, CFunctionEntry, script_context, classname_hash, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
-        SetContext(fe->GetContext());
+        SetContext(fe->GetContext(0));
         GetContext()->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0);
         GetContext()->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>());
         GetContext()->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>());
@@ -2456,9 +2452,9 @@ public:
 
     // -- registration method
     virtual void Register(CScriptContext* script_context) {
-        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFunctionType::Global, this);
+        CFunctionEntry* fe =  TinAlloc(ALLOC_FuncEntry, CFunctionEntry, script_context, 0, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
-        SetContext(fe->GetContext());
+        SetContext(fe->GetContext(0));
         GetContext()->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());
         GetContext()->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>());
         GetContext()->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>());
@@ -2527,9 +2523,9 @@ public:
 
     // -- registration method
     virtual void Register(CScriptContext* script_context) {
-        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFunctionType::Global, this);
+        CFunctionEntry* fe = TinAlloc(ALLOC_FuncEntry, CFunctionEntry, script_context, 0, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
-        SetContext(fe->GetContext());
+        SetContext(fe->GetContext(0));
         GetContext()->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0);
         GetContext()->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>());
         GetContext()->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>());
@@ -2605,9 +2601,9 @@ public:
     // -- registration method
     virtual void Register(CScriptContext* script_context) {
         uint32 classname_hash = Hash(C::_GetClassName());
-        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFunctionType::Global, this);
+        CFunctionEntry* fe = TinAlloc(ALLOC_FuncEntry, CFunctionEntry, script_context, classname_hash, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
-        SetContext(fe->GetContext());
+        SetContext(fe->GetContext(0));
         GetContext()->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());
         GetContext()->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>());
         GetContext()->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>());
@@ -2679,9 +2675,9 @@ public:
     // -- registration method
     virtual void Register(CScriptContext* script_context) {
         uint32 classname_hash = Hash(C::_GetClassName());
-        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFunctionType::Global, this);
+        CFunctionEntry* fe = TinAlloc(ALLOC_FuncEntry, CFunctionEntry, script_context, classname_hash, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
-        SetContext(fe->GetContext());
+        SetContext(fe->GetContext(0));
         GetContext()->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0);
         GetContext()->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>());
         GetContext()->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>());
@@ -2761,9 +2757,9 @@ public:
 
     // -- registration method
     virtual void Register(CScriptContext* script_context) {
-        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFunctionType::Global, this);
+        CFunctionEntry* fe =  TinAlloc(ALLOC_FuncEntry, CFunctionEntry, script_context, 0, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
-        SetContext(fe->GetContext());
+        SetContext(fe->GetContext(0));
         GetContext()->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());
         GetContext()->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>());
         GetContext()->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>());
@@ -2835,9 +2831,9 @@ public:
 
     // -- registration method
     virtual void Register(CScriptContext* script_context) {
-        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFunctionType::Global, this);
+        CFunctionEntry* fe = TinAlloc(ALLOC_FuncEntry, CFunctionEntry, script_context, 0, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
-        SetContext(fe->GetContext());
+        SetContext(fe->GetContext(0));
         GetContext()->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0);
         GetContext()->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>());
         GetContext()->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>());
@@ -2916,9 +2912,9 @@ public:
     // -- registration method
     virtual void Register(CScriptContext* script_context) {
         uint32 classname_hash = Hash(C::_GetClassName());
-        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFunctionType::Global, this);
+        CFunctionEntry* fe = TinAlloc(ALLOC_FuncEntry, CFunctionEntry, script_context, classname_hash, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
-        SetContext(fe->GetContext());
+        SetContext(fe->GetContext(0));
         GetContext()->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());
         GetContext()->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>());
         GetContext()->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>());
@@ -2993,9 +2989,9 @@ public:
     // -- registration method
     virtual void Register(CScriptContext* script_context) {
         uint32 classname_hash = Hash(C::_GetClassName());
-        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFunctionType::Global, this);
+        CFunctionEntry* fe = TinAlloc(ALLOC_FuncEntry, CFunctionEntry, script_context, classname_hash, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
-        SetContext(fe->GetContext());
+        SetContext(fe->GetContext(0));
         GetContext()->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0);
         GetContext()->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>());
         GetContext()->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>());
@@ -3078,9 +3074,9 @@ public:
 
     // -- registration method
     virtual void Register(CScriptContext* script_context) {
-        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFunctionType::Global, this);
+        CFunctionEntry* fe =  TinAlloc(ALLOC_FuncEntry, CFunctionEntry, script_context, 0, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
-        SetContext(fe->GetContext());
+        SetContext(fe->GetContext(0));
         GetContext()->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());
         GetContext()->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>());
         GetContext()->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>());
@@ -3155,9 +3151,9 @@ public:
 
     // -- registration method
     virtual void Register(CScriptContext* script_context) {
-        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFunctionType::Global, this);
+        CFunctionEntry* fe = TinAlloc(ALLOC_FuncEntry, CFunctionEntry, script_context, 0, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
-        SetContext(fe->GetContext());
+        SetContext(fe->GetContext(0));
         GetContext()->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0);
         GetContext()->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>());
         GetContext()->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>());
@@ -3239,9 +3235,9 @@ public:
     // -- registration method
     virtual void Register(CScriptContext* script_context) {
         uint32 classname_hash = Hash(C::_GetClassName());
-        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFunctionType::Global, this);
+        CFunctionEntry* fe = TinAlloc(ALLOC_FuncEntry, CFunctionEntry, script_context, classname_hash, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
-        SetContext(fe->GetContext());
+        SetContext(fe->GetContext(0));
         GetContext()->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());
         GetContext()->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>());
         GetContext()->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>());
@@ -3319,9 +3315,9 @@ public:
     // -- registration method
     virtual void Register(CScriptContext* script_context) {
         uint32 classname_hash = Hash(C::_GetClassName());
-        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFunctionType::Global, this);
+        CFunctionEntry* fe = TinAlloc(ALLOC_FuncEntry, CFunctionEntry, script_context, classname_hash, GetName(), Hash(GetName()), eFunctionType::Global, this);
         SetScriptContext(script_context);
-        SetContext(fe->GetContext());
+        SetContext(fe->GetContext(0));
         GetContext()->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0);
         GetContext()->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>());
         GetContext()->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>());

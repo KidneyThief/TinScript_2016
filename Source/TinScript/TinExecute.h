@@ -271,7 +271,7 @@ class CFunctionCallStack
         {
 		}
 
-		void Push(CFunctionEntry* functionentry, CObjectEntry* objentry, int32 varoffset)
+		CFunctionContext* Push(CFunctionEntry* functionentry, CObjectEntry* objentry, int32 varoffset)
 		{
 			assert(functionentry != NULL);
             assert(m_stacktop < m_size);
@@ -281,6 +281,11 @@ class CFunctionCallStack
             m_functionEntryStack[m_stacktop].isexecuting = false;
             m_functionEntryStack[m_stacktop].mLocalObjectCount = 0;
             ++m_stacktop;
+
+            // -- note: as we prepare to call a function, the entry on the function call
+            // -- stack might not yet know the signature of the overload to be executed
+            // -- we'll return the CFunctionContext* being prepared
+            return (&m_functionEntryStack[m_stacktop].prepareContext);
 		}
 
 		CFunctionEntry* Pop(CObjectEntry*& objentry, int32& var_offset)
@@ -342,6 +347,14 @@ class CFunctionCallStack
                 varoffset = -1;
                 return (NULL);
             }
+        }
+
+        CFunctionContext* GetPrepareContext()
+        {
+            if (m_stacktop > 0)
+                return (&m_functionEntryStack[m_stacktop - 1].prepareContext);
+            else
+                return (nullptr);
         }
 
         int32 GetStackDepth() const
@@ -413,6 +426,7 @@ class CFunctionCallStack
 
             CFunctionEntry* funcentry;
             CObjectEntry* objentry;
+            CFunctionContext prepareContext;
             int32 stackvaroffset;
             uint32 linenumberfunccall;
             bool8 isexecuting;

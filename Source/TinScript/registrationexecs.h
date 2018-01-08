@@ -121,7 +121,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     CFunctionEntry* fe = oe ? oe->GetFunctionEntry(ns_hash, func_hash)
                             : script_context->GetGlobalNamespace()->GetFuncTable()->FindItem(func_hash);
-    CVariableEntry* return_ve = fe ? fe->GetContext()->GetParameter(0) : NULL;
+    CVariableEntry* return_ve = fe ? fe->GetContext(0)->GetParameter(0) : NULL;
     if (!fe || !return_ve)
     {
         ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() not found\n", UnHash(func_hash));
@@ -137,14 +137,14 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     }
 
     // -- fill in the parameters
-    if (fe->GetContext()->GetParameterCount() < 0)
+    if (fe->GetContext(0)->GetParameterCount() < 0)
     {
-        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects %d parameters\n", UnHash(func_hash), fe->GetContext(0)->GetParameterCount());
         return (false);
     }
 
     // -- execute the function
-    if (!ExecuteScheduledFunction(GetContext(), object_id, ns_hash, func_hash, fe->GetContext()))
+    if (!ExecuteScheduledFunction(GetContext(), object_id, ns_hash, func_hash, fe->GetContext(0)))
     {
         ScriptAssert_(script_context, 0, "<internal>", -1, "Error - unable to exec function %s()\n", UnHash(func_hash));
         return false;
@@ -243,7 +243,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     CFunctionEntry* fe = oe ? oe->GetFunctionEntry(ns_hash, func_hash)
                             : script_context->GetGlobalNamespace()->GetFuncTable()->FindItem(func_hash);
-    CVariableEntry* return_ve = fe ? fe->GetContext()->GetParameter(0) : NULL;
+    CVariableEntry* return_ve = fe ? fe->GetContext(0)->GetParameter(0) : NULL;
     if (!fe || !return_ve)
     {
         ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() not found\n", UnHash(func_hash));
@@ -259,13 +259,13 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     }
 
     // -- fill in the parameters
-    if (fe->GetContext()->GetParameterCount() < 1)
+    if (fe->GetContext(0)->GetParameterCount() < 1)
     {
-        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects %d parameters\n", UnHash(func_hash), fe->GetContext(0)->GetParameterCount());
         return (false);
     }
 
-    CVariableEntry* ve_p1 = fe->GetContext()->GetParameter(1);
+    CVariableEntry* ve_p1 = fe->GetContext(0)->GetParameter(1);
     void* p1_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T1>()) == TYPE_string)
         p1_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p1, ve_p1->GetType());
@@ -280,7 +280,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     ve_p1->SetValueAddr(oe ? oe->GetAddr() : NULL, p1_convert_addr);
 
     // -- execute the function
-    if (!ExecuteScheduledFunction(GetContext(), object_id, ns_hash, func_hash, fe->GetContext()))
+    if (!ExecuteScheduledFunction(GetContext(), object_id, ns_hash, func_hash, fe->GetContext(0)))
     {
         ScriptAssert_(script_context, 0, "<internal>", -1, "Error - unable to exec function %s()\n", UnHash(func_hash));
         return false;
@@ -379,7 +379,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     CFunctionEntry* fe = oe ? oe->GetFunctionEntry(ns_hash, func_hash)
                             : script_context->GetGlobalNamespace()->GetFuncTable()->FindItem(func_hash);
-    CVariableEntry* return_ve = fe ? fe->GetContext()->GetParameter(0) : NULL;
+    CVariableEntry* return_ve = fe ? fe->GetContext(0)->GetParameter(0) : NULL;
     if (!fe || !return_ve)
     {
         ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() not found\n", UnHash(func_hash));
@@ -395,13 +395,13 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     }
 
     // -- fill in the parameters
-    if (fe->GetContext()->GetParameterCount() < 2)
+    if (fe->GetContext(0)->GetParameterCount() < 2)
     {
-        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects %d parameters\n", UnHash(func_hash), fe->GetContext(0)->GetParameterCount());
         return (false);
     }
 
-    CVariableEntry* ve_p1 = fe->GetContext()->GetParameter(1);
+    CVariableEntry* ve_p1 = fe->GetContext(0)->GetParameter(1);
     void* p1_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T1>()) == TYPE_string)
         p1_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p1, ve_p1->GetType());
@@ -415,7 +415,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     ve_p1->SetValueAddr(oe ? oe->GetAddr() : NULL, p1_convert_addr);
 
-    CVariableEntry* ve_p2 = fe->GetContext()->GetParameter(2);
+    CVariableEntry* ve_p2 = fe->GetContext(0)->GetParameter(2);
     void* p2_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T2>()) == TYPE_string)
         p2_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p2, ve_p2->GetType());
@@ -430,7 +430,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     ve_p2->SetValueAddr(oe ? oe->GetAddr() : NULL, p2_convert_addr);
 
     // -- execute the function
-    if (!ExecuteScheduledFunction(GetContext(), object_id, ns_hash, func_hash, fe->GetContext()))
+    if (!ExecuteScheduledFunction(GetContext(), object_id, ns_hash, func_hash, fe->GetContext(0)))
     {
         ScriptAssert_(script_context, 0, "<internal>", -1, "Error - unable to exec function %s()\n", UnHash(func_hash));
         return false;
@@ -529,7 +529,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     CFunctionEntry* fe = oe ? oe->GetFunctionEntry(ns_hash, func_hash)
                             : script_context->GetGlobalNamespace()->GetFuncTable()->FindItem(func_hash);
-    CVariableEntry* return_ve = fe ? fe->GetContext()->GetParameter(0) : NULL;
+    CVariableEntry* return_ve = fe ? fe->GetContext(0)->GetParameter(0) : NULL;
     if (!fe || !return_ve)
     {
         ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() not found\n", UnHash(func_hash));
@@ -545,13 +545,13 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     }
 
     // -- fill in the parameters
-    if (fe->GetContext()->GetParameterCount() < 3)
+    if (fe->GetContext(0)->GetParameterCount() < 3)
     {
-        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects %d parameters\n", UnHash(func_hash), fe->GetContext(0)->GetParameterCount());
         return (false);
     }
 
-    CVariableEntry* ve_p1 = fe->GetContext()->GetParameter(1);
+    CVariableEntry* ve_p1 = fe->GetContext(0)->GetParameter(1);
     void* p1_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T1>()) == TYPE_string)
         p1_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p1, ve_p1->GetType());
@@ -565,7 +565,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     ve_p1->SetValueAddr(oe ? oe->GetAddr() : NULL, p1_convert_addr);
 
-    CVariableEntry* ve_p2 = fe->GetContext()->GetParameter(2);
+    CVariableEntry* ve_p2 = fe->GetContext(0)->GetParameter(2);
     void* p2_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T2>()) == TYPE_string)
         p2_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p2, ve_p2->GetType());
@@ -579,7 +579,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     ve_p2->SetValueAddr(oe ? oe->GetAddr() : NULL, p2_convert_addr);
 
-    CVariableEntry* ve_p3 = fe->GetContext()->GetParameter(3);
+    CVariableEntry* ve_p3 = fe->GetContext(0)->GetParameter(3);
     void* p3_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T3>()) == TYPE_string)
         p3_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p3, ve_p3->GetType());
@@ -594,7 +594,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     ve_p3->SetValueAddr(oe ? oe->GetAddr() : NULL, p3_convert_addr);
 
     // -- execute the function
-    if (!ExecuteScheduledFunction(GetContext(), object_id, ns_hash, func_hash, fe->GetContext()))
+    if (!ExecuteScheduledFunction(GetContext(), object_id, ns_hash, func_hash, fe->GetContext(0)))
     {
         ScriptAssert_(script_context, 0, "<internal>", -1, "Error - unable to exec function %s()\n", UnHash(func_hash));
         return false;
@@ -693,7 +693,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     CFunctionEntry* fe = oe ? oe->GetFunctionEntry(ns_hash, func_hash)
                             : script_context->GetGlobalNamespace()->GetFuncTable()->FindItem(func_hash);
-    CVariableEntry* return_ve = fe ? fe->GetContext()->GetParameter(0) : NULL;
+    CVariableEntry* return_ve = fe ? fe->GetContext(0)->GetParameter(0) : NULL;
     if (!fe || !return_ve)
     {
         ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() not found\n", UnHash(func_hash));
@@ -709,13 +709,13 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     }
 
     // -- fill in the parameters
-    if (fe->GetContext()->GetParameterCount() < 4)
+    if (fe->GetContext(0)->GetParameterCount() < 4)
     {
-        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects %d parameters\n", UnHash(func_hash), fe->GetContext(0)->GetParameterCount());
         return (false);
     }
 
-    CVariableEntry* ve_p1 = fe->GetContext()->GetParameter(1);
+    CVariableEntry* ve_p1 = fe->GetContext(0)->GetParameter(1);
     void* p1_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T1>()) == TYPE_string)
         p1_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p1, ve_p1->GetType());
@@ -729,7 +729,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     ve_p1->SetValueAddr(oe ? oe->GetAddr() : NULL, p1_convert_addr);
 
-    CVariableEntry* ve_p2 = fe->GetContext()->GetParameter(2);
+    CVariableEntry* ve_p2 = fe->GetContext(0)->GetParameter(2);
     void* p2_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T2>()) == TYPE_string)
         p2_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p2, ve_p2->GetType());
@@ -743,7 +743,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     ve_p2->SetValueAddr(oe ? oe->GetAddr() : NULL, p2_convert_addr);
 
-    CVariableEntry* ve_p3 = fe->GetContext()->GetParameter(3);
+    CVariableEntry* ve_p3 = fe->GetContext(0)->GetParameter(3);
     void* p3_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T3>()) == TYPE_string)
         p3_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p3, ve_p3->GetType());
@@ -757,7 +757,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     ve_p3->SetValueAddr(oe ? oe->GetAddr() : NULL, p3_convert_addr);
 
-    CVariableEntry* ve_p4 = fe->GetContext()->GetParameter(4);
+    CVariableEntry* ve_p4 = fe->GetContext(0)->GetParameter(4);
     void* p4_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T4>()) == TYPE_string)
         p4_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p4, ve_p4->GetType());
@@ -772,7 +772,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     ve_p4->SetValueAddr(oe ? oe->GetAddr() : NULL, p4_convert_addr);
 
     // -- execute the function
-    if (!ExecuteScheduledFunction(GetContext(), object_id, ns_hash, func_hash, fe->GetContext()))
+    if (!ExecuteScheduledFunction(GetContext(), object_id, ns_hash, func_hash, fe->GetContext(0)))
     {
         ScriptAssert_(script_context, 0, "<internal>", -1, "Error - unable to exec function %s()\n", UnHash(func_hash));
         return false;
@@ -871,7 +871,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     CFunctionEntry* fe = oe ? oe->GetFunctionEntry(ns_hash, func_hash)
                             : script_context->GetGlobalNamespace()->GetFuncTable()->FindItem(func_hash);
-    CVariableEntry* return_ve = fe ? fe->GetContext()->GetParameter(0) : NULL;
+    CVariableEntry* return_ve = fe ? fe->GetContext(0)->GetParameter(0) : NULL;
     if (!fe || !return_ve)
     {
         ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() not found\n", UnHash(func_hash));
@@ -887,13 +887,13 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     }
 
     // -- fill in the parameters
-    if (fe->GetContext()->GetParameterCount() < 5)
+    if (fe->GetContext(0)->GetParameterCount() < 5)
     {
-        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects %d parameters\n", UnHash(func_hash), fe->GetContext(0)->GetParameterCount());
         return (false);
     }
 
-    CVariableEntry* ve_p1 = fe->GetContext()->GetParameter(1);
+    CVariableEntry* ve_p1 = fe->GetContext(0)->GetParameter(1);
     void* p1_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T1>()) == TYPE_string)
         p1_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p1, ve_p1->GetType());
@@ -907,7 +907,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     ve_p1->SetValueAddr(oe ? oe->GetAddr() : NULL, p1_convert_addr);
 
-    CVariableEntry* ve_p2 = fe->GetContext()->GetParameter(2);
+    CVariableEntry* ve_p2 = fe->GetContext(0)->GetParameter(2);
     void* p2_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T2>()) == TYPE_string)
         p2_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p2, ve_p2->GetType());
@@ -921,7 +921,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     ve_p2->SetValueAddr(oe ? oe->GetAddr() : NULL, p2_convert_addr);
 
-    CVariableEntry* ve_p3 = fe->GetContext()->GetParameter(3);
+    CVariableEntry* ve_p3 = fe->GetContext(0)->GetParameter(3);
     void* p3_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T3>()) == TYPE_string)
         p3_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p3, ve_p3->GetType());
@@ -935,7 +935,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     ve_p3->SetValueAddr(oe ? oe->GetAddr() : NULL, p3_convert_addr);
 
-    CVariableEntry* ve_p4 = fe->GetContext()->GetParameter(4);
+    CVariableEntry* ve_p4 = fe->GetContext(0)->GetParameter(4);
     void* p4_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T4>()) == TYPE_string)
         p4_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p4, ve_p4->GetType());
@@ -949,7 +949,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     ve_p4->SetValueAddr(oe ? oe->GetAddr() : NULL, p4_convert_addr);
 
-    CVariableEntry* ve_p5 = fe->GetContext()->GetParameter(5);
+    CVariableEntry* ve_p5 = fe->GetContext(0)->GetParameter(5);
     void* p5_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T5>()) == TYPE_string)
         p5_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p5, ve_p5->GetType());
@@ -964,7 +964,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     ve_p5->SetValueAddr(oe ? oe->GetAddr() : NULL, p5_convert_addr);
 
     // -- execute the function
-    if (!ExecuteScheduledFunction(GetContext(), object_id, ns_hash, func_hash, fe->GetContext()))
+    if (!ExecuteScheduledFunction(GetContext(), object_id, ns_hash, func_hash, fe->GetContext(0)))
     {
         ScriptAssert_(script_context, 0, "<internal>", -1, "Error - unable to exec function %s()\n", UnHash(func_hash));
         return false;
@@ -1063,7 +1063,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     CFunctionEntry* fe = oe ? oe->GetFunctionEntry(ns_hash, func_hash)
                             : script_context->GetGlobalNamespace()->GetFuncTable()->FindItem(func_hash);
-    CVariableEntry* return_ve = fe ? fe->GetContext()->GetParameter(0) : NULL;
+    CVariableEntry* return_ve = fe ? fe->GetContext(0)->GetParameter(0) : NULL;
     if (!fe || !return_ve)
     {
         ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() not found\n", UnHash(func_hash));
@@ -1079,13 +1079,13 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     }
 
     // -- fill in the parameters
-    if (fe->GetContext()->GetParameterCount() < 6)
+    if (fe->GetContext(0)->GetParameterCount() < 6)
     {
-        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects %d parameters\n", UnHash(func_hash), fe->GetContext(0)->GetParameterCount());
         return (false);
     }
 
-    CVariableEntry* ve_p1 = fe->GetContext()->GetParameter(1);
+    CVariableEntry* ve_p1 = fe->GetContext(0)->GetParameter(1);
     void* p1_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T1>()) == TYPE_string)
         p1_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p1, ve_p1->GetType());
@@ -1099,7 +1099,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     ve_p1->SetValueAddr(oe ? oe->GetAddr() : NULL, p1_convert_addr);
 
-    CVariableEntry* ve_p2 = fe->GetContext()->GetParameter(2);
+    CVariableEntry* ve_p2 = fe->GetContext(0)->GetParameter(2);
     void* p2_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T2>()) == TYPE_string)
         p2_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p2, ve_p2->GetType());
@@ -1113,7 +1113,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     ve_p2->SetValueAddr(oe ? oe->GetAddr() : NULL, p2_convert_addr);
 
-    CVariableEntry* ve_p3 = fe->GetContext()->GetParameter(3);
+    CVariableEntry* ve_p3 = fe->GetContext(0)->GetParameter(3);
     void* p3_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T3>()) == TYPE_string)
         p3_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p3, ve_p3->GetType());
@@ -1127,7 +1127,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     ve_p3->SetValueAddr(oe ? oe->GetAddr() : NULL, p3_convert_addr);
 
-    CVariableEntry* ve_p4 = fe->GetContext()->GetParameter(4);
+    CVariableEntry* ve_p4 = fe->GetContext(0)->GetParameter(4);
     void* p4_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T4>()) == TYPE_string)
         p4_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p4, ve_p4->GetType());
@@ -1141,7 +1141,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     ve_p4->SetValueAddr(oe ? oe->GetAddr() : NULL, p4_convert_addr);
 
-    CVariableEntry* ve_p5 = fe->GetContext()->GetParameter(5);
+    CVariableEntry* ve_p5 = fe->GetContext(0)->GetParameter(5);
     void* p5_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T5>()) == TYPE_string)
         p5_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p5, ve_p5->GetType());
@@ -1155,7 +1155,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     ve_p5->SetValueAddr(oe ? oe->GetAddr() : NULL, p5_convert_addr);
 
-    CVariableEntry* ve_p6 = fe->GetContext()->GetParameter(6);
+    CVariableEntry* ve_p6 = fe->GetContext(0)->GetParameter(6);
     void* p6_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T6>()) == TYPE_string)
         p6_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p6, ve_p6->GetType());
@@ -1170,7 +1170,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     ve_p6->SetValueAddr(oe ? oe->GetAddr() : NULL, p6_convert_addr);
 
     // -- execute the function
-    if (!ExecuteScheduledFunction(GetContext(), object_id, ns_hash, func_hash, fe->GetContext()))
+    if (!ExecuteScheduledFunction(GetContext(), object_id, ns_hash, func_hash, fe->GetContext(0)))
     {
         ScriptAssert_(script_context, 0, "<internal>", -1, "Error - unable to exec function %s()\n", UnHash(func_hash));
         return false;
@@ -1269,7 +1269,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     CFunctionEntry* fe = oe ? oe->GetFunctionEntry(ns_hash, func_hash)
                             : script_context->GetGlobalNamespace()->GetFuncTable()->FindItem(func_hash);
-    CVariableEntry* return_ve = fe ? fe->GetContext()->GetParameter(0) : NULL;
+    CVariableEntry* return_ve = fe ? fe->GetContext(0)->GetParameter(0) : NULL;
     if (!fe || !return_ve)
     {
         ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() not found\n", UnHash(func_hash));
@@ -1285,13 +1285,13 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     }
 
     // -- fill in the parameters
-    if (fe->GetContext()->GetParameterCount() < 7)
+    if (fe->GetContext(0)->GetParameterCount() < 7)
     {
-        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects %d parameters\n", UnHash(func_hash), fe->GetContext(0)->GetParameterCount());
         return (false);
     }
 
-    CVariableEntry* ve_p1 = fe->GetContext()->GetParameter(1);
+    CVariableEntry* ve_p1 = fe->GetContext(0)->GetParameter(1);
     void* p1_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T1>()) == TYPE_string)
         p1_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p1, ve_p1->GetType());
@@ -1305,7 +1305,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     ve_p1->SetValueAddr(oe ? oe->GetAddr() : NULL, p1_convert_addr);
 
-    CVariableEntry* ve_p2 = fe->GetContext()->GetParameter(2);
+    CVariableEntry* ve_p2 = fe->GetContext(0)->GetParameter(2);
     void* p2_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T2>()) == TYPE_string)
         p2_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p2, ve_p2->GetType());
@@ -1319,7 +1319,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     ve_p2->SetValueAddr(oe ? oe->GetAddr() : NULL, p2_convert_addr);
 
-    CVariableEntry* ve_p3 = fe->GetContext()->GetParameter(3);
+    CVariableEntry* ve_p3 = fe->GetContext(0)->GetParameter(3);
     void* p3_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T3>()) == TYPE_string)
         p3_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p3, ve_p3->GetType());
@@ -1333,7 +1333,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     ve_p3->SetValueAddr(oe ? oe->GetAddr() : NULL, p3_convert_addr);
 
-    CVariableEntry* ve_p4 = fe->GetContext()->GetParameter(4);
+    CVariableEntry* ve_p4 = fe->GetContext(0)->GetParameter(4);
     void* p4_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T4>()) == TYPE_string)
         p4_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p4, ve_p4->GetType());
@@ -1347,7 +1347,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     ve_p4->SetValueAddr(oe ? oe->GetAddr() : NULL, p4_convert_addr);
 
-    CVariableEntry* ve_p5 = fe->GetContext()->GetParameter(5);
+    CVariableEntry* ve_p5 = fe->GetContext(0)->GetParameter(5);
     void* p5_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T5>()) == TYPE_string)
         p5_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p5, ve_p5->GetType());
@@ -1361,7 +1361,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     ve_p5->SetValueAddr(oe ? oe->GetAddr() : NULL, p5_convert_addr);
 
-    CVariableEntry* ve_p6 = fe->GetContext()->GetParameter(6);
+    CVariableEntry* ve_p6 = fe->GetContext(0)->GetParameter(6);
     void* p6_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T6>()) == TYPE_string)
         p6_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p6, ve_p6->GetType());
@@ -1375,7 +1375,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     ve_p6->SetValueAddr(oe ? oe->GetAddr() : NULL, p6_convert_addr);
 
-    CVariableEntry* ve_p7 = fe->GetContext()->GetParameter(7);
+    CVariableEntry* ve_p7 = fe->GetContext(0)->GetParameter(7);
     void* p7_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T7>()) == TYPE_string)
         p7_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p7, ve_p7->GetType());
@@ -1390,7 +1390,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     ve_p7->SetValueAddr(oe ? oe->GetAddr() : NULL, p7_convert_addr);
 
     // -- execute the function
-    if (!ExecuteScheduledFunction(GetContext(), object_id, ns_hash, func_hash, fe->GetContext()))
+    if (!ExecuteScheduledFunction(GetContext(), object_id, ns_hash, func_hash, fe->GetContext(0)))
     {
         ScriptAssert_(script_context, 0, "<internal>", -1, "Error - unable to exec function %s()\n", UnHash(func_hash));
         return false;
@@ -1489,7 +1489,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     CFunctionEntry* fe = oe ? oe->GetFunctionEntry(ns_hash, func_hash)
                             : script_context->GetGlobalNamespace()->GetFuncTable()->FindItem(func_hash);
-    CVariableEntry* return_ve = fe ? fe->GetContext()->GetParameter(0) : NULL;
+    CVariableEntry* return_ve = fe ? fe->GetContext(0)->GetParameter(0) : NULL;
     if (!fe || !return_ve)
     {
         ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() not found\n", UnHash(func_hash));
@@ -1505,13 +1505,13 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     }
 
     // -- fill in the parameters
-    if (fe->GetContext()->GetParameterCount() < 8)
+    if (fe->GetContext(0)->GetParameterCount() < 8)
     {
-        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects %d parameters\n", UnHash(func_hash), fe->GetContext(0)->GetParameterCount());
         return (false);
     }
 
-    CVariableEntry* ve_p1 = fe->GetContext()->GetParameter(1);
+    CVariableEntry* ve_p1 = fe->GetContext(0)->GetParameter(1);
     void* p1_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T1>()) == TYPE_string)
         p1_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p1, ve_p1->GetType());
@@ -1525,7 +1525,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     ve_p1->SetValueAddr(oe ? oe->GetAddr() : NULL, p1_convert_addr);
 
-    CVariableEntry* ve_p2 = fe->GetContext()->GetParameter(2);
+    CVariableEntry* ve_p2 = fe->GetContext(0)->GetParameter(2);
     void* p2_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T2>()) == TYPE_string)
         p2_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p2, ve_p2->GetType());
@@ -1539,7 +1539,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     ve_p2->SetValueAddr(oe ? oe->GetAddr() : NULL, p2_convert_addr);
 
-    CVariableEntry* ve_p3 = fe->GetContext()->GetParameter(3);
+    CVariableEntry* ve_p3 = fe->GetContext(0)->GetParameter(3);
     void* p3_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T3>()) == TYPE_string)
         p3_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p3, ve_p3->GetType());
@@ -1553,7 +1553,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     ve_p3->SetValueAddr(oe ? oe->GetAddr() : NULL, p3_convert_addr);
 
-    CVariableEntry* ve_p4 = fe->GetContext()->GetParameter(4);
+    CVariableEntry* ve_p4 = fe->GetContext(0)->GetParameter(4);
     void* p4_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T4>()) == TYPE_string)
         p4_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p4, ve_p4->GetType());
@@ -1567,7 +1567,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     ve_p4->SetValueAddr(oe ? oe->GetAddr() : NULL, p4_convert_addr);
 
-    CVariableEntry* ve_p5 = fe->GetContext()->GetParameter(5);
+    CVariableEntry* ve_p5 = fe->GetContext(0)->GetParameter(5);
     void* p5_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T5>()) == TYPE_string)
         p5_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p5, ve_p5->GetType());
@@ -1581,7 +1581,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     ve_p5->SetValueAddr(oe ? oe->GetAddr() : NULL, p5_convert_addr);
 
-    CVariableEntry* ve_p6 = fe->GetContext()->GetParameter(6);
+    CVariableEntry* ve_p6 = fe->GetContext(0)->GetParameter(6);
     void* p6_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T6>()) == TYPE_string)
         p6_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p6, ve_p6->GetType());
@@ -1595,7 +1595,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     ve_p6->SetValueAddr(oe ? oe->GetAddr() : NULL, p6_convert_addr);
 
-    CVariableEntry* ve_p7 = fe->GetContext()->GetParameter(7);
+    CVariableEntry* ve_p7 = fe->GetContext(0)->GetParameter(7);
     void* p7_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T7>()) == TYPE_string)
         p7_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p7, ve_p7->GetType());
@@ -1609,7 +1609,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     ve_p7->SetValueAddr(oe ? oe->GetAddr() : NULL, p7_convert_addr);
 
-    CVariableEntry* ve_p8 = fe->GetContext()->GetParameter(8);
+    CVariableEntry* ve_p8 = fe->GetContext(0)->GetParameter(8);
     void* p8_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T8>()) == TYPE_string)
         p8_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p8, ve_p8->GetType());
@@ -1624,7 +1624,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     ve_p8->SetValueAddr(oe ? oe->GetAddr() : NULL, p8_convert_addr);
 
     // -- execute the function
-    if (!ExecuteScheduledFunction(GetContext(), object_id, ns_hash, func_hash, fe->GetContext()))
+    if (!ExecuteScheduledFunction(GetContext(), object_id, ns_hash, func_hash, fe->GetContext(0)))
     {
         ScriptAssert_(script_context, 0, "<internal>", -1, "Error - unable to exec function %s()\n", UnHash(func_hash));
         return false;
@@ -1723,7 +1723,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     CFunctionEntry* fe = oe ? oe->GetFunctionEntry(ns_hash, func_hash)
                             : script_context->GetGlobalNamespace()->GetFuncTable()->FindItem(func_hash);
-    CVariableEntry* return_ve = fe ? fe->GetContext()->GetParameter(0) : NULL;
+    CVariableEntry* return_ve = fe ? fe->GetContext(0)->GetParameter(0) : NULL;
     if (!fe || !return_ve)
     {
         ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() not found\n", UnHash(func_hash));
@@ -1739,13 +1739,13 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     }
 
     // -- fill in the parameters
-    if (fe->GetContext()->GetParameterCount() < 9)
+    if (fe->GetContext(0)->GetParameterCount() < 9)
     {
-        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects %d parameters\n", UnHash(func_hash), fe->GetContext(0)->GetParameterCount());
         return (false);
     }
 
-    CVariableEntry* ve_p1 = fe->GetContext()->GetParameter(1);
+    CVariableEntry* ve_p1 = fe->GetContext(0)->GetParameter(1);
     void* p1_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T1>()) == TYPE_string)
         p1_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p1, ve_p1->GetType());
@@ -1759,7 +1759,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     ve_p1->SetValueAddr(oe ? oe->GetAddr() : NULL, p1_convert_addr);
 
-    CVariableEntry* ve_p2 = fe->GetContext()->GetParameter(2);
+    CVariableEntry* ve_p2 = fe->GetContext(0)->GetParameter(2);
     void* p2_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T2>()) == TYPE_string)
         p2_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p2, ve_p2->GetType());
@@ -1773,7 +1773,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     ve_p2->SetValueAddr(oe ? oe->GetAddr() : NULL, p2_convert_addr);
 
-    CVariableEntry* ve_p3 = fe->GetContext()->GetParameter(3);
+    CVariableEntry* ve_p3 = fe->GetContext(0)->GetParameter(3);
     void* p3_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T3>()) == TYPE_string)
         p3_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p3, ve_p3->GetType());
@@ -1787,7 +1787,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     ve_p3->SetValueAddr(oe ? oe->GetAddr() : NULL, p3_convert_addr);
 
-    CVariableEntry* ve_p4 = fe->GetContext()->GetParameter(4);
+    CVariableEntry* ve_p4 = fe->GetContext(0)->GetParameter(4);
     void* p4_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T4>()) == TYPE_string)
         p4_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p4, ve_p4->GetType());
@@ -1801,7 +1801,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     ve_p4->SetValueAddr(oe ? oe->GetAddr() : NULL, p4_convert_addr);
 
-    CVariableEntry* ve_p5 = fe->GetContext()->GetParameter(5);
+    CVariableEntry* ve_p5 = fe->GetContext(0)->GetParameter(5);
     void* p5_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T5>()) == TYPE_string)
         p5_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p5, ve_p5->GetType());
@@ -1815,7 +1815,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     ve_p5->SetValueAddr(oe ? oe->GetAddr() : NULL, p5_convert_addr);
 
-    CVariableEntry* ve_p6 = fe->GetContext()->GetParameter(6);
+    CVariableEntry* ve_p6 = fe->GetContext(0)->GetParameter(6);
     void* p6_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T6>()) == TYPE_string)
         p6_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p6, ve_p6->GetType());
@@ -1829,7 +1829,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     ve_p6->SetValueAddr(oe ? oe->GetAddr() : NULL, p6_convert_addr);
 
-    CVariableEntry* ve_p7 = fe->GetContext()->GetParameter(7);
+    CVariableEntry* ve_p7 = fe->GetContext(0)->GetParameter(7);
     void* p7_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T7>()) == TYPE_string)
         p7_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p7, ve_p7->GetType());
@@ -1843,7 +1843,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     ve_p7->SetValueAddr(oe ? oe->GetAddr() : NULL, p7_convert_addr);
 
-    CVariableEntry* ve_p8 = fe->GetContext()->GetParameter(8);
+    CVariableEntry* ve_p8 = fe->GetContext(0)->GetParameter(8);
     void* p8_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T8>()) == TYPE_string)
         p8_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p8, ve_p8->GetType());
@@ -1857,7 +1857,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     ve_p8->SetValueAddr(oe ? oe->GetAddr() : NULL, p8_convert_addr);
 
-    CVariableEntry* ve_p9 = fe->GetContext()->GetParameter(9);
+    CVariableEntry* ve_p9 = fe->GetContext(0)->GetParameter(9);
     void* p9_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T9>()) == TYPE_string)
         p9_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p9, ve_p9->GetType());
@@ -1872,7 +1872,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     ve_p9->SetValueAddr(oe ? oe->GetAddr() : NULL, p9_convert_addr);
 
     // -- execute the function
-    if (!ExecuteScheduledFunction(GetContext(), object_id, ns_hash, func_hash, fe->GetContext()))
+    if (!ExecuteScheduledFunction(GetContext(), object_id, ns_hash, func_hash, fe->GetContext(0)))
     {
         ScriptAssert_(script_context, 0, "<internal>", -1, "Error - unable to exec function %s()\n", UnHash(func_hash));
         return false;
@@ -1971,7 +1971,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     CFunctionEntry* fe = oe ? oe->GetFunctionEntry(ns_hash, func_hash)
                             : script_context->GetGlobalNamespace()->GetFuncTable()->FindItem(func_hash);
-    CVariableEntry* return_ve = fe ? fe->GetContext()->GetParameter(0) : NULL;
+    CVariableEntry* return_ve = fe ? fe->GetContext(0)->GetParameter(0) : NULL;
     if (!fe || !return_ve)
     {
         ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() not found\n", UnHash(func_hash));
@@ -1987,13 +1987,13 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     }
 
     // -- fill in the parameters
-    if (fe->GetContext()->GetParameterCount() < 10)
+    if (fe->GetContext(0)->GetParameterCount() < 10)
     {
-        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects %d parameters\n", UnHash(func_hash), fe->GetContext(0)->GetParameterCount());
         return (false);
     }
 
-    CVariableEntry* ve_p1 = fe->GetContext()->GetParameter(1);
+    CVariableEntry* ve_p1 = fe->GetContext(0)->GetParameter(1);
     void* p1_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T1>()) == TYPE_string)
         p1_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p1, ve_p1->GetType());
@@ -2007,7 +2007,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     ve_p1->SetValueAddr(oe ? oe->GetAddr() : NULL, p1_convert_addr);
 
-    CVariableEntry* ve_p2 = fe->GetContext()->GetParameter(2);
+    CVariableEntry* ve_p2 = fe->GetContext(0)->GetParameter(2);
     void* p2_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T2>()) == TYPE_string)
         p2_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p2, ve_p2->GetType());
@@ -2021,7 +2021,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     ve_p2->SetValueAddr(oe ? oe->GetAddr() : NULL, p2_convert_addr);
 
-    CVariableEntry* ve_p3 = fe->GetContext()->GetParameter(3);
+    CVariableEntry* ve_p3 = fe->GetContext(0)->GetParameter(3);
     void* p3_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T3>()) == TYPE_string)
         p3_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p3, ve_p3->GetType());
@@ -2035,7 +2035,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     ve_p3->SetValueAddr(oe ? oe->GetAddr() : NULL, p3_convert_addr);
 
-    CVariableEntry* ve_p4 = fe->GetContext()->GetParameter(4);
+    CVariableEntry* ve_p4 = fe->GetContext(0)->GetParameter(4);
     void* p4_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T4>()) == TYPE_string)
         p4_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p4, ve_p4->GetType());
@@ -2049,7 +2049,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     ve_p4->SetValueAddr(oe ? oe->GetAddr() : NULL, p4_convert_addr);
 
-    CVariableEntry* ve_p5 = fe->GetContext()->GetParameter(5);
+    CVariableEntry* ve_p5 = fe->GetContext(0)->GetParameter(5);
     void* p5_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T5>()) == TYPE_string)
         p5_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p5, ve_p5->GetType());
@@ -2063,7 +2063,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     ve_p5->SetValueAddr(oe ? oe->GetAddr() : NULL, p5_convert_addr);
 
-    CVariableEntry* ve_p6 = fe->GetContext()->GetParameter(6);
+    CVariableEntry* ve_p6 = fe->GetContext(0)->GetParameter(6);
     void* p6_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T6>()) == TYPE_string)
         p6_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p6, ve_p6->GetType());
@@ -2077,7 +2077,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     ve_p6->SetValueAddr(oe ? oe->GetAddr() : NULL, p6_convert_addr);
 
-    CVariableEntry* ve_p7 = fe->GetContext()->GetParameter(7);
+    CVariableEntry* ve_p7 = fe->GetContext(0)->GetParameter(7);
     void* p7_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T7>()) == TYPE_string)
         p7_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p7, ve_p7->GetType());
@@ -2091,7 +2091,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     ve_p7->SetValueAddr(oe ? oe->GetAddr() : NULL, p7_convert_addr);
 
-    CVariableEntry* ve_p8 = fe->GetContext()->GetParameter(8);
+    CVariableEntry* ve_p8 = fe->GetContext(0)->GetParameter(8);
     void* p8_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T8>()) == TYPE_string)
         p8_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p8, ve_p8->GetType());
@@ -2105,7 +2105,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     ve_p8->SetValueAddr(oe ? oe->GetAddr() : NULL, p8_convert_addr);
 
-    CVariableEntry* ve_p9 = fe->GetContext()->GetParameter(9);
+    CVariableEntry* ve_p9 = fe->GetContext(0)->GetParameter(9);
     void* p9_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T9>()) == TYPE_string)
         p9_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p9, ve_p9->GetType());
@@ -2119,7 +2119,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     ve_p9->SetValueAddr(oe ? oe->GetAddr() : NULL, p9_convert_addr);
 
-    CVariableEntry* ve_p10 = fe->GetContext()->GetParameter(10);
+    CVariableEntry* ve_p10 = fe->GetContext(0)->GetParameter(10);
     void* p10_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T10>()) == TYPE_string)
         p10_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p10, ve_p10->GetType());
@@ -2134,7 +2134,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     ve_p10->SetValueAddr(oe ? oe->GetAddr() : NULL, p10_convert_addr);
 
     // -- execute the function
-    if (!ExecuteScheduledFunction(GetContext(), object_id, ns_hash, func_hash, fe->GetContext()))
+    if (!ExecuteScheduledFunction(GetContext(), object_id, ns_hash, func_hash, fe->GetContext(0)))
     {
         ScriptAssert_(script_context, 0, "<internal>", -1, "Error - unable to exec function %s()\n", UnHash(func_hash));
         return false;
@@ -2233,7 +2233,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     CFunctionEntry* fe = oe ? oe->GetFunctionEntry(ns_hash, func_hash)
                             : script_context->GetGlobalNamespace()->GetFuncTable()->FindItem(func_hash);
-    CVariableEntry* return_ve = fe ? fe->GetContext()->GetParameter(0) : NULL;
+    CVariableEntry* return_ve = fe ? fe->GetContext(0)->GetParameter(0) : NULL;
     if (!fe || !return_ve)
     {
         ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() not found\n", UnHash(func_hash));
@@ -2249,13 +2249,13 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     }
 
     // -- fill in the parameters
-    if (fe->GetContext()->GetParameterCount() < 11)
+    if (fe->GetContext(0)->GetParameterCount() < 11)
     {
-        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects %d parameters\n", UnHash(func_hash), fe->GetContext(0)->GetParameterCount());
         return (false);
     }
 
-    CVariableEntry* ve_p1 = fe->GetContext()->GetParameter(1);
+    CVariableEntry* ve_p1 = fe->GetContext(0)->GetParameter(1);
     void* p1_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T1>()) == TYPE_string)
         p1_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p1, ve_p1->GetType());
@@ -2269,7 +2269,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     ve_p1->SetValueAddr(oe ? oe->GetAddr() : NULL, p1_convert_addr);
 
-    CVariableEntry* ve_p2 = fe->GetContext()->GetParameter(2);
+    CVariableEntry* ve_p2 = fe->GetContext(0)->GetParameter(2);
     void* p2_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T2>()) == TYPE_string)
         p2_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p2, ve_p2->GetType());
@@ -2283,7 +2283,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     ve_p2->SetValueAddr(oe ? oe->GetAddr() : NULL, p2_convert_addr);
 
-    CVariableEntry* ve_p3 = fe->GetContext()->GetParameter(3);
+    CVariableEntry* ve_p3 = fe->GetContext(0)->GetParameter(3);
     void* p3_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T3>()) == TYPE_string)
         p3_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p3, ve_p3->GetType());
@@ -2297,7 +2297,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     ve_p3->SetValueAddr(oe ? oe->GetAddr() : NULL, p3_convert_addr);
 
-    CVariableEntry* ve_p4 = fe->GetContext()->GetParameter(4);
+    CVariableEntry* ve_p4 = fe->GetContext(0)->GetParameter(4);
     void* p4_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T4>()) == TYPE_string)
         p4_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p4, ve_p4->GetType());
@@ -2311,7 +2311,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     ve_p4->SetValueAddr(oe ? oe->GetAddr() : NULL, p4_convert_addr);
 
-    CVariableEntry* ve_p5 = fe->GetContext()->GetParameter(5);
+    CVariableEntry* ve_p5 = fe->GetContext(0)->GetParameter(5);
     void* p5_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T5>()) == TYPE_string)
         p5_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p5, ve_p5->GetType());
@@ -2325,7 +2325,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     ve_p5->SetValueAddr(oe ? oe->GetAddr() : NULL, p5_convert_addr);
 
-    CVariableEntry* ve_p6 = fe->GetContext()->GetParameter(6);
+    CVariableEntry* ve_p6 = fe->GetContext(0)->GetParameter(6);
     void* p6_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T6>()) == TYPE_string)
         p6_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p6, ve_p6->GetType());
@@ -2339,7 +2339,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     ve_p6->SetValueAddr(oe ? oe->GetAddr() : NULL, p6_convert_addr);
 
-    CVariableEntry* ve_p7 = fe->GetContext()->GetParameter(7);
+    CVariableEntry* ve_p7 = fe->GetContext(0)->GetParameter(7);
     void* p7_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T7>()) == TYPE_string)
         p7_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p7, ve_p7->GetType());
@@ -2353,7 +2353,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     ve_p7->SetValueAddr(oe ? oe->GetAddr() : NULL, p7_convert_addr);
 
-    CVariableEntry* ve_p8 = fe->GetContext()->GetParameter(8);
+    CVariableEntry* ve_p8 = fe->GetContext(0)->GetParameter(8);
     void* p8_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T8>()) == TYPE_string)
         p8_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p8, ve_p8->GetType());
@@ -2367,7 +2367,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     ve_p8->SetValueAddr(oe ? oe->GetAddr() : NULL, p8_convert_addr);
 
-    CVariableEntry* ve_p9 = fe->GetContext()->GetParameter(9);
+    CVariableEntry* ve_p9 = fe->GetContext(0)->GetParameter(9);
     void* p9_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T9>()) == TYPE_string)
         p9_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p9, ve_p9->GetType());
@@ -2381,7 +2381,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     ve_p9->SetValueAddr(oe ? oe->GetAddr() : NULL, p9_convert_addr);
 
-    CVariableEntry* ve_p10 = fe->GetContext()->GetParameter(10);
+    CVariableEntry* ve_p10 = fe->GetContext(0)->GetParameter(10);
     void* p10_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T10>()) == TYPE_string)
         p10_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p10, ve_p10->GetType());
@@ -2395,7 +2395,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     ve_p10->SetValueAddr(oe ? oe->GetAddr() : NULL, p10_convert_addr);
 
-    CVariableEntry* ve_p11 = fe->GetContext()->GetParameter(11);
+    CVariableEntry* ve_p11 = fe->GetContext(0)->GetParameter(11);
     void* p11_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T11>()) == TYPE_string)
         p11_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p11, ve_p11->GetType());
@@ -2410,7 +2410,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     ve_p11->SetValueAddr(oe ? oe->GetAddr() : NULL, p11_convert_addr);
 
     // -- execute the function
-    if (!ExecuteScheduledFunction(GetContext(), object_id, ns_hash, func_hash, fe->GetContext()))
+    if (!ExecuteScheduledFunction(GetContext(), object_id, ns_hash, func_hash, fe->GetContext(0)))
     {
         ScriptAssert_(script_context, 0, "<internal>", -1, "Error - unable to exec function %s()\n", UnHash(func_hash));
         return false;
@@ -2509,7 +2509,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     CFunctionEntry* fe = oe ? oe->GetFunctionEntry(ns_hash, func_hash)
                             : script_context->GetGlobalNamespace()->GetFuncTable()->FindItem(func_hash);
-    CVariableEntry* return_ve = fe ? fe->GetContext()->GetParameter(0) : NULL;
+    CVariableEntry* return_ve = fe ? fe->GetContext(0)->GetParameter(0) : NULL;
     if (!fe || !return_ve)
     {
         ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() not found\n", UnHash(func_hash));
@@ -2525,13 +2525,13 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     }
 
     // -- fill in the parameters
-    if (fe->GetContext()->GetParameterCount() < 12)
+    if (fe->GetContext(0)->GetParameterCount() < 12)
     {
-        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects %d parameters\n", UnHash(func_hash), fe->GetContext(0)->GetParameterCount());
         return (false);
     }
 
-    CVariableEntry* ve_p1 = fe->GetContext()->GetParameter(1);
+    CVariableEntry* ve_p1 = fe->GetContext(0)->GetParameter(1);
     void* p1_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T1>()) == TYPE_string)
         p1_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p1, ve_p1->GetType());
@@ -2545,7 +2545,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     ve_p1->SetValueAddr(oe ? oe->GetAddr() : NULL, p1_convert_addr);
 
-    CVariableEntry* ve_p2 = fe->GetContext()->GetParameter(2);
+    CVariableEntry* ve_p2 = fe->GetContext(0)->GetParameter(2);
     void* p2_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T2>()) == TYPE_string)
         p2_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p2, ve_p2->GetType());
@@ -2559,7 +2559,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     ve_p2->SetValueAddr(oe ? oe->GetAddr() : NULL, p2_convert_addr);
 
-    CVariableEntry* ve_p3 = fe->GetContext()->GetParameter(3);
+    CVariableEntry* ve_p3 = fe->GetContext(0)->GetParameter(3);
     void* p3_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T3>()) == TYPE_string)
         p3_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p3, ve_p3->GetType());
@@ -2573,7 +2573,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     ve_p3->SetValueAddr(oe ? oe->GetAddr() : NULL, p3_convert_addr);
 
-    CVariableEntry* ve_p4 = fe->GetContext()->GetParameter(4);
+    CVariableEntry* ve_p4 = fe->GetContext(0)->GetParameter(4);
     void* p4_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T4>()) == TYPE_string)
         p4_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p4, ve_p4->GetType());
@@ -2587,7 +2587,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     ve_p4->SetValueAddr(oe ? oe->GetAddr() : NULL, p4_convert_addr);
 
-    CVariableEntry* ve_p5 = fe->GetContext()->GetParameter(5);
+    CVariableEntry* ve_p5 = fe->GetContext(0)->GetParameter(5);
     void* p5_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T5>()) == TYPE_string)
         p5_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p5, ve_p5->GetType());
@@ -2601,7 +2601,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     ve_p5->SetValueAddr(oe ? oe->GetAddr() : NULL, p5_convert_addr);
 
-    CVariableEntry* ve_p6 = fe->GetContext()->GetParameter(6);
+    CVariableEntry* ve_p6 = fe->GetContext(0)->GetParameter(6);
     void* p6_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T6>()) == TYPE_string)
         p6_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p6, ve_p6->GetType());
@@ -2615,7 +2615,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     ve_p6->SetValueAddr(oe ? oe->GetAddr() : NULL, p6_convert_addr);
 
-    CVariableEntry* ve_p7 = fe->GetContext()->GetParameter(7);
+    CVariableEntry* ve_p7 = fe->GetContext(0)->GetParameter(7);
     void* p7_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T7>()) == TYPE_string)
         p7_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p7, ve_p7->GetType());
@@ -2629,7 +2629,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     ve_p7->SetValueAddr(oe ? oe->GetAddr() : NULL, p7_convert_addr);
 
-    CVariableEntry* ve_p8 = fe->GetContext()->GetParameter(8);
+    CVariableEntry* ve_p8 = fe->GetContext(0)->GetParameter(8);
     void* p8_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T8>()) == TYPE_string)
         p8_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p8, ve_p8->GetType());
@@ -2643,7 +2643,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     ve_p8->SetValueAddr(oe ? oe->GetAddr() : NULL, p8_convert_addr);
 
-    CVariableEntry* ve_p9 = fe->GetContext()->GetParameter(9);
+    CVariableEntry* ve_p9 = fe->GetContext(0)->GetParameter(9);
     void* p9_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T9>()) == TYPE_string)
         p9_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p9, ve_p9->GetType());
@@ -2657,7 +2657,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     ve_p9->SetValueAddr(oe ? oe->GetAddr() : NULL, p9_convert_addr);
 
-    CVariableEntry* ve_p10 = fe->GetContext()->GetParameter(10);
+    CVariableEntry* ve_p10 = fe->GetContext(0)->GetParameter(10);
     void* p10_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T10>()) == TYPE_string)
         p10_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p10, ve_p10->GetType());
@@ -2671,7 +2671,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     ve_p10->SetValueAddr(oe ? oe->GetAddr() : NULL, p10_convert_addr);
 
-    CVariableEntry* ve_p11 = fe->GetContext()->GetParameter(11);
+    CVariableEntry* ve_p11 = fe->GetContext(0)->GetParameter(11);
     void* p11_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T11>()) == TYPE_string)
         p11_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p11, ve_p11->GetType());
@@ -2685,7 +2685,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 
     ve_p11->SetValueAddr(oe ? oe->GetAddr() : NULL, p11_convert_addr);
 
-    CVariableEntry* ve_p12 = fe->GetContext()->GetParameter(12);
+    CVariableEntry* ve_p12 = fe->GetContext(0)->GetParameter(12);
     void* p12_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T12>()) == TYPE_string)
         p12_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p12, ve_p12->GetType());
@@ -2700,7 +2700,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     ve_p12->SetValueAddr(oe ? oe->GetAddr() : NULL, p12_convert_addr);
 
     // -- execute the function
-    if (!ExecuteScheduledFunction(GetContext(), object_id, ns_hash, func_hash, fe->GetContext()))
+    if (!ExecuteScheduledFunction(GetContext(), object_id, ns_hash, func_hash, fe->GetContext(0)))
     {
         ScriptAssert_(script_context, 0, "<internal>", -1, "Error - unable to exec function %s()\n", UnHash(func_hash));
         return false;

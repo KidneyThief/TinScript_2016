@@ -3206,47 +3206,34 @@ bool8 TryParseFuncDefinition(CCodeBlock* codeblock, tReadToken& filebuf, CCompil
     // -- see if this function already existed
     uint32 funchash = Hash(idtoken.tokenptr, idtoken.length);
     uint32 nshash = usenamespace ? Hash(nsnametoken.tokenptr, nsnametoken.length) : 0;
-	CFunctionEntry* exists = functable->FindItem(funchash);
-    CFunctionEntry* curfunction = exists;
+	CFunctionEntry* curfunction = functable->FindItem(funchash);
 
     // -- if thus function doesn't exist, we're defining it now
-    if (! exists)
+    // -- note:  we might be defining an overload to an existing function
+    bool exists = curfunction != nullptr;
+    if (curfunction == nullptr)
     {
 	    curfunction = FuncDeclaration(codeblock->GetScriptContext(), nshash, TokenPrint(idtoken),
-                                      Hash(TokenPrint(idtoken)), eFunctionType::Script);
-        codeblock->smFuncDefinitionStack->Push(curfunction, NULL, 0);
+                                      Hash(TokenPrint(idtoken)), kFunctionSignatureUndefined, eFunctionType::Script);
     }
 
+    // $$$TZA overload
+    codeblock->smFuncDefinitionStack->Push(curfunction, NULL, 0);
+
+    // -- allocate an overload - this will either replace the existing, or
+    // -- be added as a new implementation
+    CFunctionOverload* overload = nullptr;
+    if (!exists)
+        overload = curfunction->FindOverload(kFunctionSignatureUndefined);
     else
-    {
-        codeblock->smFuncDefinitionStack->Push(exists, NULL, 0);
-    }
-
-    // get the function context
-    CFunctionContext* funccontext = curfunction->GetContext();
+        overload = TinAlloc(ALLOC_FuncOverload, CFunctionOverload, curfunction, kFunctionSignatureUndefined,
+                                                                   eFunctionType::Script, nullptr, nullptr);
+    CFunctionContext* funccontext = overload->GetContext();
 
     // $$$TZA TYPE__array - do we need to add additional support?
     // -- first parameter is always the return type
     int32 paramcount = 0;
-    if (!exists)
-        funccontext->AddParameter("__return", Hash("__return"), regreturntype, 1, 0);
-
-    else if (exists->GetReturnType() != regreturntype)
-    {
-        ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
-                      filebuf.linenumber,
-                      "Error - return type doesn't match - Removing %s()\n"
-                      "re-Exec() script to redefine\n", exists->GetName());
-
-        // -- delete the function entirely - re-executing the script will redefine
-        // -- it with the (presumably) updated signature
-        functable->RemoveItem(funchash);
-        TinFree(exists);
-
-        return (false);
-    }
-
-    ++paramcount;
+    funccontext->AddParameter("__return", Hash("__return"), regreturntype, 1, 0);
 
     // -- now we build the parameter list
     while (true)
@@ -3326,44 +3313,15 @@ bool8 TryParseFuncDefinition(CCodeBlock* codeblock, tReadToken& filebuf, CCompil
         // -- so far so good
         filebuf = paramname;
 
-        // -- if the function doesn't exists, add the parameter
-        if (!exists)
+        // -- add the parameter to the context
+        if (!funccontext->AddParameter(TokenPrint(paramname), Hash(TokenPrint(paramname)), paramtype,
+                                        param_is_array ? -1 : 1, 0))
         {
-            // -- add the parameter to the context
-            if (!funccontext->AddParameter(TokenPrint(paramname), Hash(TokenPrint(paramname)), paramtype,
-                                           param_is_array ? -1 : 1, 0))
-            {
-                ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
-                              filebuf.linenumber,
-                              "Error - unable to add parameter %s to function declaration %s\n",
-                              TokenPrint(paramname), TokenPrint(idtoken));
-                return (false);
-            }
-        }
-
-        // -- else ensure the parameters match
-        else
-        {
-            int cur_param_count = exists->GetContext()->GetParameterCount();
-            CVariableEntry* paramexists = paramcount < cur_param_count
-                                          ? exists->GetContext()->GetParameter(paramcount)
-                                          : NULL;
-            if (!paramexists || paramexists->GetType() != paramtype ||
-                (paramtype != TYPE_hashtable && paramexists->IsArray() != param_is_array))
-            {
-                ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
-                              filebuf.linenumber,
-                              "Error - function signature does not match: %s\n"
-                              "Removing %s() - re-Exec() to redefine\n",
-                              TokenPrint(idtoken), exists->GetName());
-
-                // -- delete the function entirely - re-executing the script will redefine
-                // -- it with the (presumably) updated signature
-                functable->RemoveItem(funchash);
-                TinFree(exists);
-
-                return (false);
-            }
+            ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
+                            filebuf.linenumber,
+                            "Error - unable to add parameter %s to function declaration %s\n",
+                            TokenPrint(paramname), TokenPrint(idtoken));
+            return (false);
         }
 
         // -- increment the parameter count
@@ -3393,6 +3351,11 @@ bool8 TryParseFuncDefinition(CCodeBlock* codeblock, tReadToken& filebuf, CCompil
             filebuf = peektoken;
         }
     }
+
+    // -- at this point, we have the complete parameter list - if the function already exists
+    // -- then we set the signature for the overload, and add it to the function entry
+    // -- note:  if the signature matches an existing overload signature, it'll delete the old
+    overload->FinalizeSignature();
 
     // see if we're simply declaring the function
     peektoken = filebuf;
@@ -3472,7 +3435,8 @@ bool8 TryParseFuncDefinition(CCodeBlock* codeblock, tReadToken& filebuf, CCompil
     CFuncDeclNode* funcdeclnode = TinAlloc(ALLOC_TreeNode, CFuncDeclNode, codeblock, link,
                                            filebuf.linenumber, idtoken.tokenptr, idtoken.length,
                                            usenamespace ? nsnametoken.tokenptr : "",
-                                           usenamespace ? nsnametoken.length : 0, derived_hash);
+                                           usenamespace ? nsnametoken.length : 0, derived_hash,
+                                           overload->GetHash());
 
     // -- read the function body
     int32 result = ParseStatementBlock(codeblock, funcdeclnode->leftchild, filebuf, true);
@@ -4932,9 +4896,10 @@ CVariableEntry* AddVariable(CScriptContext* script_context, tVarTable* curglobal
     if (curfuncdefinition)
     {
         // -- search the local var table for the executing function
-        ve = curfuncdefinition->GetContext()->GetLocalVar(varhash);
+        // $$$TZA overload - current overload
+        ve = curfuncdefinition->GetContext(0)->GetLocalVar(varhash);
         if (!ve)
-            ve = curfuncdefinition->GetContext()->AddLocalVar(varname, varhash, vartype, array_size, false);
+            ve = curfuncdefinition->GetContext(0)->AddLocalVar(varname, varhash, vartype, array_size, false);
     }
 
     // -- not defining a function - see if we're compiling
@@ -5077,7 +5042,8 @@ CVariableEntry* GetVariable(CScriptContext* script_context, tVarTable* globalVar
     // -- else if were given a function, find the local variable
     else if (fe)
     {
-        ve = fe->GetContext()->GetLocalVar(var_hash);
+        // -- get the overload currently being used
+        ve = fe->GetContext(fe->GetActiveOverload())->GetLocalVar(var_hash);
 
         // -- mark the variable entry with the owning function
         if (ve)
@@ -5140,7 +5106,7 @@ CVariableEntry* GetVariable(CScriptContext* script_context, tVarTable* globalVar
 // FuncDeclaration():  Add a function entry to a given namespace.
 // ====================================================================================================================
 CFunctionEntry* FuncDeclaration(CScriptContext* script_context, uint32 namespacehash,
-                                const char* funcname, uint32 funchash, eFunctionType type)
+                                const char* funcname, uint32 funchash, uint32 sig_hash, eFunctionType type)
 {
     const char* ns_string = NULL;
     CNamespace* nsentry = script_context->FindNamespace(namespacehash);
@@ -5171,14 +5137,14 @@ CFunctionEntry* FuncDeclaration(CScriptContext* script_context, uint32 namespace
         return (NULL);
     }
 
-    return (FuncDeclaration(script_context, nsentry, funcname, funchash, type));
+    return (FuncDeclaration(script_context, nsentry, funcname, funchash, sig_hash, type));
 }
 
 // ====================================================================================================================
 // FuncDeclaration():  Add a function entry to a given namespace.
 // ====================================================================================================================
 CFunctionEntry* FuncDeclaration(CScriptContext* script_context, CNamespace* nsentry,
-                                const char* funcname, uint32 funchash, eFunctionType type)
+                                const char* funcname, uint32 funchash, uint32 sig_hash, eFunctionType type)
 {
     // -- no namespace means by definition this is a global function
     if (!nsentry)
@@ -5186,20 +5152,17 @@ CFunctionEntry* FuncDeclaration(CScriptContext* script_context, CNamespace* nsen
         nsentry = script_context->GetGlobalNamespace();
     }
 
-    // -- remove any existing function decl
+    // -- if we already have a function entry with the give hash, return it
 	CFunctionEntry* fe = nsentry->GetFuncTable()->FindItem(funchash);
-	if (fe)
-    {
-        nsentry->GetFuncTable()->RemoveItem(fe->GetHash());
-        TinFree(fe);
-    }
+	if (fe != nullptr)
+        return (fe);
 
-	// -- create the function entry, and add it to the global table
+	// -- create the function entry, and add it to the namespace function table
 	fe = TinAlloc(ALLOC_FuncEntry, CFunctionEntry, script_context, nsentry->GetHash(), funcname,
-                                                   funchash, type, (void*)NULL);
+                                                   funchash, type, (void*)nullptr, sig_hash);
 	uint32 hash = fe->GetHash();
 	nsentry->GetFuncTable()->AddItem(*fe, hash);
-    return fe;
+    return (fe);
 }
 
 } // Tinscript

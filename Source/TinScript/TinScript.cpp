@@ -1721,16 +1721,17 @@ bool8 CScriptContext::InitWatchExpression(CDebuggerWatchExpression& debugger_wat
 	CCompileTreeNode* root = CCompileTreeNode::CreateTreeRoot(codeblock);
 
     // -- create the watch function
-	CFunctionEntry* fe = FuncDeclaration(this, GetGlobalNamespace(), watch_name, watch_name_hash, eFunctionType::Script);
+	CFunctionEntry* fe = FuncDeclaration(this, GetGlobalNamespace(), watch_name, watch_name_hash,
+                                         kFunctionSignatureUndefined, eFunctionType::Script);
 
     // -- create a set of local variables in the context to match those of the current function
-    // $$TZA overload
-    CFunctionEntry::CFunctionOverload* overload = cur_function->findOverload(0);
+    // -- watch expressions can only every hasve one overload
+    CFunctionOverload* overload = cur_function->FindOverload(0);
     assert(overload != nullptr);
     CFunctionContext* cur_func_context = overload->GetContext();
 
     // $$$TZA overload - watch expressions can't be overloaded
-    CFunctionContext* temp_context = fe->findOverload(0)->GetContext();
+    CFunctionContext* temp_context = fe->FindOverload(0)->GetContext();
 
     bool returnAdded = false;
     tVarTable* cur_var_table = cur_func_context->GetLocalVarTable();
@@ -1763,7 +1764,8 @@ bool8 CScriptContext::InitWatchExpression(CDebuggerWatchExpression& debugger_wat
     // -- add a funcdecl node, and set its left child to be the statement block
     // -- for fun, use the watch_id as the line number - to find it while debugging
     CFuncDeclNode* funcdeclnode = TinAlloc(ALLOC_TreeNode, CFuncDeclNode, codeblock, root->next,
-                                           watch_id, watch_name, (int32)strlen(watch_name), "", 0, 0);
+                                           watch_id, watch_name, (int32)strlen(watch_name), "", 0, 0,
+                                           kFunctionSignatureUndefined);
 
     // -- the body of our watch function, is to simply return the given expression
     // -- parsing and returning the expression will also identify the type for us
@@ -1859,7 +1861,7 @@ bool8 CScriptContext::EvalWatchExpression(CDebuggerWatchExpression& debugger_wat
 
     // -- create space on the execstack for the local variables
     // $$$TZA overload - watch functions can't be overloaded
-    int32 localvarcount = watch_function->findOverload(0)->GetContext()->CalculateLocalVarStackSize();
+    int32 localvarcount = watch_function->FindOverload(0)->GetContext()->CalculateLocalVarStackSize();
     execstack.Reserve(localvarcount * MAX_TYPE_SIZE);
 
     // -- copy the local values from the currently executing function, to stack
@@ -1931,14 +1933,13 @@ bool8 CScriptContext::EvaluateWatchExpression(const char* expression, bool8 cond
     const char* temp_func_name = "_eval_watch_expr_";
 	uint32 temp_func_hash = Hash(temp_func_name);
 	CFunctionEntry* fe = FuncDeclaration(this, GetGlobalNamespace(), temp_func_name, temp_func_hash,
-                                         eFunctionType::Script);
+                                         kFunctionSignatureUndefined, eFunctionType::Script);
 
     // -- copy the function context from our currently executing function, to the temporary,
     // -- so we have access to the same variables, and their current values - but won't change
     // -- the *real* variables
-    // $$$TZA overload - getting the current function executing should also return the sig hash
-    CFunctionContext* cur_func_context = cur_function->findOverload(0)->GetContext();
-    CFunctionContext* temp_context = fe->findOverload(0)->GetContext();
+    CFunctionContext* cur_func_context = cur_function->FindOverload(kFunctionSignatureUndefined)->GetContext();
+    CFunctionContext* temp_context = fe->FindOverload(0)->GetContext();
 
     // -- first parameter is always "__return"
     bool returnAdded = false;
@@ -1970,7 +1971,8 @@ bool8 CScriptContext::EvaluateWatchExpression(const char* expression, bool8 cond
 
         // -- add a funcdecl node, and set its left child to be the statement block
     CFuncDeclNode* funcdeclnode = TinAlloc(ALLOC_TreeNode, CFuncDeclNode, codeblock, root->next,
-                                           -1, temp_func_name, (int32)strlen(temp_func_name), "", 0 , 0);
+                                           -1, temp_func_name, (int32)strlen(temp_func_name), "", 0 , 0,
+                                           kFunctionSignatureUndefined);
 
     // -- if this is a conditional, then we want to see if the value of it is true/false
     char expr_result[kMaxTokenLength];
@@ -2004,8 +2006,7 @@ bool8 CScriptContext::EvaluateWatchExpression(const char* expression, bool8 cond
                 funccallstack.Push(fe, NULL, 0);
 
                 // -- create space on the execstack, if this is a script function
-                // $$$TZA overload - need to find the currently compiling overload
-                int32 localvarcount = fe->findOverload(0)->GetContext()->CalculateLocalVarStackSize();
+                int32 localvarcount = fe->FindOverload(fe->GetActiveOverload())->GetContext()->CalculateLocalVarStackSize();
                 execstack.Reserve(localvarcount * MAX_TYPE_SIZE);
 
                 // -- copy the local values onto the stack
@@ -2814,7 +2815,7 @@ void CScriptContext::DebuggerRequestFunctionAssist(uint32 object_id)
 
 			// -- get the codeblock, and fill in the line number
             // $$$TZA overload - send all overloads?
-            CFunctionEntry::CFunctionOverload* overload = function_entry->findOverload(0);
+            CFunctionOverload* overload = function_entry->FindOverload(0);
             assert(overload != nullptr);
             CCodeBlock* code_block = nullptr;
             int32 offset = overload->GetCodeBlockOffset(code_block);
@@ -3761,7 +3762,7 @@ bool8 CScriptContext::AddThreadExecParam(eVarType param_type, void* value)
     CFunctionEntry* fe = GetGlobalNamespace()->GetFuncTable()->FindItem(m_socketCurrentCommand->mFuncHash);
 
     // $$$TZA overload - which overload is being executed?
-    CFunctionEntry::CFunctionOverload* overload = fe->findOverload(0);
+    CFunctionOverload* overload = fe->FindOverload(0);
     assert(0);
     CVariableEntry* fe_param = current_param < overload->GetContext()->GetParameterCount()
                                ? overload->GetContext()->GetParameter(current_param)
@@ -4123,7 +4124,7 @@ void DebuggerRequestTabComplete(int32 request_id, const char* partial_input, int
         if (fe != nullptr)
         {
             // $$$TZA overload - tab complete different overloads?
-            CFunctionEntry::CFunctionOverload* overload = fe->findOverload(0);
+            CFunctionOverload* overload = fe->FindOverload(0);
             assert(overload != nullptr);
 
             // -- if we have parameters (more than 1, since the first parameter is always the return value)
@@ -4282,7 +4283,7 @@ void CDebuggerWatchExpression::SetAttributes(bool break_enabled, const char* new
             // -- to delete a function, remove it from it's namespace, and then deleting it will automatically
             // -- remove it from whatever codeblock owned it...
             // $$$TZA overload - watch functions can't have overloads, and can't be empty
-            CCodeBlock* code_block = mWatchFunctionEntry->findOverload(0)->GetCodeBlock();
+            CCodeBlock* code_block = mWatchFunctionEntry->FindOverload(0)->GetCodeBlock();
             TinScript::GetContext()->GetGlobalNamespace()->GetFuncTable()->RemoveItem(mWatchFunctionEntry->GetHash());
             TinFree(mWatchFunctionEntry);
             CCodeBlock::DestroyCodeBlock(code_block);
@@ -4299,7 +4300,7 @@ void CDebuggerWatchExpression::SetAttributes(bool break_enabled, const char* new
         if (mTraceFunctionEntry)
         {
             // $$$TZA overload - trace functions can't have overloads
-            CCodeBlock* codeblock = mTraceFunctionEntry->findOverload(0)->GetCodeBlock();
+            CCodeBlock* codeblock = mTraceFunctionEntry->FindOverload(0)->GetCodeBlock();
             TinScript::GetContext()->GetGlobalNamespace()->GetFuncTable()->RemoveItem(mTraceFunctionEntry->GetHash());
             TinFree(mTraceFunctionEntry);
             CCodeBlock::DestroyCodeBlock(codeblock);

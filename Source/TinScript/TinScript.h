@@ -171,6 +171,7 @@ const int32 kGlobalFuncTableSize = 251;
 const int32 kGlobalVarTableSize = 251;
 
 const int32 kLocalFuncTableSize = 17;
+const int32 kLocalOverloadTableSize = 3;
 const int32 kLocalVarTableSize = 17;
 
 const int32 kExecStackSize = 4096;
@@ -189,6 +190,8 @@ const int32 kHashTableIteratorTableSize = 7;
 const int32 kMaxScratchBuffers = 32;
 
 const int32 kThreadExecBufferSize = 32 * 1024;
+
+const uint32 kFunctionSignatureUndefined = 0xffffffff;
 
 // ====================================================================================================================
 // -- debugger constants

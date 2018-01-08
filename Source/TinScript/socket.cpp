@@ -1335,9 +1335,10 @@ bool CSocket::ReceiveScriptExec(void* data)
     if (!paramTypesOptimal)
     {
         TinScript::CFunctionEntry* fe = mScriptContext->GetGlobalNamespace()->GetFuncTable()->FindItem(func_hash);
-        if (fe != nullptr &&  fe->GetContext() != nullptr)
+        // $$$TZA overload - remote exec - overload signature should have been received?
+        if (fe != nullptr &&  fe->GetContext(0) != nullptr)
         {
-            SendScriptSignature(func_hash, fe->GetContext());
+            SendScriptSignature(func_hash, fe->GetContext(0));
         }
     }
 

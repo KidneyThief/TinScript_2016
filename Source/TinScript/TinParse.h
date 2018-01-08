@@ -41,15 +41,16 @@ namespace TinScript
 // -- forward declarations
 
 class CCompileTreeNode;
-class CFunctionEntry;
 class CFunctionContext;
 class CCodeBlock;
 struct tExprParenDepthStack;
 class CVariableEntry;
 class CFunctionEntry;
+class CFunctionOverload;
 
 typedef CHashTable<CVariableEntry> tVarTable;
 typedef CHashTable<CFunctionEntry> tFuncTable;
+typedef CHashTable<CFunctionOverload> tOverloadTable;
 
 // --------------------------------------------------------------------------------------------------------------------
 // -- tuple defining the token types
@@ -305,9 +306,9 @@ CVariableEntry* GetObjectMember(CScriptContext* script_context, CObjectEntry*& o
                                 uint32 func_or_obj, uint32 var_hash, uint32 array_hash);
 
 CFunctionEntry* FuncDeclaration(CScriptContext* script_context, uint32 namespacehash,
-                                const char* funcname, uint32 funchash, eFunctionType type);
+                                const char* funcname, uint32 funchash, uint32 sig_hash, eFunctionType type);
 CFunctionEntry* FuncDeclaration(CScriptContext* script_context, CNamespace* nsentry,
-                                const char* funcname, uint32 funchash, eFunctionType type);
+                                const char* funcname, uint32 funchash, uint32 sig_hash, eFunctionType type);
 
 // ====================================================================================================================
 // -- debugging methods

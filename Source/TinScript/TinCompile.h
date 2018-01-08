@@ -44,6 +44,7 @@ namespace TinScript
 class CVariableEntry;
 class CFunctionContext;
 class CFunctionEntry;
+class CFunctionOverload;
 class CExecStack;
 class CFunctionCallStack;
 class CWhileLoopNode;
@@ -602,7 +603,7 @@ class CFuncDeclNode : public CCompileTreeNode
 {
 	public:
 		CFuncDeclNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber, const char* _funcname,
-                      int32 _length, const char* _funcns, int32 _funcnslength, uint32 derived_ns);
+                      int32 _length, const char* _funcns, int32 _funcnslength, uint32 derived_ns, uint32 sig_hash);
 
 		virtual int32 Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
 		virtual void Dump(char*& output, int32& length)const;
@@ -615,6 +616,7 @@ class CFuncDeclNode : public CCompileTreeNode
         char funcnamespace[kMaxNameLength];
         CFunctionEntry* functionentry;
         uint32 mDerivedNamespace;
+        uint32 mSignatureHash;
 };
 
 // ====================================================================================================================
@@ -1005,23 +1007,20 @@ class CCodeBlock
         //-- CompileToC members
         bool CompileTreeToSourceC(const CCompileTreeNode& root, char*& out_buffer, int32& max_size);
 
-        void AddFunction(CFunctionEntry* _func)
+        void AddOverload(CFunctionOverload* _overload)
         {
-            if (!mFunctionList->FindItem(_func->GetHash()))
-                mFunctionList->AddItem(*_func, _func->GetHash());
-
-            // $$$TZA Overload
-            //printf("### DEBUG: 0x%x\n", _func->GetContext()->CalcHash());
+            if (!mOverloadList->FindItem(_overload->GetHash()))
+                mOverloadList->AddItem(*_overload, _overload->GetHash());
         }
 
-        void RemoveFunction(CFunctionEntry* _func)
+        void RemoveOverload(CFunctionOverload* _overload)
         {
-            mFunctionList->RemoveItem(_func->GetHash());
+            mOverloadList->RemoveItem(_overload->GetHash());
         }
 
         int32 IsInUse()
         {
-            return (mIsParsing || !mFunctionList->IsEmpty());
+            return (mIsParsing || !mOverloadList->IsEmpty());
         }
 
         void SetFinishedParsing() { mIsParsing = false; }
@@ -1082,7 +1081,7 @@ class CCodeBlock
         uint32* mLineNumbers;
 
         // -- need to keep a list of all functions that are tied to this codeblock
-        tFuncTable* mFunctionList;
+        tOverloadTable* mOverloadList;
 
         // -- keep a list of all lines to be broken on, for this code block
         CHashTable<CDebuggerWatchExpression>* mBreakpoints;
