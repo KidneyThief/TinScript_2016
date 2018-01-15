@@ -410,6 +410,7 @@ void RegisterTypeConvert(eVarType to_type, eVarType from_type, TypeConvertFuncti
 
 // ====================================================================================================================
 void* TypeConvert(CScriptContext* script_context, eVarType fromtype, void* fromaddr, eVarType totype);
+bool8 CanConvert(CScriptContext* script_context, eVarType fromtype, void* fromaddr, eVarType totype);
 const char* DebugPrintVar(void* addr, eVarType vartype);
 
 // ====================================================================================================================

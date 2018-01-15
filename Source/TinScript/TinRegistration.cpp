@@ -323,6 +323,17 @@ bool8 CVariableEntry::IsStackVariable(CFunctionCallStack& funccallstack) const
     CObjectEntry* oe = NULL;
     CFunctionEntry* fe_executing = funccallstack.GetExecuting(oe, stackoffset);
     CFunctionEntry* fe_top = funccallstack.GetTop(oe, stackoffset);
+
+    // -- fe_top is the function we're preparing to call... if it has overloads, then we won't
+    // -- yet know which is to be called, and all values are stored in the preparation context
+    if (fe_top && fe_top == GetFunctionEntry() && fe_top->HasOverloads())
+    {
+        return (false);
+    }
+
+    // -- otherwise, either this variable belongs to the currently executing function,
+    // -- or it's a parameter we're setting for a single overload function we're about to call,
+    // -- or it's not a hash table, and not an array that was passed as a parameter
     return (((fe_executing && fe_executing == GetFunctionEntry()) || (IsParameter() && fe_top &&
                                                                       fe_top == GetFunctionEntry())) &&
             GetType() != TYPE_hashtable && mStackOffset >= 0 && (!IsArray() || !IsParameter()));
@@ -389,8 +400,23 @@ void CVariableEntry::SetValue(void* objaddr, void* value, CExecStack* execstack,
 // SetValue():  Sets the value of a variable.
 // This method is called externally, e.g.  from code, as opposed to from the virtual machine.
 // ====================================================================================================================
-void CVariableEntry::SetValueAddr(void* objaddr, void* value, int32 array_index)
+void CVariableEntry::SetValueAddr(void* objaddr, void* value, int32 array_index, eVarType new_type)
 {
+    // -- when cacheing the parameter values for an overload, we assign the type based on the call
+    if (new_type != TYPE_NULL)
+    {
+        if (!IsParameter() || mType != TYPE__resolve)
+        {
+            ScriptAssert_(GetScriptContext(), false, "<internal>", -1,
+                          "Error SetValueAddr() - changing the type of a non-Type__Resolve non-parameter (%s)\n",
+                          UnHash(GetHash()));
+            return;
+        }
+
+        // $$$TZA overload - deal with arrays/strings, make sure enough space has been allocated!
+        mType = new_type;
+    }
+
     // -- strings have their own implementation, as they have to manage both the hash value of the string
     // -- (essentially the script value), and the const char*, the actual string, only used by code
     if (mType == TYPE_string)
@@ -829,6 +855,9 @@ CFunctionEntry::CFunctionEntry(CScriptContext* script_context, uint32 _nshash, c
     CFunctionOverload* new_overload = TinAlloc(ALLOC_FuncOverload, CFunctionOverload, this, sig_hash,
                                                                                       _type, nullptr);
     AddOverload(new_overload);
+
+    // -- initially there's no active context
+    mPrepareContext = nullptr;
 }
 
 // ====================================================================================================================
@@ -846,6 +875,9 @@ CFunctionEntry::CFunctionEntry(CScriptContext* script_context, uint32 _nshash, c
     CFunctionOverload* new_overload = TinAlloc(ALLOC_FuncOverload, CFunctionOverload, this, sig_hash,
                                                                                       _type, nullptr, _func);
     AddOverload(new_overload);
+
+    // -- initially there's no active context
+    mPrepareContext = nullptr;
 }
 
 // ====================================================================================================================
@@ -866,6 +898,44 @@ CFunctionEntry::~CFunctionEntry()
         mCodeBlock->RemoveFunction(this);
     }
 */
+}
+
+// ====================================================================================================================
+// GetPrepareContext():  Get the context we're using, either during definition, or in preparation to call
+// ====================================================================================================================
+CFunctionContext* CFunctionEntry::GetActiveContext() const
+{
+    // -- if we're not using an prepare context (as per a function call),
+    // -- use the context from the active overload (we're currently defining)
+    CFunctionContext* context = mPrepareContext;
+    if (context == nullptr)
+    {
+        CFunctionOverload* overload = FindOverload(mDefineOverload);
+        assert(overload != nullptr);
+        context = overload->GetContext();
+    }
+    return (context);
+}
+
+// ====================================================================================================================
+// FindOverload():  Find an overload with the given signature, or if only one overload is defined, any but undefined
+// ====================================================================================================================
+CFunctionOverload* CFunctionEntry::FindOverload(uint32 signature_hash) const
+{
+    // -- if there are no overloads, then...  invalid function entry
+    assert(mOverloadTable.Used() > 0);
+
+    // -- if there's only one entry, and we're not looking for the undefined overload
+    // -- return it - as all arguments will be coerced as needed
+    if (mOverloadTable.Used() == 1 && signature_hash != kFunctionSignatureUndefined)
+    {
+        return mOverloadTable.First();
+    }
+    else
+    {
+        CFunctionOverload* found = mOverloadTable.FindItem(signature_hash);
+        return (found);
+    }
 }
 
 // ====================================================================================================================
@@ -929,8 +999,104 @@ uint32 CFunctionEntry::FindMatchingSignature(CFunctionContext* caller) const
         return (overload->GetHash());
     }
 
-    // $$$TZA overload - implement me!
-    assert(0);
+    // -- our strategy for finding an overload -
+    // -- we know there cannot be two *exact* matches, so we'll iterate through each overload
+    // -- we'll cache the first "convertable" overload
+    // -- if we find an exact match, we're done (success)
+    // -- if we find a single "convertable" overload, we're done (success)
+    // -- if we find 2+ "convertable" overloads, and no exact match, we're done (fail)
+    CFunctionOverload* best_match = nullptr;
+    bool perfect_sub_match = false;
+    bool ambiguous_match_found = false;
+    CFunctionOverload* test_overload = mOverloadTable.First();
+    while (test_overload != nullptr)
+    {
+        // -- if the caller has more parameters than our overload, it's obviously not a match
+        if (caller->GetParameterCount() > test_overload->GetContext()->GetParameterCount())
+        {
+            test_overload = mOverloadTable.Next();
+            continue;
+        }
+
+        // -- iterate through the caller's parameters (note:  not the return param)
+        // -- the caller may have less params than
+        bool is_invalid = false;
+        bool requires_conversion = false;
+        for (int i = 1; i < caller->GetParameterCount(); ++i)
+        {
+            // -- see the parameters "match"
+            // $$$TZA overload - handle arrays, hashtables, etc...
+            CVariableEntry* caller_param = caller->GetParameter(i);
+            CVariableEntry* overload_param = test_overload->GetContext()->GetParameter(i);
+            if (caller_param->GetType() == overload_param->GetType())
+                continue;
+
+            // -- for now, we'll see if theoretically the types can be converted
+            if (!CanConvert(caller_param->GetScriptContext(), caller_param->GetType(), nullptr, overload_param->GetType()))
+            {
+                is_invalid = true;
+                break;
+            }
+
+            // -- so far so good
+            requires_conversion = true;
+        }
+        
+        // -- if the signatures are not invalid
+        if (!is_invalid)
+        {
+            // -- if we don't require conversion - see if this is a perfect match
+            if (!requires_conversion)
+            {
+                //-- if the parameter counts match, then we have a perfect match
+                if (caller->GetParameterCount() == test_overload->GetContext()->GetParameterCount())
+                {
+                    return (test_overload->GetHash());
+                }
+
+                // -- otherwise, if we have a match with no conversions (using less than the full signature)
+                // -- then as long as we don't have two, we're still non-ambiguous
+                else if (best_match == nullptr || !perfect_sub_match)
+                {
+                    best_match = test_overload;
+                    perfect_sub_match = true;
+                    ambiguous_match_found = false;
+                }
+
+                // -- otherwise we have two "sub matches"
+                // -- the only way we can succeed now, is to keep looking and find a perfect full match
+                else
+                {
+                    perfect_sub_match = true;   
+                    ambiguous_match_found = true;
+                }
+            }
+
+            // -- here we have a match but it requires conversion
+            else
+            {
+                // -- if we don't already have a perfect sub match, then either this match will work
+                // -- or we have an ambiguity
+                if (!perfect_sub_match)
+                {
+                    if (best_match == nullptr)
+                        best_match = test_overload;
+                    else
+                        ambiguous_match_found = true;                    
+                }
+            }
+        }
+
+        // -- test the next overload
+        test_overload = mOverloadTable.Next();
+    }
+    
+    // -- if we've exited the loop, then we don't have a perfect match
+    // -- as long as we don't have ambiguous matches, return the result
+    if (best_match != nullptr && !ambiguous_match_found)
+            return (best_match->GetHash());
+
+    // -- no matches found
     return kFunctionSignatureUndefined;
 }
 

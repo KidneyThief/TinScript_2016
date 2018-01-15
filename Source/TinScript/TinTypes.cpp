@@ -399,8 +399,15 @@ void* TypeConvert(CScriptContext* script_context, eVarType fromtype, void* froma
     if (fromtype == totype || !fromaddr)
         return fromaddr;
 
+    // -- if the totype is Type__resolve, then we simply do a copy of the from type
+    if (totype == TYPE__resolve)
+    {
+        memcpy(bufferptr, (char*)fromaddr, MAX_TYPE_SIZE * sizeof(uint32));
+        return (bufferptr);
+    }
+
     // -- if the "to type" is a string, use the registered string conversion function
-    if (totype == TYPE_string)
+    else if (totype == TYPE_string)
     {
         bool8 success = gRegisteredTypeToString[fromtype](script_context, fromaddr, bufferptr, kMaxTokenLength);
         if (!success)
@@ -465,6 +472,29 @@ void* TypeConvert(CScriptContext* script_context, eVarType fromtype, void* froma
 
     // -- no conversion found
     return (NULL);
+}
+
+// ====================================================================================================================
+// CanConvert():  Determine if it's possible to convert between the types - and if the addrs is given,
+// -- return the result of actually converting the value
+// ====================================================================================================================
+bool8 CanConvert(CScriptContext* script_context, eVarType fromtype, void* fromaddr, eVarType totype)
+{
+    // -- if the types are the same, we're done
+    if (fromtype == totype)
+        return (true);
+
+    // -- if there's a conversion method...
+    if (gRegisteredTypeConvertTable[totype][fromtype])
+    {
+        // -- if there's no actual value address, then theoretically we could convert
+        if (fromaddr == nullptr)
+            return (true);
+
+        // -- perform the actual conversion
+        void* convert = TypeConvert(script_context, fromtype, fromaddr, totype);
+        return (convert != nullptr);
+    }
 }
 
 // ====================================================================================================================

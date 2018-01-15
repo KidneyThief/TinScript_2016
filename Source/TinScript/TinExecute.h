@@ -271,12 +271,12 @@ class CFunctionCallStack
         {
 		}
 
-		CFunctionContext* Push(CFunctionEntry* functionentry, CObjectEntry* objentry, int32 varoffset)
+		CFunctionContext* Push(CFunctionEntry* fe, CObjectEntry* oe, int32 varoffset)
 		{
-			assert(functionentry != NULL);
+			assert(fe != NULL);
             assert(m_stacktop < m_size);
-            m_functionEntryStack[m_stacktop].objentry = objentry;
-            m_functionEntryStack[m_stacktop].funcentry = functionentry;
+            m_functionEntryStack[m_stacktop].objentry = oe;
+            m_functionEntryStack[m_stacktop].funcentry = fe;
             m_functionEntryStack[m_stacktop].stackvaroffset = varoffset;
             m_functionEntryStack[m_stacktop].isexecuting = false;
             m_functionEntryStack[m_stacktop].mLocalObjectCount = 0;
@@ -285,7 +285,14 @@ class CFunctionCallStack
             // -- note: as we prepare to call a function, the entry on the function call
             // -- stack might not yet know the signature of the overload to be executed
             // -- we'll return the CFunctionContext* being prepared
-            return (&m_functionEntryStack[m_stacktop].prepareContext);
+            m_functionEntryStack[m_stacktop].prepareContext = nullptr;
+            if (fe->HasOverloads())
+            {
+                m_functionEntryStack[m_stacktop].prepareContext =
+                    TinAlloc(ALLOC_FuncContext, CFunctionContext, fe->GetScriptContext());
+            }
+
+            return (m_functionEntryStack[m_stacktop].prepareContext);
 		}
 
 		CFunctionEntry* Pop(CObjectEntry*& objentry, int32& var_offset)
@@ -307,6 +314,12 @@ class CFunctionCallStack
 					function_entry->GetScriptContext()->DestroyObject(local_object->GetID());
 				}
 			}
+
+            // -- if we had a preparation context, free it
+            if (m_functionEntryStack[m_stacktop].prepareContext != nullptr)
+            {
+                TinFree(m_functionEntryStack[m_stacktop].prepareContext);
+            }
 
             return (m_functionEntryStack[--m_stacktop].funcentry);
 		}
@@ -347,14 +360,6 @@ class CFunctionCallStack
                 varoffset = -1;
                 return (NULL);
             }
-        }
-
-        CFunctionContext* GetPrepareContext()
-        {
-            if (m_stacktop > 0)
-                return (&m_functionEntryStack[m_stacktop - 1].prepareContext);
-            else
-                return (nullptr);
         }
 
         int32 GetStackDepth() const
@@ -426,7 +431,7 @@ class CFunctionCallStack
 
             CFunctionEntry* funcentry;
             CObjectEntry* objentry;
-            CFunctionContext prepareContext;
+            CFunctionContext* prepareContext;
             int32 stackvaroffset;
             uint32 linenumberfunccall;
             bool8 isexecuting;
@@ -450,6 +455,8 @@ class CFunctionCallStack
 		int32 m_size;
 		int32 m_stacktop;
 };
+
+bool8 CopyStackParameters(CFunctionEntry* fe, CExecStack& execstack, CFunctionCallStack& funccallstack);
 
 bool8 ExecuteCodeBlock(CCodeBlock& codeblock);
 bool8 ExecuteScheduledFunction(CScriptContext* script_context, uint32 objectid, uint32 ns_hash, uint32 funchash,

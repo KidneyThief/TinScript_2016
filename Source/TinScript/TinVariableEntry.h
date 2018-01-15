@@ -218,7 +218,7 @@ public:
 
     void SetValue(void* objaddr, void* value, CExecStack* execstack = NULL, CFunctionCallStack* funccallstack = NULL,
                   int32 array_index = 0);
-    void SetValueAddr(void* objaddr, void* value, int32 array_index = 0);
+    void SetValueAddr(void* objaddr, void* value, int32 array_index = 0, eVarType new_type = TYPE_NULL);
 
     // -- the equivalent of SetValue and SetValueAddr, but for variable (arrays) of Type_string
     void SetStringArrayHashValue(void* objaddr, void* value, CExecStack* execstack = NULL,

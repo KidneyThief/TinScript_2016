@@ -4896,8 +4896,7 @@ CVariableEntry* AddVariable(CScriptContext* script_context, tVarTable* curglobal
     if (curfuncdefinition)
     {
         // -- search the local var table for the executing function
-        // $$$TZA overload - current overload
-        ve = curfuncdefinition->GetContext(0)->GetLocalVar(varhash);
+        ve = curfuncdefinition->GetContext(curfuncdefinition->GetActiveOverload())->GetLocalVar(varhash);
         if (!ve)
             ve = curfuncdefinition->GetContext(0)->AddLocalVar(varname, varhash, vartype, array_size, false);
     }
@@ -5042,8 +5041,8 @@ CVariableEntry* GetVariable(CScriptContext* script_context, tVarTable* globalVar
     // -- else if were given a function, find the local variable
     else if (fe)
     {
-        // -- get the overload currently being used
-        ve = fe->GetContext(fe->GetActiveOverload())->GetLocalVar(var_hash);
+        // $$$TZA overload - ensure both parameters and local vars work here!
+        ve = fe->GetActiveContext()->GetLocalVar(var_hash);
 
         // -- mark the variable entry with the owning function
         if (ve)

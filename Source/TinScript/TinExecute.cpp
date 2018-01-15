@@ -470,10 +470,13 @@ void CFunctionCallStack::BeginExecution(const uint32* instrptr)
     // -- the m_stacktop - 2, therefore, is the calling function (if it exists)...
     // -- tag it with the offset into the codeblock, for a debugger callstack
     // $$$TZA overload - we should know which overload we're executing
-    if (m_stacktop >= 2 && m_functionEntryStack[m_stacktop - 2].funcentry->GetType(0) == eFunctionType::Script)
+    CFunctionEntry* cur_function = m_stacktop >= 2 ? m_functionEntryStack[m_stacktop - 2].funcentry : nullptr;
+    uint32 cur_overload_hash = cur_function != nullptr ? cur_function->GetActiveOverload() : 0;
+    if (m_stacktop >= 2 && 
+        m_functionEntryStack[m_stacktop - 2].funcentry->GetType(cur_overload_hash) == eFunctionType::Script)
     {
         CCodeBlock* callingfunc_cb = NULL;
-        m_functionEntryStack[m_stacktop - 2].funcentry->GetCodeBlockOffset(0, callingfunc_cb);
+        m_functionEntryStack[m_stacktop - 2].funcentry->GetCodeBlockOffset(cur_overload_hash, callingfunc_cb);
         m_functionEntryStack[m_stacktop - 2].linenumberfunccall = callingfunc_cb->CalcLineNumber(instrptr);
     }
 
@@ -501,8 +504,7 @@ bool8 CodeBlockCallFunction(CFunctionEntry* fe, CObjectEntry* oe, CExecStack& ex
     // -- for registered 'C' functions, or to the execstack for scripted functions
 
     // -- scripted function
-    // $$$TZA overload -do swe know the signature?
-    if (fe->GetType(0) == eFunctionType::Script)
+    if (fe->GetType(fe->GetActiveOverload()) == eFunctionType::Script)
     {
         // -- for scheduled function calls, the stack parameters are still stored in the context
         // -- for regular function calls, GetStackVarAddr() will already have used the stack
@@ -510,7 +512,7 @@ bool8 CodeBlockCallFunction(CFunctionEntry* fe, CObjectEntry* oe, CExecStack& ex
             CopyStackParameters(fe, execstack, funccallstack);
 
         CCodeBlock* funccb = NULL;
-        uint32 funcoffset = fe->GetCodeBlockOffset(0, funccb);
+        uint32 funcoffset = fe->GetCodeBlockOffset(fe->GetActiveOverload(), funccb);
         if (!funccb)
         {
             ScriptAssert_(fe->GetScriptContext(), 0, "<internal>", -1,
@@ -534,16 +536,15 @@ bool8 CodeBlockCallFunction(CFunctionEntry* fe, CObjectEntry* oe, CExecStack& ex
     }
 
     // -- registered 'C' function
-    // $$$TZA overload - do we know the signature?
-    else if (fe->GetType(0) == eFunctionType::Global)
+    else if (fe->GetType(fe->GetActiveOverload()) == eFunctionType::Global)
     {
-        fe->GetRegObject(0)->DispatchFunction(oe ? oe->GetAddr() : NULL);
+        fe->GetRegObject(fe->GetActiveOverload())->DispatchFunction(oe ? oe->GetAddr() : NULL);
 
         // -- if the function has a return type, push it on the stack
-        if (fe->GetReturnType(0) > TYPE_void)
+        if (fe->GetReturnType(fe->GetActiveOverload()) > TYPE_void)
         {
-            assert(fe->GetContext(0) && fe->GetContext(0)->GetParameterCount() > 0);
-            CVariableEntry* returnval = fe->GetContext(0)->GetParameter(0);
+            assert(fe->GetContext(fe->GetActiveOverload()) && fe->GetContext(fe->GetActiveOverload())->GetParameterCount() > 0);
+            CVariableEntry* returnval = fe->GetContext(fe->GetActiveOverload())->GetParameter(0);
             assert(returnval);
             execstack.Push(returnval->GetAddr(NULL), returnval->GetType());
         }
@@ -557,8 +558,7 @@ bool8 CodeBlockCallFunction(CFunctionEntry* fe, CObjectEntry* oe, CExecStack& ex
 
         // -- clear all parameters for the function - this will ensure all
         // -- strings are decremented, keeping the string table clear of unassigned values
-        // $$$TZA overload - do we know the signature?
-        fe->GetContext(0)->ClearParameters();
+        fe->GetContext(fe->GetActiveOverload())->ClearParameters();
         fe->GetScriptContext()->GetStringTable()->RemoveUnreferencedStrings();
         
         // -- since we called a 'C' function, there's no OP_FuncReturn - pop the function call stack

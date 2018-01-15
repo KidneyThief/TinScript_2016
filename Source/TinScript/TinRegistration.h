@@ -210,25 +210,17 @@ class CFunctionEntry
         void SetActiveOverload(uint32 sig_hash) { mDefineOverload = sig_hash; }
         uint32 GetActiveOverload() const { return (mDefineOverload); }
 
-        bool8 NoOverloads() const { return (mOverloadTable.Used() == 1); }
+        // -- when preparing to call a function, because we *might* not know which
+        // -- overload we're calling, we use the "active context", which might either
+        // -- be the context for the known overload, or the one owned by the
+        // -- function calls stack entry, which is used to match and find the overload
+        void SetPrepareContext(CFunctionContext* context) { mPrepareContext = context; }
+        CFunctionContext* GetPrepareContext() const {return (mPrepareContext); }
+        CFunctionContext* GetActiveContext() const;
 
-        CFunctionOverload* FindOverload(uint32 signature_hash) const
-        {
-            // -- if there are no overloads, then...  invalid function entry
-            assert(mOverloadTable.Used() > 0);
+        bool8 HasOverloads() const { return (mOverloadTable.Used() > 1); }
 
-            // -- if there's only one entry, and we're not looking for the undefined overload
-            // -- return it - as all arguments will be coerced as needed
-            if (mOverloadTable.Used() == 1 && signature_hash != kFunctionSignatureUndefined)
-            {
-                return mOverloadTable.First();
-            }
-            else
-            {
-                CFunctionOverload* found = mOverloadTable.FindItem(signature_hash);
-                return (found);
-            }
-        }
+        CFunctionOverload* FindOverload(uint32 signature_hash) const;
 
         // -- if there's an existing overload with the same signature, this replaces it
         void AddOverload(CFunctionOverload* _overload);
@@ -264,6 +256,9 @@ class CFunctionEntry
 
         // -- track which overload is currently being defined
         uint32 mDefineOverload;
+
+        // -- tr4ack which context we're filling in with values before calling
+        CFunctionContext* mPrepareContext;
 };
 
 // ====================================================================================================================
