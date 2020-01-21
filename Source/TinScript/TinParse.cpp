@@ -1145,8 +1145,21 @@ bool8 TryParseVarDeclaration(CCodeBlock* codeblock, tReadToken& filebuf, CCompil
             return (false);
     }
 
+    // -- if we have an integer, what we actually have is an object_id, we're dynamically adding a member to
+    bool8 objvardecl = false;
+    if (idtoken.type == TOKEN_INTEGER)
+    {
+        // -- store the object id
+        objvardecl = true;
+
+        // -- we'd better find a TOKEN_PERIOD, followed by an identifier
+        tReadToken peektoken(idtoken);
+        if (!GetToken(peektoken) || peektoken.type != TOKEN_PERIOD)
+            return (false);
+    }
+
     // -- at this point, we should have an identifier
-	if (idtoken.type != TOKEN_IDENTIFIER)
+	if (idtoken.type != TOKEN_IDENTIFIER && (idtoken.type != TOKEN_INTEGER || !objvardecl))
 		return (false);
 
     // -- make sure the next token isn't an open parenthesis
@@ -1371,7 +1384,7 @@ bool8 TryParseVarDeclaration(CCodeBlock* codeblock, tReadToken& filebuf, CCompil
 		    CObjMemberNode* objmember = TinAlloc(ALLOC_TreeNode, CObjMemberNode, codeblock, arrayvarnode->leftchild,
                                                  member_token.linenumber, member_token.tokenptr, member_token.length);
 
-            // -- the left child of the member node resolves tothe object
+            // -- the left child of the member node resolves to the object
 		    CValueNode* valuenode = TinAlloc(ALLOC_TreeNode, CValueNode, codeblock, objmember->leftchild,
                                              idtoken.linenumber, idtoken.tokenptr, idtoken.length, true, TYPE_object);
         }
@@ -1388,8 +1401,9 @@ bool8 TryParseVarDeclaration(CCodeBlock* codeblock, tReadToken& filebuf, CCompil
                                                                 member_token.length, registeredtype, array_size);
 
             // -- create the value node that resolves to an object
+            // -- note, the objvardecl bool determines whether this value node is a literal or not
 		    CValueNode* valuenode = TinAlloc(ALLOC_TreeNode, CValueNode, codeblock, obj_member_decl_node->leftchild,
-                                             idtoken.linenumber, idtoken.tokenptr, idtoken.length, true, TYPE_object);
+                                             idtoken.linenumber, idtoken.tokenptr, idtoken.length, !objvardecl, TYPE_object);
         }
 
         // -- now we find the final token - is this a declaration, or do we have an assignment
@@ -1434,13 +1448,37 @@ bool8 TryParseVarDeclaration(CCodeBlock* codeblock, tReadToken& filebuf, CCompil
     // -- if we found a variable declaration, add the variable
     if (is_var_decl && !selfvardecl)
     {
-        int32 stacktopdummy = 0;
-        CObjectEntry* dummy = NULL;
-        CFunctionEntry* curfunction =
-            codeblock->smFuncDefinitionStack->GetTop(dummy, stacktopdummy);
+        // -- see if we're adding a global var
+        if (!objvardecl)
+        {  
+            int32 stacktopdummy = 0;
+            CObjectEntry* dummy = NULL;
+            CFunctionEntry* curfunction =
+                codeblock->smFuncDefinitionStack->GetTop(dummy, stacktopdummy);
 
-        AddVariable(codeblock->GetScriptContext(), codeblock->smCurrentGlobalVarTable, curfunction,
-                    TokenPrint(idtoken), Hash(TokenPrint(idtoken)), registeredtype, array_size);
+            AddVariable(codeblock->GetScriptContext(), codeblock->smCurrentGlobalVarTable, curfunction,
+                        TokenPrint(idtoken), Hash(TokenPrint(idtoken)), registeredtype, array_size);
+        }
+/*
+        else
+        {
+            // -- this is only available in immediate execution code
+            int32 stacktopdummy = 0;
+            CObjectEntry* dummy = NULL;
+            CFunctionEntry* curfunction = codeblock->smFuncDefinitionStack->GetTop(dummy, stacktopdummy);
+            uint32 funchash = curfunction ? curfunction->GetHash() : 0;
+            if (funchash != 0)
+            {
+                ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
+                              finaltoken.linenumber, "Error - dynamically declaring an object member outside a function.\n");
+			    return (false);
+            }
+
+            uint32 object_id = Atoi(object_id_token.tokenptr, object_id_token.length);
+            CScriptContext* script_context = TinScript::GetContext();
+            script_context->AddDynamicVariable(object_id,  Hash(TokenPrint(idtoken)), registeredtype, array_size);
+        }
+*/
     }
 
     // -- return the result

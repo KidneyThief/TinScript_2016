@@ -353,8 +353,8 @@ public:
         methodtable->AddItem(*fe, hash);
 
         // $$$TZA Overload
-        printf("### DEBUG reg: %s, has: 0x%x\n", GetName(), GetContext()->CalcHash());
-        printf("### DEBUG verify: 0x%x\n", CFunctionContext::CalcSignatureHash<T1>());
+        //printf("### DEBUG reg: %s, has: 0x%x\n", GetName(), GetContext()->CalcHash());
+        //printf("### DEBUG verify: 0x%x\n", CFunctionContext::CalcSignatureHash<T1>());
     }
 
 private:
