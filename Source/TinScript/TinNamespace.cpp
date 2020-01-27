@@ -830,24 +830,6 @@ bool8 CScriptContext::AddDynamicVariable(uint32 objectid, uint32 varhash, eVarTy
 }
 
 // ====================================================================================================================
-// AddDynamicVariable():  Given an object id, add a dynamic variable by name and type name.
-// ====================================================================================================================
-bool8 CScriptContext::AddDynamicVariable(uint32 objectid, const char* varname, const char* vartypename,
-                                         int32 array_size)
-{
-    if (!varname || !vartypename)
-    {
-        ScriptAssert_(this, 0, "<internal>", -1,
-                      "Error - AddDynamicVariable with no var name/type\n");
-        return (false);
-    }
-
-    uint32 varhash = Hash(varname);
-    eVarType vartype = GetRegisteredType(vartypename, (int32)strlen(vartypename));
-    return (AddDynamicVariable(objectid, varhash, vartype, array_size));
-}
-
-// ====================================================================================================================
 // SetMemberVar():  Given an object id, and the name of a member, set the value.
 // ====================================================================================================================
 bool8 CScriptContext::SetMemberVar(uint32 objectid, const char* varname, void* value)

@@ -399,6 +399,10 @@ void* TypeConvert(CScriptContext* script_context, eVarType fromtype, void* froma
     if (fromtype == totype || !fromaddr)
         return fromaddr;
 
+    // -- if the types we're converting between are variable or hashtable, they're interchangable by definition
+    //if ((totype == TYPE__var || totype == TYPE_hashtable) && (fromtype == TYPE__var || fromtype == TYPE_hashtable))
+    //    return fromaddr;
+
     // -- if the "to type" is a string, use the registered string conversion function
     if (totype == TYPE_string)
     {
@@ -510,6 +514,64 @@ bool8 SafeStrcpy(char* dest, const char* src, int32 max)
 	}
 	*destptr = '\0';
 	return true;
+}
+
+
+// ====================================================================================================================
+// SafeStrCaseStr(): pre-Cx11 strcasestr
+// ====================================================================================================================
+const char* SafeStrStr(const char* str, const char* partial, bool case_sensitive)
+{
+    // -- sanity checks
+    if (str && (!partial || !partial[0]))
+    {
+        return str;
+    }
+    else if (!str || strlen(partial) > strlen(str))
+    {
+        return nullptr;
+    }
+
+    #define IS_ALPHA(c) (((c) >= 'A' && (c) <= 'Z') || ((c) >= 'a' && (c) <= 'z'))
+    #define TO_UPPER(c) ((c) & 0xDF)
+
+    const char* loop_iter = str;
+    while (*loop_iter)
+    {
+        bool8 diff = false;
+        const char* str_iter = loop_iter;
+        const char* partial_iter = partial;
+        while (*partial_iter)
+        {
+            char test_str = case_sensitive ? *str_iter
+                                           : (!IS_ALPHA(*str_iter) ? *str_iter : TO_UPPER(*str_iter));
+            char test_partial = case_sensitive ? *partial_iter
+                                               : (!IS_ALPHA(*partial_iter) ? *partial_iter : TO_UPPER(*partial_iter));
+            if (test_str == test_partial)
+            {
+                ++str_iter;
+                ++partial_iter;
+            }
+            else
+            {
+                diff = true;
+                break;
+            }
+        }
+
+        // -- if we completed the loop without finding a difference, we're done
+        if (!*partial_iter && !diff)
+        {
+            return str_iter;
+        }
+        else
+        {
+            ++str_iter;
+        }
+    }
+
+    // -- no match found
+    return nullptr;
 }
 
 // ====================================================================================================================

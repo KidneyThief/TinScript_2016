@@ -430,7 +430,6 @@ class CScriptContext
         bool8 HasMethod(uint32 objectid, const char* method_name);
 
         bool8 AddDynamicVariable(uint32 objectid, uint32 varhash, eVarType vartype, int32 array_size = 1);
-        bool8 AddDynamicVariable(uint32 objectid, const char* varname, const char* vartypename, int32 array_size = 1);
         bool8 SetMemberVar(uint32 objectid, const char* varname, void* value);
 
         void PrintObject(CObjectEntry* oe, int32 indent = 0);

@@ -23,11 +23,15 @@
 // TinScriptContextReg.cpp
 // ====================================================================================================================
 
+// -- system includes
+#include <string.h>
+
 // -- includes
 #include "TinRegistration.h"
 #include "TinScheduler.h"
 #include "TinObjectGroup.h"
 #include "TinScript.h"
+
 
 // == namespace TinScript =============================================================================================
 
@@ -183,15 +187,6 @@ bool8 ContextObjectHasMethod(uint32 objectid, const char* method_name)
 }
 
 // ====================================================================================================================
-// ContextAddDynamicVariable():  Declare a dynamic variable for the given object.
-// ====================================================================================================================
-void ContextAddDynamicVariable(uint32 objectid, const char* varname, const char* vartype, int32 array_size)
-{
-    CScriptContext* script_context = TinScript::GetContext();
-    script_context->AddDynamicVariable(objectid, varname, vartype, array_size);
-}
-
-// ====================================================================================================================
 // ContextLinkNamespaces():  Link the child namespace to the parent, in the current thread's CScriptContext.
 // ====================================================================================================================
 void ContextLinkNamespaces(const char* childns, const char* parentns)
@@ -243,6 +238,31 @@ void ContextListFunctions(uint32 objectid)
     }
     else
         TinScript::DumpFuncTable(script_context, script_context->GetGlobalNamespace()->GetFuncTable());
+}
+
+// ====================================================================================================================
+// ContextListNamespaces():  If an partial namespace is given, list all that contain it, otherwise list all
+// ====================================================================================================================
+void ContextListNamespaces(const char* partial_name)
+{
+    CScriptContext* context = TinScript::GetContext();
+    CHashTable<CNamespace>* namespaces = TinScript::GetContext()->GetNamespaceDictionary();
+    if (namespaces != nullptr)
+    {
+        CNamespace* current_namespace = namespaces->First();
+        while (current_namespace != nullptr)
+        {
+            const char* current_name = current_namespace->GetName();
+            if (current_name && current_name[0])
+            {
+                if  (!partial_name || !partial_name[0] || SafeStrStr(current_name, partial_name) != 0)
+                {
+                    TinPrint(context, "%s\n", current_name);
+                }       
+            }
+            current_namespace = namespaces->Next();
+        }
+    }
 }
 
 // ====================================================================================================================
@@ -314,10 +334,10 @@ REGISTER_FUNCTION_P1(IsObject, ContextIsObject, bool8, uint32);
 REGISTER_FUNCTION_P1(FindObject, ContextFindObjectByName, uint32, const char*);
 REGISTER_FUNCTION_P2(ObjectHasNamespace, ContextObjectIsDerivedFrom, bool8, uint32, const char*);
 REGISTER_FUNCTION_P2(ObjectHasMethod, ContextObjectHasMethod, bool8, uint32, const char*);
-REGISTER_FUNCTION_P4(AddDynamicVar, ContextAddDynamicVariable, void, uint32, const char*, const char*, int32);
 REGISTER_FUNCTION_P2(LinkNamespaces, ContextLinkNamespaces, void, const char*, const char*);
 REGISTER_FUNCTION_P1(ListVariables, ContextListVariables, void, uint32);
 REGISTER_FUNCTION_P1(ListFunctions, ContextListFunctions, void, uint32);
+REGISTER_FUNCTION_P1(ListNamespaces, ContextListNamespaces, void, const char*);
 REGISTER_FUNCTION_P1(GetObjectNamespace, ContextGetObjectNamespace, const char*, uint32);
 REGISTER_FUNCTION_P2(SaveObjects, ContextSaveObjects, void, uint32, const char*);
 

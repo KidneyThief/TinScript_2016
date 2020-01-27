@@ -2922,25 +2922,29 @@ bool8 OpExecScheduleParam(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, C
     // -- get the parameter index
     int32 paramindex = *instrptr++;
 
-    // -- pull the parameter value off the stack
-    eVarType contenttype;
-    void* contentptr = execstack.Pop(contenttype);
+	// -- pop the value
+    CVariableEntry* stack_ve = NULL;
+    CObjectEntry* stack_oe = NULL;
+	eVarType stack_valtype;
+	void* stack_valaddr = execstack.Pop(stack_valtype);
+    if (!GetStackValue(cb->GetScriptContext(), execstack, funccallstack, stack_valaddr, stack_valtype, stack_ve, stack_oe))
+        return (false);
 
     // -- add the parameter to the function context, inheriting the type from whatever
     // -- was pushed
     char varnamebuf[32];
     sprintf_s(varnamebuf, 32, "_%d", paramindex);
     cb->GetScriptContext()->GetScheduler()->mCurrentSchedule->mFuncContext->
-        AddParameter(varnamebuf, Hash(varnamebuf), contenttype, 1, paramindex, 0);
+        AddParameter(varnamebuf, Hash(varnamebuf), stack_valtype, 1, paramindex, 0);
 
     // -- assign the value
     CVariableEntry* ve = cb->GetScriptContext()->GetScheduler()->mCurrentSchedule->
                          mFuncContext->GetParameter(paramindex);
-    ve->SetValue(NULL, contentptr);
+    ve->SetValue(NULL, stack_valaddr);
     DebugTrace(op, "Param: %d, Var: %s", paramindex, varnamebuf);
 
     // -- post increment/decrement support
-    ApplyPostUnaryOpEntry(contenttype, contentptr);
+    ApplyPostUnaryOpEntry(stack_valtype, stack_valaddr);
 
     return (true);
 }
