@@ -491,22 +491,29 @@ const char* DebugPrintVar(void* addr, eVarType vartype)
     return convertbuf;
 }
 
+
 // ====================================================================================================================
-// SafeStrcpy(): Safe version of strcpy(), guarantees no buffer overruns, and a null-terminated destination.
+// SafeStrcpy(): Safe version of strcpy(), checks nullptrs and returns a null-terminated destination.
 // ====================================================================================================================
-bool8 SafeStrcpy(char* dest, const char* src, int32 max)
+bool8 SafeStrcpy(char* dest, size_t dest_size, const char* src, size_t length)
 {
 	// terminate the dest pointer, in case we copy a zero length string
 	if (dest)
 		*dest = '\0';
 
 	// -- sanity check
-	if (! dest || ! src || max <= 0)
+	if (! dest || dest_size == 0 || ! src)
 		return false;
+
+    // -- a lenth of 0 means copy the complete string (up to dest_size)
+    if (length == 0)
+        length = dest_size;
 
 	char* destptr = dest;
 	const char* srcptr = src;
-	int32 count = max - 1;
+	int32 count = length - 1;
+    if (dest_size < length)
+        count = dest_size = 1;
 	while (*srcptr != '\0' && count > 0)
     {
 		*destptr++ = *srcptr++;
@@ -515,7 +522,6 @@ bool8 SafeStrcpy(char* dest, const char* src, int32 max)
 	*destptr = '\0';
 	return true;
 }
-
 
 // ====================================================================================================================
 // SafeStrCaseStr(): pre-Cx11 strcasestr
@@ -566,7 +572,7 @@ const char* SafeStrStr(const char* str, const char* partial, bool case_sensitive
         }
         else
         {
-            ++str_iter;
+            ++loop_iter;
         }
     }
 
@@ -837,6 +843,20 @@ bool8 StringBinaryOp(CScriptContext* script_context, eOpCode op, eVarType& resul
     // -- sanity check
     if (!script_context || !result_addr || !val0 || !val1)
         return (false);
+
+    // -- if we're comparing, use the StringCmp() fuunctions
+    if (val0_type == TYPE_string && val1_type == TYPE_string)
+    {
+        if (op == OP_CompareEqual || op == OP_CompareNotEqual)
+        {
+            uint32 str_0_hash = *(uint32*)TypeConvert(script_context, val0_type, val0, TYPE_string);
+            uint32 str_1_hash = *(uint32*)TypeConvert(script_context, val1_type, val1, TYPE_string);
+            int32* result = (int32*)result_addr;
+            result_type = TYPE_int;
+            *result = (str_0_hash == str_1_hash) ? 0 : 1;
+            return (true);
+        }
+    }
 
     // -- if we cannot convert the string to a float non-zero value, convert it as an integer
     bool val0_float = true;
@@ -1123,6 +1143,9 @@ bool8 StringConfig(eVarType var_type, bool8 onInit)
         RegisterTypeOpOverride(OP_Mult, TYPE_string, StringBinaryOp);
         RegisterTypeOpOverride(OP_Div, TYPE_string, StringBinaryOp);
         RegisterTypeOpOverride(OP_Mod, TYPE_string, StringBinaryOp);
+
+        RegisterTypeOpOverride(OP_CompareEqual, TYPE_string, StringBinaryOp);
+        RegisterTypeOpOverride(OP_CompareNotEqual, TYPE_string, StringBinaryOp);
     }
 
     // -- success

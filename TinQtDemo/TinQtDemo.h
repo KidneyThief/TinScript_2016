@@ -193,7 +193,7 @@ struct tText
     {
         id = _id;
         position = _position;
-        TinScript::SafeStrcpy(text, _text, TinScript::kMaxNameLength);
+        TinScript::SafeStrcpy(text, TinScript::kMaxNameLength, _text);
         color = _color;
         expired = false;
     }

@@ -401,7 +401,7 @@ void CDemoWidget::DrawText(int32 id, const CVector3f& position, const char* _tex
         {
             item.id = id;
             item.position = position;
-            TinScript::SafeStrcpy(item.text, _text, TinScript::kMaxNameLength);
+            TinScript::SafeStrcpy(item.text, TinScript::kMaxNameLength, _text);
             item.color = color;
             item.expired = false;
 

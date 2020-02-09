@@ -321,10 +321,11 @@ void DumpTree(const CCompileTreeNode* root, int32 indent, bool8 isleft, bool8 is
 void DestroyTree(CCompileTreeNode* root);
 
 int32 CalcVarTableSize(tVarTable* vartable);
-void DumpVarTable(CObjectEntry* oe);
-void DumpVarTable(CScriptContext* script_context, CObjectEntry* oe, const tVarTable* vartable);
-void DumpFuncTable(CObjectEntry* oe);
-void DumpFuncTable(CScriptContext* script_context, const tFuncTable* functable);
+void DumpVarTable(CObjectEntry* oe, const char* partial = nullptr);
+void DumpVarTable(CScriptContext* script_context, CObjectEntry* oe, const tVarTable* vartable,
+                  const char* partial = nullptr);
+void DumpFuncTable(CObjectEntry* oe, const char* partial = nullptr);
+void DumpFuncTable(CScriptContext* script_context, const tFuncTable* functable, const char* partial = nullptr);
 
 // ====================================================================================================================
 

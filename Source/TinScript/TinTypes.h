@@ -437,7 +437,8 @@ bool8 GetRegisteredPODMember(eVarType type_id, void* var_addr, uint32 member_has
 
 TypeOpOverride GetTypeOpOverride(eOpCode op, eVarType var_type);
 
-bool8 SafeStrcpy(char* dest, const char* src, int32 max);
+
+bool8 SafeStrcpy(char* dest, size_t dest_size, const char* src, size_t length = 0);
 const char* SafeStrStr(const char* str, const char* partial, bool case_sensitive = false);
 int32 Atoi(const char* src, int32 length = -1);
 

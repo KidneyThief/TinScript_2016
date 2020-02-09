@@ -158,7 +158,7 @@ class CHashTable
 	};
 
 	// -- constructor / destructor
-	CHashTable(int32 _size = 0)
+	CHashTable(int32 _size = 1)
     {
 		size = _size;
 		table = TinAllocArray(ALLOC_HashTable, CHashTableEntry*, size);

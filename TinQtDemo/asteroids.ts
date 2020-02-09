@@ -445,6 +445,12 @@ void AsteroidsGame::OnUpdate()
             float distance = V3fLength(bullet.position - asteroid.position);
             if (distance < asteroid.radius)
             {
+                // -- post a notification
+                if (IsFunction("PostCollision"))
+                {
+                    PostCollision(asteroid, bullet);
+                }
+
                 // -- set the flag, call the function
                 asteroid.OnCollision();
                 
@@ -475,6 +481,12 @@ void AsteroidsGame::OnUpdate()
         float max_dist = (asteroid.radius + self.ship.radius) * 0.75f;
         if (distance < max_dist)
         {
+            // -- post a notification
+            if (IsFunction("PostCollision"))
+            {
+                PostCollision(asteroid, self.ship);
+            }
+
             // -- notify the ship of the collision
             self.ship.OnCollision();
             

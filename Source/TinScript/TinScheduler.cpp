@@ -299,7 +299,7 @@ CScheduler::CCommand::CCommand(CScriptContext* script_context, int32 _reqid, uin
     mDispatchTime = _dispatchtime;
     mRepeatTime = _repeat_time;
     mImmediateExec = immediate;
-    SafeStrcpy(mCommandBuf, _command, kMaxTokenLength);
+    SafeStrcpy(mCommandBuf, sizeof(mCommandBuf), _command, kMaxTokenLength);
 
     // -- command string, null out the direct function call members
     mFuncHash = 0;

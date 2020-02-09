@@ -398,7 +398,7 @@ bool SendExec(int32 func_hash, const char* arg1, const char* arg2, const char* a
         {
             int32 arg_length = (int32)strlen(arg_string);
             *dataptr++ = (uint32)TinScript::TYPE_string;
-            TinScript::SafeStrcpy((char*)dataptr, arg_string, max_size);
+            TinScript::SafeStrcpy((char*)dataptr, max_size, arg_string, max_size);
 
             // -- ensure we keep the data ptr aligned (include the string terminator)
             int32 data_count = (arg_length / 4) + 1;

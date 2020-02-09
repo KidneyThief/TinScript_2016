@@ -819,8 +819,8 @@ bool8 GetBinaryFileName(const char* filename, char* binfilename, int32 maxnamele
 
     // -- copy the root name
     uint32 length = kPointerDiffUInt32(extptr, filename);
-    SafeStrcpy(binfilename, filename, maxnamelength);
-    SafeStrcpy(&binfilename[length], ".tso", maxnamelength - length);
+    SafeStrcpy(binfilename, maxnamelength, filename, maxnamelength);
+    SafeStrcpy(&binfilename[length], maxnamelength, ".tso", maxnamelength - length);
 
     return true;
 }
@@ -874,8 +874,8 @@ bool8 GetSourceCFileName(const char* filename, char* source_C_name, int32 maxnam
 
     // -- copy the root name
     uint32 length = kPointerDiffUInt32(extptr, filename);
-    SafeStrcpy(source_C_name, filename, maxnamelength);
-    SafeStrcpy(&source_C_name[length], ".h", maxnamelength - length);
+    SafeStrcpy(source_C_name, maxnamelength, filename, maxnamelength);
+    SafeStrcpy(&source_C_name[length], maxnamelength - length, ".h", maxnamelength - length);
 
     return true;
 }
@@ -1350,7 +1350,7 @@ void CScriptContext::InitWatchEntryFromVarEntry(CVariableEntry& ve, CObjectEntry
 
 	// -- type, name, and value string
 	watch_entry.mType = ve.GetType();
-	SafeStrcpy(watch_entry.mVarName, UnHash(ve.GetHash()), kMaxNameLength);
+	SafeStrcpy(watch_entry.mVarName, sizeof(watch_entry.mVarName), UnHash(ve.GetHash()), kMaxNameLength);
 	gRegisteredTypeToString[ve.GetType()](this, value_addr, watch_entry.mValue, kMaxNameLength);
 
     // -- fill in the array size
@@ -1446,7 +1446,7 @@ void CScriptContext::AddVariableWatch(int32 request_id, const char* variable_wat
 
 			// -- type, name, and value string, and array size
 			found_variable.mType = TYPE_object;
-			SafeStrcpy(found_variable.mVarName, UnHash(oe->GetNameHash()), kMaxNameLength);
+			SafeStrcpy(found_variable.mVarName, sizeof(found_variable.mVarName), UnHash(oe->GetNameHash()), kMaxNameLength);
 			sprintf_s(found_variable.mValue, "%d", object_id);
             found_variable.mArraySize = 1;
 
@@ -1638,7 +1638,7 @@ void CScriptContext::AddVariableWatch(int32 request_id, const char* variable_wat
 
 		        // -- type, name, and value string, and array size
 		        watch_result.mType = returnType;
-		        SafeStrcpy(watch_result.mVarName, variable_watch, kMaxNameLength);
+		        SafeStrcpy(watch_result.mVarName, sizeof(watch_result.mVarName), variable_watch, kMaxNameLength);
                 gRegisteredTypeToString[returnType](this, returnValue, watch_result.mValue, kMaxNameLength);
                 watch_result.mArraySize = 1;
 
@@ -1765,7 +1765,7 @@ bool8 CScriptContext::InitWatchExpression(CDebuggerWatchExpression& debugger_wat
     // -- note:  trace expressions are evaluated verbatim
     char expr_result[kMaxTokenLength];
     if (use_trace)
-        SafeStrcpy(expr_result, expression, kMaxTokenLength);
+        SafeStrcpy(expr_result, sizeof(expr_result), expression, kMaxTokenLength);
     else
         sprintf_s(expr_result, "return (%s);", expression);
 
@@ -2107,7 +2107,7 @@ void CScriptContext::DebuggerCurrentWorkingDir(const char* cwd)
     *dataPtr++ = k_DebuggerCurrentWorkingDirPacketID;
 
     // -- write the string
-    SafeStrcpy((char*)dataPtr, cwd, strLength);
+    SafeStrcpy((char*)dataPtr, strLength, cwd, strLength);
 
     // -- send the packet
     SocketManager::SendDataPacket(newPacket);
@@ -2148,7 +2148,7 @@ void CScriptContext::DebuggerCodeblockLoaded(uint32 codeblock_hash)
     *dataPtr++ = k_DebuggerCodeblockLoadedPacketID;
 
     // -- write the string
-    SafeStrcpy((char*)dataPtr, filename, strLength);
+    SafeStrcpy((char*)dataPtr, strLength, filename, strLength);
 
     // -- send the packet
     SocketManager::SendDataPacket(newPacket);
@@ -2482,14 +2482,14 @@ void CScriptContext::DebuggerSendWatchVariable(CDebuggerWatchVarEntry* watch_var
     *dataPtr++ = nameLength;
 
     // -- write the var name string
-    SafeStrcpy((char*)dataPtr, watch_var_entry->mVarName, nameLength);
+    SafeStrcpy((char*)dataPtr, nameLength, watch_var_entry->mVarName, nameLength);
     dataPtr += (nameLength / 4);
 
     // -- write the value string length
     *dataPtr++ = valueLength;
 
     // -- write the value string
-    SafeStrcpy((char*)dataPtr, watch_var_entry->mValue, valueLength);
+    SafeStrcpy((char*)dataPtr, nameLength, watch_var_entry->mValue, valueLength);
     dataPtr += (valueLength / 4);
 
     // -- write the cached var name hash
@@ -2530,8 +2530,8 @@ void CScriptContext::DebuggerSendObjectMembers(CDebuggerWatchVarEntry* callingFu
 
         // -- TYPE_void marks this as a namespace label, and set the object's name as the value
         watch_entry.mType = TYPE_void;
-        SafeStrcpy(watch_entry.mVarName, "self", kMaxNameLength);
-        SafeStrcpy(watch_entry.mValue, oe->GetName(), kMaxNameLength);
+        SafeStrcpy(watch_entry.mVarName, sizeof(kMaxNameLength), "self", kMaxNameLength);
+        SafeStrcpy(watch_entry.mValue, sizeof(kMaxNameLength), oe->GetName(), kMaxNameLength);
 
         // -- zero out the size
         watch_entry.mArraySize = 0;
@@ -2566,7 +2566,7 @@ void CScriptContext::DebuggerSendObjectMembers(CDebuggerWatchVarEntry* callingFu
 
         // -- TYPE_void marks this as a namespace label
         ns_entry.mType = TYPE_void;
-        SafeStrcpy(ns_entry.mVarName, UnHash(ns->GetHash()), kMaxNameLength);
+        SafeStrcpy(ns_entry.mVarName, sizeof(ns_entry.mVarName), UnHash(ns->GetHash()), kMaxNameLength);
         ns_entry.mValue[0] = '\0';
 
         // -- zero out the size
@@ -2619,7 +2619,7 @@ void CScriptContext::DebuggerSendObjectVarTable(CDebuggerWatchVarEntry* callingF
         member_entry.mArraySize = member->GetArraySize();
 
         // -- member name
-        SafeStrcpy(member_entry.mVarName, UnHash(member->GetHash()), kMaxNameLength);
+        SafeStrcpy(member_entry.mVarName, sizeof(member_entry.mVarName), UnHash(member->GetHash()), kMaxNameLength);
 
         // -- copy the value, as a string (to a max length)
         gRegisteredTypeToString[member->GetType()](this, member->GetAddr(oe->GetAddr()), member_entry.mValue,
@@ -2692,7 +2692,7 @@ void CScriptContext::DebuggerSendAssert(const char* assert_msg, uint32 codeblock
     *dataPtr++ = msgLength;
 
     // -- write the message string
-    SafeStrcpy((char*)dataPtr, assert_msg, msgLength);
+    SafeStrcpy((char*)dataPtr, msgLength, assert_msg, msgLength);
     dataPtr += (msgLength / 4);
 
     // -- send the codeblock hash
@@ -2757,7 +2757,7 @@ void CScriptContext::DebuggerSendPrint(const char* fmt, ...)
     *dataPtr++ = msgLength;
 
     // -- write the message string
-    SafeStrcpy((char*)dataPtr, msg_buf, msgLength);
+    SafeStrcpy((char*)dataPtr, msgLength, msg_buf, msgLength);
     dataPtr += (msgLength / 4);
 
     // -- send the packet
@@ -2801,7 +2801,7 @@ void CScriptContext::DebuggerRequestFunctionAssist(uint32 object_id)
             entry.mObjectID = object_id;
             entry.mNamespaceHash = current_namespace ? current_namespace->GetHash() : 0;
             entry.mFunctionHash = function_entry->GetHash();
-            SafeStrcpy(entry.mFunctionName, function_entry->GetName(), kMaxNameLength);
+            SafeStrcpy(entry.mFunctionName, sizeof(entry.mFunctionName), function_entry->GetName(), kMaxNameLength);
 
 			// -- get the codeblock, and fill in the line number
 			entry.mCodeBlockHash = function_entry->GetCodeBlock()
@@ -2928,7 +2928,7 @@ void CScriptContext::DebuggerSendFunctionAssistEntry(const CDebuggerFunctionAssi
     *dataPtr++ = nameLength;
 
     // -- write the message string
-    SafeStrcpy((char*)dataPtr, function_assist_entry.mFunctionName, nameLength);
+    SafeStrcpy((char*)dataPtr, nameLength, function_assist_entry.mFunctionName, nameLength);
     dataPtr += (nameLength / 4);
 
 	// -- codeblock filename hash and linenumber
@@ -3645,7 +3645,7 @@ bool8 CScriptContext::AddThreadCommand(const char* command)
     }
     else
     {
-        SafeStrcpy(mThreadBufPtr, command, lengthRemaining);
+        SafeStrcpy(mThreadBufPtr, lengthRemaining, command, lengthRemaining);
         mThreadBufPtr += cmdLength;
     }
 
@@ -4216,8 +4216,8 @@ CDebuggerWatchExpression::CDebuggerWatchExpression(bool8 isConditional, bool8 br
 {
     mIsEnabled = break_enabled;
     mIsConditional = isConditional;
-    SafeStrcpy(mConditional, condition, kMaxNameLength);
-    SafeStrcpy(mTrace, trace, kMaxNameLength);
+    SafeStrcpy(mConditional, sizeof(mConditional), condition, kMaxNameLength);
+    SafeStrcpy(mTrace, sizeof(mTrace), trace, kMaxNameLength);
     mTraceOnCondition = trace_on_condition;
     mWatchFunctionEntry = NULL;
     mTraceFunctionEntry = NULL;
@@ -4267,7 +4267,7 @@ void CDebuggerWatchExpression::SetAttributes(bool break_enabled, const char* new
         }
 
         // -- the first time this is needed, it'll be evaluated
-        SafeStrcpy(mConditional, new_conditional, kMaxNameLength);
+        SafeStrcpy(mConditional, sizeof(mConditional), new_conditional, kMaxNameLength);
     }
 
     // -- same for the trace
@@ -4283,7 +4283,7 @@ void CDebuggerWatchExpression::SetAttributes(bool break_enabled, const char* new
         }
 
         // -- the first time this is needed, it'll be evaluated
-        SafeStrcpy(mTrace, new_trace, kMaxNameLength);
+        SafeStrcpy(mTrace, sizeof(mTrace), new_trace, kMaxNameLength);
     }
 }
 

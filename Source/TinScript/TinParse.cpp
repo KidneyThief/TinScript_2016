@@ -237,7 +237,7 @@ const char* TokenPrint(tReadToken& token)
         return ("");
 
     char* bufferptr = TinScript::GetContext()->GetScratchBuffer();
-    SafeStrcpy(bufferptr, token.tokenptr, token.length + 1);
+    SafeStrcpy(bufferptr, kMaxTokenLength, token.tokenptr, token.length + 1);
     return (bufferptr);
 }
 
@@ -380,8 +380,8 @@ bool8 GetCommentToken(tReadToken& token)
         token.type = TOKEN_COMMENT;        
     }
 
-    // -- success
-	return (true);
+    // -- return if we found a comment
+	return (found_comment);
 }
 
 // ====================================================================================================================
@@ -808,7 +808,7 @@ bool8 DumpFile(const char* filename)
 		char tokenbuf[kMaxTokenLength] = { 0 };
 		if (token.tokenptr != NULL)
         {
-			SafeStrcpy(tokenbuf, token.tokenptr, token.length + 1);
+			SafeStrcpy(tokenbuf, kMaxTokenLength, token.tokenptr, token.length + 1);
 			printf("Found token: [%s] %s\n", gTokenTypeStrings[token.type], tokenbuf);
 		}
 	} while (success);
@@ -832,13 +832,13 @@ void DumpTree(const CCompileTreeNode* root, int32 indent, bool8 isleft, bool8 is
 		char* debugptr = debugbuf;
 		for (int32 i = 0; i < indent; ++i)
         {
-			SafeStrcpy(debugptr, "    ", debuglength);
+			SafeStrcpy(debugptr, debuglength, "    ", debuglength);
 			debugptr += 4;
 			debuglength -= 4;
 		}
 
         const char* branchtype = isleft ? "L-> " : isright ? "R-> " : "N-> ";
-        SafeStrcpy(debugptr, branchtype, debuglength);
+        SafeStrcpy(debugptr, debuglength, branchtype, debuglength);
 		debugptr += 4;
 		debuglength -= 4;
 		root->Dump(debugptr, debuglength);
@@ -893,7 +893,7 @@ void DestroyTree(CCompileTreeNode* root)
 // ====================================================================================================================
 // DumpVarTable():  Debug function to print all members (both dynamic and registered) belonging to a specific object.
 // ====================================================================================================================
-void DumpVarTable(CObjectEntry* oe)
+void DumpVarTable(CObjectEntry* oe, const char* partial)
 {
 	// -- sanity check
 	if (!oe)
@@ -903,7 +903,7 @@ void DumpVarTable(CObjectEntry* oe)
     while (curentry)
     {
         TinPrint(oe->GetScriptContext(), "\nNamespace: %s\n", UnHash(curentry->GetHash()));
-        DumpVarTable(oe->GetScriptContext(), oe, curentry->GetVarTable());
+        DumpVarTable(oe->GetScriptContext(), oe, curentry->GetVarTable(), partial);
         curentry = curentry->GetNext();
     }
 
@@ -911,14 +911,14 @@ void DumpVarTable(CObjectEntry* oe)
     if (oe->GetDynamicVarTable())
     {
         TinPrint(oe->GetScriptContext(), "\nDYNAMIC VARS:\n");
-        DumpVarTable(oe->GetScriptContext(), oe, oe->GetDynamicVarTable());
+        DumpVarTable(oe->GetScriptContext(), oe, oe->GetDynamicVarTable(), partial);
     }
 }
 
 // ====================================================================================================================
 // DebugVarTable():  Debug function to print out the variables in a variable table.
 // ====================================================================================================================
-void DumpVarTable(CScriptContext* script_context, CObjectEntry* oe, const tVarTable* vartable)
+void DumpVarTable(CScriptContext* script_context, CObjectEntry* oe, const tVarTable* vartable, const char* partial)
 {
 	// -- sanity check
 	if (!script_context || (!oe && !vartable))
@@ -929,10 +929,14 @@ void DumpVarTable(CScriptContext* script_context, CObjectEntry* oe, const tVarTa
 	CVariableEntry* ve = vartable->First();
     while (ve)
     {
-		char valbuf[kMaxTokenLength];
-        gRegisteredTypeToString[ve->GetType()](script_context, ve->GetValueAddr(objaddr), valbuf, kMaxTokenLength);
-		TinPrint(script_context, "    [%s] %s: %s\n", gRegisteredTypeNames[ve->GetType()],
-                    ve->GetName(), valbuf);
+        const char* ve_name = ve->GetName();
+        if (!partial || !partial[0] || SafeStrStr(ve_name, partial) != 0)
+        {
+		    char valbuf[kMaxTokenLength];
+            gRegisteredTypeToString[ve->GetType()](script_context, ve->GetValueAddr(objaddr), valbuf, kMaxTokenLength);
+		    TinPrint(script_context, "    [%s] %s: %s\n", gRegisteredTypeNames[ve->GetType()],
+                        ve->GetName(), valbuf);
+        }
 		ve = vartable->Next();
 	}
 }
@@ -940,7 +944,7 @@ void DumpVarTable(CScriptContext* script_context, CObjectEntry* oe, const tVarTa
 // ====================================================================================================================
 // DumpFuncTable():  Debug function to print the hierarchy of methods for a specific object.
 // ====================================================================================================================
-void DumpFuncTable(CObjectEntry* oe)
+void DumpFuncTable(CObjectEntry* oe, const char* partial)
 {
 	// -- sanity check
 	if (!oe)
@@ -950,7 +954,7 @@ void DumpFuncTable(CObjectEntry* oe)
     while (curentry)
     {
         TinPrint(oe->GetScriptContext(), "\nNamespace: %s\n", UnHash(curentry->GetHash()));
-        DumpFuncTable(oe->GetScriptContext(), curentry->GetFuncTable());
+        DumpFuncTable(oe->GetScriptContext(), curentry->GetFuncTable(), partial);
         curentry = curentry->GetNext();
     }
 }
@@ -958,7 +962,7 @@ void DumpFuncTable(CObjectEntry* oe)
 // ====================================================================================================================
 // DumpFuncTable():  Debug function to print all methods registered to a given namespace.
 // ====================================================================================================================
-void DumpFuncTable(CScriptContext* script_context, const tFuncTable* functable)
+void DumpFuncTable(CScriptContext* script_context, const tFuncTable* functable, const char* partial)
 {
 	// -- sanity check
 	if (!functable || !script_context)
@@ -996,7 +1000,13 @@ void DumpFuncTable(CScriptContext* script_context, const tFuncTable* functable)
 
     // -- print out the function names
     for (int i = 0; i < function_count; ++i)
-        TinPrint(script_context, "    %s()\n", UnHash(function_list[i]->GetHash()));
+    {
+        const char* func_name = UnHash(function_list[i]->GetHash());
+        if (!partial || !partial[0]|| SafeStrStr(func_name, partial) != nullptr)
+        {
+            TinPrint(script_context, "    %s()\n", UnHash(function_list[i]->GetHash()));
+        }
+    }
 }
 // ====================================================================================================================
 // AppendToRoot():  Parse tree nodes have left/right children, but they also form a linked list at the root level.

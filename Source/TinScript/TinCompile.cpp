@@ -572,7 +572,7 @@ bool8 CDebugNode::CompileToC(int32 indent, char*& out_buffer, int32& max_size, b
 CCommentNode::CCommentNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber, const char* _comment, int32 _length)
     : CCompileTreeNode(_codeblock, _link, eComment, _linenumber)
 {
-	SafeStrcpy(m_comment, _comment, _length + 1);
+	SafeStrcpy(m_comment, sizeof(m_comment), _comment, _length + 1);
 }
 
 // ====================================================================================================================
@@ -672,7 +672,7 @@ CValueNode::CValueNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _
                        eVarType _valtype)
     : CCompileTreeNode(_codeblock, _link, eValue, _linenumber)
 {
-	SafeStrcpy(value, _value, _valuelength + 1);
+	SafeStrcpy(value, sizeof(value), _value, _valuelength + 1);
 	isvariable = _isvar;
     isparam = false;
     valtype = _valtype;
@@ -927,7 +927,7 @@ CObjMemberNode::CObjMemberNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link,
                                const char* _membername, int32 _memberlength)
     : CCompileTreeNode(_codeblock, _link, eObjMember, _linenumber)
 {
-	SafeStrcpy(membername, _membername, _memberlength + 1);
+	SafeStrcpy(membername, sizeof(membername), _membername, _memberlength + 1);
 }
 
 // ====================================================================================================================
@@ -1019,7 +1019,7 @@ CPODMemberNode::CPODMemberNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link,
                                const char* _membername, int32 _memberlength)
     : CCompileTreeNode(_codeblock, _link, ePODMember, _linenumber)
 {
-	SafeStrcpy(podmembername, _membername, _memberlength + 1);
+	SafeStrcpy(podmembername, sizeof(podmembername), _membername, _memberlength + 1);
 }
 
 // ====================================================================================================================
@@ -2156,8 +2156,8 @@ CFuncDeclNode::CFuncDeclNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, i
                              int32 _funcnslength, uint32 derived_ns)
     : CCompileTreeNode(_codeblock, _link, eFuncDecl, _linenumber)
 {
-    SafeStrcpy(funcname, _funcname, _length + 1);
-    SafeStrcpy(funcnamespace, _funcns, _funcnslength + 1);
+    SafeStrcpy(funcname, sizeof(funcname), _funcname, _length + 1);
+    SafeStrcpy(funcnamespace, sizeof(funcnamespace), _funcns, _funcnslength + 1);
 
     int32 stacktopdummy = 0;
     CObjectEntry* dummy = NULL;
@@ -2400,8 +2400,8 @@ CFuncCallNode::CFuncCallNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, i
                              int32 _nslength, bool8 _ismethod)
     : CCompileTreeNode(_codeblock, _link, eFuncCall, _linenumber)
 {
-    SafeStrcpy(funcname, _funcname, _length + 1);
-    SafeStrcpy(nsname, _nsname, _nslength + 1);
+    SafeStrcpy(funcname, sizeof(funcname), _funcname, _length + 1);
+    SafeStrcpy(nsname, sizeof(nsname), _nsname, _nslength + 1);
     ismethod = _ismethod;
 }
 
@@ -2594,7 +2594,7 @@ CObjMethodNode::CObjMethodNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link,
                                const char* _methodname, int32 _methodlength)
     : CCompileTreeNode(_codeblock, _link, eObjMethod, _linenumber)
 {
-	SafeStrcpy(methodname, _methodname, _methodlength + 1);
+	SafeStrcpy(methodname, sizeof(methodname), _methodname, _methodlength + 1);
 }
 
 // ====================================================================================================================
@@ -2990,7 +2990,7 @@ CSelfVarDeclNode::CSelfVarDeclNode(CCodeBlock* _codeblock, CCompileTreeNode*& _l
                                    eVarType _type, int32 _array_size)
     : CCompileTreeNode(_codeblock, _link, eSelfVarDecl, _linenumber)
 {
-	SafeStrcpy(varname, _varname, _varnamelength + 1);
+	SafeStrcpy(varname, sizeof(varname), _varname, _varnamelength + 1);
     type = _type;
     mArraySize = _array_size;
 }
@@ -3045,7 +3045,7 @@ CObjMemberDeclNode::CObjMemberDeclNode(CCodeBlock* _codeblock, CCompileTreeNode*
                                        eVarType _type, int32 _array_size)
     : CCompileTreeNode(_codeblock, _link, eObjMemberDecl, _linenumber)
 {
-	SafeStrcpy(varname, _varname, _varnamelength + 1);
+	SafeStrcpy(varname, sizeof(varname), _varname, _varnamelength + 1);
     type = _type;
     mArraySize = _array_size;
 }
@@ -3299,7 +3299,7 @@ CCreateObjectNode::CCreateObjectNode(CCodeBlock* _codeblock, CCompileTreeNode*& 
                                      const char* _classname, uint32 _classlength, bool create_local)
     : CCompileTreeNode(_codeblock, _link, eCreateObject, _linenumber)
 {
-	SafeStrcpy(classname, _classname, _classlength + 1);
+	SafeStrcpy(classname, sizeof(classname), _classname, _classlength + 1);
 	mLocalObject = create_local;
 }
 
@@ -3402,7 +3402,7 @@ CCodeBlock::CCodeBlock(CScriptContext* script_context, const char* _filename)
     mFileNameHash = 0;
     if (_filename && _filename[0])
     {
-        SafeStrcpy(mFileName, _filename, kMaxNameLength);
+        SafeStrcpy(mFileName, sizeof(mFileName), _filename, kMaxNameLength);
         mFileNameHash = Hash(mFileName);
         script_context->GetCodeBlockList()->AddItem(*this, mFileNameHash);
     }

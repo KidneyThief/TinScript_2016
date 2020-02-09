@@ -45,7 +45,7 @@ CVariableEntry::CVariableEntry(CScriptContext* script_context, const char* _name
                                int32 _array_size, void* _addr)
 {
     mContextOwner = script_context;
-	SafeStrcpy(mName, _name, kMaxNameLength);
+	SafeStrcpy(mName, sizeof(mName), _name, kMaxNameLength);
 	mType = _type;
     mArraySize = _array_size;
 	mHash = Hash(_name);
@@ -83,9 +83,10 @@ CVariableEntry::CVariableEntry(CScriptContext* script_context, const char* _name
                                int32 _array_size, bool8 isoffset, uint32 _offset, bool8 _isdynamic, bool8 is_param)
 {
     mContextOwner = script_context;
-	SafeStrcpy(mName, _name, kMaxNameLength);
+	SafeStrcpy(mName, sizeof(mName), _name, kMaxNameLength);
 	mType = _type;
     mArraySize = _array_size;
+    mAddr = (void*)0xdeadbeef;
 	mHash = _hash;
     mOffset = 0;
     mIsDynamic = _isdynamic;
@@ -153,8 +154,10 @@ CVariableEntry::CVariableEntry(CScriptContext* script_context, const char* _name
             if (mArraySize > 0)
             {
 			    mAddr = (void*)TinAllocArray(ALLOC_VarStorage, char, gRegisteredTypeSize[_type] * mArraySize);
-			    memset(mAddr, 0, gRegisteredTypeSize[_type] * mArraySize);
-
+                if (mAddr != nullptr)
+                {
+			        memset(mAddr, 0, gRegisteredTypeSize[_type] * mArraySize);
+                }
             }
 
             // -- otherwise the size is being determined dynamically - we'll allocate when we execute an OP_ArrayDecl
@@ -822,7 +825,7 @@ CFunctionEntry::CFunctionEntry(CScriptContext* script_context, uint32 _nshash, c
     : mContext(script_context)
 {
     mContextOwner = script_context;
-	SafeStrcpy(mName, _name, kMaxNameLength);
+	SafeStrcpy(mName, sizeof(mName), _name, kMaxNameLength);
 	mType = _type;
 	mHash = _hash;
     mNamespaceHash = _nshash;
@@ -840,7 +843,7 @@ CFunctionEntry::CFunctionEntry(CScriptContext* script_context, uint32 _nshash, c
     : mContext(script_context)
 {
     mContextOwner = script_context;
-	SafeStrcpy(mName, _name, kMaxNameLength);
+	SafeStrcpy(mName, sizeof(mName), _name, kMaxNameLength);
 	mType = _type;
 	mHash = _hash;
     mNamespaceHash = _nshash;

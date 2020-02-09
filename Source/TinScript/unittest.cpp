@@ -191,14 +191,14 @@ class CUnitTest
                   UnitTestFunc code_test = NULL, const char* code_result = NULL, bool execute_code_last = false)
         {
             // -- copy the unit test parameters
-            TinScript::SafeStrcpy(mName, name, TinScript::kMaxTokenLength);
-            TinScript::SafeStrcpy(mDescription, description, TinScript::kMaxTokenLength);
-            TinScript::SafeStrcpy(mScriptCommand, script_command, TinScript::kMaxTokenLength);
-            TinScript::SafeStrcpy(mScriptResult, script_result, TinScript::kMaxTokenLength);
+            TinScript::SafeStrcpy(mName, sizeof(mName), name, TinScript::kMaxTokenLength);
+            TinScript::SafeStrcpy(mDescription, sizeof(mDescription), description, TinScript::kMaxTokenLength);
+            TinScript::SafeStrcpy(mScriptCommand, sizeof(mScriptCommand), script_command, TinScript::kMaxTokenLength);
+            TinScript::SafeStrcpy(mScriptResult, sizeof(mScriptResult), script_result, TinScript::kMaxTokenLength);
 
             mExecuteCodeLast = execute_code_last;
             mCodeTest = code_test;
-            TinScript::SafeStrcpy(mCodeResult, code_result, TinScript::kMaxTokenLength);
+            TinScript::SafeStrcpy(mCodeResult, sizeof(mCodeResult), code_result, TinScript::kMaxTokenLength);
         }
 
         // -- members

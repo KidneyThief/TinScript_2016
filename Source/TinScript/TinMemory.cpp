@@ -135,6 +135,12 @@ void CMemoryTracker::Shutdown()
 // ====================================================================================================================
 void* CMemoryTracker::Alloc(eAllocType alloc_type, int32 size)
 {
+   
+    if (size == 0)
+    {
+        return nullptr;
+    }
+    
     // -- ensure we've been initialized
     void* addr = ::operator new(size);
 

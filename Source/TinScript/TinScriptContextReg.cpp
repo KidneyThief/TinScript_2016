@@ -199,45 +199,38 @@ void ContextLinkNamespaces(const char* childns, const char* parentns)
 // ContextListVariables():  If an object id is given, dump it's hierarchy of members.
 // Otherwise, dump the global variables in this thread's CScriptContext.
 // ====================================================================================================================
-void ContextListVariables(uint32 objectid)
+void ContextListVariables(const char* partial)
 {
     CScriptContext* script_context = TinScript::GetContext();
-    if (objectid > 0)
-    {
-        TinScript::CObjectEntry* oe = script_context->FindObjectEntry(objectid);
-        if (!oe)
-        {
-            ScriptAssert_(script_context, 0, "<internal>", -1,
-                          "Error - Unable to find object: %d\n", objectid);
-        }
-        else
-            TinScript::DumpVarTable(oe);
-    }
-    else
-    {
-        TinScript::DumpVarTable(script_context, NULL, script_context->GetGlobalNamespace()->GetVarTable());
-    }
+    TinScript::DumpVarTable(script_context, NULL, script_context->GetGlobalNamespace()->GetVarTable(), partial);
 }
 
 // ====================================================================================================================
-// ContextListFunctions():  If an object id is given, dump it's hierarchy of methods.
-// Otherwise, dump the global functions in this thread's CScriptContext.
+// ContextIsVariable():  returns true if the global Variable has been defined
 // ====================================================================================================================
-void ContextListFunctions(uint32 objectid)
+bool8 ContextIsVariable(const char* name)
+{
+    if (name == nullptr || name[0] == '\0')
+        return false;
+    CScriptContext* script_context = TinScript::GetContext();
+    return (script_context->GetGlobalNamespace()->GetVarTable()->FindItem(Hash(name)) != nullptr);
+}
+
+// ====================================================================================================================
+// ContextListFunctions():  If a partial function name is provided, list all functions containing the partial.
+// ====================================================================================================================
+void ContextListFunctions(const char* partial)
 {
     CScriptContext* script_context = TinScript::GetContext();
-    if (objectid > 0)
-    {
-        TinScript::CObjectEntry* oe = script_context->FindObjectEntry(objectid);
-        if (!oe)
-        {
-            ScriptAssert_(script_context, 0, "<internal>", -1, "Error - Unable to find object: %d\n", objectid);
-        }
-        else
-            TinScript::DumpFuncTable(oe);
-    }
-    else
-        TinScript::DumpFuncTable(script_context, script_context->GetGlobalNamespace()->GetFuncTable());
+    TinScript::DumpFuncTable(script_context, script_context->GetGlobalNamespace()->GetFuncTable(), partial);
+}
+
+// ====================================================================================================================
+// ContextIsFunction():  return true if the global function is defined
+// ====================================================================================================================
+bool8 ContextIsFunction(const char* name)
+{
+    return (TinScript::GetContext()->FunctionExists(name, ""));
 }
 
 // ====================================================================================================================
@@ -245,10 +238,13 @@ void ContextListFunctions(uint32 objectid)
 // ====================================================================================================================
 void ContextListNamespaces(const char* partial_name)
 {
-    CScriptContext* context = TinScript::GetContext();
-    CHashTable<CNamespace>* namespaces = TinScript::GetContext()->GetNamespaceDictionary();
+    CScriptContext* script_context = TinScript::GetContext();
+    CHashTable<CNamespace>* namespaces = script_context->GetNamespaceDictionary();
     if (namespaces != nullptr)
     {
+        // -- we're going to sort them alphabetically...  no allocations, so use a big limit
+        int namespace_count = 0;
+        CNamespace* namespace_list[1024];
         CNamespace* current_namespace = namespaces->First();
         while (current_namespace != nullptr)
         {
@@ -257,12 +253,50 @@ void ContextListNamespaces(const char* partial_name)
             {
                 if  (!partial_name || !partial_name[0] || SafeStrStr(current_name, partial_name) != 0)
                 {
-                    TinPrint(context, "%s\n", current_name);
+                    namespace_list[namespace_count++] = current_namespace;
+                    if (namespace_count >= 1024)
+                    {
+                        break;
+                    }
                 }       
             }
             current_namespace = namespaces->Next();
         }
+
+        // -- sort the namespaces alphabetically
+        if (namespace_count > 0)
+        {
+            auto namespace_sort = [](const void* a, const void* b) -> int
+            {
+                CNamespace* ns_a = *(CNamespace**)a;
+                CNamespace* ns_b = *(CNamespace**)b;
+
+                const char* name_a = ns_a != nullptr ? TinScript::UnHash(ns_a->GetHash()) : "";
+                const char* name_b = ns_b != nullptr ? TinScript::UnHash(ns_b->GetHash()) : "";
+                int result = _stricmp(name_a, name_b);
+                return (result);
+             };
+
+            qsort(namespace_list, namespace_count, sizeof(CNamespace*), namespace_sort);
+        }
+
+        // -- print out the function names
+        for (int i = 0; i < namespace_count; ++i)
+        {
+            TinPrint(script_context, "    %s\n", UnHash(namespace_list[i]->GetHash()));
+        }
     }
+}
+
+// ====================================================================================================================
+// ContextIsNamespaces():  see if the given name is a valid (instantiable) namespace
+// ====================================================================================================================
+bool8 ContextIsNamespace(const char* name)
+{
+    if (!name || !name[0])
+        return false;
+    CNamespace* ns = TinScript::GetContext()->FindNamespace(Hash(name));
+    return (ns != nullptr);
 }
 
 // ====================================================================================================================
@@ -335,9 +369,12 @@ REGISTER_FUNCTION_P1(FindObject, ContextFindObjectByName, uint32, const char*);
 REGISTER_FUNCTION_P2(ObjectHasNamespace, ContextObjectIsDerivedFrom, bool8, uint32, const char*);
 REGISTER_FUNCTION_P2(ObjectHasMethod, ContextObjectHasMethod, bool8, uint32, const char*);
 REGISTER_FUNCTION_P2(LinkNamespaces, ContextLinkNamespaces, void, const char*, const char*);
-REGISTER_FUNCTION_P1(ListVariables, ContextListVariables, void, uint32);
-REGISTER_FUNCTION_P1(ListFunctions, ContextListFunctions, void, uint32);
+REGISTER_FUNCTION_P1(ListVariables, ContextListVariables, void, const char*);
+REGISTER_FUNCTION_P1(IsVariable, ContextIsVariable, bool8, const char*);
+REGISTER_FUNCTION_P1(ListFunctions, ContextListFunctions, void, const char*);
+REGISTER_FUNCTION_P1(IsFunction, ContextIsFunction, bool8, const char*);
 REGISTER_FUNCTION_P1(ListNamespaces, ContextListNamespaces, void, const char*);
+REGISTER_FUNCTION_P1(IsNamespace, ContextIsNamespace, bool8, const char*);
 REGISTER_FUNCTION_P1(GetObjectNamespace, ContextGetObjectNamespace, const char*, uint32);
 REGISTER_FUNCTION_P2(SaveObjects, ContextSaveObjects, void, uint32, const char*);
 

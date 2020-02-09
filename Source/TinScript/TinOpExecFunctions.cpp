@@ -418,7 +418,9 @@ bool8 GetStackValue(CScriptContext* script_context, CExecStack& execstack,
             }
 
             // -- otherwise, adjust the value address to be the actual hashtable
-            valaddr = ve->GetAddr(oe ? oe->GetAddr() : NULL);
+            // $$$TZA if this is a TYPE__stackvar, why are we using the oe??
+            //valaddr = ve->GetAddr(oe ? oe->GetAddr() : NULL);
+            valaddr = ve->GetAddr(NULL);
         }
     }
 

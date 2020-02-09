@@ -272,7 +272,7 @@ int32 CFunctionCallStack::DebuggerGetStackVarEntries(CScriptContext* script_cont
                 cur_entry->mArraySize = ve->GetArraySize();
 
                 // -- copy the var name
-                SafeStrcpy(cur_entry->mVarName, UnHash(ve->GetHash()), kMaxNameLength);
+                SafeStrcpy(cur_entry->mVarName, sizeof(cur_entry->mVarName), UnHash(ve->GetHash()), kMaxNameLength);
 
                 // -- get the address on the stack, where this local var is stored
                 int32 func_stacktop = m_functionEntryStack[stack_index].stackvaroffset;
@@ -386,7 +386,7 @@ bool CFunctionCallStack::DebuggerFindStackTopVar(CScriptContext* script_context,
 						watch_entry.mType = ve->GetType();
 
 						// -- copy the var name
-						SafeStrcpy(watch_entry.mVarName, UnHash(ve->GetHash()), kMaxNameLength);
+						SafeStrcpy(watch_entry.mVarName, sizeof(watch_entry.mVarName), UnHash(ve->GetHash()), kMaxNameLength);
 
 						// -- get the address on the stack, where this local var is stored
 						int32 func_stacktop = m_functionEntryStack[stack_index].stackvaroffset;

@@ -36,8 +36,8 @@
     static uint32 classname##GetObjectID(classname* obj);                                           \
     static const char* classname##GetObjectName(classname* obj);                                    \
     static uint32 classname##GetGroupID(classname* obj);                                            \
-    static void classname##ListMembers(classname* obj);                                             \
-    static void classname##ListMethods(classname* obj);                                             \
+    static void classname##ListMembers(classname* obj, const char* partial = nullptr);              \
+    static void classname##ListMethods(classname* obj, const char* partial = nullptr);              \
 
 #define IMPLEMENT_DEFAULT_METHODS(classname)                                                        \
     static uint32 classname##GetObjectID(classname* obj) {                                          \
@@ -68,21 +68,21 @@
         _reg_##classname##GetGroupID                                                                \
         ("GetGroupID", classname##GetGroupID);                                                      \
                                                                                                     \
-    static void classname##ListMembers(classname* obj) {                                            \
+    static void classname##ListMembers(classname* obj, const char* partial = nullptr) {             \
         ::TinScript::CObjectEntry* oe =                                                             \
             ::TinScript::GetContext()->FindObjectByAddress((void*)obj);                             \
-        ::TinScript::DumpVarTable(oe);                                                              \
+        ::TinScript::DumpVarTable(oe, partial);                                                     \
     }                                                                                               \
-    static TinScript::CRegMethodP0<classname, void>                                                 \
+    static TinScript::CRegMethodP1<classname, void, const char*>                                    \
         _reg_##classname##ListMembers                                                               \
         ("ListMembers", classname##ListMembers);                                                    \
                                                                                                     \
-    static void classname##ListMethods(classname* obj) {                                            \
+    static void classname##ListMethods(classname* obj, const char* partial = nullptr) {             \
         ::TinScript::CObjectEntry* oe =                                                             \
             ::TinScript::GetContext()->FindObjectByAddress((void*)obj);                             \
-        ::TinScript::DumpFuncTable(oe);                                                             \
+        ::TinScript::DumpFuncTable(oe, partial);                                                    \
     }                                                                                               \
-    static ::TinScript::CRegMethodP0<classname, void>                                               \
+    static ::TinScript::CRegMethodP1<classname, void, const char*>                                  \
         _reg_##classname##ListMethods                                                               \
         ("ListMethods", classname##ListMethods);                                                    \
 

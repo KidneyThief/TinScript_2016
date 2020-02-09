@@ -96,7 +96,7 @@ const char* CStringTable::AddString(const char* s, int length, uint32 hash, bool
             return NULL;
         }
         const char* stringptr = mBufptr;
-        SafeStrcpy(mBufptr, s, length + 1);
+        SafeStrcpy(mBufptr, remaining, s, length + 1);
         mBufptr += length + 1;
 
         // -- create the string table entry
