@@ -429,6 +429,9 @@ class CScriptContext
         bool8 HasMethod(void* addr, const char* method_name);
         bool8 HasMethod(uint32 objectid, const char* method_name);
 
+        bool8 HasMember(void* addr, const char* member_name);
+        bool8 HasMember(uint32 objectid, const char* member_name);
+
         bool8 AddDynamicVariable(uint32 objectid, uint32 varhash, eVarType vartype, int32 array_size = 1);
         bool8 SetMemberVar(uint32 objectid, const char* varname, void* value);
 

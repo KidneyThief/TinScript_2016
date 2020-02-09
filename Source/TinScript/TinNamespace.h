@@ -38,6 +38,9 @@
     static uint32 classname##GetGroupID(classname* obj);                                            \
     static void classname##ListMembers(classname* obj, const char* partial = nullptr);              \
     static void classname##ListMethods(classname* obj, const char* partial = nullptr);              \
+    static bool classname##HasMethod(classname* obj, const char* name);                             \
+    static bool classname##HasMember(classname* obj, const char* name);                             \
+    static bool classname##HasNamespace(classname* obj, const char* name);                          \
 
 #define IMPLEMENT_DEFAULT_METHODS(classname)                                                        \
     static uint32 classname##GetObjectID(classname* obj) {                                          \
@@ -85,7 +88,34 @@
     static ::TinScript::CRegMethodP1<classname, void, const char*>                                  \
         _reg_##classname##ListMethods                                                               \
         ("ListMethods", classname##ListMethods);                                                    \
-
+                                                                                                    \
+    static bool classname##HasMember(classname* obj, const char* name) {                            \
+        ::TinScript::CObjectEntry* oe =                                                             \
+            ::TinScript::GetContext()->FindObjectByAddress((void*)obj);                             \
+        return (::TinScript::GetContext()->HasMember(oe->GetID(), name));                           \
+    }                                                                                               \
+    static TinScript::CRegMethodP1<classname, bool, const char*>                                    \
+        _reg_##classname##HasMember                                                                 \
+        ("HasMember", classname##HasMember);                                                        \
+                                                                                                    \
+    static bool classname##HasMethod(classname* obj, const char* name) {                            \
+        ::TinScript::CObjectEntry* oe =                                                             \
+            ::TinScript::GetContext()->FindObjectByAddress((void*)obj);                             \
+        return (::TinScript::GetContext()->HasMethod(oe->GetID(), name));                           \
+    }                                                                                               \
+    static TinScript::CRegMethodP1<classname, bool, const char*>                                    \
+        _reg_##classname##HasMethod                                                                 \
+        ("HasMethod", classname##HasMethod);                                                        \
+                                                                                                    \
+    static bool classname##HasNamespace(classname* obj, const char* name) {                         \
+        ::TinScript::CObjectEntry* oe =                                                             \
+            ::TinScript::GetContext()->FindObjectByAddress((void*)obj);                             \
+        return (::TinScript::GetContext()->FindObject(oe->GetID(), name) != nullptr);               \
+    }                                                                                               \
+    static TinScript::CRegMethodP1<classname, bool, const char*>                                    \
+        _reg_##classname##HasNamespace                                                              \
+        ("HasNamespace", classname##HasNamespace);                                                  \
+                                                                                                    \
 
 // == namespace TinScript =============================================================================================
 

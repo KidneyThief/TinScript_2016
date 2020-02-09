@@ -816,6 +816,40 @@ bool8 CScriptContext::HasMethod(uint32 objectid, const char* method_name)
 }
 
 // ====================================================================================================================
+// HasMember():  Return 'true' if there's a registered or scripted member in the hierarchy of an object.
+// ====================================================================================================================
+bool8 CScriptContext::HasMember(void* addr, const char* member_name)
+{
+    if (!addr || !member_name)
+        return (false);
+
+    CObjectEntry* oe = GetAddressDictionary()->FindItem(kPointerToUInt32(addr));
+    if (!oe)
+        return (false);
+
+    uint32 member_hash = Hash(member_name);
+    CVariableEntry* ve = oe->GetVariableEntry(member_hash);
+    return (ve != NULL);
+}
+
+// ====================================================================================================================
+// HasMethod():  Return 'true' if there's a registered or scripted member in the hierarchy of an object.
+// ====================================================================================================================
+bool8 CScriptContext::HasMember(uint32 objectid, const char* member_name)
+{
+    if (!member_name)
+        return (false);
+
+    CObjectEntry* oe = GetObjectDictionary()->FindItem(objectid);
+    if (!oe)
+        return (false);
+
+    uint32 member_hash = Hash(member_name);
+    CVariableEntry* ve = oe->GetVariableEntry(member_hash);
+    return (ve != NULL);
+}
+
+// ====================================================================================================================
 // AddDynamicVariable():  Given an object id, add a variable (or array) of a given type.
 // ====================================================================================================================
 bool8 CScriptContext::AddDynamicVariable(uint32 objectid, uint32 varhash, eVarType vartype, int32 array_size)
