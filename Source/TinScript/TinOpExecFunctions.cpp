@@ -2757,6 +2757,80 @@ bool8 OpExecArrayCount(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExe
 }
 
 // ====================================================================================================================
+// OpExecArrayCopy():  implement me!
+// ====================================================================================================================
+bool8 OpExecArrayCopy(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExecStack& execstack,
+	CFunctionCallStack& funccallstack)
+{
+    // $$$TZA implement me!
+	return (false);
+}
+
+// ====================================================================================================================
+// OpExecHashtableHasKey():  Pops the hashtable variable, and pushes a bool if the given key exists.
+// ====================================================================================================================
+bool8 OpExecHashtableHasKey(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExecStack& execstack,
+	CFunctionCallStack& funccallstack)
+{
+    // -- hash value will have already been pushed
+    eVarType contenttype;
+    void* contentptr = execstack.Pop(contenttype);
+    if (contenttype != TYPE_int)
+    {
+        DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
+                        "Error - ExecStack should contain TYPE_int\n");
+        return false;
+    }
+    int32 arrayvarhash = *(int32*)contentptr;
+
+    // -- next, pop the hash table variable off the stack
+    // -- pull the hashtable variable off the stack
+    CVariableEntry* ve0 = NULL;
+    CObjectEntry* oe0 = NULL;
+    eVarType val0type;
+    void* val0 = execstack.Pop(val0type);
+    if (!GetStackValue(cb->GetScriptContext(), execstack, funccallstack, val0, val0type, ve0, oe0))
+    {
+        DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
+                        "Error - ExecStack should contain a hashtable variable\n");
+        return false;
+    }
+
+    if (!ve0 || (ve0->GetType() != TYPE_hashtable && !ve0->IsArray()))
+    {
+        DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
+                        "Error - ExecStack should contain hashtable variable\n");
+        return false;
+    }
+
+
+    // -- get the var table
+    // note:  hashtable isn't a natural C++ type, so there's no such thing as
+    // -- an addr + offset to an object's registered hashtable
+    tVarTable* vartable = (tVarTable*)ve0->GetAddr(NULL);
+
+    // -- look for the entry in the vartable
+    CVariableEntry* vte = vartable->FindItem(arrayvarhash);
+
+    // -- push true if we found an entry
+    bool8 found = (vte != nullptr);
+    execstack.Push(&found, TYPE_bool);
+ 
+	DebugTrace(op, "HashTable: %s[%s] %s", UnHash(ve0->GetHash()), UnHash(arrayvarhash), found ? "found" : "not found");
+
+	return (true);
+}
+
+// ====================================================================================================================
+// OpExecHashtableCopy():  implement me!
+// ====================================================================================================================
+bool8 OpExecHashtableCopy(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExecStack& execstack,
+	CFunctionCallStack& funccallstack)
+{
+    return false;
+}
+
+// ====================================================================================================================
 // OpExecSelfVarDecl():  Declare a member for the object executing the current method.
 // ====================================================================================================================
 bool8 OpExecSelfVarDecl(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExecStack& execstack,

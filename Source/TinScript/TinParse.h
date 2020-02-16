@@ -171,27 +171,30 @@ enum eUnaryOpType
 // -- tuple defining the reserved keywords
 
 #define ReservedKeywordTuple \
-	ReservedKeywordEntry(NULL)			\
-	ReservedKeywordEntry(if)			\
-	ReservedKeywordEntry(else)			\
-	ReservedKeywordEntry(do)			\
-	ReservedKeywordEntry(while)			\
-	ReservedKeywordEntry(switch)		\
-	ReservedKeywordEntry(case)		    \
-	ReservedKeywordEntry(default)		\
-	ReservedKeywordEntry(break)			\
-	ReservedKeywordEntry(continue)		\
-	ReservedKeywordEntry(for)			\
-	ReservedKeywordEntry(return)		\
-	ReservedKeywordEntry(schedule)		\
-    ReservedKeywordEntry(execute)		\
-	ReservedKeywordEntry(repeat)		\
-    ReservedKeywordEntry(hash)			\
-	ReservedKeywordEntry(create)   		\
-	ReservedKeywordEntry(createlocal)   \
-	ReservedKeywordEntry(destroy) 		\
-	ReservedKeywordEntry(self)   		\
-	ReservedKeywordEntry(array_count)   \
+	ReservedKeywordEntry(NULL)			        \
+	ReservedKeywordEntry(if)			        \
+	ReservedKeywordEntry(else)			        \
+	ReservedKeywordEntry(do)			        \
+	ReservedKeywordEntry(while)			        \
+	ReservedKeywordEntry(switch)		        \
+	ReservedKeywordEntry(case)		            \
+	ReservedKeywordEntry(default)		        \
+	ReservedKeywordEntry(break)			        \
+	ReservedKeywordEntry(continue)		        \
+	ReservedKeywordEntry(for)			        \
+	ReservedKeywordEntry(return)		        \
+    ReservedKeywordEntry(schedule)		        \
+    ReservedKeywordEntry(execute)		        \
+    ReservedKeywordEntry(repeat)		        \
+    ReservedKeywordEntry(hash)			        \
+	ReservedKeywordEntry(create)   		        \
+	ReservedKeywordEntry(create_local)          \
+	ReservedKeywordEntry(destroy) 		        \
+	ReservedKeywordEntry(self)   		        \
+	ReservedKeywordEntry(array_count)           \
+	ReservedKeywordEntry(array_copy)            \
+	ReservedKeywordEntry(hashtable_haskey)      \
+	ReservedKeywordEntry(hashtable_copy)        \
 
 enum eReservedKeyword
 {
@@ -288,9 +291,12 @@ bool8 TryParseFuncCall(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeN
 bool8 TryParseArrayHash(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link);
 bool8 TryParseHash(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link);
 bool8 TryParseArrayCount(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link);
+bool8 TryParseArrayCopy(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link);
 bool8 TryParseSchedule(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link);
 bool8 TryParseCreateObject(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link);
 bool8 TryParseDestroyObject(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link);
+bool8 TryParseHashtableHasKey(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link);
+bool8 TryParseHashtableCopy(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link);
 
 // ====================================================================================================================
 // -- functions for declaring and finding variables and functions

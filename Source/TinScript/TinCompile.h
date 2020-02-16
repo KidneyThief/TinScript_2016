@@ -81,6 +81,9 @@ class CWhileLoopNode;
 	CompileNodeTypeEntry(ArrayVarDecl)			\
 	CompileNodeTypeEntry(ArrayDecl)			    \
 	CompileNodeTypeEntry(ArrayCount)		    \
+	CompileNodeTypeEntry(ArrayCopy)		        \
+	CompileNodeTypeEntry(HashtableHasKey)		\
+	CompileNodeTypeEntry(HashtableCopy)	    	\
 	CompileNodeTypeEntry(SelfVarDecl)			\
 	CompileNodeTypeEntry(ObjMemberDecl)			\
 	CompileNodeTypeEntry(Schedule)			    \
@@ -173,6 +176,9 @@ const char* GetNodeTypeString(ECompileNodeType nodetype);
 	OperationEntry(ArrayVarDecl)		\
 	OperationEntry(ArrayDecl)		    \
 	OperationEntry(ArrayCount)		    \
+	OperationEntry(ArrayCopy)		    \
+	OperationEntry(HashtableHasKey)		\
+	OperationEntry(HashtableCopy)		\
 	OperationEntry(SelfVarDecl)		    \
 	OperationEntry(ObjMemberDecl)       \
 	OperationEntry(ScheduleBegin)       \
@@ -757,6 +763,21 @@ class CArrayCountNode : public CCompileTreeNode
 
 	protected:
 		CArrayCountNode() { }
+};
+
+// ====================================================================================================================
+// class CHashtableHasKey:  Parse tree node, pushes a bool for the left node having the give nkey.
+// ====================================================================================================================
+class CHashtableHasKey : public CCompileTreeNode
+{
+	public:
+		CHashtableHasKey(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber);
+		virtual int32 Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
+
+        virtual bool8 CompileToC(int32 indent, char*& out_buffer, int32& max_size, bool root_node) const;
+
+	protected:
+		CHashtableHasKey() { }
 };
 
 // ====================================================================================================================

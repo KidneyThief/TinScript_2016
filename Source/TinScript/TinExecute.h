@@ -312,7 +312,7 @@ class CFunctionCallStack
             if (m_stacktop <= 0)
 			{
 				ScriptAssert_(TinScript::GetContext(), 0, "<internal>", -1,
-		                      "Error - createlocal called outside a function definition\n");
+		                      "Error - create_local called outside a function definition\n");
 				return;
 			}
 

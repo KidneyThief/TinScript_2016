@@ -3201,7 +3201,7 @@ int32 ParseIdentifierStack(const char* input_str, char identifierStack[kMaxNameL
         while (input_ptr > input_buf && *input_ptr <= 0x20)
             --input_ptr;
 
-        // -- feels like a hack, but check for the specific keywords 'create' or 'createlocal'
+        // -- feels like a hack, but check for the specific keywords 'create' or 'create_local'
         if (identifier_count == 1)
         {
             // -- note:  inputPtr will be pointing at the last character in the string, so the lenghts are off by 1
@@ -3214,9 +3214,9 @@ int32 ParseIdentifierStack(const char* input_str, char identifierStack[kMaxNameL
                 break;
             }
             else if (kPointerDiffUInt32(input_ptr, input_buf) >= (uint32)createlocal_length &&
-                     !strncmp(input_ptr - createlocal_length, "createlocal", createlocal_length + 1))
+                     !strncmp(input_ptr - createlocal_length, "create_local", createlocal_length + 1))
             {
-                strcpy_s(identifierStack[identifier_count++], kMaxNameLength, "createlocal");
+                strcpy_s(identifierStack[identifier_count++], kMaxNameLength, "create_local");
                 break;
             }
         }
@@ -3463,7 +3463,7 @@ bool CScriptContext::TabComplete(const char* partial_input, int32& ref_tab_compl
     // -- special case, if we're tab completing on "create"
     bool tabcomplete_handled = false;
     if (identifier_count == 2 && (!strcmp(identifier_stack[1], "create") ||
-                                  !strcmp(identifier_stack[1], "createlocal")))
+                                  !strcmp(identifier_stack[1], "create_local")))
     {
         tabcomplete_handled = true;
         list_is_full = TabCompleteKeywordCreate(partial_function_ptr, partial_length, tab_complete_list, entry_count,

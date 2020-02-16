@@ -2059,6 +2059,10 @@ bool8 TryParseExpression(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTre
 	if (TryParseArrayCount(codeblock, filebuf, exprlink))
 		return (true);
 
+	// -- a hashtable_haskey() completes an expression
+	if (TryParseHashtableHasKey(codeblock, filebuf, exprlink))
+		return (true);
+
     // -- after the potential unary op, an expression may start with:
     // -- a 'self'
     // -- a function call (not a method)
@@ -4021,6 +4025,76 @@ bool8 TryParseArrayCount(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTre
 }
 
 // ====================================================================================================================
+// TryParseArrayCount():  The keyword "count" has a well defined syntax.
+// ====================================================================================================================
+bool8 TryParseHashtableHasKey(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link)
+{
+	// -- ensure the next token is the 'hash' keyword
+	tReadToken peektoken(filebuf);
+	if (!GetToken(peektoken) || peektoken.type != TOKEN_KEYWORD)
+		return (false);
+
+	int32 reservedwordtype = GetReservedKeywordType(peektoken.tokenptr, peektoken.length);
+	if (reservedwordtype != KEYWORD_hashtable_haskey)
+		return (false);
+
+	// -- read the opening parenthesis
+	if (!GetToken(peektoken) || peektoken.type != TOKEN_PAREN_OPEN)
+		return (false);
+
+	// -- we're committed to an array count expression
+	filebuf = peektoken;
+
+	// -- create the ArrayVarNode, leftchild is the hashtable var, right is the hash value
+	CHashtableHasKey* hashtable_haskey_node = TinAlloc(ALLOC_TreeNode, CHashtableHasKey, codeblock, link,
+											     filebuf.linenumber);
+
+	// -- ensure we have an expression to fill the left child
+	bool8 result = TryParseExpression(codeblock, filebuf, hashtable_haskey_node->leftchild);
+	if (!result || !hashtable_haskey_node->leftchild)
+	{
+		ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
+			          "Error - hashtable_haskey() requires a hashtable variable expression\n");
+		return (false);
+	}
+
+    // -- the next token must be a comma
+	peektoken = filebuf;
+	if (!GetToken(peektoken) || peektoken.type != TOKEN_COMMA)
+    {
+		ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
+			          "Error - hashtable_haskey() requires 2nd parameter key expression\n");
+		return (false);        
+    }
+	// -- update the file buf
+	filebuf = peektoken;
+
+	// -- ensure we have an expression to fill the right child
+    result = TryParseArrayHash(codeblock, filebuf, hashtable_haskey_node->rightchild);
+	if (!result || !hashtable_haskey_node->rightchild)
+	{
+		ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
+			          "Error - hashtable_haskey() requires a key expression\n");
+		return (false);
+	}
+
+	// -- read the closing parenthesis
+	peektoken = filebuf;
+	if (!GetToken(peektoken) || peektoken.type != TOKEN_PAREN_CLOSE)
+	{
+		ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
+			          "Error - hashtable_haskey() expression, expecting ')' following array variable\n");
+		return (false);
+	}
+
+	// -- update the file buf
+	filebuf = peektoken;
+
+	// -- success
+	return (true);
+}
+
+// ====================================================================================================================
 // TryParseSchedule():  The keyword "schedule" has a well defined syntax, similar to a function call.
 // ====================================================================================================================
 bool8 TryParseSchedule(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link)
@@ -4212,11 +4286,11 @@ bool8 TryParseCreateObject(CCodeBlock* codeblock, tReadToken& filebuf, CCompileT
         return (false);
 
 	int32 reservedwordtype = GetReservedKeywordType(peektoken.tokenptr, peektoken.length);
-	if (reservedwordtype != KEYWORD_create && reservedwordtype != KEYWORD_createlocal)
+	if (reservedwordtype != KEYWORD_create && reservedwordtype != KEYWORD_create_local)
         return (false);
 
 	// -- see if we're creating a local object - one that is destructed as soon as the function context is popped
-	bool local_object = (reservedwordtype == KEYWORD_createlocal);
+	bool local_object = (reservedwordtype == KEYWORD_create_local);
 
     // -- committed
     filebuf = peektoken;
@@ -5040,7 +5114,8 @@ CVariableEntry* GetObjectMember(CScriptContext* script_context, CObjectEntry*& o
     if (ve && ve->GetType() == TYPE_hashtable && array_hash != 0)
     {
         // -- get the var table
-        tVarTable* vartable = (tVarTable*)ve->GetAddr(oe ? oe->GetAddr() : NULL);
+        // note:  hashtable isn't a natural C++ type, therefore, it'll never be found as the addr + offset of an object
+        tVarTable* vartable = (tVarTable*)ve->GetAddr(NULL);
 
         // -- look for the entry in the vartable
         CVariableEntry* vte = vartable->FindItem(array_hash);
@@ -5158,7 +5233,8 @@ CVariableEntry* GetVariable(CScriptContext* script_context, tVarTable* globalVar
         if (ve->GetType() == TYPE_hashtable)
         {
             // -- get the var table
-            tVarTable* vartable = (tVarTable*)ve->GetAddr(oe ? oe->GetAddr() : NULL);
+            // note:  hashtable isn't a natural C++ type, therefore, it'll never be found as the addr + offset of an object
+            tVarTable* vartable = (tVarTable*)ve->GetAddr(NULL);
 
             // -- look for the entry in the vartable
             CVariableEntry* vte = vartable->FindItem(array_hash_index);
