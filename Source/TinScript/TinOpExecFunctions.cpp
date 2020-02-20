@@ -2909,6 +2909,36 @@ bool8 OpExecHashtableCopy(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, C
 }
 
 // ====================================================================================================================
+// OpType():  Pops the variable, pushes the string representation of its type.
+// ====================================================================================================================
+bool8 OpExecType(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExecStack& execstack,
+	CFunctionCallStack& funccallstack)
+{
+    // -- pop the variable to get the first/next key
+    CVariableEntry* ve0 = NULL;
+    CObjectEntry* oe0 = NULL;
+    eVarType val0type;
+    void* val0 = execstack.Pop(val0type);
+
+    if (!GetStackValue(cb->GetScriptContext(), execstack, funccallstack, val0, val0type, ve0, oe0))
+    {
+        DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
+                        "Error - ExecStack should contain a hashtable variable\n");
+        return false;
+    }
+
+    const char* type_str = GetRegisteredTypeName(val0type);
+    if (type_str == nullptr)
+        type_str = "";
+
+    uint32 string_hash = Hash(type_str);
+    execstack.Push(&string_hash, TYPE_string);
+	DebugTrace(op, "Type: %s", GetRegisteredTypeName(val0type));
+
+	return (true);
+}
+
+// ====================================================================================================================
 // OpExecSelfVarDecl():  Declare a member for the object executing the current method.
 // ====================================================================================================================
 bool8 OpExecSelfVarDecl(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExecStack& execstack,

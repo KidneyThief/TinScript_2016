@@ -3073,10 +3073,10 @@ int32 CHashtableIter::Eval(uint32*& instrptr, eVarType pushresult, bool countonl
         return (-1);
     size += tree_size;
 
-    // -- push the "has key", which will pop the hashtable, and potential key, and push a bool if the key exists
+    // -- push the "hashtable iter", which will pop the hashtable, and push the value (or bool if hashtable_end)
     size += PushInstruction(countonly, instrptr, OP_HashtableIter, DBG_instr);
 
-    // -- push true if this is a hashtable_first(), else it's a hashtable_next()
+    // -- push 0 == first(), 1 == next(), -1 == end()
 	size += PushInstruction(countonly, instrptr, m_iterType, DBG_value);
 
 	return size;
@@ -3086,6 +3086,52 @@ int32 CHashtableIter::Eval(uint32*& instrptr, eVarType pushresult, bool countonl
 // CompileToC(): Convert the parse tree to valid C, to compile directly to the executable. 
 // ====================================================================================================================
 bool8 CHashtableIter::CompileToC(int32 indent, char*& out_buffer, int32& max_size, bool root_node) const
+{
+    TinPrint(TinScript::GetContext(), "CHashtableIter::CompileToC() not implemented.\n");
+    return (true);
+}
+
+// == class CTypeNode =================================================================================================
+
+// ====================================================================================================================
+// Constructor
+// ====================================================================================================================
+CTypeNode::CTypeNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber)
+	: CCompileTreeNode(_codeblock, _link, eType, _linenumber)
+{
+}
+
+// ====================================================================================================================
+// Eval():  Generates the byte code instruction compiled from this node.
+// ====================================================================================================================
+int32 CTypeNode::Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const
+{
+	DebugEvaluateNode(*this, countonly, instrptr);
+	int32 size = 0;
+
+    if (!leftchild)
+    {
+        ScriptAssert_(codeblock->GetScriptContext(), leftchild != NULL, codeblock->GetFileName(), linenumber,
+                      "Error - CTypeNode::Eval() - missing leftchild\n");
+        return (-1);
+    }
+
+   	// -- left child will have pushed the hashtable variable
+    int32 tree_size = leftchild->Eval(instrptr, TYPE__var, countonly);
+    if (tree_size < 0)
+        return (-1);
+    size += tree_size;
+
+    // -- push the "has key", which will pop the hashtable, and potential key, and push a bool if the key exists
+    size += PushInstruction(countonly, instrptr, OP_Type, DBG_instr);
+
+	return size;
+}
+
+// ====================================================================================================================
+// CompileToC(): Convert the parse tree to valid C, to compile directly to the executable. 
+// ====================================================================================================================
+bool8 CTypeNode::CompileToC(int32 indent, char*& out_buffer, int32& max_size, bool root_node) const
 {
     TinPrint(TinScript::GetContext(), "CHashtableIter::CompileToC() not implemented.\n");
     return (true);

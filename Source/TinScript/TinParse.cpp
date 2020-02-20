@@ -2051,6 +2051,10 @@ bool8 TryParseExpression(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTre
         return (true);
     }
 
+    // -- a type() completes an expression
+    if (TryParseType(codeblock, filebuf, exprlink))
+        return (true);
+
     // -- a hash() completes an expression
     if (TryParseHash(codeblock, filebuf, exprlink))
         return (true);
@@ -3919,6 +3923,7 @@ bool8 TryParseArrayHash(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTree
     return (true);
 
 }
+
 // ====================================================================================================================
 // TryParseHash():  The keyword "hash" has a well defined syntax.
 // ====================================================================================================================
@@ -4133,7 +4138,7 @@ bool8 TryParseHashtableIter(CCodeBlock* codeblock, tReadToken& filebuf, CCompile
 	if (!result || !ht_iter_node->leftchild)
 	{
 		ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
-			          "Error - hashtable_first/ext() requires the hashtable variable expression.\n");
+			          "Error - hashtable_first/next() requires the hashtable variable expression.\n");
 		return (false);
 	}
 
@@ -4142,7 +4147,56 @@ bool8 TryParseHashtableIter(CCodeBlock* codeblock, tReadToken& filebuf, CCompile
 	if (!GetToken(peektoken) || peektoken.type != TOKEN_PAREN_CLOSE)
 	{
 		ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
-			          "Error - count() expression, expecting ')' following array variable\n");
+			          "Error - hashtable_first/next() expression, expecting ')' following array variable\n");
+		return (false);
+	}
+
+	// -- update the file buf
+	filebuf = peektoken;
+
+	// -- success
+	return (true);
+}
+
+// ====================================================================================================================
+// TryParseType():  Pushes the string name for the type of the given variable/value
+// ====================================================================================================================
+bool8 TryParseType(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link)
+{
+	// -- ensure the next token is the 'type' keyword
+	tReadToken peektoken(filebuf);
+	if (!GetToken(peektoken) || peektoken.type != TOKEN_KEYWORD)
+		return (false);
+
+	int32 reservedwordtype = GetReservedKeywordType(peektoken.tokenptr, peektoken.length);
+	if (reservedwordtype != KEYWORD_type)
+		return (false);
+
+	// -- read the opening parenthesis
+	if (!GetToken(peektoken) || peektoken.type != TOKEN_PAREN_OPEN)
+		return (false);
+
+	// -- we're committed to a hashtable_keys expression
+	filebuf = peektoken;
+
+	// -- create the CTypeNode, leftchild is the string[] to copy the keys to,
+	CTypeNode* type_node = TinAlloc(ALLOC_TreeNode, CTypeNode, codeblock, link, filebuf.linenumber);
+
+	// -- ensure we have an expression to fill the left child
+	bool8 result = TryParseExpression(codeblock, filebuf, type_node->leftchild);
+	if (!result || !type_node->leftchild)
+	{
+		ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
+			          "Error - type() requires variable expression.\n");
+		return (false);
+	}
+
+	// -- read the closing parenthesis
+	peektoken = filebuf;
+	if (!GetToken(peektoken) || peektoken.type != TOKEN_PAREN_CLOSE)
+	{
+		ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
+			          "Error - type() expression, expecting ')' following array variable\n");
 		return (false);
 	}
 

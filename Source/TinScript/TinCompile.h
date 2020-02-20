@@ -55,6 +55,7 @@ class CWhileLoopNode;
 	CompileNodeTypeEntry(Comment)				\
 	CompileNodeTypeEntry(BinaryNOP)			    \
 	CompileNodeTypeEntry(DebugNOP)			    \
+	CompileNodeTypeEntry(Type)  	            \
 	CompileNodeTypeEntry(Value)					\
 	CompileNodeTypeEntry(Self)       			\
 	CompileNodeTypeEntry(ObjMember) 			\
@@ -110,6 +111,7 @@ const char* GetNodeTypeString(ECompileNodeType nodetype);
 	OperationEntry(NULL)				\
 	OperationEntry(NOP)					\
 	OperationEntry(DebugMsg)			\
+	OperationEntry(Type)				\
 	OperationEntry(VarDecl)				\
 	OperationEntry(ParamDecl)			\
 	OperationEntry(Assign)				\
@@ -796,6 +798,21 @@ class CHashtableIter : public CCompileTreeNode
 	protected:
 		CHashtableIter() { }
         int32 m_iterType;
+};
+
+// ====================================================================================================================
+// class CTypeNode:  Parse tree node, pushes the string name of the given variable type.
+// ====================================================================================================================
+class CTypeNode : public CCompileTreeNode
+{
+	public:
+		CTypeNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber);
+		virtual int32 Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
+
+        virtual bool8 CompileToC(int32 indent, char*& out_buffer, int32& max_size, bool root_node) const;
+
+	protected:
+		CTypeNode() { }
 };
 
 // ====================================================================================================================

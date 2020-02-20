@@ -198,6 +198,7 @@ enum eUnaryOpType
 	ReservedKeywordEntry(hashtable_first)       \
 	ReservedKeywordEntry(hashtable_next)        \
 	ReservedKeywordEntry(hashtable_end)         \
+	ReservedKeywordEntry(type)                  \
 
 enum eReservedKeyword
 {
@@ -301,6 +302,7 @@ bool8 TryParseDestroyObject(CCodeBlock* codeblock, tReadToken& filebuf, CCompile
 bool8 TryParseHashtableHasKey(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link);
 bool8 TryParseHashtableCopy(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link);
 bool8 TryParseHashtableIter(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link);
+bool8 TryParseType(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link);
 
 // ====================================================================================================================
 // -- functions for declaring and finding variables and functions
