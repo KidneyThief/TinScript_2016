@@ -84,6 +84,7 @@ class CWhileLoopNode;
 	CompileNodeTypeEntry(ArrayCopy)		        \
 	CompileNodeTypeEntry(HashtableHasKey)		\
 	CompileNodeTypeEntry(HashtableCopy)	    	\
+	CompileNodeTypeEntry(HashtableIter)		    \
 	CompileNodeTypeEntry(SelfVarDecl)			\
 	CompileNodeTypeEntry(ObjMemberDecl)			\
 	CompileNodeTypeEntry(Schedule)			    \
@@ -179,6 +180,7 @@ const char* GetNodeTypeString(ECompileNodeType nodetype);
 	OperationEntry(ArrayCopy)		    \
 	OperationEntry(HashtableHasKey)		\
 	OperationEntry(HashtableCopy)		\
+	OperationEntry(HashtableIter)		\
 	OperationEntry(SelfVarDecl)		    \
 	OperationEntry(ObjMemberDecl)       \
 	OperationEntry(ScheduleBegin)       \
@@ -766,7 +768,7 @@ class CArrayCountNode : public CCompileTreeNode
 };
 
 // ====================================================================================================================
-// class CHashtableHasKey:  Parse tree node, pushes a bool for the left node having the give nkey.
+// class CHashtableHasKey:  Parse tree node, pushes a bool for the left node having the given key.
 // ====================================================================================================================
 class CHashtableHasKey : public CCompileTreeNode
 {
@@ -778,6 +780,22 @@ class CHashtableHasKey : public CCompileTreeNode
 
 	protected:
 		CHashtableHasKey() { }
+};
+
+// ====================================================================================================================
+// class CHashtableIter:  Parse tree node, pushes the string of the first/next hashtable key.
+// ====================================================================================================================
+class CHashtableIter : public CCompileTreeNode
+{
+	public:
+		CHashtableIter(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber, int32 iter_type);
+		virtual int32 Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
+
+        virtual bool8 CompileToC(int32 indent, char*& out_buffer, int32& max_size, bool root_node) const;
+
+	protected:
+		CHashtableIter() { }
+        int32 m_iterType;
 };
 
 // ====================================================================================================================

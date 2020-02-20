@@ -2063,6 +2063,10 @@ bool8 TryParseExpression(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTre
 	if (TryParseHashtableHasKey(codeblock, filebuf, exprlink))
 		return (true);
 
+	// -- a hashtable_first/next() completes an expression
+	if (TryParseHashtableIter(codeblock, filebuf, exprlink))
+		return (true);
+
     // -- after the potential unary op, an expression may start with:
     // -- a 'self'
     // -- a function call (not a method)
@@ -4025,7 +4029,7 @@ bool8 TryParseArrayCount(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTre
 }
 
 // ====================================================================================================================
-// TryParseArrayCount():  The keyword "count" has a well defined syntax.
+// TryParseHashtableHasKey():  returns true for hashtable_haskey(<ht>, "key") if ht["key"] is defined.
 // ====================================================================================================================
 bool8 TryParseHashtableHasKey(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link)
 {
@@ -4042,7 +4046,7 @@ bool8 TryParseHashtableHasKey(CCodeBlock* codeblock, tReadToken& filebuf, CCompi
 	if (!GetToken(peektoken) || peektoken.type != TOKEN_PAREN_OPEN)
 		return (false);
 
-	// -- we're committed to an array count expression
+	// -- we're committed to a hashtable_haskey expression
 	filebuf = peektoken;
 
 	// -- create the ArrayVarNode, leftchild is the hashtable var, right is the hash value
@@ -4084,6 +4088,61 @@ bool8 TryParseHashtableHasKey(CCodeBlock* codeblock, tReadToken& filebuf, CCompi
 	{
 		ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
 			          "Error - hashtable_haskey() expression, expecting ')' following array variable\n");
+		return (false);
+	}
+
+	// -- update the file buf
+	filebuf = peektoken;
+
+	// -- success
+	return (true);
+}
+
+// ====================================================================================================================
+// TryParseHashtableIter():  returns the first or next key, using keywords hashtable_first() and hashtable_next()
+// ====================================================================================================================
+bool8 TryParseHashtableIter(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link)
+{
+	// -- ensure the next token is the 'hash' keyword
+	tReadToken peektoken(filebuf);
+	if (!GetToken(peektoken) || peektoken.type != TOKEN_KEYWORD)
+		return (false);
+
+	int32 reservedwordtype = GetReservedKeywordType(peektoken.tokenptr, peektoken.length);
+	if (reservedwordtype != KEYWORD_hashtable_first && reservedwordtype != KEYWORD_hashtable_next &&
+        reservedwordtype != KEYWORD_hashtable_end)
+		return (false);
+
+	// -- read the opening parenthesis
+	if (!GetToken(peektoken) || peektoken.type != TOKEN_PAREN_OPEN)
+		return (false);
+
+	// -- we're committed to a hashtable_keys expression
+	filebuf = peektoken;
+
+	// -- create the HashtableKeys, leftchild is the string[] to copy the keys to,
+    // rightchild is the hashtable var, returns the keys count
+    int32 iter_type = reservedwordtype == KEYWORD_hashtable_first ? 0 :
+                      reservedwordtype == KEYWORD_hashtable_next ? 1 :
+                      -1;
+	CHashtableIter* ht_iter_node =
+        TinAlloc(ALLOC_TreeNode, CHashtableIter, codeblock, link, filebuf.linenumber, iter_type);
+
+	// -- ensure we have an expression to fill the left child
+	bool8 result = TryParseExpression(codeblock, filebuf, ht_iter_node->leftchild);
+	if (!result || !ht_iter_node->leftchild)
+	{
+		ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
+			          "Error - hashtable_first/ext() requires the hashtable variable expression.\n");
+		return (false);
+	}
+
+	// -- read the closing parenthesis
+	peektoken = filebuf;
+	if (!GetToken(peektoken) || peektoken.type != TOKEN_PAREN_CLOSE)
+	{
+		ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
+			          "Error - count() expression, expecting ')' following array variable\n");
 		return (false);
 	}
 

@@ -432,13 +432,10 @@ bool8 GetStackValue(CScriptContext* script_context, CExecStack& execstack,
         valaddr = (void*)((uint32*)valaddr)[1];
     }
 
-    // -- if the valtype wasn't either a var or a member, they remain unchanged
-    // -- we were successful, if we were able to find either the valaddr, or the variable entry
-    // $$$TZA not 100% convinced this is the correct "success" condition...
-    // -- during dev of SocketExec(), a bad packet caused a crash because a null valaddr was returned
-    // -- this was added to lead to an assert instead, *but*, if the variable is a parameter, of Type_hashtable
-    // -- then it won't have an mAddr of its own, so valaddr is legitimately nullptr.
-    return (valaddr != nullptr || ve != nullptr);
+    // -- if we weren't able to resolve the address for the actual value storage, then we'd better
+    // -- have a valid stack variable
+    bool8 valid_result = valaddr != nullptr || (ve != nullptr && ve->IsStackVariable(funccallstack));
+    return (valid_result);
 }
 
 // ====================================================================================================================
@@ -2819,6 +2816,87 @@ bool8 OpExecHashtableHasKey(CCodeBlock* cb, eOpCode op, const uint32*& instrptr,
 	DebugTrace(op, "HashTable: %s[%s] %s", UnHash(ve0->GetHash()), UnHash(arrayvarhash), found ? "found" : "not found");
 
 	return (true);
+}
+
+// ====================================================================================================================
+// OpExecHashtableIter():  Pops the hashtable, pushes the first key (string).
+// ====================================================================================================================
+bool8 OpExecHashtableIter(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExecStack& execstack,
+	CFunctionCallStack& funccallstack)
+{
+    // -- pop the bool, if this iter call is first() or next()
+    int32 iter_type = *instrptr++;
+
+    // -- pop the hashtable variable to get the first/next key
+    CVariableEntry* ve0 = NULL;
+    CObjectEntry* oe0 = NULL;
+    eVarType val0type;
+    void* val0 = execstack.Pop(val0type);
+
+    if (!GetStackValue(cb->GetScriptContext(), execstack, funccallstack, val0, val0type, ve0, oe0))
+    {
+        DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
+                        "Error - ExecStack should contain a hashtable variable\n");
+        return false;
+    }
+
+    if (!ve0 || ve0->GetType() != TYPE_hashtable)
+    {
+        DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
+                        "Error - ExecStack should contain hashtable variable\n");
+        return false;
+    }
+
+    // -- get the var table
+    // note:  hashtable isn't a natural C++ type, so there's no such thing as
+    // -- an addr + offset to an object's registered hashtable
+    tVarTable* vartable = (tVarTable*)ve0->GetAddr(NULL);
+    if (vartable != nullptr)
+    {
+        // -- if we're calling first() or next(), push the iteration value
+        if (iter_type == 0 || iter_type == 1)
+        {
+            CVariableEntry* hte = iter_type == 0 ? vartable->First() : vartable->Next();
+
+            // -- Push the contents of the return_ve onto *this* execstack
+            if (hte != nullptr)
+            {
+                execstack.Push(hte->GetAddr(NULL), hte->GetType());
+	            DebugTrace(op, "HashTable: %s iteration value: %s", UnHash(ve0->GetHash()), DebugPrintVar(hte, hte->GetType()), 0);
+            }
+            else
+            {
+                int32 null_val = 0;
+                execstack.Push(&null_val, TYPE_int);
+	            DebugTrace(op, "HashTable: %s, hashtable iter is at end", UnHash(ve0->GetHash()), 0);
+            }
+ 
+            return true;
+        }
+
+        // -- else we're checking for the end of the hashtable
+        else
+        {
+            // -- calling Current() will see if the internal iterator is at the end
+            CVariableEntry* hte = vartable->Current();
+
+            bool8 at_end = (hte == nullptr);
+            execstack.Push(&at_end, TYPE_bool);
+            if (at_end)
+	            DebugTrace(op, "HashTable: %s, iterator is at end", UnHash(ve0->GetHash()), 0);
+            else
+	            DebugTrace(op, "HashTable: %s, iterator is at valid entry", UnHash(ve0->GetHash()), 0);
+        }
+
+        // -- success
+        return true;
+    }
+ 
+    // -- this should be impossible - to have successfully resolved a hashtable variable with no tVarTable...
+    DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
+                    "Error - invalid hashtable \n");
+
+	return (false);
 }
 
 // ====================================================================================================================
