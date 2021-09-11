@@ -173,7 +173,7 @@ CDebugToolButton::CDebugToolButton(const char* name, const char* description, co
     : CDebugToolEntry(parent)
 {
     // -- copy the command
-    TinScript::SafeStrcpy(mCommand, command, TinScript::kMaxTokenLength);
+    TinScript::SafeStrcpy(mCommand, sizeof(mCommand), command, TinScript::kMaxTokenLength);
 
     // -- create the button
     mButton = new QPushButton(value);
@@ -230,7 +230,7 @@ CDebugToolSlider::CDebugToolSlider(const char* name, const char* description, in
     : CDebugToolEntry(parent)
 {
     // -- copy the command
-    TinScript::SafeStrcpy(mCommand, command, TinScript::kMaxTokenLength);
+    TinScript::SafeStrcpy(mCommand, sizeof(mCommand), command, TinScript::kMaxTokenLength);
 
     // -- create the button
     mSlider = new QSlider(Qt::Horizontal);
@@ -302,7 +302,7 @@ CDebugToolTextEdit::CDebugToolTextEdit(const char* name, const char* description
     : CDebugToolEntry(parent)
 {
     // -- copy the command
-    TinScript::SafeStrcpy(mCommand, command, TinScript::kMaxTokenLength);
+    TinScript::SafeStrcpy(mCommand, sizeof(mCommand), command, TinScript::kMaxTokenLength);
 
     // -- create the button
     mLineEdit = new SafeLineEdit();
@@ -370,7 +370,7 @@ CDebugToolCheckBox::CDebugToolCheckBox(const char* name, const char* description
     : CDebugToolEntry(parent)
 {
     // -- copy the command
-    TinScript::SafeStrcpy(mCommand, command, TinScript::kMaxTokenLength);
+    TinScript::SafeStrcpy(mCommand, sizeof(mCommand), command, TinScript::kMaxTokenLength);
 
     // -- create the button
     mCheckBox = new QCheckBox();
@@ -433,7 +433,7 @@ void CDebugToolCheckBox::OnClicked()
 // ====================================================================================================================
 CDebugToolsWin::CDebugToolsWin(const char* tools_name, QWidget* parent) : QWidget(parent)
 {
-    TinScript::SafeStrcpy(mWindowName, tools_name, TinScript::kMaxNameLength);
+    TinScript::SafeStrcpy(mWindowName, sizeof(mWindowName), tools_name, TinScript::kMaxNameLength);
     mScrollArea = new QScrollArea(this);
     mScrollContent = new QWidget(mScrollArea);
     mLayout = new QGridLayout(mScrollContent);

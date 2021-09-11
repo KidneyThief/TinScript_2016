@@ -48,8 +48,8 @@ CBrowserEntry::CBrowserEntry(uint32 parent_id, uint32 object_id, bool8 owned, co
     mObjectID = object_id;
     mParentID = parent_id;
     mOwned = owned;
-    TinScript::SafeStrcpy(mName, object_name, TinScript::kMaxNameLength);
-    TinScript::SafeStrcpy(mDerivation, derivation, TinScript::kMaxNameLength);
+    TinScript::SafeStrcpy(mName, sizeof(mName), object_name, TinScript::kMaxNameLength);
+    TinScript::SafeStrcpy(mDerivation, sizeof(mDerivation), derivation, TinScript::kMaxNameLength);
 
     // -- create and store the formatted name string
     sprintf_s(mFormattedName, TinScript::kMaxNameLength, "[%d] %s", object_id, mName);

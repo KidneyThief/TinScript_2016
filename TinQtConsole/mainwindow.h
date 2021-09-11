@@ -73,7 +73,7 @@ class SafeLineEdit : public QLineEdit
         void SetStringValue(const char* value)
         {
             const char* new_value = value ? value : "";
-            TinScript::SafeStrcpy(mStringValue, new_value, TinScript::kMaxNameLength);
+            TinScript::SafeStrcpy(mStringValue, sizeof(mStringValue), new_value, TinScript::kMaxNameLength);
             setText(new_value);
         }
 
@@ -89,7 +89,7 @@ class SafeLineEdit : public QLineEdit
             QLineEdit::keyPressEvent(e);
 
             // -- store the current value of the string
-            TinScript::SafeStrcpy(mStringValue, text().toUtf8(), TinScript::kMaxNameLength);
+            TinScript::SafeStrcpy(mStringValue, sizeof(mStringValue), text().toUtf8(), TinScript::kMaxNameLength);
         }
 
     private:
@@ -223,7 +223,7 @@ public:
     {
         if (!fullPath)
             fullPath = "";
-        TinScript::SafeStrcpy(mFullPath, fullPath, TinScript::kMaxNameLength);
+        TinScript::SafeStrcpy(mFullPath, sizeof(mFullPath), fullPath, TinScript::kMaxNameLength);
         mFileHash = fileHash;
         mActionWidget = action;
     }

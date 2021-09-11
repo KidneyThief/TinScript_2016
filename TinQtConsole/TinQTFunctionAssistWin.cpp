@@ -299,7 +299,7 @@ void CDebugFunctionAssistWin::UpdateFilter(const char* filter)
         return;
 
     // -- copy the new search filter
-    TinScript::SafeStrcpy(mFilterString, filter, TinScript::kMaxNameLength);
+    TinScript::SafeStrcpy(mFilterString, sizeof(mFilterString), filter, TinScript::kMaxNameLength);
 
     // -- if we have a new object id, we need to re-issue the function assist request
     if (new_object_search)
@@ -313,7 +313,7 @@ void CDebugFunctionAssistWin::UpdateFilter(const char* filter)
         {
             // -- if the string is a valid number
             char object_string[TinScript::kMaxNameLength];
-            TinScript::SafeStrcpy(object_string, mFilterString, TinScript::kMaxNameLength);
+            TinScript::SafeStrcpy(object_string, sizeof(object_string), mFilterString, TinScript::kMaxNameLength);
             period_str = strchr(object_string, '.');
             *period_str = '\0';
 
@@ -383,7 +383,7 @@ void CDebugFunctionAssistWin::UpdateFilter(const char* filter)
                         new_entry->mObjectID = display_object_id;
                         new_entry->mNamespaceHash = 0;
                         new_entry->mFunctionHash = 0;
-                        TinScript::SafeStrcpy(new_entry->mFunctionName, object_name, TinScript::kMaxNameLength);
+                        TinScript::SafeStrcpy(new_entry->mFunctionName, sizeof(new_entry->mFunctionName), object_name, TinScript::kMaxNameLength);
                         new_entry->mParameterCount = 0;
 
                         // -- add the object to the object map
@@ -764,7 +764,7 @@ CFunctionListEntry::CFunctionListEntry(TinScript::CDebuggerFunctionAssistEntry* 
         // -- set the function name
         char sort_buf[TinScript::kMaxNameLength];
         sort_buf[0] = ' ';
-        TinScript::SafeStrcpy(&sort_buf[1], _entry->mFunctionName, TinScript::kMaxNameLength - 1);
+        TinScript::SafeStrcpy(&sort_buf[1], sizeof(sort_buf) - 1, _entry->mFunctionName, TinScript::kMaxNameLength - 1);
         setText(1, sort_buf);
     }
     else

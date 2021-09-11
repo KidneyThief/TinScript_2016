@@ -433,7 +433,7 @@ void CDebugWatchWin::AddVariableWatch(const char* variableWatch, bool breakOnWri
     new_watch.mType = TinScript::TYPE_void;
 
 	// -- var name holds the expresion
-	TinScript::SafeStrcpy(new_watch.mVarName, variableWatch, TinScript::kMaxNameLength);
+	TinScript::SafeStrcpy(new_watch.mVarName, sizeof(new_watch.mVarName), variableWatch, TinScript::kMaxNameLength);
 
 	// -- we also *hope* the target can fill in a value for us as well
     new_watch.mValue[0] = '\0';

@@ -314,7 +314,8 @@ public:
     {
         char title_buf[TinScript::kMaxNameLength];
         sprintf_s(title_buf, "Object Inspect: ");
-        TinScript::SafeStrcpy(&title_buf[strlen(title_buf)], object_identifier,
+        TinScript::SafeStrcpy(&title_buf[strlen(title_buf)], TinScript::kMaxNameLength - strlen(title_buf),
+                              object_identifier,
                               TinScript::kMaxNameLength - strlen(title_buf));
         setWindowTitle(title_buf);
     }

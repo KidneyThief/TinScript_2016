@@ -414,7 +414,7 @@ void CDebugBreakpointsWin::SetBreakCondition(const char* expression, bool8 cond_
     CBreakpointEntry* cur_entry = static_cast<CBreakpointEntry*>(currentItem());
     if (cur_entry)
     {
-        TinScript::SafeStrcpy(cur_entry->mCondition, expression, TinScript::kMaxNameLength);
+        TinScript::SafeStrcpy(cur_entry->mCondition, sizeof(cur_entry->mCondition), expression, TinScript::kMaxNameLength);
         cur_entry->mConditionEnabled = cond_enabled;
 
         // -- update the label
@@ -482,7 +482,7 @@ void CDebugBreakpointsWin::SetTraceExpression(const char* expression, bool8 trac
     CBreakpointEntry* cur_entry = static_cast<CBreakpointEntry*>(currentItem());
     if (cur_entry)
     {
-        TinScript::SafeStrcpy(cur_entry->mTracePoint, expression, TinScript::kMaxNameLength);
+        TinScript::SafeStrcpy(cur_entry->mTracePoint, sizeof(cur_entry->mCondition), expression, TinScript::kMaxNameLength);
         cur_entry->mTraceEnabled = trace_enabled;
         cur_entry->mTraceOnCondition = trace_on_condition;
 

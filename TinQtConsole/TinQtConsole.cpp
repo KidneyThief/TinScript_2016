@@ -393,13 +393,13 @@ int32 ConsolePrint(const char* fmt, ...)
     if (last_msg[0] != '\0')
     {
         int last_msg_length = strlen(last_msg);
-        TinScript::SafeStrcpy(&last_msg[last_msg_length], buffer, 4096 - last_msg_length);
+        TinScript::SafeStrcpy(&last_msg[last_msg_length], 4096 - last_msg_length, buffer, 4096 - last_msg_length);
         int msg_count = CConsoleWindow::GetInstance()->GetOutput()->count();
         CConsoleWindow::GetInstance()->GetOutput()->takeItem(msg_count - 1);
     }
     else
     {
-        TinScript::SafeStrcpy(last_msg, buffer, 4096);
+        TinScript::SafeStrcpy(last_msg, sizeof(last_msg), buffer, 4096);
     }
 
     // -- print the buffer
@@ -428,7 +428,7 @@ int32 ConsolePrint(const char* fmt, ...)
 
         // -- copy the message to the beginning of the buffer
         if (buf_ptr > last_msg)
-            TinScript::SafeStrcpy(last_msg, buf_ptr, 4096);
+            TinScript::SafeStrcpy(last_msg, sizeof(last_msg), buf_ptr, 4096);
     }
 
     // -- otherwise, zero out the last msg so we don't append
@@ -1190,7 +1190,7 @@ void CConsoleInput::RequestTabComplete()
         QByteArray input_ba = text().toUtf8();
         const char* input_text = input_ba.data();
 
-        TinScript::SafeStrcpy(mTabCompletionBuf, input_text, TinScript::kMaxTokenLength);
+        TinScript::SafeStrcpy(mTabCompletionBuf, sizeof(mTabCompletionBuf), input_text, TinScript::kMaxTokenLength);
     }
 
     // -- if we have a non-empty string...

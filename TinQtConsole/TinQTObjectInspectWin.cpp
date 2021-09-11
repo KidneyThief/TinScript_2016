@@ -79,7 +79,7 @@ void CObjectInspectEntry::Initialize(const TinScript::CDebuggerWatchVarEntry& de
 	mParent->GetContent()->setGeometry(0, 20, newWidth, (count + 2) * kFontHeight);
 
     mNameLabel = new QLabel(debugger_entry.mVarName);
-    TinScript::SafeStrcpy(mName, debugger_entry.mVarName, TinScript::kMaxNameLength);
+    TinScript::SafeStrcpy(mName, sizeof(mName), debugger_entry.mVarName, TinScript::kMaxNameLength);
     mNameHash = debugger_entry.mVarHash;
 
     // -- if this is not a namespace, add the line edit
@@ -152,7 +152,7 @@ CDebugObjectInspectWin::CDebugObjectInspectWin(uint32 object_id, const char* obj
     : QWidget(parent)
     , mObjectID(object_id)
 {
-    TinScript::SafeStrcpy(mWindowName, object_identifier, TinScript::kMaxNameLength);
+    TinScript::SafeStrcpy(mWindowName, sizeof(mWindowName), object_identifier, TinScript::kMaxNameLength);
     mScrollArea = new QScrollArea(this);
     mScrollContent = new QWidget(mScrollArea);
     mLayout = new QGridLayout(mScrollContent);
