@@ -48,5 +48,5 @@ StringTablePlugin/bin/
 StringTablePlugin/packages/
 StringTablePlugin/stylesheet.css
 *.db
-*.exe
+*/*.exe
 

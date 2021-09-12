@@ -102,6 +102,16 @@ class CConsoleWindow
         CDebugSchedulesWin* GetDebugSchedulesWin() { return (mSchedulesWin); }
         CDebugFunctionAssistWin* GetDebugFunctionAssistWin() { return (mFunctionAssistWin); }
 
+        void InitFontMetrics() const;
+        static int32 FontWidth() { return gPaddedFontWidth; }
+        static int32 FontHeight() { return gPaddedFontHeight; }
+        static int32 TitleHeight() { return gPaddedFontHeight + 8; }
+        static int32 StringWidth(const QString& in_string);
+
+        static void ExpandToParentSize(QWidget* in_console_widget);
+
+        QLabel* CreateTitleLabel(const QString& in_title_txt, QWidget* in_parent = nullptr) const;
+
         void SetStatusMessage(const char* message);
         void SetTargetInfoMessage(const char* message);
 
@@ -110,6 +120,7 @@ class CConsoleWindow
         MainWindow* mMainWindow;
         QGridLayout* mGridLayout;
         MainWindow* GetMainWindow() { return (mMainWindow); }
+        QApplication* GetApplication() { return (mApp); }
 
         CConsoleOutput* mConsoleOutput;
 
@@ -213,6 +224,10 @@ class CConsoleWindow
 
         // -- store whether we're connected
         bool8 mIsConnected;
+
+        // -- font metrics members
+        static int32 gPaddedFontWidth;
+        static int32 gPaddedFontHeight;
 };
 
 // ====================================================================================================================
@@ -236,7 +251,7 @@ class CConsoleInput : public QLineEdit
         void ExpandToParentSize()
         {
             // -- leave room at the start for the input label: 3x characters '==>'
-			int labelWidth = (kFontWidth * 3);
+			int labelWidth = (CConsoleWindow::FontWidth() * 3);
             QSize parentSize = parentWidget()->size();
             int newWidth = parentSize.width() - labelWidth;
             if (newWidth < 0)
@@ -331,10 +346,10 @@ class CConsoleOutput : public QListWidget
             // -- leave room at the bottom for the console input
             QSize parentSize = parentWidget()->size();
             int newWidth = parentSize.width();
-            int newHeight = parentSize.height() - 46;
-            if (newHeight < 20)
-                newHeight = 20;
-            setGeometry(0, 20, newWidth, newHeight);
+            int newHeight = parentSize.height() - CConsoleWindow::TitleHeight();
+            if (newHeight < CConsoleWindow::TitleHeight())
+                newHeight = CConsoleWindow::TitleHeight();
+            setGeometry(0, CConsoleWindow::TitleHeight(), newWidth, newHeight);
             updateGeometry();
 
             // -- reposition the console input

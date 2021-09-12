@@ -64,26 +64,14 @@ class CDebugWatchWin : public QTreeWidget {
 
         virtual void paintEvent(QPaintEvent* e)
         {
-            ExpandToParentSize();
+            CConsoleWindow::ExpandToParentSize(this);
             QTreeWidget::paintEvent(e);
         }
 
         virtual void resizeEvent(QResizeEvent* e)
         {
-            ExpandToParentSize();
+            CConsoleWindow::ExpandToParentSize(this);
             QTreeWidget::resizeEvent(e);
-        }
-
-        void ExpandToParentSize()
-        {
-            // -- resize to be the parent widget's size, with room for the title
-            QSize parentSize = parentWidget()->size();
-            int newWidth = parentSize.width();
-            int newHeight = parentSize.height();
-            if (newHeight < 20)
-                newHeight = 20;
-            setGeometry(0, 20, newWidth, newHeight);
-            updateGeometry();
         }
 
         CWatchEntry* FindWatchEntry(uint32 funcHash, uint32 objectID, uint32 nsHash, bool& foundNamespaceLabel);

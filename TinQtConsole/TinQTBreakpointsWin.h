@@ -75,20 +75,8 @@ class CDebugBreakpointsWin : public QListWidget
 
         virtual void paintEvent(QPaintEvent* e)
         {
-            ExpandToParentSize();
+            CConsoleWindow::ExpandToParentSize(this);
             QListWidget::paintEvent(e);
-        }
-
-        void ExpandToParentSize()
-        {
-            // -- resize to be the parent widget's size, with room for the title
-            QSize parentSize = parentWidget()->size();
-            int32 newWidth = parentSize.width();
-            int32 newHeight = parentSize.height();
-            if (newHeight < 20)
-                newHeight = 20;
-            setGeometry(0, 20, newWidth, newHeight);
-            updateGeometry();
         }
 
         // -- Toggle the breakpoint32 for a file/line
@@ -154,20 +142,8 @@ class CDebugCallstackWin : public QListWidget {
 
         virtual void paintEvent(QPaintEvent* e)
         {
-            ExpandToParentSize();
+            CConsoleWindow::ExpandToParentSize(this);
             QListWidget::paintEvent(e);
-        }
-
-        void ExpandToParentSize()
-        {
-            // -- resize to be the parent widget's size, with room for the title
-            QSize parentSize = parentWidget()->size();
-            int32 newWidth = parentSize.width();
-            int32 newHeight = parentSize.height();
-            if (newHeight < 20)
-                newHeight = 20;
-            setGeometry(0, 20, newWidth, newHeight);
-            updateGeometry();
         }
 
         void NotifyCallstack(uint32* codeblock_array, uint32* objid_array, uint32* namespace_array,

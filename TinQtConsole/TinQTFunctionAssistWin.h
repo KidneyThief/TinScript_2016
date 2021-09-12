@@ -53,20 +53,8 @@ class CDebugFunctionAssistWin : public QWidget
 
         virtual void paintEvent(QPaintEvent* e)
         {
-            ExpandToParentSize();
+            CConsoleWindow::ExpandToParentSize(this);
             QWidget::paintEvent(e);
-        }
-
-        void ExpandToParentSize()
-        {
-            // -- resize to be the parent widget's size, with room for the title
-            QSize parentSize = parentWidget()->size();
-            int newWidth = parentSize.width();
-            int newHeight = parentSize.height() - 20;
-            if (newHeight < 20)
-                newHeight = 20;
-            setGeometry(0, 20, newWidth, newHeight);
-            updateGeometry();
         }
 
         void NotifyCodeblockLoaded(uint32 codeblock_hash);

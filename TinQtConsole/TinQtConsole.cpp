@@ -62,6 +62,10 @@
 
 #include "mainwindow.h"
 
+// -- statics -------------------------------------------------------------------------------------
+int32 CConsoleWindow::gPaddedFontWidth = 16;
+int32 CConsoleWindow::gPaddedFontHeight = 26;
+
 // ------------------------------------------------------------------------------------------------
 // -- override the macro from integration.h
 #undef TinPrint
@@ -82,6 +86,10 @@ CConsoleWindow::CConsoleWindow()
     mApp->setOrganizationName("QtProject");
     mApp->setApplicationName("TinConsole");
 
+    // -- initialize the font metrics
+    // $$$TZA there's no current API to change font (size), but who knows...
+    InitFontMetrics();
+
     // -- create the main window
     QMap<QString, QSize> customSizeHints;
     mMainWindow = new MainWindow(customSizeHints);
@@ -90,7 +98,7 @@ CConsoleWindow::CConsoleWindow()
     // -- create the output widget
     QDockWidget* outputDockWidget = new QDockWidget();
     outputDockWidget->setObjectName("Console Output");
-    outputDockWidget->setWindowTitle("Console Output");
+    outputDockWidget->setTitleBarWidget(CreateTitleLabel("Console Ouptut", outputDockWidget));
     mConsoleOutput = new CConsoleOutput(outputDockWidget);
     mConsoleOutput->addItem("Welcome to the TinConsole!");
     outputDockWidget->setMinimumHeight(200);
@@ -159,8 +167,8 @@ CConsoleWindow::CConsoleWindow()
 
     QWidget* spacer_3 = new QWidget();
     spacer_3->setFixedWidth(8);
-    QLabel* unhash_label = new QLabel("Hash/Unhash:");
-    unhash_label->setFixedWidth(105);
+    QLabel* unhash_label = new QLabel("Hash/Unhash: ");
+    unhash_label->setFixedWidth(CConsoleWindow::StringWidth("Hash/Unhash: "));
     unhash_label->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
     mUnhashLineEdit = new QLineEdit();
     mUnhashLineEdit->setFixedWidth(200);
@@ -194,49 +202,52 @@ CConsoleWindow::CConsoleWindow()
     // -- create the source window
     mSourceWinDockWidget = new QDockWidget();
     mSourceWinDockWidget->setObjectName("Source View");
-    mSourceWinDockWidget->setWindowTitle("Source View");
+    mSourceWinDockWidget->setTitleBarWidget(CreateTitleLabel("Source View", mSourceWinDockWidget));
     mDebugSourceWin = new CDebugSourceWin(mSourceWinDockWidget);
 
     // -- create the callstack window
     QDockWidget* callstackDockWidget = new QDockWidget();
     callstackDockWidget->setObjectName("Call Stack");
     callstackDockWidget->setWindowTitle("Call Stack");
+    callstackDockWidget->setTitleBarWidget(CreateTitleLabel("Call Stack", callstackDockWidget));
     mCallstackWin = new CDebugCallstackWin(callstackDockWidget);
 
     // -- create the breakpoints window
     QDockWidget* breakpointsDockWidget = new QDockWidget();
     breakpointsDockWidget->setObjectName("Breakpoints");
-    breakpointsDockWidget->setWindowTitle("Breakpoints");
+    breakpointsDockWidget->setTitleBarWidget(CreateTitleLabel("Breakpoints", breakpointsDockWidget));
     mBreakpointsWin = new CDebugBreakpointsWin(breakpointsDockWidget);
 
     // -- create the autos window
     mAutosWinDockWidget = new QDockWidget();
     mAutosWinDockWidget->setObjectName("Autos");
     mAutosWinDockWidget->setWindowTitle("Autos");
+    mAutosWinDockWidget->setTitleBarWidget(CreateTitleLabel("Autos", mAutosWinDockWidget));
     mAutosWin = new CDebugWatchWin(mAutosWinDockWidget);
 
     // -- create the watches window
     QDockWidget* watchesDockWidget = new QDockWidget();
     watchesDockWidget->setObjectName("Watches");
     watchesDockWidget->setWindowTitle("Watches");
+    watchesDockWidget->setTitleBarWidget(CreateTitleLabel("Watches", watchesDockWidget));
     mWatchesWin = new CDebugWatchWin(watchesDockWidget);
 
     // -- create the object browser window
     QDockWidget* browserDockWidget = new QDockWidget();
     browserDockWidget->setObjectName("Object Browser");
-    browserDockWidget->setWindowTitle("Object Browser");
+    browserDockWidget->setTitleBarWidget(CreateTitleLabel("Object Browser", browserDockWidget));
     mObjectBrowserWin = new CDebugObjectBrowserWin(browserDockWidget);
 
     // -- create the schedules window
     QDockWidget* schedulesDockWidget = new QDockWidget();
     schedulesDockWidget->setObjectName("Scheduler");
-    schedulesDockWidget->setWindowTitle("Scheduler");
+    schedulesDockWidget->setTitleBarWidget(CreateTitleLabel("Scheduler", schedulesDockWidget));
     mSchedulesWin = new CDebugSchedulesWin(schedulesDockWidget);
 
     // -- create the schedules window
     QDockWidget* functionAssistDockWidget = new QDockWidget();
     functionAssistDockWidget->setObjectName("Function Assist");
-    functionAssistDockWidget->setWindowTitle("Function Assist");
+    functionAssistDockWidget->setTitleBarWidget(CreateTitleLabel("Function Assist", functionAssistDockWidget));
     mFunctionAssistWin = new CDebugFunctionAssistWin(functionAssistDockWidget);
 
     // -- connect the widgets
@@ -1088,6 +1099,78 @@ void NotifyCurrentDir(const char* cwd)
 void NotifyWatchVarEntry(TinScript::CDebuggerWatchVarEntry* watch_var_entry)
 {
     CConsoleWindow::GetInstance()->GetDebugAutosWin()->NotifyWatchVarEntry(watch_var_entry, false);
+}
+
+// ====================================================================================================================
+// InitFontMetrics():  Determines the current Qt font metrics from the application instance
+// ====================================================================================================================
+void CConsoleWindow::InitFontMetrics() const
+{
+    if (mApp == nullptr)
+    {
+        // -- usable values
+        gPaddedFontWidth = 16;
+        gPaddedFontWidth = 28;
+        return;
+    }
+
+    // -- we'll use a captial 'W' as the "font width", since it's the widest character
+    QFontMetrics my_font_metrics = mApp->fontMetrics();
+    gPaddedFontWidth = my_font_metrics.width("W");
+    gPaddedFontHeight = my_font_metrics.height();
+}
+
+// ====================================================================================================================
+// StringWidth():  Determines the pixel with of a string, using the current application font
+// ====================================================================================================================
+int32 CConsoleWindow::StringWidth(const QString& in_string)
+{
+    QApplication* my_app = GetInstance() != nullptr ? GetInstance()->GetApplication() : nullptr;
+    if (my_app == nullptr)
+    {
+        // -- usable values
+        return 16 * in_string.length();
+    }
+
+    // -- we'll use a captial 'W' as the "font width", since it's the widest character
+    QFontMetrics my_font_metrics = my_app->fontMetrics();
+    return my_font_metrics.width(in_string);
+}
+
+// ====================================================================================================================
+// CreateTitleLabel():  Creates a QLabel with the title text, sized to the application font height (padded)
+// ====================================================================================================================
+QLabel* CConsoleWindow::CreateTitleLabel(const QString& in_title_text, QWidget* in_parent) const
+{
+    QLabel* title_label = new QLabel(QString("   ").append(in_title_text), in_parent);
+    int width = 100;
+    if (in_parent != nullptr)
+    {
+        const QRect& parent_geometry = in_parent->geometry();
+        width = parent_geometry.width();
+    }
+    // -- adding padding to the height - update ExpandToParentSize() to match
+    title_label->setGeometry(0, 2, width, FontHeight() + 2);
+    return title_label;
+}
+
+// ====================================================================================================================
+// ExpandToParentSize():  Helper to expand a console widget with a title, to fill it's parent (dock) widget size
+// ====================================================================================================================
+void CConsoleWindow::ExpandToParentSize(QWidget* in_console_widget)
+{
+    // -- sanity check
+    if (in_console_widget == nullptr || in_console_widget->parentWidget() == nullptr)
+        return;
+
+    // -- resize to be the parent widget's size, with room for the title
+    QSize parentSize = in_console_widget->parentWidget()->size();
+    int newWidth = parentSize.width();
+    int newHeight = parentSize.height() - CConsoleWindow::TitleHeight() - 4;
+    if (newHeight < CConsoleWindow::TitleHeight())
+        newHeight = CConsoleWindow::TitleHeight();
+    in_console_widget->setGeometry(0, CConsoleWindow::TitleHeight() + 4, newWidth, newHeight);
+    in_console_widget->updateGeometry();
 }
         
 // ====================================================================================================================

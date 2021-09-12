@@ -53,7 +53,7 @@ CDebugFunctionAssistWin::CDebugFunctionAssistWin(QWidget* parent)
 
     // -- create the input components
     QWidget* input_widget = new QWidget(this);
-    input_widget->setFixedHeight(48);
+    input_widget->setFixedHeight(CConsoleWindow::FontHeight() * 3);
     input_widget->setMinimumWidth(80);
     QHBoxLayout* input_layout = new QHBoxLayout(input_widget);
     mFunctionInput = new CFunctionAssistInput(this, input_widget);
@@ -63,17 +63,17 @@ CDebugFunctionAssistWin::CDebugFunctionAssistWin(QWidget* parent)
 
     // -- create the object identifier
     QWidget* identifier_widget = new QWidget(this);
-    identifier_widget->setFixedHeight(kFontHeight * 2 + kButtonSpace * 3);
+    identifier_widget->setFixedHeight(CConsoleWindow::FontHeight() * 3);
     identifier_widget->setMinimumWidth(80);
     QGridLayout* identifier_layout = new QGridLayout(identifier_widget);
     mObjectIndentifier = new QLabel("<global scope>", identifier_widget);
-	mObjectIndentifier->setFixedHeight(kFontHeight);
+	mObjectIndentifier->setFixedHeight(CConsoleWindow::FontHeight());
 	QPushButton* method_button = new QPushButton("Method", identifier_widget);
 	QPushButton* browse_button = new QPushButton("Object", identifier_widget);
     QPushButton* created_button = new QPushButton("Created", identifier_widget);
-    method_button->setFixedHeight(kFontHeight);
-    browse_button->setFixedHeight(kFontHeight);
-    created_button->setFixedHeight(kFontHeight);
+    method_button->setFixedHeight(CConsoleWindow::FontHeight());
+    browse_button->setFixedHeight(CConsoleWindow::FontHeight());
+    created_button->setFixedHeight(CConsoleWindow::FontHeight());
 
     identifier_layout->addWidget(mObjectIndentifier, 0, 0, 1, 3);
 	identifier_layout->addWidget(method_button, 1, 0, 1, 1);
