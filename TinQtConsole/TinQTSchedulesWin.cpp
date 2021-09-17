@@ -53,7 +53,7 @@ CScheduleEntry::CScheduleEntry(uint32 sched_id, bool repeat, int32 time_remainin
 
     QSize parentSize = parent->size();
     int newWidth = parentSize.width();
-	parent->GetContent()->setGeometry(0, 20, newWidth, (count + 2) * kFontHeight);
+	parent->GetContent()->setGeometry(0, 20, newWidth, (count + 2) * CConsoleWindow::FontHeight());
 
     // -- kill button (it's partially checked, if this is a repeated schedule)
     mKillButton = new QCheckBox();

@@ -44,10 +44,6 @@ static const char* kConsoleSendPrefix = ">> ";
 static const char* kConsoleRecvPrefix = "";
 static const char* kLocalSendPrefix = "> ";
 
-const int kFontWidth = 12;
-const int kFontHeight = 28;
-const int kButtonSpace = 4;
-
 // --------------------------------------------------------------------------------------------------------------------
 // -- Forward declarations
 
@@ -256,14 +252,14 @@ class CConsoleInput : public QLineEdit
             int newWidth = parentSize.width() - labelWidth;
             if (newWidth < 0)
                 newWidth = 0;
-			int newYOffset = parentSize.height() - kFontHeight;
+			int newYOffset = parentSize.height() - CConsoleWindow::TitleHeight();
             if (newYOffset < 0)
                 newYOffset = 0;
-			setGeometry(labelWidth, newYOffset, newWidth, kFontHeight);
+			setGeometry(labelWidth, newYOffset, newWidth, CConsoleWindow::TitleHeight());
             updateGeometry();
 
             // -- update the label as well
-			mInputLabel->setGeometry(0, newYOffset, labelWidth, kFontHeight);
+			mInputLabel->setGeometry(0, newYOffset, labelWidth, CConsoleWindow::TitleHeight());
         }
 
         void SetText(const char* text, int cursor_pos);
@@ -346,7 +342,7 @@ class CConsoleOutput : public QListWidget
             // -- leave room at the bottom for the console input
             QSize parentSize = parentWidget()->size();
             int newWidth = parentSize.width();
-            int newHeight = parentSize.height() - CConsoleWindow::TitleHeight();
+            int newHeight = parentSize.height() - CConsoleWindow::TitleHeight() * 2;
             if (newHeight < CConsoleWindow::TitleHeight())
                 newHeight = CConsoleWindow::TitleHeight();
             setGeometry(0, CConsoleWindow::TitleHeight(), newWidth, newHeight);

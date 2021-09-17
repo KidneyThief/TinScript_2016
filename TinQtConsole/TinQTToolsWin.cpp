@@ -94,7 +94,7 @@ int32 CDebugToolEntry::Initialize(const char* name, const char* description, QWi
 
     QSize parentSize = mParent->size();
     int newWidth = parentSize.width();
-	mParent->GetContent()->setGeometry(0, kFontHeight, newWidth, (count + 2) * (kFontHeight + 4));
+	mParent->GetContent()->setGeometry(0, CConsoleWindow::FontHeight(), newWidth, (count + 2) * (CConsoleWindow::FontHeight() + 4));
 
     mName = new QLabel(name);
     mDescription = new QLabel(description);

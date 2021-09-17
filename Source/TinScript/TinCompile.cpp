@@ -1146,7 +1146,7 @@ int32 CBinaryOpNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 countonl
 	if (!leftchild)
     {
         ScriptAssert_(TinScript::GetContext(), 0, codeblock->GetFileName(), linenumber,
-                      "Error - CompileToC - No left child.\n");
+                      "Error - BinOp [%s] failed - No left child.\n", GetBinOperatorString(bin_op));
 		return (-1);
 	}
 
@@ -1154,7 +1154,7 @@ int32 CBinaryOpNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 countonl
 	if (!rightchild)
     {
         ScriptAssert_(TinScript::GetContext(), 0, codeblock->GetFileName(), linenumber,
-                      "Error - CompileToC - No right child.\n");
+                      "Error - BinOp [%s] failed - No right child.\n", GetBinOperatorString(bin_op));
 		return (-1);
 	}
 
