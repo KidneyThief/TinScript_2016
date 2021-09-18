@@ -513,7 +513,7 @@ bool8 SafeStrcpy(char* dest, size_t dest_size, const char* src, size_t length)
 	const char* srcptr = src;
 	int32 count = length - 1;
     if (dest_size < length)
-        count = dest_size = 1;
+        count = dest_size - 1;
 	while (*srcptr != '\0' && count > 0)
     {
 		*destptr++ = *srcptr++;

@@ -377,7 +377,11 @@ bool8 GetCommentToken(tReadToken& token)
         token.tokenptr = comment_start;
         //token.length = kPointerDiffUInt32(inbuf, comment_start);
         token.length = comment_length + 1;
-        token.type = TOKEN_COMMENT;        
+        token.type = TOKEN_COMMENT; 
+
+        // -- because comments are also whitespace, consuming a comment
+        // needs to update the line number as well
+        token.linenumber = linenumber;
     }
 
     // -- return if we found a comment
@@ -3544,21 +3548,9 @@ bool8 TryParseFuncDefinition(CCodeBlock* codeblock, tReadToken& filebuf, CCompil
         return (false);
     }
 
-    // $$$TZA ideally, we'd like to validate every path to ensure if a return() is required,
-    // -- all paths return a value - however, for now, just ensure there's at least *one* return
-    // -- node in the body of the function definition
+    // $$$TZA ideally, we'd like to validate every path to see if we already have a return
+    // if one is missing, we'll fall through to the nullreturn, and catch the invalid return at runtime
     if (regreturntype > TYPE_void)
-    {
-        if (!FindChildNode(*funcdeclnode->leftchild, ECompileNodeType::eFuncReturn))
-        {
-            ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
-                            filebuf.linenumber,
-                            "Error - function requires a return statement\n");
-            return (false);
-        }
-    }
-
-    else
     {
         // -- we're going to force every script function to have a return value, to ensure
         // -- we can consistently pop the stack after every function call regardless of return type
