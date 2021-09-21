@@ -261,7 +261,8 @@ CMemoryTracker::tObjectCreatedFileLine::tObjectCreatedFileLine(uint32 _file_line
 // ====================================================================================================================
 void CMemoryTracker::NotifyObjectCreated(uint32 object_id, uint32 codeblock_hash, int32 line_number)
 {
-    Assert_(g_memoryTrackerInstance != nullptr);
+    if (g_memoryTrackerInstance == nullptr)
+        return;
 
     // -- create the entry, and add it to the object created hash table
     // -- add the address to the table
