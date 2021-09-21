@@ -268,9 +268,7 @@ void UnitTest_GlobalHashtable()
 
 void TestParameterHashtable(hashtable test_hashtable)
 {
-	Print("### DEBUG TestParameterHashtable() - before");
     string test_hashtable["ParamTest"] = "Chakakah";
-	Print("### DEBUG TestParameterHashtable() - after");
 }
 
 void UnitTest_ParameterHashtable()
