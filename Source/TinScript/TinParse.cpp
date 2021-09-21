@@ -3550,7 +3550,7 @@ bool8 TryParseFuncDefinition(CCodeBlock* codeblock, tReadToken& filebuf, CCompil
 
     // $$$TZA ideally, we'd like to validate every path to see if we already have a return
     // if one is missing, we'll fall through to the nullreturn, and catch the invalid return at runtime
-    if (regreturntype > TYPE_void)
+    if (!FindChildNode(*funcdeclnode->leftchild, ECompileNodeType::eFuncReturn))
     {
         // -- we're going to force every script function to have a return value, to ensure
         // -- we can consistently pop the stack after every function call regardless of return type

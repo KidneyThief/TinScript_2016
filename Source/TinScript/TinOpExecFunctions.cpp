@@ -195,7 +195,7 @@ void* GetStackVarAddr(CScriptContext* script_context, CExecStack& execstack, CFu
                       CVariableEntry& ve, int32 array_var_index)
 {
     // -- ensure the variable is a stack variable
-    if (!ve.IsStackVariable(funccallstack))
+    if (!ve.IsStackVariable(funccallstack, array_var_index == 0))
     {
         ScriptAssert_(script_context, 0, "<internal>", -1, "Error - GetStackVarAddr() failed\n");
         return NULL;
@@ -308,7 +308,7 @@ bool8 GetStackValue(CScriptContext* script_context, CExecStack& execstack,
 
         // -- if the ve belongs to a function, and is not a hash table or parameter array, we need
         // -- to find the stack address, as all local variable live on the stack
-        if (ve && ve->IsStackVariable(funccallstack))
+        if (ve && ve->IsStackVariable(funccallstack, ve_array_hash_index == 0))
         {
             valaddr = GetStackVarAddr(script_context, execstack, funccallstack, *ve, ve_array_hash_index);
         }
@@ -434,7 +434,7 @@ bool8 GetStackValue(CScriptContext* script_context, CExecStack& execstack,
 
     // -- if we weren't able to resolve the address for the actual value storage, then we'd better
     // -- have a valid stack variable
-    bool8 valid_result = valaddr != nullptr || (ve != nullptr && ve->IsStackVariable(funccallstack));
+    bool8 valid_result = valaddr != nullptr || (ve != nullptr && ve->IsStackVariable(funccallstack, false));
     return (valid_result);
 }
 
@@ -520,7 +520,7 @@ bool8 GetStackArrayVarAddr(CScriptContext* script_context, CExecStack& execstack
     // -- push the variable onto the stack
     // -- if the variable is a stack parameter, we need to push it's value from the stack
     valtype = ve->GetType();
-    if (ve->IsStackVariable(funccallstack))
+    if (ve->IsStackVariable(funccallstack, arrayvarhash == 0))
     {
         valaddr = GetStackVarAddr(script_context, execstack, funccallstack, *ve, arrayvarhash);
     }
@@ -715,7 +715,8 @@ bool8 PerformAssignOp(CScriptContext* script_context, CExecStack& execstack, CFu
         return (false);
 
     // -- if the variable is a local variable, we also have the actual address already
-    use_var_addr = use_var_addr || (ve0 && ve0->IsStackVariable(funccallstack));
+    // $$$TZA FIXME!
+    use_var_addr = use_var_addr || (ve0 && ve0->IsStackVariable(funccallstack, false));
 
     // -- ensure we're assigning to a variable, an object member, or a local stack variable
     if (!ve0 && !use_var_addr)
@@ -1602,9 +1603,10 @@ bool8 OpExecPushArrayValue(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, 
 
     // -- push the variable onto the stack
     // -- if the variable is a stack parameter, we need to push it's value from the stack
+    // $$$TZA FIXME arrays of hashtables?
     eVarType vetype = ve->GetType();
     void* veaddr = NULL;
-    if (ve->IsStackVariable(funccallstack))
+    if (ve->IsStackVariable(funccallstack, false))
     {
         veaddr = GetStackVarAddr(cb->GetScriptContext(), execstack, funccallstack, *ve, arrayvarhash);
     }

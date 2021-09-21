@@ -214,7 +214,7 @@ public:
         return (mIsParameter);
     }
 
-    bool8 IsStackVariable(CFunctionCallStack& funccallstack) const;
+    bool8 IsStackVariable(CFunctionCallStack& funccallstack, bool allow_indexed_var = false) const;
 
     void SetValue(void* objaddr, void* value, CExecStack* execstack = NULL, CFunctionCallStack* funccallstack = NULL,
                   int32 array_index = 0);

@@ -302,7 +302,7 @@ void CVariableEntry::InitializeArrayParameter(CVariableEntry* assign_from_ve, CO
 
     // -- the address is the usual complication, based on object member, dynamic var, global, registered, ...
     void* valueaddr = NULL;
-    if (assign_from_ve->IsStackVariable(funccallstack))
+    if (assign_from_ve->IsStackVariable(funccallstack, false))
     {
         valueaddr = GetStackVarAddr(GetScriptContext(), execstack, funccallstack, assign_from_ve->GetStackOffset());
         if (mStringHashArray != NULL)
@@ -320,15 +320,19 @@ void CVariableEntry::InitializeArrayParameter(CVariableEntry* assign_from_ve, CO
 // ====================================================================================================================
 // IsStackVariable():  Returns true if this variable is to use space on the stack as it's function is executing.
 // ====================================================================================================================
-bool8 CVariableEntry::IsStackVariable(CFunctionCallStack& funccallstack) const
+bool8 CVariableEntry::IsStackVariable(CFunctionCallStack& funccallstack, bool allow_indexed_var) const
 {
     int32 stackoffset = 0;
     CObjectEntry* oe = NULL;
     CFunctionEntry* fe_executing = funccallstack.GetExecuting(oe, stackoffset);
     CFunctionEntry* fe_top = funccallstack.GetTop(oe, stackoffset);
-    return (((fe_executing && fe_executing == GetFunctionEntry()) || (IsParameter() && fe_top &&
-                                                                      fe_top == GetFunctionEntry())) &&
-            GetType() != TYPE_hashtable && mStackOffset >= 0 && (!IsArray() || !IsParameter()));
+
+    bool belongs_to_executing_function = (fe_executing && fe_executing == GetFunctionEntry());
+    bool is_top_function = fe_top && fe_top == GetFunctionEntry();
+    bool var_allowed = allow_indexed_var || (GetType() != TYPE_hashtable && !IsArray());
+
+    return (belongs_to_executing_function || (IsParameter() && is_top_function)) &&
+            var_allowed && mStackOffset >= 0;
 }
 
 // ====================================================================================================================
