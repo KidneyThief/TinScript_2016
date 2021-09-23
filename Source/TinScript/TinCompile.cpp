@@ -3773,9 +3773,26 @@ bool8 GetDebugCodeBlock()
 }
 
 // ====================================================================================================================
+// SetDebugForceCompile():  Registered function to force a compile on executed scripts, ignoring the .tso.
+// ====================================================================================================================
+void SetDebugForceCompile(bool8 torf)
+{
+    CScriptContext::gDebugForceCompile = torf;
+}
+
+// ====================================================================================================================
+// GetDebugForceCompile():  Returns true if we're forcing compilation of executed scripts.
+// ====================================================================================================================
+bool8 GetDebugForceCompile()
+{
+    return (CScriptContext::gDebugForceCompile);
+}
+
+// ====================================================================================================================
 // -- function registration
 
 REGISTER_FUNCTION_P1(SetDebugCodeBlock, SetDebugCodeBlock, void, bool8);
+REGISTER_FUNCTION(SetDebugForceCompile, SetDebugForceCompile);
 
 } // TinScript
 

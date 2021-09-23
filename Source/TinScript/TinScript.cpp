@@ -63,6 +63,7 @@ static const char* gStringTableFileName = "stringtable.txt";
 bool8 CScriptContext::gDebugParseTree = false;
 bool8 CScriptContext::gDebugCodeBlock = false;
 bool8 CScriptContext::gDebugTrace = false;
+bool8 CScriptContext::gDebugForceCompile = false;
 
 const char* CScriptContext::kGlobalNamespace = "_global";
 uint32 CScriptContext::kGlobalNamespaceHash = Hash(CScriptContext::kGlobalNamespace);
@@ -848,14 +849,24 @@ bool8 NeedToCompile(const char* filename, const char* binfilename)
     else
     {
 
-    // -- if we don't need to compile, then if we're forcing compilation anyways,
-    // -- we only force it on files that aren't already loaded
+        // -- if we don't need to compile, then if we're forcing compilation anyways,
+        // -- we only force it on files that aren't already loaded
+        // note:  this can be set dynamically as well, or forced on via the compiler define
+        bool force_compile = GetDebugForceCompile();
 #if FORCE_COMPILE
-        uint32 filename_hash = Hash(filename, -1, false);
-        CCodeBlock* already_executed = GetContext()->GetCodeBlockList()->FindItem(filename_hash);
-        return (!already_executed);
+        force_compile = true;
 #endif
-        return false;
+
+        if (force_compile)
+        {
+            uint32 filename_hash = Hash(filename, -1, false);
+            CCodeBlock* already_executed = GetContext()->GetCodeBlockList()->FindItem(filename_hash);
+            return (!already_executed);
+        }
+        else
+        {
+            return false;
+        }
     }
 }
 

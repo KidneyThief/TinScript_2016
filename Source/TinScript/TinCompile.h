@@ -1149,6 +1149,9 @@ class CCodeBlock
 void SetDebugCodeBlock(bool torf);
 bool GetDebugCodeBlock();
 
+void SetDebugForceCompile(bool torf);
+bool GetDebugForceCompile();
+
 }  // TinScript
 
 #endif // __TINCOMPILE_H

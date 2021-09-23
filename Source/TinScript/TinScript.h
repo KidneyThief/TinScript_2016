@@ -537,6 +537,7 @@ class CScriptContext
         static bool8 gDebugParseTree;
         static bool8 gDebugCodeBlock;
         static bool8 gDebugTrace;
+        static bool8 gDebugForceCompile;
 
         // -- Thread commands are only supported in WIN32
         #ifdef WIN32
