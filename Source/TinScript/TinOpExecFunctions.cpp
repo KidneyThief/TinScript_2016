@@ -285,6 +285,7 @@ bool8 GetStackValue(CScriptContext* script_context, CExecStack& execstack,
         uint32 val1hash = ((uint32*)valaddr)[2];
 
         // -- one more level of dereference for variables that are actually hashtables or arrays
+        bool val_is_hash_index = (valtype == TYPE__hashvarindex);
         int32 ve_array_hash_index = (valtype == TYPE__hashvarindex) ? ((int32*)valaddr)[3] : 0;
 
         // -- this method will return the object, if the 4x parameters resolve to an object member
@@ -308,7 +309,7 @@ bool8 GetStackValue(CScriptContext* script_context, CExecStack& execstack,
 
         // -- if the ve belongs to a function, and is not a hash table or parameter array, we need
         // -- to find the stack address, as all local variable live on the stack
-        if (ve && ve->IsStackVariable(funccallstack, ve_array_hash_index == 0))
+        if (ve && ve->IsStackVariable(funccallstack, !val_is_hash_index))
         {
             valaddr = GetStackVarAddr(script_context, execstack, funccallstack, *ve, ve_array_hash_index);
         }
