@@ -28,8 +28,15 @@
     static ::TinScript::CRegisterFunction<gArgCount_##name, decltype(funcptr)> gReg_##name(#name, funcptr);
 
 #define REGISTER_METHOD(classname, name, methodptr) \
-static const int gArgCount_classname##_##name = ::TinScript::SignatureArgCount<decltype(std::declval<classname>().methodptr)>::arg_count; \
-static ::TinScript::CRegisterMethod<gArgCount_classname##_##name, classname, decltype(std::declval<classname>().methodptr)> gReg_##classname##_##name(#name, &classname::methodptr);
+    static const int gArgCount_classname##_##name = ::TinScript::SignatureArgCount<decltype(std::declval<classname>().methodptr)>::arg_count; \
+    static ::TinScript::CRegisterMethod<gArgCount_classname##_##name, classname, decltype(std::declval<classname>().methodptr)> gReg_##classname##_##name(#name, &classname::methodptr);
+
+// -- needed for static class methods
+#define REGISTER_CLASS_FUNCTION(classname, name, methodptr) \
+    static const int gArgCount_classname##_##name = ::TinScript::SignatureArgCount<decltype(std::declval<classname>().methodptr)>::arg_count;   \
+    static ::TinScript::CRegisterFunction<gArgCount_classname##_##name, decltype(std::declval<classname>().methodptr)> gReg_##classname##_##name(#name, &classname::methodptr);
+
+// ------------------------------------------------------------------------------------------------
 
 template<typename S>
 class SignatureArgCount;

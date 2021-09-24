@@ -21,6 +21,7 @@
 
 // -- system includes
 #include <cstdlib>
+#include <functional>
 
 // -- includes
 #include "mathutil.h"
@@ -53,7 +54,7 @@ void CVector3f::Set(float32 _x, float32 _y, float32 _z)
 // ====================================================================================================================
 float32 CVector3f::Length()
 {
-    float32 length = (float32)sqrt(x*x + y*y + z*z);
+    float32 length = (float32)sqrt(float32(x*x + y*y + z*z));
     return (length);
 }
 
@@ -170,22 +171,20 @@ IMPLEMENT_SCRIPT_CLASS_BEGIN(CVector3f, VOID)
     REGISTER_MEMBER(CVector3f, z, z);
 IMPLEMENT_SCRIPT_CLASS_END()
 
-
-REGISTER_METHOD_P3(CVector3f, Set, Set, void, float32, float32, float32);
-//REGISTER_METHOD_P0(CVector3f, Length, Length, float32);
+REGISTER_METHOD(CVector3f, Set, Set);
 REGISTER_METHOD(CVector3f, Length, Length);
-REGISTER_METHOD_P0(CVector3f, Normalize, Normalize, float32);
+REGISTER_METHOD(CVector3f, Normalize, Normalize);
 
-REGISTER_FUNCTION_P3(ObjCross, TS_Cross, bool8, CVector3f*, CVector3f*, CVector3f*);
-REGISTER_FUNCTION_P2(ObjDot, TS_Dot, float32, CVector3f*, CVector3f*);
-REGISTER_FUNCTION_P2(ObjNormalized, TS_Normalized, float32, CVector3f*, CVector3f*);
+REGISTER_FUNCTION(ObjCross, TS_Cross);
+REGISTER_FUNCTION(ObjDot, TS_Dot);
+REGISTER_FUNCTION(ObjNormalized, TS_Normalized);
 
 // --------------------------------------------------------------------------------------------------------------------
 // -- Re-registered using the registered type, instead of having to find an object
-REGISTER_FUNCTION_P1(V3fLength, CVector3f::V3fLength, float32, CVector3f);
-REGISTER_FUNCTION_P2(V3fCross, CVector3f::Cross, CVector3f, CVector3f, CVector3f);
-REGISTER_FUNCTION_P2(V3fDot, CVector3f::Dot, float32, CVector3f, CVector3f);
-REGISTER_FUNCTION_P1(V3fNormalized, CVector3f::Normalized, CVector3f, CVector3f);
+REGISTER_CLASS_FUNCTION(CVector3f, V3fLength, V3fLength);
+REGISTER_CLASS_FUNCTION(CVector3f, V3fCross, Cross);
+REGISTER_CLASS_FUNCTION(CVector3f, V3fDot, Dot);
+REGISTER_CLASS_FUNCTION(CVector3f, V3fNormalized, Normalized);
 
 // ====================================================================================================================
 // Random Numbers
@@ -213,9 +212,9 @@ int32 RandomInt(int32 exclusiveMax)
     return (result);
 }
 
-REGISTER_FUNCTION_P0(Random, Random, float32);
-REGISTER_FUNCTION_P2(RandomRange, RandomRange, float32, float32, float32);
-REGISTER_FUNCTION_P1(RandomInt, RandomInt, int32, int32);
+REGISTER_FUNCTION(Random, Random);
+REGISTER_FUNCTION(RandomRange, RandomRange);
+REGISTER_FUNCTION(RandomInt, RandomInt);
 
 // ====================================================================================================================
 // Trigonometry
@@ -240,9 +239,9 @@ float32 Atan2(float32 y, float32 x)
     return (angle);
 }
 
-REGISTER_FUNCTION_P1(Cos, Cos, float32, float32);
-REGISTER_FUNCTION_P1(Sin, Sin, float32, float32);
-REGISTER_FUNCTION_P2(Atan2, Atan2, float32, float32, float32);
+REGISTER_FUNCTION(Cos, Cos);
+REGISTER_FUNCTION(Sin, Sin);
+REGISTER_FUNCTION(Atan2, Atan2);
 
 // ====================================================================================================================
 // EOF
