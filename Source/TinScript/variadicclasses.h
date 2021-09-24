@@ -28,12 +28,12 @@
     static ::TinScript::CRegisterFunction<gArgCount_##name, decltype(funcptr)> gReg_##name(#name, funcptr);
 
 #define REGISTER_METHOD(classname, name, methodptr) \
-    static const int gArgCount_classname##_##name = ::TinScript::SignatureArgCount<decltype(std::declval<classname>().methodptr)>::arg_count; \
-    static ::TinScript::CRegisterMethod<gArgCount_classname##_##name, classname, decltype(std::declval<classname>().methodptr)> gReg_##classname##_##name(#name, &classname::methodptr);
+    static const int gArgCount_##classname##_##name = ::TinScript::SignatureArgCount<decltype(std::declval<classname>().methodptr)>::arg_count; \
+    static ::TinScript::CRegisterMethod<gArgCount_##classname##_##name, classname, decltype(std::declval<classname>().methodptr)> gReg_##classname##_##name(#name, &classname::methodptr);
 
 #define REGISTER_CLASS_FUNCTION(classname, name, methodptr) \
-    static const int gArgCount_classname##_##name = ::TinScript::SignatureArgCount<decltype(std::declval<classname>().methodptr)>::arg_count; \
-    static ::TinScript::CRegisterFunction<gArgCount_classname##_##name, decltype(std::declval<classname>().methodptr)> gReg_##classname##_##name(#name, &classname::methodptr); \
+    static const int gArgCount_##classname##_##name = ::TinScript::SignatureArgCount<decltype(std::declval<classname>().methodptr)>::arg_count; \
+    static ::TinScript::CRegisterFunction<gArgCount_##classname##_##name, decltype(std::declval<classname>().methodptr)> gReg_##classname##_##name(#name, &classname::methodptr); \
 
 template<typename S>
 class SignatureArgCount;
@@ -700,7 +700,7 @@ public:
         using T2 = std::tuple_element<1, argument_types>::type;
 
         T1* p1 = (T1*)_p1;
-        T2* p2 = (T1*)_p2;
+        T2* p2 = (T2*)_p2;
 
         C* object = (C*)(objaddr);
         R r = (object->*methodptr)(*p1, *p2);
@@ -772,7 +772,7 @@ public:
         using T2 = std::tuple_element<1, argument_types>::type;
 
         T1* p1 = (T1*)_p1;
-        T2* p2 = (T1*)_p2;
+        T2* p2 = (T2*)_p2;
 
         C* object = (C*)(objaddr);
         (object->*methodptr)(*p1, *p2);
@@ -1000,8 +1000,8 @@ public:
         using T3 = std::tuple_element<2, argument_types>::type;
 
         T1* p1 = (T1*)_p1;
-        T2* p2 = (T1*)_p2;
-        T3* p3 = (T1*)_p3;
+        T2* p2 = (T2*)_p2;
+        T3* p3 = (T3*)_p3;
 
         C* object = (C*)(objaddr);
         R r = (object->*methodptr)(*p1, *p2, *p3);
@@ -1079,8 +1079,8 @@ public:
         using T3 = std::tuple_element<2, argument_types>::type;
 
         T1* p1 = (T1*)_p1;
-        T2* p2 = (T1*)_p2;
-        T3* p3 = (T1*)_p3;
+        T2* p2 = (T2*)_p2;
+        T3* p3 = (T3*)_p3;
 
         C* object = (C*)(objaddr);
         (object->*methodptr)(*p1, *p2, *p3);
@@ -1328,9 +1328,9 @@ public:
         using T4 = std::tuple_element<3, argument_types>::type;
 
         T1* p1 = (T1*)_p1;
-        T2* p2 = (T1*)_p2;
-        T3* p3 = (T1*)_p3;
-        T4* p4 = (T1*)_p4;
+        T2* p2 = (T2*)_p2;
+        T3* p3 = (T3*)_p3;
+        T4* p4 = (T4*)_p4;
 
         C* object = (C*)(objaddr);
         R r = (object->*methodptr)(*p1, *p2, *p3, *p4);
@@ -1414,9 +1414,9 @@ public:
         using T4 = std::tuple_element<3, argument_types>::type;
 
         T1* p1 = (T1*)_p1;
-        T2* p2 = (T1*)_p2;
-        T3* p3 = (T1*)_p3;
-        T4* p4 = (T1*)_p4;
+        T2* p2 = (T2*)_p2;
+        T3* p3 = (T3*)_p3;
+        T4* p4 = (T4*)_p4;
 
         C* object = (C*)(objaddr);
         (object->*methodptr)(*p1, *p2, *p3, *p4);
@@ -1684,10 +1684,10 @@ public:
         using T5 = std::tuple_element<4, argument_types>::type;
 
         T1* p1 = (T1*)_p1;
-        T2* p2 = (T1*)_p2;
-        T3* p3 = (T1*)_p3;
-        T4* p4 = (T1*)_p4;
-        T5* p5 = (T1*)_p5;
+        T2* p2 = (T2*)_p2;
+        T3* p3 = (T3*)_p3;
+        T4* p4 = (T4*)_p4;
+        T5* p5 = (T5*)_p5;
 
         C* object = (C*)(objaddr);
         R r = (object->*methodptr)(*p1, *p2, *p3, *p4, *p5);
@@ -1777,10 +1777,10 @@ public:
         using T5 = std::tuple_element<4, argument_types>::type;
 
         T1* p1 = (T1*)_p1;
-        T2* p2 = (T1*)_p2;
-        T3* p3 = (T1*)_p3;
-        T4* p4 = (T1*)_p4;
-        T5* p5 = (T1*)_p5;
+        T2* p2 = (T2*)_p2;
+        T3* p3 = (T3*)_p3;
+        T4* p4 = (T4*)_p4;
+        T5* p5 = (T5*)_p5;
 
         C* object = (C*)(objaddr);
         (object->*methodptr)(*p1, *p2, *p3, *p4, *p5);
@@ -2068,11 +2068,11 @@ public:
         using T6 = std::tuple_element<5, argument_types>::type;
 
         T1* p1 = (T1*)_p1;
-        T2* p2 = (T1*)_p2;
-        T3* p3 = (T1*)_p3;
-        T4* p4 = (T1*)_p4;
-        T5* p5 = (T1*)_p5;
-        T6* p6 = (T1*)_p6;
+        T2* p2 = (T2*)_p2;
+        T3* p3 = (T3*)_p3;
+        T4* p4 = (T4*)_p4;
+        T5* p5 = (T5*)_p5;
+        T6* p6 = (T6*)_p6;
 
         C* object = (C*)(objaddr);
         R r = (object->*methodptr)(*p1, *p2, *p3, *p4, *p5, *p6);
@@ -2168,11 +2168,11 @@ public:
         using T6 = std::tuple_element<5, argument_types>::type;
 
         T1* p1 = (T1*)_p1;
-        T2* p2 = (T1*)_p2;
-        T3* p3 = (T1*)_p3;
-        T4* p4 = (T1*)_p4;
-        T5* p5 = (T1*)_p5;
-        T6* p6 = (T1*)_p6;
+        T2* p2 = (T2*)_p2;
+        T3* p3 = (T3*)_p3;
+        T4* p4 = (T4*)_p4;
+        T5* p5 = (T5*)_p5;
+        T6* p6 = (T6*)_p6;
 
         C* object = (C*)(objaddr);
         (object->*methodptr)(*p1, *p2, *p3, *p4, *p5, *p6);
@@ -2480,12 +2480,12 @@ public:
         using T7 = std::tuple_element<6, argument_types>::type;
 
         T1* p1 = (T1*)_p1;
-        T2* p2 = (T1*)_p2;
-        T3* p3 = (T1*)_p3;
-        T4* p4 = (T1*)_p4;
-        T5* p5 = (T1*)_p5;
-        T6* p6 = (T1*)_p6;
-        T7* p7 = (T1*)_p7;
+        T2* p2 = (T2*)_p2;
+        T3* p3 = (T3*)_p3;
+        T4* p4 = (T4*)_p4;
+        T5* p5 = (T5*)_p5;
+        T6* p6 = (T6*)_p6;
+        T7* p7 = (T7*)_p7;
 
         C* object = (C*)(objaddr);
         R r = (object->*methodptr)(*p1, *p2, *p3, *p4, *p5, *p6, *p7);
@@ -2587,12 +2587,12 @@ public:
         using T7 = std::tuple_element<6, argument_types>::type;
 
         T1* p1 = (T1*)_p1;
-        T2* p2 = (T1*)_p2;
-        T3* p3 = (T1*)_p3;
-        T4* p4 = (T1*)_p4;
-        T5* p5 = (T1*)_p5;
-        T6* p6 = (T1*)_p6;
-        T7* p7 = (T1*)_p7;
+        T2* p2 = (T2*)_p2;
+        T3* p3 = (T3*)_p3;
+        T4* p4 = (T4*)_p4;
+        T5* p5 = (T5*)_p5;
+        T6* p6 = (T6*)_p6;
+        T7* p7 = (T7*)_p7;
 
         C* object = (C*)(objaddr);
         (object->*methodptr)(*p1, *p2, *p3, *p4, *p5, *p6, *p7);
@@ -2920,13 +2920,13 @@ public:
         using T8 = std::tuple_element<7, argument_types>::type;
 
         T1* p1 = (T1*)_p1;
-        T2* p2 = (T1*)_p2;
-        T3* p3 = (T1*)_p3;
-        T4* p4 = (T1*)_p4;
-        T5* p5 = (T1*)_p5;
-        T6* p6 = (T1*)_p6;
-        T7* p7 = (T1*)_p7;
-        T8* p8 = (T1*)_p8;
+        T2* p2 = (T2*)_p2;
+        T3* p3 = (T3*)_p3;
+        T4* p4 = (T4*)_p4;
+        T5* p5 = (T5*)_p5;
+        T6* p6 = (T6*)_p6;
+        T7* p7 = (T7*)_p7;
+        T8* p8 = (T8*)_p8;
 
         C* object = (C*)(objaddr);
         R r = (object->*methodptr)(*p1, *p2, *p3, *p4, *p5, *p6, *p7, *p8);
@@ -3034,13 +3034,13 @@ public:
         using T8 = std::tuple_element<7, argument_types>::type;
 
         T1* p1 = (T1*)_p1;
-        T2* p2 = (T1*)_p2;
-        T3* p3 = (T1*)_p3;
-        T4* p4 = (T1*)_p4;
-        T5* p5 = (T1*)_p5;
-        T6* p6 = (T1*)_p6;
-        T7* p7 = (T1*)_p7;
-        T8* p8 = (T1*)_p8;
+        T2* p2 = (T2*)_p2;
+        T3* p3 = (T3*)_p3;
+        T4* p4 = (T4*)_p4;
+        T5* p5 = (T5*)_p5;
+        T6* p6 = (T6*)_p6;
+        T7* p7 = (T7*)_p7;
+        T8* p8 = (T8*)_p8;
 
         C* object = (C*)(objaddr);
         (object->*methodptr)(*p1, *p2, *p3, *p4, *p5, *p6, *p7, *p8);
@@ -3388,14 +3388,14 @@ public:
         using T9 = std::tuple_element<8, argument_types>::type;
 
         T1* p1 = (T1*)_p1;
-        T2* p2 = (T1*)_p2;
-        T3* p3 = (T1*)_p3;
-        T4* p4 = (T1*)_p4;
-        T5* p5 = (T1*)_p5;
-        T6* p6 = (T1*)_p6;
-        T7* p7 = (T1*)_p7;
-        T8* p8 = (T1*)_p8;
-        T9* p9 = (T1*)_p9;
+        T2* p2 = (T2*)_p2;
+        T3* p3 = (T3*)_p3;
+        T4* p4 = (T4*)_p4;
+        T5* p5 = (T5*)_p5;
+        T6* p6 = (T6*)_p6;
+        T7* p7 = (T7*)_p7;
+        T8* p8 = (T8*)_p8;
+        T9* p9 = (T9*)_p9;
 
         C* object = (C*)(objaddr);
         R r = (object->*methodptr)(*p1, *p2, *p3, *p4, *p5, *p6, *p7, *p8, *p9);
@@ -3509,14 +3509,14 @@ public:
         using T9 = std::tuple_element<8, argument_types>::type;
 
         T1* p1 = (T1*)_p1;
-        T2* p2 = (T1*)_p2;
-        T3* p3 = (T1*)_p3;
-        T4* p4 = (T1*)_p4;
-        T5* p5 = (T1*)_p5;
-        T6* p6 = (T1*)_p6;
-        T7* p7 = (T1*)_p7;
-        T8* p8 = (T1*)_p8;
-        T9* p9 = (T1*)_p9;
+        T2* p2 = (T2*)_p2;
+        T3* p3 = (T3*)_p3;
+        T4* p4 = (T4*)_p4;
+        T5* p5 = (T5*)_p5;
+        T6* p6 = (T6*)_p6;
+        T7* p7 = (T7*)_p7;
+        T8* p8 = (T8*)_p8;
+        T9* p9 = (T9*)_p9;
 
         C* object = (C*)(objaddr);
         (object->*methodptr)(*p1, *p2, *p3, *p4, *p5, *p6, *p7, *p8, *p9);
@@ -3884,15 +3884,15 @@ public:
         using T10 = std::tuple_element<9, argument_types>::type;
 
         T1* p1 = (T1*)_p1;
-        T2* p2 = (T1*)_p2;
-        T3* p3 = (T1*)_p3;
-        T4* p4 = (T1*)_p4;
-        T5* p5 = (T1*)_p5;
-        T6* p6 = (T1*)_p6;
-        T7* p7 = (T1*)_p7;
-        T8* p8 = (T1*)_p8;
-        T9* p9 = (T1*)_p9;
-        T10* p10 = (T1*)_p10;
+        T2* p2 = (T2*)_p2;
+        T3* p3 = (T3*)_p3;
+        T4* p4 = (T4*)_p4;
+        T5* p5 = (T5*)_p5;
+        T6* p6 = (T6*)_p6;
+        T7* p7 = (T7*)_p7;
+        T8* p8 = (T8*)_p8;
+        T9* p9 = (T9*)_p9;
+        T10* p10 = (T10*)_p10;
 
         C* object = (C*)(objaddr);
         R r = (object->*methodptr)(*p1, *p2, *p3, *p4, *p5, *p6, *p7, *p8, *p9, *p10);
@@ -4012,15 +4012,15 @@ public:
         using T10 = std::tuple_element<9, argument_types>::type;
 
         T1* p1 = (T1*)_p1;
-        T2* p2 = (T1*)_p2;
-        T3* p3 = (T1*)_p3;
-        T4* p4 = (T1*)_p4;
-        T5* p5 = (T1*)_p5;
-        T6* p6 = (T1*)_p6;
-        T7* p7 = (T1*)_p7;
-        T8* p8 = (T1*)_p8;
-        T9* p9 = (T1*)_p9;
-        T10* p10 = (T1*)_p10;
+        T2* p2 = (T2*)_p2;
+        T3* p3 = (T3*)_p3;
+        T4* p4 = (T4*)_p4;
+        T5* p5 = (T5*)_p5;
+        T6* p6 = (T6*)_p6;
+        T7* p7 = (T7*)_p7;
+        T8* p8 = (T8*)_p8;
+        T9* p9 = (T9*)_p9;
+        T10* p10 = (T10*)_p10;
 
         C* object = (C*)(objaddr);
         (object->*methodptr)(*p1, *p2, *p3, *p4, *p5, *p6, *p7, *p8, *p9, *p10);
@@ -4408,16 +4408,16 @@ public:
         using T11 = std::tuple_element<10, argument_types>::type;
 
         T1* p1 = (T1*)_p1;
-        T2* p2 = (T1*)_p2;
-        T3* p3 = (T1*)_p3;
-        T4* p4 = (T1*)_p4;
-        T5* p5 = (T1*)_p5;
-        T6* p6 = (T1*)_p6;
-        T7* p7 = (T1*)_p7;
-        T8* p8 = (T1*)_p8;
-        T9* p9 = (T1*)_p9;
-        T10* p10 = (T1*)_p10;
-        T11* p11 = (T1*)_p11;
+        T2* p2 = (T2*)_p2;
+        T3* p3 = (T3*)_p3;
+        T4* p4 = (T4*)_p4;
+        T5* p5 = (T5*)_p5;
+        T6* p6 = (T6*)_p6;
+        T7* p7 = (T7*)_p7;
+        T8* p8 = (T8*)_p8;
+        T9* p9 = (T9*)_p9;
+        T10* p10 = (T10*)_p10;
+        T11* p11 = (T11*)_p11;
 
         C* object = (C*)(objaddr);
         R r = (object->*methodptr)(*p1, *p2, *p3, *p4, *p5, *p6, *p7, *p8, *p9, *p10, *p11);
@@ -4543,16 +4543,16 @@ public:
         using T11 = std::tuple_element<10, argument_types>::type;
 
         T1* p1 = (T1*)_p1;
-        T2* p2 = (T1*)_p2;
-        T3* p3 = (T1*)_p3;
-        T4* p4 = (T1*)_p4;
-        T5* p5 = (T1*)_p5;
-        T6* p6 = (T1*)_p6;
-        T7* p7 = (T1*)_p7;
-        T8* p8 = (T1*)_p8;
-        T9* p9 = (T1*)_p9;
-        T10* p10 = (T1*)_p10;
-        T11* p11 = (T1*)_p11;
+        T2* p2 = (T2*)_p2;
+        T3* p3 = (T3*)_p3;
+        T4* p4 = (T4*)_p4;
+        T5* p5 = (T5*)_p5;
+        T6* p6 = (T6*)_p6;
+        T7* p7 = (T7*)_p7;
+        T8* p8 = (T8*)_p8;
+        T9* p9 = (T9*)_p9;
+        T10* p10 = (T10*)_p10;
+        T11* p11 = (T11*)_p11;
 
         C* object = (C*)(objaddr);
         (object->*methodptr)(*p1, *p2, *p3, *p4, *p5, *p6, *p7, *p8, *p9, *p10, *p11);
@@ -4960,17 +4960,17 @@ public:
         using T12 = std::tuple_element<11, argument_types>::type;
 
         T1* p1 = (T1*)_p1;
-        T2* p2 = (T1*)_p2;
-        T3* p3 = (T1*)_p3;
-        T4* p4 = (T1*)_p4;
-        T5* p5 = (T1*)_p5;
-        T6* p6 = (T1*)_p6;
-        T7* p7 = (T1*)_p7;
-        T8* p8 = (T1*)_p8;
-        T9* p9 = (T1*)_p9;
-        T10* p10 = (T1*)_p10;
-        T11* p11 = (T1*)_p11;
-        T12* p12 = (T1*)_p12;
+        T2* p2 = (T2*)_p2;
+        T3* p3 = (T3*)_p3;
+        T4* p4 = (T4*)_p4;
+        T5* p5 = (T5*)_p5;
+        T6* p6 = (T6*)_p6;
+        T7* p7 = (T7*)_p7;
+        T8* p8 = (T8*)_p8;
+        T9* p9 = (T9*)_p9;
+        T10* p10 = (T10*)_p10;
+        T11* p11 = (T11*)_p11;
+        T12* p12 = (T12*)_p12;
 
         C* object = (C*)(objaddr);
         R r = (object->*methodptr)(*p1, *p2, *p3, *p4, *p5, *p6, *p7, *p8, *p9, *p10, *p11, *p12);
@@ -5102,17 +5102,17 @@ public:
         using T12 = std::tuple_element<11, argument_types>::type;
 
         T1* p1 = (T1*)_p1;
-        T2* p2 = (T1*)_p2;
-        T3* p3 = (T1*)_p3;
-        T4* p4 = (T1*)_p4;
-        T5* p5 = (T1*)_p5;
-        T6* p6 = (T1*)_p6;
-        T7* p7 = (T1*)_p7;
-        T8* p8 = (T1*)_p8;
-        T9* p9 = (T1*)_p9;
-        T10* p10 = (T1*)_p10;
-        T11* p11 = (T1*)_p11;
-        T12* p12 = (T1*)_p12;
+        T2* p2 = (T2*)_p2;
+        T3* p3 = (T3*)_p3;
+        T4* p4 = (T4*)_p4;
+        T5* p5 = (T5*)_p5;
+        T6* p6 = (T6*)_p6;
+        T7* p7 = (T7*)_p7;
+        T8* p8 = (T8*)_p8;
+        T9* p9 = (T9*)_p9;
+        T10* p10 = (T10*)_p10;
+        T11* p11 = (T11*)_p11;
+        T12* p12 = (T12*)_p12;
 
         C* object = (C*)(objaddr);
         (object->*methodptr)(*p1, *p2, *p3, *p4, *p5, *p6, *p7, *p8, *p9, *p10, *p11, *p12);

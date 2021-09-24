@@ -616,13 +616,13 @@ def GenerateVariadicClasses(maxparamcount, outputfilename):
     outputfile.write("\n");
 
     outputfile.write('#define REGISTER_METHOD(classname, name, methodptr) \\\n');
-    outputfile.write('    static const int gArgCount_classname##_##name = ::TinScript::SignatureArgCount<decltype(std::declval<classname>().methodptr)>::arg_count; \\\n');
-    outputfile.write('    static ::TinScript::CRegisterMethod<gArgCount_classname##_##name, classname, decltype(std::declval<classname>().methodptr)> gReg_##classname##_##name(#name, &classname::methodptr);\n');
+    outputfile.write('    static const int gArgCount_##classname##_##name = ::TinScript::SignatureArgCount<decltype(std::declval<classname>().methodptr)>::arg_count; \\\n');
+    outputfile.write('    static ::TinScript::CRegisterMethod<gArgCount_##classname##_##name, classname, decltype(std::declval<classname>().methodptr)> gReg_##classname##_##name(#name, &classname::methodptr);\n');
     outputfile.write("\n");
 
     outputfile.write('#define REGISTER_CLASS_FUNCTION(classname, name, methodptr) \\\n');
-    outputfile.write('    static const int gArgCount_classname##_##name = ::TinScript::SignatureArgCount<decltype(std::declval<classname>().methodptr)>::arg_count; \\\n');
-    outputfile.write('    static ::TinScript::CRegisterFunction<gArgCount_classname##_##name, decltype(std::declval<classname>().methodptr)> gReg_##classname##_##name(#name, &classname::methodptr); \\\n');
+    outputfile.write('    static const int gArgCount_##classname##_##name = ::TinScript::SignatureArgCount<decltype(std::declval<classname>().methodptr)>::arg_count; \\\n');
+    outputfile.write('    static ::TinScript::CRegisterFunction<gArgCount_##classname##_##name, decltype(std::declval<classname>().methodptr)> gReg_##classname##_##name(#name, &classname::methodptr); \\\n');
     outputfile.write("\n");
 
     outputfile.write('template<typename S>\n');
@@ -995,7 +995,7 @@ def GenerateVariadicClasses(maxparamcount, outputfilename):
 
         i = 1;
         while (i <= paramcount):
-            outputfile.write("        T%d* p%d = (T1*)_p%d;\n" % (i, i, i));
+            outputfile.write("        T%d* p%d = (T%d*)_p%d;\n" % (i, i, i, i));
             i = i + 1;
         if (paramcount > 0):
             outputfile.write("\n");
@@ -1124,7 +1124,7 @@ def GenerateVariadicClasses(maxparamcount, outputfilename):
 
         i = 1;
         while (i <= paramcount):
-            outputfile.write("        T%d* p%d = (T1*)_p%d;\n" % (i, i, i));
+            outputfile.write("        T%d* p%d = (T%d*)_p%d;\n" % (i, i, i, i));
             i = i + 1;
         outputfile.write("\n");
 
