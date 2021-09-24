@@ -482,9 +482,9 @@ void CMemoryTracker::FindObject(uint32 object_id)
 
 // == Function Registration ===========================================================================================
 
-REGISTER_FUNCTION_P0(MemoryDumpTotals, CMemoryTracker::DumpTotals, void);
-REGISTER_FUNCTION_P0(MemoryDumpObjects, CMemoryTracker::DumpObjects, void);
-REGISTER_FUNCTION_P1(MemoryFindObject, CMemoryTracker::FindObject, void, uint32);
+REGISTER_CLASS_FUNCTION(CMemoryTracker, MemoryDumpTotals, DumpTotals);
+REGISTER_CLASS_FUNCTION(CMemoryTracker, MemoryDumpObjects, DumpObjects);
+REGISTER_CLASS_FUNCTION(CMemoryTracker, MemoryFindObject, FindObject);
 
 }
 

@@ -448,7 +448,7 @@ IMPLEMENT_SCRIPT_CLASS_BEGIN(CWeapon, VOID)
     REGISTER_MEMBER(CWeapon, readytofire, readytofire);
 IMPLEMENT_SCRIPT_CLASS_END()
 
-REGISTER_FUNCTION_P0(UpdateWeaponList, CWeapon::UpdateWeaponList, void);
+REGISTER_CLASS_FUNCTION(CWeapon, UpdateWeaponList, UpdateWeaponList);
 
 bool8 AddUnitTest(const char* name, const char* description, const char* script_command, const char* script_result,
                   CUnitTest::UnitTestFunc code_test = NULL, const char* code_result = NULL, bool execute_code_last = false)

@@ -5451,7 +5451,7 @@ bool8 GetDebugParseTree() {
     return TinScript::gDebugParseTree;
 }
 
-REGISTER_FUNCTION_P1(SetDebugParseTree, SetDebugParseTree, void, bool8);
+REGISTER_FUNCTION(SetDebugParseTree, SetDebugParseTree);
 
 // ====================================================================================================================
 // eof

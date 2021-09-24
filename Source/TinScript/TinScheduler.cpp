@@ -448,20 +448,6 @@ CScheduler::CCommand* CScheduler::RemoteScheduleCreate(uint32 funchash)
 
 } // TinScript
 
-// ------------------------------------------------------------------------------------------------
-// script registered interface
-
-// $$$TZA schedule is a keyword within the language...  these external functions either need
-// -- to be converted to methods from an (CScriptContext*) object
-/*
-REGISTER_FUNCTION_P3(Schedule, TinScript::CScheduler::Schedule, int32, uint32, int32, const char*);
-REGISTER_FUNCTION_P4(ScheduleThread, TinScript::CScheduler::Thread, int32, int32, uint32, int32, const char*);
-
-REGISTER_FUNCTION_P1(ScheduleCancelObject, TinScript::CScheduler::CancelObject, void, uint32);
-REGISTER_FUNCTION_P1(ScheduleCancelRequest, TinScript::CScheduler::CancelRequest, void, int32);
-REGISTER_FUNCTION_P0(ListSchedules, TinScript::CScheduler::Dump, void);
-*/
-
 // ====================================================================================================================
 // EOF
 // ====================================================================================================================

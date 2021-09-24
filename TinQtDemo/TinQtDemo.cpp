@@ -658,9 +658,9 @@ bool8 KeyReleasedSinceTime(int32 key_code, int32 update_time)
     return (gCanvas->KeyReleasedSinceTime(key_code, update_time));
 }
 
-REGISTER_FUNCTION_P1(IsKeyPressed, IsKeyPressed, bool8, int32);
-REGISTER_FUNCTION_P2(KeyPressedSinceTime, KeyPressedSinceTime, bool8, int32, int32);
-REGISTER_FUNCTION_P2(KeyReleasedSinceTime, KeyReleasedSinceTime, bool8, int32, int32);
+REGISTER_FUNCTION(IsKeyPressed, IsKeyPressed);
+REGISTER_FUNCTION(KeyPressedSinceTime, KeyPressedSinceTime);
+REGISTER_FUNCTION(KeyReleasedSinceTime, KeyReleasedSinceTime);
 
 // --------------------------------------------------------------------------------------------------------------------
 #include "TinQtDemoMoc.cpp"

@@ -2239,50 +2239,50 @@ static int32 ToolPaletteAddCheckBox(const char* win_name, const char* name, cons
 }
 
 // ====================================================================================================================
-// ToolPaletteSetDescription():  Given a DebugEntry name, update the name.
+// ToolPaletteSetDescriptionByName():  Given a DebugEntry name, update the name.
 // ====================================================================================================================
-static void ToolPaletteSetDescription(const char* entry_name, const char* new_description)
+static void ToolPaletteSetDescriptionByName(const char* entry_name, const char* new_description)
 {
     CDebugToolsWin::SetEntryDescription(entry_name, new_description);
 }
 
 // ====================================================================================================================
-// ToolPaletteSetDescription():  Given a DebugEntry ID, update the name.
+// ToolPaletteSetDescriptionByID():  Given a DebugEntry ID, update the name.
 // ====================================================================================================================
-static void ToolPaletteSetDescription(int32 entry_id, const char* new_description)
+static void ToolPaletteSetDescriptionByID(int32 entry_id, const char* new_description)
 {
     CDebugToolsWin::SetEntryDescription(entry_id, new_description);
 }
 
 // ====================================================================================================================
-// ToolPaletteSetValue():  Given a DebugEntry name, update the value.
+// ToolPaletteSetValueByName():  Given a DebugEntry name, update the value.
 // ====================================================================================================================
-static void ToolPaletteSetValue(const char* entry_name, const char* new_value)
+static void ToolPaletteSetValueByName(const char* entry_name, const char* new_value)
 {
     CDebugToolsWin::SetEntryValue(entry_name, new_value);
 }
 
 // ====================================================================================================================
-// ToolPaletteSetValue():  Given a DebugEntry ID, update the value.
+// ToolPaletteSetValueByID():  Given a DebugEntry ID, update the value.
 // ====================================================================================================================
-static void ToolPaletteSetValue(int32 entry_id, const char* new_value)
+static void ToolPaletteSetValueByID(int32 entry_id, const char* new_value)
 {
     CDebugToolsWin::SetEntryValue(entry_id, new_value);
 }
 
 // == ToolPalette Registration ========================================================================================
 
-REGISTER_FUNCTION_P1(ToolPaletteClear, ToolPaletteClear, void, const char*);
-REGISTER_FUNCTION_P2(ToolPaletteAddMessage, ToolPaletteAddMessage, int32, const char*, const char*);
-REGISTER_FUNCTION_P5(ToolPaletteAddButton, ToolPaletteAddButton, int32, const char*, const char*, const char*, const char*, const char*);
-REGISTER_FUNCTION_P7(ToolPaletteAddSlider, ToolPaletteAddSlider, int32, const char*, const char*, const char*, int32, int32, int32, const char*);
-REGISTER_FUNCTION_P5(ToolPaletteAddTextEdit, ToolPaletteAddTextEdit, int32, const char*, const char*, const char*, const char*, const char*);
-REGISTER_FUNCTION_P5(ToolPaletteAddCheckBox, ToolPaletteAddCheckBox, int32, const char*, const char*, const char*, bool8, const char*);
+REGISTER_FUNCTION(ToolPaletteClear, ToolPaletteClear);
+REGISTER_FUNCTION(ToolPaletteAddMessage, ToolPaletteAddMessage);
+REGISTER_FUNCTION(ToolPaletteAddButton, ToolPaletteAddButton);
+REGISTER_FUNCTION(ToolPaletteAddSlider, ToolPaletteAddSlider);
+REGISTER_FUNCTION(ToolPaletteAddTextEdit, ToolPaletteAddTextEdit);
+REGISTER_FUNCTION(ToolPaletteAddCheckBox, ToolPaletteAddCheckBox);
 
-REGISTER_FUNCTION_P2(ToolPaletteSetEntryDescription, ToolPaletteSetDescription, void, const char*, const char*);
-REGISTER_FUNCTION_P2(ToolPaletteSetDescription, ToolPaletteSetDescription, void, int32, const char*);
-REGISTER_FUNCTION_P2(ToolPaletteSetEntryValue, ToolPaletteSetValue, void, const char*, const char*);
-REGISTER_FUNCTION_P2(ToolPaletteSetValue, ToolPaletteSetValue, void, int32, const char*);
+REGISTER_FUNCTION(ToolPaletteSetEntryDescription, ToolPaletteSetDescriptionByName);
+REGISTER_FUNCTION(ToolPaletteSetDescription, ToolPaletteSetDescriptionByID);
+REGISTER_FUNCTION(ToolPaletteSetEntryValue, ToolPaletteSetValueByName);
+REGISTER_FUNCTION(ToolPaletteSetValue, ToolPaletteSetValueByID);
 
 // ====================================================================================================================
 // DebuggerClearObjectBrowser():  Method to clear the ObjectBrowser

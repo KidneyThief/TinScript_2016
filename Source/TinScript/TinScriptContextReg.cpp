@@ -361,30 +361,30 @@ void ContextScheduleCancelObject(uint32 objectid)
 
 // -- these methods all wrap some call to a member of ScriptContext
 // -- we want to execute the context created by the thread, in which this function is being called
-REGISTER_FUNCTION_P1(PrintObject, ContextPrintObject, void, uint32);
-REGISTER_FUNCTION_P1(DebugBreak, ContextDebugBreak, void, const char*);
-REGISTER_FUNCTION_P0(ListObjects, ContextListObjects, void);
-REGISTER_FUNCTION_P1(IsObject, ContextIsObject, bool8, uint32);
-REGISTER_FUNCTION_P1(FindObject, ContextFindObjectByName, uint32, const char*);
-REGISTER_FUNCTION_P2(ObjectHasNamespace, ContextObjectIsDerivedFrom, bool8, uint32, const char*);
-REGISTER_FUNCTION_P2(ObjectHasMethod, ContextObjectHasMethod, bool8, uint32, const char*);
-REGISTER_FUNCTION_P2(LinkNamespaces, ContextLinkNamespaces, void, const char*, const char*);
-REGISTER_FUNCTION_P1(ListVariables, ContextListVariables, void, const char*);
-REGISTER_FUNCTION_P1(IsVariable, ContextIsVariable, bool8, const char*);
-REGISTER_FUNCTION_P1(ListFunctions, ContextListFunctions, void, const char*);
-REGISTER_FUNCTION_P1(IsFunction, ContextIsFunction, bool8, const char*);
-REGISTER_FUNCTION_P1(ListNamespaces, ContextListNamespaces, void, const char*);
-REGISTER_FUNCTION_P1(IsNamespace, ContextIsNamespace, bool8, const char*);
-REGISTER_FUNCTION_P1(GetObjectNamespace, ContextGetObjectNamespace, const char*, uint32);
-REGISTER_FUNCTION_P2(SaveObjects, ContextSaveObjects, void, uint32, const char*);
+REGISTER_FUNCTION(PrintObject, ContextPrintObject);
+REGISTER_FUNCTION(DebugBreak, ContextDebugBreak);
+REGISTER_FUNCTION(ListObjects, ContextListObjects);
+REGISTER_FUNCTION(IsObject, ContextIsObject);
+REGISTER_FUNCTION(FindObject, ContextFindObjectByName);
+REGISTER_FUNCTION(ObjectHasNamespace, ContextObjectIsDerivedFrom);
+REGISTER_FUNCTION(ObjectHasMethod, ContextObjectHasMethod);
+REGISTER_FUNCTION(LinkNamespaces, ContextLinkNamespaces);
+REGISTER_FUNCTION(ListVariables, ContextListVariables);
+REGISTER_FUNCTION(IsVariable, ContextIsVariable);
+REGISTER_FUNCTION(ListFunctions, ContextListFunctions);
+REGISTER_FUNCTION(IsFunction, ContextIsFunction);
+REGISTER_FUNCTION(ListNamespaces, ContextListNamespaces);
+REGISTER_FUNCTION(IsNamespace, ContextIsNamespace);
+REGISTER_FUNCTION(GetObjectNamespace, ContextGetObjectNamespace);
+REGISTER_FUNCTION(SaveObjects, ContextSaveObjects);
 
-REGISTER_FUNCTION_P0(ListSchedules, ContextListSchedules, void);
-REGISTER_FUNCTION_P1(ScheduleCancel, ContextScheduleCancel, void, int32);
-REGISTER_FUNCTION_P1(ScheduleCancelObject, ContextScheduleCancelObject, void, uint32);
+REGISTER_FUNCTION(ListSchedules, ContextListSchedules);
+REGISTER_FUNCTION(ScheduleCancel, ContextScheduleCancel);
+REGISTER_FUNCTION(ScheduleCancelObject, ContextScheduleCancelObject);
 
 // -- while technically not a context specific function, we need access to these functions anyways
-REGISTER_FUNCTION_P4(Hash, CalcHash, int32, const char*, const char*, const char*, const char*);
-REGISTER_FUNCTION_P1(Unhash, CalcUnhash, const char*, int32);
+REGISTER_FUNCTION(Hash, CalcHash);
+REGISTER_FUNCTION(Unhash, CalcUnhash);
 
 } // TinScript
 

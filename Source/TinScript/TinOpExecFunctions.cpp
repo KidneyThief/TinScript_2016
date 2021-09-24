@@ -3304,7 +3304,7 @@ void SetDebugTrace(bool8 torf)
     CScriptContext::gDebugTrace = torf;
 }
 
-REGISTER_FUNCTION_P1(SetDebugTrace, SetDebugTrace, void, bool8);
+REGISTER_FUNCTION(SetDebugTrace, SetDebugTrace);
 
 }  // namespace TinScript
 

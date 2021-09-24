@@ -3791,7 +3791,7 @@ bool8 GetDebugForceCompile()
 // ====================================================================================================================
 // -- function registration
 
-REGISTER_FUNCTION_P1(SetDebugCodeBlock, SetDebugCodeBlock, void, bool8);
+REGISTER_FUNCTION(SetDebugCodeBlock, SetDebugCodeBlock);
 REGISTER_FUNCTION(SetDebugForceCompile, SetDebugForceCompile);
 
 } // TinScript

@@ -1071,8 +1071,8 @@ bool CSocket::ProcessRecvPackets()
             // -- success or fail, the packet is de-queued
             if (!ReceiveScriptExec(recvPacket->mData))
             {
-                ScriptAssert_(mScriptContext, false, "<internal>", -1,
-                              "Error - ProcessRecvPackets() - SCRIPT_FUNCTION_EXEC:  unable to process the packet\n");
+                // note:  asserts during threaded execution cause crashes - find out why!
+                TinPrint(mScriptContext, "Error - ProcessRecvPackets() - SCRIPT_FUNCTION_EXEC:  unable to process the packet\n\n");
             }
         }
 
@@ -1083,8 +1083,7 @@ bool CSocket::ProcessRecvPackets()
             // -- success or fail, the packet is de-queued
             if (!ReceiveScriptSignature(recvPacket->mData))
             {
-                ScriptAssert_(mScriptContext, false, "<internal>", -1,
-                              "Error - ProcessRecvPackets() - SCRIPT_FUNCTION_SIGNATURE:  unable to process the packet\n");
+                TinPrint(mScriptContext,"Error - ProcessRecvPackets() - SCRIPT_FUNCTION_SIGNATURE:  unable to process the packet\n\n");
             }
         }
 
@@ -1532,12 +1531,12 @@ bool CSocket::ProcessRecvData(void* data, int dataSize)
 
 // ====================================================================================================================
 // -- TinScript Registration
-REGISTER_FUNCTION_P0(SocketListen, SocketManager::Listen, bool);
-REGISTER_FUNCTION_P1(SocketConnect, SocketManager::Connect, bool, const char*);
-REGISTER_FUNCTION_P0(SocketDisconnect, SocketManager::Disconnect, void);
-REGISTER_FUNCTION_P0(SocketIsConnected, SocketManager::IsConnected, bool);
-REGISTER_FUNCTION_P1(SocketSend, SocketManager::SendCommand, bool, const char*);
-REGISTER_FUNCTION_P8(SocketExec, SocketManager::SendExec, bool, int32, const char*, const char*, const char*, const char*, const char*, const char*, const char*);
+REGISTER_FUNCTION(SocketListen, SocketManager::Listen);
+REGISTER_FUNCTION(SocketConnect, SocketManager::Connect);
+REGISTER_FUNCTION(SocketDisconnect, SocketManager::Disconnect);
+REGISTER_FUNCTION(SocketIsConnected, SocketManager::IsConnected);
+REGISTER_FUNCTION(SocketSend, SocketManager::SendCommand);
+REGISTER_FUNCTION(SocketExec, SocketManager::SendExec);
 
 // ====================================================================================================================
 // EOF

@@ -3717,21 +3717,23 @@ bool8 CScriptContext::BeginThreadExec(uint32 func_hash)
     // -- ensure we have a script context (that we're not shutting down), and the func_hash is valid
     if (GetGlobalNamespace()->GetFuncTable()->FindItem(func_hash) == nullptr)
     {
-        ScriptAssert_(this, 0, "<internal>", -1, "Error - unable to find registered function: %s\n",
-                      UnHash(func_hash));
+        //ScriptAssert_(this, 0, "<internal>", -1, "Error - CScriptContext::BeginThreadExec(): unable to find function hash: 0x%x\n"
+        //              "If remote called SocketExec(), remember it's SocketExec(hash('MyFunction'), args...);", func_hash);
+        // note:  asserts during threaded execution cause crashes - find out why!
+        TinPrint(this, "Error - CScriptContext::BeginThreadExec(): unable to find function hash: 0x%x\n"
+                       "If remote called SocketExec(), remember it's SocketExec(hash('MyFunction'), args...);\n\n", func_hash);
         return (false);
     }
 
     // -- if we're already creating a thread command, assert
     if (m_socketCurrentCommand != nullptr)
     {
-        ScriptAssert_(this, 0, "<internal>", -1, "Error - socket exec command already being constructed: %s\n",
-                      UnHash(func_hash));
+        ScriptAssert_(this, 0, "<internal>", -1, "Error - CScriptContext::BeginThreadExec(): socket exec command already being constructed for function hash: 0x%x\n", func_hash);
         return (false);
     }
 
     // -- we to wrap access to the linked list of commands in a thread mutex, to prevent the socket thread from
-    // -- queueing, while the main thread is processing
+    // -- queuing, while the main thread is processing
     mThreadLock.Lock();
 
     m_socketCurrentCommand = GetScheduler()->RemoteScheduleCreate(func_hash);
@@ -4152,28 +4154,28 @@ void DebuggerRequestStringUnhash(uint32 string_hash)
 
 // -------------------------------------------------------------------------------------------------------------------
 // -- Registration
-REGISTER_FUNCTION_P1(DebuggerSetConnected, DebuggerSetConnected, void, bool8);
-REGISTER_FUNCTION_P6(DebuggerAddBreakpoint, DebuggerAddBreakpoint, void, const char*, int32, bool8, const char*, const char*, bool8);
-REGISTER_FUNCTION_P2(DebuggerRemoveBreakpoint, DebuggerRemoveBreakpoint, void, const char*, int32);
-REGISTER_FUNCTION_P1(DebuggerRemoveAllBreakpoints, DebuggerRemoveAllBreakpoints, void, const char*);
+REGISTER_FUNCTION(DebuggerSetConnected, DebuggerSetConnected);
+REGISTER_FUNCTION(DebuggerAddBreakpoint, DebuggerAddBreakpoint);
+REGISTER_FUNCTION(DebuggerRemoveBreakpoint, DebuggerRemoveBreakpoint);
+REGISTER_FUNCTION(DebuggerRemoveAllBreakpoints, DebuggerRemoveAllBreakpoints);
 
-REGISTER_FUNCTION_P0(DebuggerForceBreak, DebuggerForceBreak, void);
-REGISTER_FUNCTION_P2(DebuggerBreakStep, DebuggerBreakStep, void, bool8, bool8);
-REGISTER_FUNCTION_P0(DebuggerBreakRun, DebuggerBreakRun, void);
+REGISTER_FUNCTION(DebuggerForceBreak, DebuggerForceBreak);
+REGISTER_FUNCTION(DebuggerBreakStep, DebuggerBreakStep);
+REGISTER_FUNCTION(DebuggerBreakRun, DebuggerBreakRun);
 
-REGISTER_FUNCTION_P3(DebuggerAddVariableWatch, DebuggerAddVariableWatch, void, int32, const char*, bool8);
-REGISTER_FUNCTION_P7(DebuggerToggleVarWatch, DebuggerToggleVarWatch, void, int32, uint32, int32, bool8, const char*, const char*, bool8);
-REGISTER_FUNCTION_P3(DebuggerModifyVariableWatch, DebuggerModifyVariableWatch, void, int32, const char*, const char*);
+REGISTER_FUNCTION(DebuggerAddVariableWatch, DebuggerAddVariableWatch);
+REGISTER_FUNCTION(DebuggerToggleVarWatch, DebuggerToggleVarWatch);
+REGISTER_FUNCTION(DebuggerModifyVariableWatch, DebuggerModifyVariableWatch);
 
-REGISTER_FUNCTION_P1(DebuggerRequestStringUnhash, DebuggerRequestStringUnhash, void, uint32);
+REGISTER_FUNCTION(DebuggerRequestStringUnhash, DebuggerRequestStringUnhash);
 
-REGISTER_FUNCTION_P1(DebuggerListObjects, DebuggerListObjects, void, int32);
-REGISTER_FUNCTION_P1(DebuggerInspectObject, DebuggerInspectObject, void, int32);
+REGISTER_FUNCTION(DebuggerListObjects, DebuggerListObjects);
+REGISTER_FUNCTION(DebuggerInspectObject, DebuggerInspectObject);
 
-REGISTER_FUNCTION_P0(DebuggerListSchedules, DebuggerListSchedules, void);
-REGISTER_FUNCTION_P1(DebuggerRequestFunctionAssist, DebuggerRequestFunctionAssist, void, int32);
+REGISTER_FUNCTION(DebuggerListSchedules, DebuggerListSchedules);
+REGISTER_FUNCTION(DebuggerRequestFunctionAssist, DebuggerRequestFunctionAssist);
 
-REGISTER_FUNCTION_P3(DebuggerRequestTabComplete, DebuggerRequestTabComplete, void, int32, const char*, int32);
+REGISTER_FUNCTION(DebuggerRequestTabComplete, DebuggerRequestTabComplete);
 
 // == class CThreadMutex ==============================================================================================
 // -- CThreadMutex is only functional in WIN32

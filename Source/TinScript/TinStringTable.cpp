@@ -224,7 +224,7 @@ int32 StringLen(const char* string)
     return (len);
 }
 
-REGISTER_FUNCTION_P1(StringLen, StringLen, int32, const char*);
+REGISTER_FUNCTION(StringLen, StringLen);
 
 // ====================================================================================================================
 // StringCat():  multi-arg implementation of strcat
@@ -262,7 +262,7 @@ const char* StringCat(const char* str0, const char* str1, const char* str2, cons
     return (result);
 }
 
-REGISTER_FUNCTION_P8(StringCat, StringCat, const char*, const char*, const char*, const char*, const char*, const char*, const char*, const char*, const char*);
+REGISTER_FUNCTION(StringCat, StringCat);
 
 // ====================================================================================================================
 // StringCmp():  Same as strcmp, case sensitive
@@ -278,7 +278,7 @@ int32 StringCmp(const char* str0, const char* str1)
     return (strcmp(str0, str1));
 }
 
-REGISTER_FUNCTION_P2(StringCmp, StringCmp, int32, const char*, const char*);
+REGISTER_FUNCTION(StringCmp, StringCmp);
 
 // ====================================================================================================================
 // IntToChar():  Converts from an int to a single character string
@@ -295,7 +295,7 @@ const char* IntToChar(int32 ascii_value)
     return (buffer);
 }
 
-REGISTER_FUNCTION_P1(IntToChar, IntToChar, const char*, int32);
+REGISTER_FUNCTION(IntToChar, IntToChar);
 
 // ====================================================================================================================
 // CharToInt():  Converts from char to the ascii int value
@@ -308,7 +308,7 @@ int32 CharToInt(const char* input_string)
         return ((int32)(input_string[0]));
 }
 
-REGISTER_FUNCTION_P1(CharToInt, CharToInt, int32, const char*);
+REGISTER_FUNCTION(CharToInt, CharToInt);
 
 // ====================================================================================================================
 // Print():  script method to call the main thread print handler
@@ -330,7 +330,7 @@ const char* Print(const char* str0, const char* str1, const char* str2, const ch
     return (str_concat);
 }
 
-REGISTER_FUNCTION_P8(Print, Print, const char*, const char*, const char*, const char*, const char*, const char*, const char*, const char*, const char*);
+REGISTER_FUNCTION(Print, Print);
 
 // ====================================================================================================================
 // EOF
