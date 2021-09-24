@@ -616,8 +616,13 @@ def GenerateVariadicClasses(maxparamcount, outputfilename):
     outputfile.write("\n");
 
     outputfile.write('#define REGISTER_METHOD(classname, name, methodptr) \\\n');
-    outputfile.write('static const int gArgCount_classname##_##name = ::TinScript::SignatureArgCount<decltype(std::declval<classname>().methodptr)>::arg_count; \\\n');
-    outputfile.write('static ::TinScript::CRegisterMethod<gArgCount_classname##_##name, classname, decltype(std::declval<classname>().methodptr)> gReg_##classname##_##name(#name, &classname::methodptr);\n');
+    outputfile.write('    static const int gArgCount_classname##_##name = ::TinScript::SignatureArgCount<decltype(std::declval<classname>().methodptr)>::arg_count; \\\n');
+    outputfile.write('    static ::TinScript::CRegisterMethod<gArgCount_classname##_##name, classname, decltype(std::declval<classname>().methodptr)> gReg_##classname##_##name(#name, &classname::methodptr);\n');
+    outputfile.write("\n");
+
+    outputfile.write('#define REGISTER_CLASS_FUNCTION(classname, name, methodptr) \\\n');
+    outputfile.write('    static const int gArgCount_classname##_##name = ::TinScript::SignatureArgCount<decltype(std::declval<classname>().methodptr)>::arg_count; \\\n');
+    outputfile.write('    static ::TinScript::CRegisterFunction<gArgCount_classname##_##name, decltype(std::declval<classname>().methodptr)> gReg_##classname##_##name(#name, &classname::methodptr); \\\n');
     outputfile.write("\n");
 
     outputfile.write('template<typename S>\n');
@@ -687,28 +692,31 @@ def GenerateVariadicClasses(maxparamcount, outputfilename):
         while (i <= paramcount):
             outputfile.write("        using T%d = std::tuple_element<%d, argument_types>::type;\n" % (i, i - 1));
             i = i + 1;
-        outputfile.write("\n");
+        if (paramcount > 0):
+            outputfile.write("\n");
 
         i = 1;
         while (i <= paramcount):
             outputfile.write("        CVariableEntry* ve%d = GetContext()->GetParameter(%d);\n" % (i, i));
             i = i + 1;
-        outputfile.write("\n");
+        if (paramcount > 0):
+            outputfile.write("\n");
 
         i = 1;
         while (i <= paramcount):
             outputfile.write("        T%d p%d = ConvertVariableForDispatch<T%d>(ve%d);\n" % (i, i, i, i));
             i = i + 1;
-        outputfile.write("\n");
+        if (paramcount > 0):
+            outputfile.write("\n");
             
         dispatch_string = "        Dispatch(";
-        if(paramcount == 0):
+        if (paramcount == 0):
             dispatch_string = dispatch_string + ");\n"
         else:
             i = 1;
             while (i <= paramcount):
                 if (i > 1):
-                    dispatch_string = dispatch_string + ",\n                 ";
+                    dispatch_string = dispatch_string + ", ";
                 dispatch_string = dispatch_string + "&p%d" % (i);
                 i = i + 1;
             dispatch_string = dispatch_string + ");\n";
@@ -731,13 +739,15 @@ def GenerateVariadicClasses(maxparamcount, outputfilename):
         while (i <= paramcount):
             outputfile.write("        using T%d = std::tuple_element<%d, argument_types>::type;\n" % (i, i - 1));
             i = i + 1;
-        outputfile.write("\n");
+        if (paramcount > 0):
+            outputfile.write("\n");
 
         i = 1;
         while (i <= paramcount):
             outputfile.write("        T%d* p%d = (T%d*)_p%d;\n" % (i, i, i, i));
             i = i + 1;
-        outputfile.write("\n");
+        if (paramcount > 0):
+            outputfile.write("\n");
         
         functioncall = "        R r = funcptr(";
         i = 1;
@@ -764,7 +774,8 @@ def GenerateVariadicClasses(maxparamcount, outputfilename):
         while (i <= paramcount):
             outputfile.write("        using T%d = std::tuple_element<%d, argument_types>::type;\n" % (i, i - 1));
             i = i + 1;
-        outputfile.write("\n");
+        if (paramcount > 0):
+            outputfile.write("\n");
 
         outputfile.write("        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFuncTypeGlobal, this);\n");
         outputfile.write("        SetScriptContext(script_context);\n");
@@ -810,19 +821,22 @@ def GenerateVariadicClasses(maxparamcount, outputfilename):
         while (i <= paramcount):
             outputfile.write("        using T%d = std::tuple_element<%d, argument_types>::type;\n" % (i, i - 1));
             i = i + 1;
-        outputfile.write("\n");
+        if (paramcount > 0):
+            outputfile.write("\n");
 
         i = 1;
         while (i <= paramcount):
             outputfile.write("        CVariableEntry* ve%d = GetContext()->GetParameter(%d);\n" % (i, i));
             i = i + 1;
-        outputfile.write("\n");
+        if (paramcount > 0):
+            outputfile.write("\n");
 
         i = 1;
         while (i <= paramcount):
             outputfile.write("        T%d p%d = ConvertVariableForDispatch<T%d>(ve%d);\n" % (i, i, i, i));
             i = i + 1;
-        outputfile.write("\n");
+        if (paramcount > 0):
+            outputfile.write("\n");
             
         dispatch_string = "        Dispatch(";
         if(paramcount == 0):
@@ -831,7 +845,7 @@ def GenerateVariadicClasses(maxparamcount, outputfilename):
             i = 1;
             while (i <= paramcount):
                 if (i > 1):
-                    dispatch_string = dispatch_string + ",\n                 ";
+                    dispatch_string = dispatch_string + ", ";
                 dispatch_string = dispatch_string + "&p%d" % (i);
                 i = i + 1;
             dispatch_string = dispatch_string + ");\n";
@@ -854,13 +868,15 @@ def GenerateVariadicClasses(maxparamcount, outputfilename):
         while (i <= paramcount):
             outputfile.write("        using T%d = std::tuple_element<%d, argument_types>::type;\n" % (i, i - 1));
             i = i + 1;
-        outputfile.write("\n");
+        if (paramcount > 0):
+            outputfile.write("\n");
 
         i = 1;
         while (i <= paramcount):
             outputfile.write("        T%d* p%d = (T%d*)_p%d;\n" % (i, i, i, i));
             i = i + 1;
-        outputfile.write("\n");
+        if (paramcount > 0):
+            outputfile.write("\n");
         
         functioncall = "        funcptr(";
         i = 1;
@@ -883,7 +899,8 @@ def GenerateVariadicClasses(maxparamcount, outputfilename):
         while (i <= paramcount):
             outputfile.write("        using T%d = std::tuple_element<%d, argument_types>::type;\n" % (i, i - 1));
             i = i + 1;
-        outputfile.write("\n");
+        if (paramcount > 0):
+            outputfile.write("\n");
 
 
         outputfile.write("        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFuncTypeGlobal, this);\n");
@@ -894,7 +911,9 @@ def GenerateVariadicClasses(maxparamcount, outputfilename):
         while (i <= paramcount):
             outputfile.write("        GetContext()->AddParameter(\"_p%d\", Hash(\"_p%d\"), GetRegisteredType(GetTypeID<T%d>()), 1, GetTypeID<T%d>());\n" % (i, i, i, i));
             i = i + 1;
-        outputfile.write("\n");
+        if (paramcount > 0):
+            outputfile.write("\n");
+
         outputfile.write("        uint32 hash = fe->GetHash();\n");
         outputfile.write("        tFuncTable* globalfunctable = script_context->FindNamespace(0)->GetFuncTable();\n");
         outputfile.write("        globalfunctable->AddItem(*fe, hash);\n");
@@ -931,18 +950,20 @@ def GenerateVariadicClasses(maxparamcount, outputfilename):
         while (i <= paramcount):
             outputfile.write("        using T%d = std::tuple_element<%d, argument_types>::type;\n" % (i, i - 1));
             i = i + 1;
-        outputfile.write("\n");
+        if (paramcount > 0):
+            outputfile.write("\n");
 
         i = 1;
         while (i <= paramcount):
             outputfile.write("        CVariableEntry* ve%d = GetContext()->GetParameter(%d);\n" % (i, i));
             i = i + 1;
+        if (paramcount > 0):
+            outputfile.write("\n");
 
         i = 1;
         while (i <= paramcount):
             outputfile.write("        T%d p%d = ConvertVariableForDispatch<T%d>(ve%d);\n" % (i, i, i, i));
             i = i + 1;
-
 
         dispatch_string = "        Dispatch(objaddr";
         i = 1;
@@ -969,13 +990,15 @@ def GenerateVariadicClasses(maxparamcount, outputfilename):
         while (i <= paramcount):
             outputfile.write("        using T%d = std::tuple_element<%d, argument_types>::type;\n" % (i, i - 1));
             i = i + 1;
-        outputfile.write("\n");
+        if (paramcount > 0):
+            outputfile.write("\n");
 
         i = 1;
         while (i <= paramcount):
             outputfile.write("        T%d* p%d = (T1*)_p%d;\n" % (i, i, i));
             i = i + 1;
-        outputfile.write("\n");
+        if (paramcount > 0):
+            outputfile.write("\n");
 
         outputfile.write('        C* object = (C*)(objaddr);\n');
 
@@ -1005,9 +1028,9 @@ def GenerateVariadicClasses(maxparamcount, outputfilename):
         while (i <= paramcount):
             outputfile.write("        using T%d = std::tuple_element<%d, argument_types>::type;\n" % (i, i - 1));
             i = i + 1;
-        outputfile.write("\n");
+        if (paramcount > 0):
+            outputfile.write("\n");
 
-        outputfile.write('\n');
         outputfile.write('        uint32 classname_hash = Hash(C::_GetClassName());\n');
         outputfile.write('        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFuncTypeGlobal, this);\n');
         outputfile.write('        SetScriptContext(script_context);\n');
@@ -1018,9 +1041,9 @@ def GenerateVariadicClasses(maxparamcount, outputfilename):
         while (i <= paramcount):
             outputfile.write('        GetContext()->AddParameter("_p%d", Hash("_p%d"), GetRegisteredType(GetTypeID<T%d>()), 1, GetTypeID<T%d>());\n' % (i, i, i, i));
             i = i + 1;
-        outputfile.write("\n");
+        if (paramcount > 0):
+            outputfile.write("\n");
 
-        outputfile.write('\n');
         outputfile.write('        uint32 hash = fe->GetHash();\n');
         outputfile.write('        tFuncTable* methodtable = script_context->FindNamespace(classname_hash)->GetFuncTable();\n');
         outputfile.write('        methodtable->AddItem(*fe, hash);\n');
@@ -1055,18 +1078,22 @@ def GenerateVariadicClasses(maxparamcount, outputfilename):
         while (i <= paramcount):
             outputfile.write("        using T%d = std::tuple_element<%d, argument_types>::type;\n" % (i, i - 1));
             i = i + 1;
-        outputfile.write("\n");
+        if (paramcount > 0):
+            outputfile.write("\n");
 
         i = 1;
         while (i <= paramcount):
             outputfile.write("        CVariableEntry* ve%d = GetContext()->GetParameter(%d);\n" % (i, i));
             i = i + 1;
+        if (paramcount > 0):
+            outputfile.write("\n");
 
         i = 1;
         while (i <= paramcount):
             outputfile.write("        T%d p%d = ConvertVariableForDispatch<T%d>(ve%d);\n" % (i, i, i, i));
             i = i + 1;
-
+        if (paramcount > 0):
+            outputfile.write("\n");
 
         dispatch_string = "        Dispatch(objaddr";
         i = 1;
@@ -1076,7 +1103,6 @@ def GenerateVariadicClasses(maxparamcount, outputfilename):
         dispatch_string = dispatch_string + ");\n";
         outputfile.write(dispatch_string);
         outputfile.write('    }\n\n');
-
 
         outputfile.write('    // -- dispatch method\n');
 
@@ -1093,7 +1119,8 @@ def GenerateVariadicClasses(maxparamcount, outputfilename):
         while (i <= paramcount):
             outputfile.write("        using T%d = std::tuple_element<%d, argument_types>::type;\n" % (i, i - 1));
             i = i + 1;
-        outputfile.write("\n");
+        if (paramcount > 0):
+            outputfile.write("\n");
 
         i = 1;
         while (i <= paramcount):
@@ -1125,7 +1152,8 @@ def GenerateVariadicClasses(maxparamcount, outputfilename):
         while (i <= paramcount):
             outputfile.write("        using T%d = std::tuple_element<%d, argument_types>::type;\n" % (i, i - 1));
             i = i + 1;
-        outputfile.write("\n");
+        if (paramcount > 0):
+            outputfile.write("\n");
 
         outputfile.write('\n');
         outputfile.write('        uint32 classname_hash = Hash(C::_GetClassName());\n');
@@ -1138,7 +1166,8 @@ def GenerateVariadicClasses(maxparamcount, outputfilename):
         while (i <= paramcount):
             outputfile.write('        GetContext()->AddParameter("_p%d", Hash("_p%d"), GetRegisteredType(GetTypeID<T%d>()), 1, GetTypeID<T%d>());\n' % (i, i, i, i));
             i = i + 1;
-        outputfile.write("\n");
+        if (paramcount > 0):
+            outputfile.write("\n");
 
         outputfile.write('\n');
         outputfile.write('        uint32 hash = fe->GetHash();\n');
@@ -1150,324 +1179,6 @@ def GenerateVariadicClasses(maxparamcount, outputfilename):
         outputfile.write('    methodsignature methodptr;\n');
         outputfile.write('};\n');
 
-#        template_string = "template<";
-#        i = 1;
-#        while (i <= paramcount):
-#            if (i > 1):
-#                template_string = template_string + ", ";
-#            template_string = template_string + "typename T%d" % i;
-#            i = i + 1;
-#        template_string = template_string + ">\n";
-#            
-#        outputfile.write(template_string);
-#        classname_string = "class CRegFunctionP%d<void" % paramcount;
-#        i = 1;
-#        while (i <= paramcount):
-#            classname_string = classname_string + ", T%d" % i;
-#            i = i + 1;
-#        classname_string = classname_string + "> : public CRegFunctionBase {\n";
-#        outputfile.write(classname_string);
-#        outputfile.write("public:\n");
-#        outputfile.write("\n");
-#
-#        typedef_string = "    typedef void (*funcsignature)(";
-#        i = 1;
-#        while (i <= paramcount):
-#            if (i > 1):
-#                typedef_string = typedef_string + ", ";
-#            typedef_string = typedef_string + "T%d p%d" % (i, i);
-#            i = i + 1;
-#        typedef_string = typedef_string + ");\n";
-#        outputfile.write(typedef_string);
-#        outputfile.write("\n");
-#
-#        outputfile.write("    // -- CRegisterFunctionP%d\n" % paramcount);
-#        outputfile.write("    CRegFunctionP%d(const char* _funcname, funcsignature _funcptr) :\n" % paramcount);
-#        outputfile.write("                    CRegFunctionBase(_funcname) {\n");
-#        outputfile.write("        funcptr = _funcptr;\n");
-#        outputfile.write("    }\n");
-#        outputfile.write("\n");
-#        
-#        outputfile.write("    // -- destructor\n");
-#        outputfile.write("    virtual ~CRegFunctionP%d() {\n" % paramcount);
-#        outputfile.write("    }\n");
-#        outputfile.write("\n");
-#        
-#        outputfile.write("    // -- virtual DispatchFunction wrapper\n");
-#        outputfile.write("    virtual void DispatchFunction(void*) {\n");
-#        i = 1;
-#        while (i <= paramcount):
-#            outputfile.write("        CVariableEntry* ve%d = GetContext()->GetParameter(%d);\n" % (i, i));
-#            i = i + 1;
-#            
-#        dispatch_string = "        Dispatch(";
-#        if(paramcount == 0):
-#            dispatch_string = dispatch_string + ");\n"
-#        else:
-#            i = 1;
-#            while (i <= paramcount):
-#                if (i > 1):
-#                    dispatch_string = dispatch_string + ",\n                 ";
-#                dispatch_string = dispatch_string + "ConvertVariableForDispatch<T%d>(ve%d)" % (i, i);
-#                i = i + 1;
-#            dispatch_string = dispatch_string + ");\n";
-#        outputfile.write(dispatch_string);
-#        outputfile.write("    }\n");
-#        outputfile.write("\n");
-#        
-#        outputfile.write("    // -- dispatch method\n");
-#        dispatch_string = "    void Dispatch(";
-#        i = 1;
-#        while (i <= paramcount):
-#            if (i > 1):
-#                dispatch_string = dispatch_string + ", ";
-#            dispatch_string = dispatch_string + "T%d p%d" % (i, i);
-#            i = i + 1;
-#        dispatch_string = dispatch_string + ") {\n";
-#        outputfile.write(dispatch_string);
-#        
-#        functioncall = "        funcptr(";
-#        i = 1;
-#        while (i <= paramcount):
-#            if (i > 1):
-#                functioncall = functioncall + ", ";
-#            functioncall = functioncall + "p%d" % i;
-#            i = i + 1;
-#        functioncall = functioncall + ");\n";
-#        outputfile.write(functioncall);
-#        outputfile.write("    }\n");
-#        outputfile.write("\n");
-#        
-#        outputfile.write("    // -- registration method\n");
-#        outputfile.write("    virtual void Register(CScriptContext* script_context) {\n");
-#        outputfile.write("        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFuncTypeGlobal, this);\n");
-#        outputfile.write("        SetScriptContext(script_context);\n");
-#        outputfile.write("        SetContext(fe->GetContext());\n");
-#        outputfile.write("        GetContext()->AddParameter(\"__return\", Hash(\"__return\"), TYPE_void, 1, 0);\n");
-#        i = 1;
-#        while (i <= paramcount):
-#            outputfile.write("        GetContext()->AddParameter(\"_p%d\", Hash(\"_p%d\"), GetRegisteredType(GetTypeID<T%d>()), 1, GetTypeID<T%d>());\n" % (i, i, i, i));
-#            i = i + 1;
-#        outputfile.write("\n");
-#        outputfile.write("        uint32 hash = fe->GetHash();\n");
-#        outputfile.write("        tFuncTable* globalfunctable = script_context->FindNamespace(0)->GetFuncTable();\n");
-#        outputfile.write("        globalfunctable->AddItem(*fe, hash);\n");
-#        outputfile.write("    }\n");
-#        outputfile.write("\n");
-#        outputfile.write("private:\n");
-#        outputfile.write("    funcsignature funcptr;\n");
-#        outputfile.write("};\n");
-#        outputfile.write("\n");
-#
-#        # -----------------------------------------------------------------------------------------
-#        # repeat for the methods templates
-#
-#        template_string = "template<typename C, typename R";
-#        i = 1;
-#        while (i <= paramcount):
-#            template_string = template_string + ", typename T%d" % i;
-#            i = i + 1;
-#        template_string = template_string + ">\n";
-#        outputfile.write(template_string);
-#        
-#        outputfile.write("class CRegMethodP%d : public CRegFunctionBase {\n" % paramcount);
-#        outputfile.write("public:\n");
-#        outputfile.write("\n");
-#
-#        typedef_string = "    typedef R (*methodsignature)(C* c";
-#        i = 1;
-#        while (i <= paramcount):
-#            typedef_string = typedef_string + ", T%d p%d" % (i, i);
-#            i = i + 1;
-#        typedef_string = typedef_string + ");\n";
-#        outputfile.write(typedef_string);
-#        outputfile.write("\n");
-#
-#        outputfile.write("    // -- CRegisterMethodP%d\n" % paramcount);
-#        outputfile.write("    CRegMethodP%d(const char* _funcname, methodsignature _funcptr) :\n" % paramcount);
-#        outputfile.write("                  CRegFunctionBase(_funcname) {\n");
-#        outputfile.write("        funcptr = _funcptr;\n");
-#        outputfile.write("    }\n");
-#        outputfile.write("\n");
-#        
-#        outputfile.write("    // -- destructor\n");
-#        outputfile.write("    virtual ~CRegMethodP%d() {\n" % paramcount);
-#        outputfile.write("    }\n");
-#        outputfile.write("\n");
-#        
-#        outputfile.write("    // -- virtual DispatchFunction wrapper\n");
-#        outputfile.write("    virtual void DispatchFunction(void* objaddr) {\n");
-#        i = 1;
-#        while (i <= paramcount):
-#            outputfile.write("        CVariableEntry* ve%d = GetContext()->GetParameter(%d);\n" % (i, i));
-#            i = i + 1;
-#            
-#        dispatch_string = "        Dispatch(objaddr";
-#        if(paramcount == 0):
-#            dispatch_string = dispatch_string + ");\n"
-#        else:
-#            i = 1;
-#            while (i <= paramcount):
-#                dispatch_string = dispatch_string + ",\n                 ";
-#                dispatch_string = dispatch_string + "ConvertVariableForDispatch<T%d>(ve%d)" % (i, i);
-#                i = i + 1;
-#            dispatch_string = dispatch_string + ");\n";
-#        outputfile.write(dispatch_string);
-#        outputfile.write("    }\n");
-#        outputfile.write("\n");
-#        
-#        outputfile.write("    // -- dispatch method\n");
-#        dispatch_string = "    R Dispatch(void* objaddr";
-#        i = 1;
-#        while (i <= paramcount):
-#            dispatch_string = dispatch_string + ", T%d p%d" % (i, i);
-#            i = i + 1;
-#        dispatch_string = dispatch_string + ") {\n";
-#        outputfile.write(dispatch_string);
-#        
-#        outputfile.write("        C* objptr = (C*)objaddr;\n");
-#        functioncall = "        R r = funcptr(objptr";
-#        i = 1;
-#        while (i <= paramcount):
-#            functioncall = functioncall + ", p%d" % i;
-#            i = i + 1;
-#        functioncall = functioncall + ");\n";
-#        outputfile.write(functioncall);
-#        outputfile.write("        assert(GetContext()->GetParameter(0));\n");
-#        outputfile.write("        CVariableEntry* returnval = GetContext()->GetParameter(0);\n");
-#        outputfile.write("        returnval->SetValueAddr(NULL, convert_to_void_ptr<R>::Convert(r));\n");
-#        outputfile.write("        return (r);\n");
-#        outputfile.write("    }\n");
-#        outputfile.write("\n");
-#        
-#        outputfile.write("    // -- registration method\n");
-#        outputfile.write("    virtual void Register(CScriptContext* script_context) {\n");
-#        outputfile.write("        uint32 classname_hash = Hash(C::_GetClassName());\n");
-#        outputfile.write("        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFuncTypeGlobal, this);\n");
-#        outputfile.write("        SetScriptContext(script_context);\n");
-#        outputfile.write("        SetContext(fe->GetContext());\n");
-#        outputfile.write("        GetContext()->AddParameter(\"__return\", Hash(\"__return\"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());\n");
-#        i = 1;
-#        while (i <= paramcount):
-#            outputfile.write("        GetContext()->AddParameter(\"_p%d\", Hash(\"_p%d\"), GetRegisteredType(GetTypeID<T%d>()), 1, GetTypeID<T%d>());\n" % (i, i, i, i));
-#            i = i + 1;
-#        outputfile.write("\n");
-#        outputfile.write("        uint32 hash = fe->GetHash();\n");
-#        outputfile.write("        tFuncTable* methodtable = script_context->FindNamespace(classname_hash)->GetFuncTable();\n");
-#        outputfile.write("        methodtable->AddItem(*fe, hash);\n");
-#        outputfile.write("    }\n");
-#        outputfile.write("\n");
-#        outputfile.write("private:\n");
-#        outputfile.write("    methodsignature funcptr;\n");
-#        outputfile.write("};\n");
-#        outputfile.write("\n");
-#        
-#        # -----------------------------------------------------------------------------------------
-#        # repeat for the void specialized methods
-#
-#        template_string = "template<typename C";
-#        i = 1;
-#        while (i <= paramcount):
-#            template_string = template_string + ", typename T%d" % i;
-#            i = i + 1;
-#        template_string = template_string + ">\n";
-#        outputfile.write(template_string);
-#        
-#        classname_string = "class CRegMethodP%d<C, void" % paramcount;
-#        i = 1;
-#        while (i <= paramcount):
-#            classname_string = classname_string + ", T%d" % i;
-#            i = i + 1;
-#        classname_string = classname_string + "> : public CRegFunctionBase {\n";
-#        outputfile.write(classname_string);
-#        
-#        outputfile.write("public:\n");
-#        outputfile.write("\n");
-#
-#        typedef_string = "    typedef void (*methodsignature)(C* c";
-#        i = 1;
-#        while (i <= paramcount):
-#            typedef_string = typedef_string + ", T%d p%d" % (i, i);
-#            i = i + 1;
-#        typedef_string = typedef_string + ");\n";
-#        outputfile.write(typedef_string);
-#        outputfile.write("\n");
-#
-#        outputfile.write("    // -- CRegisterMethodP%d\n" % paramcount);
-#        outputfile.write("    CRegMethodP%d(const char* _funcname, methodsignature _funcptr) :\n" % paramcount);
-#        outputfile.write("                  CRegFunctionBase(_funcname) {\n");
-#        outputfile.write("        funcptr = _funcptr;\n");
-#        outputfile.write("    }\n");
-#        outputfile.write("\n");
-#        
-#        outputfile.write("    // -- destructor\n");
-#        outputfile.write("    virtual ~CRegMethodP%d() {\n" % paramcount);
-#        outputfile.write("    }\n");
-#        outputfile.write("\n");
-#        
-#        outputfile.write("    // -- virtual DispatchFunction wrapper\n");
-#        outputfile.write("    virtual void DispatchFunction(void* objaddr) {\n");
-#        i = 1;
-#        while (i <= paramcount):
-#            outputfile.write("        CVariableEntry* ve%d = GetContext()->GetParameter(%d);\n" % (i, i));
-#            i = i + 1;
-#            
-#        dispatch_string = "        Dispatch(objaddr";
-#        if(paramcount == 0):
-#            dispatch_string = dispatch_string + ");\n"
-#        else:
-#            i = 1;
-#            while (i <= paramcount):
-#                dispatch_string = dispatch_string + ",\n                 ";
-#                dispatch_string = dispatch_string + "ConvertVariableForDispatch<T%d>(ve%d)" % (i, i);
-#                i = i + 1;
-#            dispatch_string = dispatch_string + ");\n";
-#        outputfile.write(dispatch_string);
-#        outputfile.write("    }\n");
-#        outputfile.write("\n");
-#        
-#        outputfile.write("    // -- dispatch method\n");
-#        dispatch_string = "    void Dispatch(void* objaddr";
-#        i = 1;
-#        while (i <= paramcount):
-#            dispatch_string = dispatch_string + ", T%d p%d" % (i, i);
-#            i = i + 1;
-#        dispatch_string = dispatch_string + ") {\n";
-#        outputfile.write(dispatch_string);
-#        
-#        outputfile.write("        C* objptr = (C*)objaddr;\n");
-#        functioncall = "        funcptr(objptr";
-#        i = 1;
-#        while (i <= paramcount):
-#            functioncall = functioncall + ", p%d" % i;
-#            i = i + 1;
-#        functioncall = functioncall + ");\n";
-#        outputfile.write(functioncall);
-#        outputfile.write("    }\n");
-#        outputfile.write("\n");
-#        
-#        outputfile.write("    // -- registration method\n");
-#        outputfile.write("    virtual void Register(CScriptContext* script_context) {\n");
-#        outputfile.write("        uint32 classname_hash = Hash(C::_GetClassName());\n");
-#        outputfile.write("        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFuncTypeGlobal, this);\n");
-#        outputfile.write("        SetScriptContext(script_context);\n");
-#        outputfile.write("        SetContext(fe->GetContext());\n");
-#        outputfile.write("        GetContext()->AddParameter(\"__return\", Hash(\"__return\"), TYPE_void, 1, 0);\n");
-#        i = 1;
-#        while (i <= paramcount):
-#            outputfile.write("        GetContext()->AddParameter(\"_p%d\", Hash(\"_p%d\"), GetRegisteredType(GetTypeID<T%d>()), 1, GetTypeID<T%d>());\n" % (i, i, i, i));
-#            i = i + 1;
-#        outputfile.write("\n");
-#        outputfile.write("        uint32 hash = fe->GetHash();\n");
-#        outputfile.write("        tFuncTable* methodtable = script_context->FindNamespace(classname_hash)->GetFuncTable();\n");
-#        outputfile.write("        methodtable->AddItem(*fe, hash);\n");
-#        outputfile.write("    }\n");
-#        outputfile.write("\n");
-#        outputfile.write("private:\n");
-#        outputfile.write("    methodsignature funcptr;\n");
-#        outputfile.write("};\n");
-#        outputfile.write("\n");
-#
         # -----------------------------------------------------------------------------------------
         # next class definition
         paramcount = paramcount + 1;

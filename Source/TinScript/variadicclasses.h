@@ -31,12 +31,9 @@
     static const int gArgCount_classname##_##name = ::TinScript::SignatureArgCount<decltype(std::declval<classname>().methodptr)>::arg_count; \
     static ::TinScript::CRegisterMethod<gArgCount_classname##_##name, classname, decltype(std::declval<classname>().methodptr)> gReg_##classname##_##name(#name, &classname::methodptr);
 
-// -- needed for static class methods
 #define REGISTER_CLASS_FUNCTION(classname, name, methodptr) \
-    static const int gArgCount_classname##_##name = ::TinScript::SignatureArgCount<decltype(std::declval<classname>().methodptr)>::arg_count;   \
-    static ::TinScript::CRegisterFunction<gArgCount_classname##_##name, decltype(std::declval<classname>().methodptr)> gReg_##classname##_##name(#name, &classname::methodptr);
-
-// ------------------------------------------------------------------------------------------------
+    static const int gArgCount_classname##_##name = ::TinScript::SignatureArgCount<decltype(std::declval<classname>().methodptr)>::arg_count; \
+    static ::TinScript::CRegisterFunction<gArgCount_classname##_##name, decltype(std::declval<classname>().methodptr)> gReg_##classname##_##name(#name, &classname::methodptr); \
 
 template<typename S>
 class SignatureArgCount;
@@ -93,17 +90,12 @@ public:
     // -- virtual DispatchFunction wrapper
     virtual void DispatchFunction(void*)
     {
-
-
-
         Dispatch();
     }
 
     // -- dispatch method
     R Dispatch()
     {
-
-
         R r = funcptr();
 
         assert(GetContext()->GetParameter(0));
@@ -115,7 +107,6 @@ public:
     // -- registration method
     virtual void Register(CScriptContext* script_context)
     {
-
         CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
@@ -149,17 +140,12 @@ public:
     // -- virtual DispatchFunction wrapper
     virtual void DispatchFunction(void*)
     {
-
-
-
         Dispatch();
     }
 
     // -- dispatch method
     void Dispatch()
     {
-
-
         funcptr();
 
     }
@@ -167,12 +153,10 @@ public:
     // -- registration method
     virtual void Register(CScriptContext* script_context)
     {
-
         CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
         GetContext()->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0);
-
         uint32 hash = fe->GetHash();
         tFuncTable* globalfunctable = script_context->FindNamespace(0)->GetFuncTable();
         globalfunctable->AddItem(*fe, hash);
@@ -202,15 +186,12 @@ public:
     virtual void DispatchFunction(void* objaddr)
     {
 
-
         Dispatch(objaddr);
     }
 
     // -- dispatch method
     R Dispatch(void* objaddr)
     {
-
-
         C* object = (C*)(objaddr);
         R r = (object->*methodptr)();
 
@@ -223,15 +204,11 @@ public:
     // -- registration method
     virtual void Register(TinScript::CScriptContext* script_context)
     {
-
-
         uint32 classname_hash = Hash(C::_GetClassName());
         CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
         GetContext()->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());
-
-
         uint32 hash = fe->GetHash();
         tFuncTable* methodtable = script_context->FindNamespace(classname_hash)->GetFuncTable();
         methodtable->AddItem(*fe, hash);
@@ -260,14 +237,12 @@ public:
     virtual void DispatchFunction(void* objaddr)
     {
 
-
         Dispatch(objaddr);
     }
 
     // -- dispatch method
     void Dispatch(void* objaddr)
     {
-
 
         C* object = (C*)(objaddr);
         (object->*methodptr)();
@@ -278,13 +253,11 @@ public:
     virtual void Register(TinScript::CScriptContext* script_context)
     {
 
-
         uint32 classname_hash = Hash(C::_GetClassName());
         CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
         GetContext()->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0);
-
 
         uint32 hash = fe->GetHash();
         tFuncTable* methodtable = script_context->FindNamespace(classname_hash)->GetFuncTable();
@@ -444,6 +417,7 @@ public:
         using T1 = std::tuple_element<0, argument_types>::type;
 
         CVariableEntry* ve1 = GetContext()->GetParameter(1);
+
         T1 p1 = ConvertVariableForDispatch<T1>(ve1);
         Dispatch(objaddr, &p1);
     }
@@ -469,14 +443,12 @@ public:
     {
         using T1 = std::tuple_element<0, argument_types>::type;
 
-
         uint32 classname_hash = Hash(C::_GetClassName());
         CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
         SetScriptContext(script_context);
         SetContext(fe->GetContext());
         GetContext()->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());
         GetContext()->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>());
-
 
         uint32 hash = fe->GetHash();
         tFuncTable* methodtable = script_context->FindNamespace(classname_hash)->GetFuncTable();
@@ -509,7 +481,9 @@ public:
         using T1 = std::tuple_element<0, argument_types>::type;
 
         CVariableEntry* ve1 = GetContext()->GetParameter(1);
+
         T1 p1 = ConvertVariableForDispatch<T1>(ve1);
+
         Dispatch(objaddr, &p1);
     }
 
@@ -580,8 +554,7 @@ public:
         T1 p1 = ConvertVariableForDispatch<T1>(ve1);
         T2 p2 = ConvertVariableForDispatch<T2>(ve2);
 
-        Dispatch(&p1,
-                 &p2);
+        Dispatch(&p1, &p2);
     }
 
     // -- dispatch method
@@ -651,8 +624,7 @@ public:
         T1 p1 = ConvertVariableForDispatch<T1>(ve1);
         T2 p2 = ConvertVariableForDispatch<T2>(ve2);
 
-        Dispatch(&p1,
-                 &p2);
+        Dispatch(&p1, &p2);
     }
 
     // -- dispatch method
@@ -715,6 +687,7 @@ public:
 
         CVariableEntry* ve1 = GetContext()->GetParameter(1);
         CVariableEntry* ve2 = GetContext()->GetParameter(2);
+
         T1 p1 = ConvertVariableForDispatch<T1>(ve1);
         T2 p2 = ConvertVariableForDispatch<T2>(ve2);
         Dispatch(objaddr, &p1, &p2);
@@ -744,7 +717,6 @@ public:
         using T1 = std::tuple_element<0, argument_types>::type;
         using T2 = std::tuple_element<1, argument_types>::type;
 
-
         uint32 classname_hash = Hash(C::_GetClassName());
         CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
         SetScriptContext(script_context);
@@ -752,7 +724,6 @@ public:
         GetContext()->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());
         GetContext()->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>());
         GetContext()->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>());
-
 
         uint32 hash = fe->GetHash();
         tFuncTable* methodtable = script_context->FindNamespace(classname_hash)->GetFuncTable();
@@ -787,8 +758,10 @@ public:
 
         CVariableEntry* ve1 = GetContext()->GetParameter(1);
         CVariableEntry* ve2 = GetContext()->GetParameter(2);
+
         T1 p1 = ConvertVariableForDispatch<T1>(ve1);
         T2 p2 = ConvertVariableForDispatch<T2>(ve2);
+
         Dispatch(objaddr, &p1, &p2);
     }
 
@@ -866,9 +839,7 @@ public:
         T2 p2 = ConvertVariableForDispatch<T2>(ve2);
         T3 p3 = ConvertVariableForDispatch<T3>(ve3);
 
-        Dispatch(&p1,
-                 &p2,
-                 &p3);
+        Dispatch(&p1, &p2, &p3);
     }
 
     // -- dispatch method
@@ -945,9 +916,7 @@ public:
         T2 p2 = ConvertVariableForDispatch<T2>(ve2);
         T3 p3 = ConvertVariableForDispatch<T3>(ve3);
 
-        Dispatch(&p1,
-                 &p2,
-                 &p3);
+        Dispatch(&p1, &p2, &p3);
     }
 
     // -- dispatch method
@@ -1016,6 +985,7 @@ public:
         CVariableEntry* ve1 = GetContext()->GetParameter(1);
         CVariableEntry* ve2 = GetContext()->GetParameter(2);
         CVariableEntry* ve3 = GetContext()->GetParameter(3);
+
         T1 p1 = ConvertVariableForDispatch<T1>(ve1);
         T2 p2 = ConvertVariableForDispatch<T2>(ve2);
         T3 p3 = ConvertVariableForDispatch<T3>(ve3);
@@ -1049,7 +1019,6 @@ public:
         using T2 = std::tuple_element<1, argument_types>::type;
         using T3 = std::tuple_element<2, argument_types>::type;
 
-
         uint32 classname_hash = Hash(C::_GetClassName());
         CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
         SetScriptContext(script_context);
@@ -1058,7 +1027,6 @@ public:
         GetContext()->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>());
         GetContext()->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>());
         GetContext()->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>());
-
 
         uint32 hash = fe->GetHash();
         tFuncTable* methodtable = script_context->FindNamespace(classname_hash)->GetFuncTable();
@@ -1095,9 +1063,11 @@ public:
         CVariableEntry* ve1 = GetContext()->GetParameter(1);
         CVariableEntry* ve2 = GetContext()->GetParameter(2);
         CVariableEntry* ve3 = GetContext()->GetParameter(3);
+
         T1 p1 = ConvertVariableForDispatch<T1>(ve1);
         T2 p2 = ConvertVariableForDispatch<T2>(ve2);
         T3 p3 = ConvertVariableForDispatch<T3>(ve3);
+
         Dispatch(objaddr, &p1, &p2, &p3);
     }
 
@@ -1182,10 +1152,7 @@ public:
         T3 p3 = ConvertVariableForDispatch<T3>(ve3);
         T4 p4 = ConvertVariableForDispatch<T4>(ve4);
 
-        Dispatch(&p1,
-                 &p2,
-                 &p3,
-                 &p4);
+        Dispatch(&p1, &p2, &p3, &p4);
     }
 
     // -- dispatch method
@@ -1269,10 +1236,7 @@ public:
         T3 p3 = ConvertVariableForDispatch<T3>(ve3);
         T4 p4 = ConvertVariableForDispatch<T4>(ve4);
 
-        Dispatch(&p1,
-                 &p2,
-                 &p3,
-                 &p4);
+        Dispatch(&p1, &p2, &p3, &p4);
     }
 
     // -- dispatch method
@@ -1347,6 +1311,7 @@ public:
         CVariableEntry* ve2 = GetContext()->GetParameter(2);
         CVariableEntry* ve3 = GetContext()->GetParameter(3);
         CVariableEntry* ve4 = GetContext()->GetParameter(4);
+
         T1 p1 = ConvertVariableForDispatch<T1>(ve1);
         T2 p2 = ConvertVariableForDispatch<T2>(ve2);
         T3 p3 = ConvertVariableForDispatch<T3>(ve3);
@@ -1384,7 +1349,6 @@ public:
         using T3 = std::tuple_element<2, argument_types>::type;
         using T4 = std::tuple_element<3, argument_types>::type;
 
-
         uint32 classname_hash = Hash(C::_GetClassName());
         CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
         SetScriptContext(script_context);
@@ -1394,7 +1358,6 @@ public:
         GetContext()->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>());
         GetContext()->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>());
         GetContext()->AddParameter("_p4", Hash("_p4"), GetRegisteredType(GetTypeID<T4>()), 1, GetTypeID<T4>());
-
 
         uint32 hash = fe->GetHash();
         tFuncTable* methodtable = script_context->FindNamespace(classname_hash)->GetFuncTable();
@@ -1433,10 +1396,12 @@ public:
         CVariableEntry* ve2 = GetContext()->GetParameter(2);
         CVariableEntry* ve3 = GetContext()->GetParameter(3);
         CVariableEntry* ve4 = GetContext()->GetParameter(4);
+
         T1 p1 = ConvertVariableForDispatch<T1>(ve1);
         T2 p2 = ConvertVariableForDispatch<T2>(ve2);
         T3 p3 = ConvertVariableForDispatch<T3>(ve3);
         T4 p4 = ConvertVariableForDispatch<T4>(ve4);
+
         Dispatch(objaddr, &p1, &p2, &p3, &p4);
     }
 
@@ -1528,11 +1493,7 @@ public:
         T4 p4 = ConvertVariableForDispatch<T4>(ve4);
         T5 p5 = ConvertVariableForDispatch<T5>(ve5);
 
-        Dispatch(&p1,
-                 &p2,
-                 &p3,
-                 &p4,
-                 &p5);
+        Dispatch(&p1, &p2, &p3, &p4, &p5);
     }
 
     // -- dispatch method
@@ -1623,11 +1584,7 @@ public:
         T4 p4 = ConvertVariableForDispatch<T4>(ve4);
         T5 p5 = ConvertVariableForDispatch<T5>(ve5);
 
-        Dispatch(&p1,
-                 &p2,
-                 &p3,
-                 &p4,
-                 &p5);
+        Dispatch(&p1, &p2, &p3, &p4, &p5);
     }
 
     // -- dispatch method
@@ -1708,6 +1665,7 @@ public:
         CVariableEntry* ve3 = GetContext()->GetParameter(3);
         CVariableEntry* ve4 = GetContext()->GetParameter(4);
         CVariableEntry* ve5 = GetContext()->GetParameter(5);
+
         T1 p1 = ConvertVariableForDispatch<T1>(ve1);
         T2 p2 = ConvertVariableForDispatch<T2>(ve2);
         T3 p3 = ConvertVariableForDispatch<T3>(ve3);
@@ -1749,7 +1707,6 @@ public:
         using T4 = std::tuple_element<3, argument_types>::type;
         using T5 = std::tuple_element<4, argument_types>::type;
 
-
         uint32 classname_hash = Hash(C::_GetClassName());
         CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
         SetScriptContext(script_context);
@@ -1760,7 +1717,6 @@ public:
         GetContext()->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>());
         GetContext()->AddParameter("_p4", Hash("_p4"), GetRegisteredType(GetTypeID<T4>()), 1, GetTypeID<T4>());
         GetContext()->AddParameter("_p5", Hash("_p5"), GetRegisteredType(GetTypeID<T5>()), 1, GetTypeID<T5>());
-
 
         uint32 hash = fe->GetHash();
         tFuncTable* methodtable = script_context->FindNamespace(classname_hash)->GetFuncTable();
@@ -1801,11 +1757,13 @@ public:
         CVariableEntry* ve3 = GetContext()->GetParameter(3);
         CVariableEntry* ve4 = GetContext()->GetParameter(4);
         CVariableEntry* ve5 = GetContext()->GetParameter(5);
+
         T1 p1 = ConvertVariableForDispatch<T1>(ve1);
         T2 p2 = ConvertVariableForDispatch<T2>(ve2);
         T3 p3 = ConvertVariableForDispatch<T3>(ve3);
         T4 p4 = ConvertVariableForDispatch<T4>(ve4);
         T5 p5 = ConvertVariableForDispatch<T5>(ve5);
+
         Dispatch(objaddr, &p1, &p2, &p3, &p4, &p5);
     }
 
@@ -1904,12 +1862,7 @@ public:
         T5 p5 = ConvertVariableForDispatch<T5>(ve5);
         T6 p6 = ConvertVariableForDispatch<T6>(ve6);
 
-        Dispatch(&p1,
-                 &p2,
-                 &p3,
-                 &p4,
-                 &p5,
-                 &p6);
+        Dispatch(&p1, &p2, &p3, &p4, &p5, &p6);
     }
 
     // -- dispatch method
@@ -2007,12 +1960,7 @@ public:
         T5 p5 = ConvertVariableForDispatch<T5>(ve5);
         T6 p6 = ConvertVariableForDispatch<T6>(ve6);
 
-        Dispatch(&p1,
-                 &p2,
-                 &p3,
-                 &p4,
-                 &p5,
-                 &p6);
+        Dispatch(&p1, &p2, &p3, &p4, &p5, &p6);
     }
 
     // -- dispatch method
@@ -2099,6 +2047,7 @@ public:
         CVariableEntry* ve4 = GetContext()->GetParameter(4);
         CVariableEntry* ve5 = GetContext()->GetParameter(5);
         CVariableEntry* ve6 = GetContext()->GetParameter(6);
+
         T1 p1 = ConvertVariableForDispatch<T1>(ve1);
         T2 p2 = ConvertVariableForDispatch<T2>(ve2);
         T3 p3 = ConvertVariableForDispatch<T3>(ve3);
@@ -2144,7 +2093,6 @@ public:
         using T5 = std::tuple_element<4, argument_types>::type;
         using T6 = std::tuple_element<5, argument_types>::type;
 
-
         uint32 classname_hash = Hash(C::_GetClassName());
         CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
         SetScriptContext(script_context);
@@ -2156,7 +2104,6 @@ public:
         GetContext()->AddParameter("_p4", Hash("_p4"), GetRegisteredType(GetTypeID<T4>()), 1, GetTypeID<T4>());
         GetContext()->AddParameter("_p5", Hash("_p5"), GetRegisteredType(GetTypeID<T5>()), 1, GetTypeID<T5>());
         GetContext()->AddParameter("_p6", Hash("_p6"), GetRegisteredType(GetTypeID<T6>()), 1, GetTypeID<T6>());
-
 
         uint32 hash = fe->GetHash();
         tFuncTable* methodtable = script_context->FindNamespace(classname_hash)->GetFuncTable();
@@ -2199,12 +2146,14 @@ public:
         CVariableEntry* ve4 = GetContext()->GetParameter(4);
         CVariableEntry* ve5 = GetContext()->GetParameter(5);
         CVariableEntry* ve6 = GetContext()->GetParameter(6);
+
         T1 p1 = ConvertVariableForDispatch<T1>(ve1);
         T2 p2 = ConvertVariableForDispatch<T2>(ve2);
         T3 p3 = ConvertVariableForDispatch<T3>(ve3);
         T4 p4 = ConvertVariableForDispatch<T4>(ve4);
         T5 p5 = ConvertVariableForDispatch<T5>(ve5);
         T6 p6 = ConvertVariableForDispatch<T6>(ve6);
+
         Dispatch(objaddr, &p1, &p2, &p3, &p4, &p5, &p6);
     }
 
@@ -2310,13 +2259,7 @@ public:
         T6 p6 = ConvertVariableForDispatch<T6>(ve6);
         T7 p7 = ConvertVariableForDispatch<T7>(ve7);
 
-        Dispatch(&p1,
-                 &p2,
-                 &p3,
-                 &p4,
-                 &p5,
-                 &p6,
-                 &p7);
+        Dispatch(&p1, &p2, &p3, &p4, &p5, &p6, &p7);
     }
 
     // -- dispatch method
@@ -2421,13 +2364,7 @@ public:
         T6 p6 = ConvertVariableForDispatch<T6>(ve6);
         T7 p7 = ConvertVariableForDispatch<T7>(ve7);
 
-        Dispatch(&p1,
-                 &p2,
-                 &p3,
-                 &p4,
-                 &p5,
-                 &p6,
-                 &p7);
+        Dispatch(&p1, &p2, &p3, &p4, &p5, &p6, &p7);
     }
 
     // -- dispatch method
@@ -2520,6 +2457,7 @@ public:
         CVariableEntry* ve5 = GetContext()->GetParameter(5);
         CVariableEntry* ve6 = GetContext()->GetParameter(6);
         CVariableEntry* ve7 = GetContext()->GetParameter(7);
+
         T1 p1 = ConvertVariableForDispatch<T1>(ve1);
         T2 p2 = ConvertVariableForDispatch<T2>(ve2);
         T3 p3 = ConvertVariableForDispatch<T3>(ve3);
@@ -2569,7 +2507,6 @@ public:
         using T6 = std::tuple_element<5, argument_types>::type;
         using T7 = std::tuple_element<6, argument_types>::type;
 
-
         uint32 classname_hash = Hash(C::_GetClassName());
         CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
         SetScriptContext(script_context);
@@ -2582,7 +2519,6 @@ public:
         GetContext()->AddParameter("_p5", Hash("_p5"), GetRegisteredType(GetTypeID<T5>()), 1, GetTypeID<T5>());
         GetContext()->AddParameter("_p6", Hash("_p6"), GetRegisteredType(GetTypeID<T6>()), 1, GetTypeID<T6>());
         GetContext()->AddParameter("_p7", Hash("_p7"), GetRegisteredType(GetTypeID<T7>()), 1, GetTypeID<T7>());
-
 
         uint32 hash = fe->GetHash();
         tFuncTable* methodtable = script_context->FindNamespace(classname_hash)->GetFuncTable();
@@ -2627,6 +2563,7 @@ public:
         CVariableEntry* ve5 = GetContext()->GetParameter(5);
         CVariableEntry* ve6 = GetContext()->GetParameter(6);
         CVariableEntry* ve7 = GetContext()->GetParameter(7);
+
         T1 p1 = ConvertVariableForDispatch<T1>(ve1);
         T2 p2 = ConvertVariableForDispatch<T2>(ve2);
         T3 p3 = ConvertVariableForDispatch<T3>(ve3);
@@ -2634,6 +2571,7 @@ public:
         T5 p5 = ConvertVariableForDispatch<T5>(ve5);
         T6 p6 = ConvertVariableForDispatch<T6>(ve6);
         T7 p7 = ConvertVariableForDispatch<T7>(ve7);
+
         Dispatch(objaddr, &p1, &p2, &p3, &p4, &p5, &p6, &p7);
     }
 
@@ -2746,14 +2684,7 @@ public:
         T7 p7 = ConvertVariableForDispatch<T7>(ve7);
         T8 p8 = ConvertVariableForDispatch<T8>(ve8);
 
-        Dispatch(&p1,
-                 &p2,
-                 &p3,
-                 &p4,
-                 &p5,
-                 &p6,
-                 &p7,
-                 &p8);
+        Dispatch(&p1, &p2, &p3, &p4, &p5, &p6, &p7, &p8);
     }
 
     // -- dispatch method
@@ -2865,14 +2796,7 @@ public:
         T7 p7 = ConvertVariableForDispatch<T7>(ve7);
         T8 p8 = ConvertVariableForDispatch<T8>(ve8);
 
-        Dispatch(&p1,
-                 &p2,
-                 &p3,
-                 &p4,
-                 &p5,
-                 &p6,
-                 &p7,
-                 &p8);
+        Dispatch(&p1, &p2, &p3, &p4, &p5, &p6, &p7, &p8);
     }
 
     // -- dispatch method
@@ -2971,6 +2895,7 @@ public:
         CVariableEntry* ve6 = GetContext()->GetParameter(6);
         CVariableEntry* ve7 = GetContext()->GetParameter(7);
         CVariableEntry* ve8 = GetContext()->GetParameter(8);
+
         T1 p1 = ConvertVariableForDispatch<T1>(ve1);
         T2 p2 = ConvertVariableForDispatch<T2>(ve2);
         T3 p3 = ConvertVariableForDispatch<T3>(ve3);
@@ -3024,7 +2949,6 @@ public:
         using T7 = std::tuple_element<6, argument_types>::type;
         using T8 = std::tuple_element<7, argument_types>::type;
 
-
         uint32 classname_hash = Hash(C::_GetClassName());
         CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
         SetScriptContext(script_context);
@@ -3038,7 +2962,6 @@ public:
         GetContext()->AddParameter("_p6", Hash("_p6"), GetRegisteredType(GetTypeID<T6>()), 1, GetTypeID<T6>());
         GetContext()->AddParameter("_p7", Hash("_p7"), GetRegisteredType(GetTypeID<T7>()), 1, GetTypeID<T7>());
         GetContext()->AddParameter("_p8", Hash("_p8"), GetRegisteredType(GetTypeID<T8>()), 1, GetTypeID<T8>());
-
 
         uint32 hash = fe->GetHash();
         tFuncTable* methodtable = script_context->FindNamespace(classname_hash)->GetFuncTable();
@@ -3085,6 +3008,7 @@ public:
         CVariableEntry* ve6 = GetContext()->GetParameter(6);
         CVariableEntry* ve7 = GetContext()->GetParameter(7);
         CVariableEntry* ve8 = GetContext()->GetParameter(8);
+
         T1 p1 = ConvertVariableForDispatch<T1>(ve1);
         T2 p2 = ConvertVariableForDispatch<T2>(ve2);
         T3 p3 = ConvertVariableForDispatch<T3>(ve3);
@@ -3093,6 +3017,7 @@ public:
         T6 p6 = ConvertVariableForDispatch<T6>(ve6);
         T7 p7 = ConvertVariableForDispatch<T7>(ve7);
         T8 p8 = ConvertVariableForDispatch<T8>(ve8);
+
         Dispatch(objaddr, &p1, &p2, &p3, &p4, &p5, &p6, &p7, &p8);
     }
 
@@ -3212,15 +3137,7 @@ public:
         T8 p8 = ConvertVariableForDispatch<T8>(ve8);
         T9 p9 = ConvertVariableForDispatch<T9>(ve9);
 
-        Dispatch(&p1,
-                 &p2,
-                 &p3,
-                 &p4,
-                 &p5,
-                 &p6,
-                 &p7,
-                 &p8,
-                 &p9);
+        Dispatch(&p1, &p2, &p3, &p4, &p5, &p6, &p7, &p8, &p9);
     }
 
     // -- dispatch method
@@ -3339,15 +3256,7 @@ public:
         T8 p8 = ConvertVariableForDispatch<T8>(ve8);
         T9 p9 = ConvertVariableForDispatch<T9>(ve9);
 
-        Dispatch(&p1,
-                 &p2,
-                 &p3,
-                 &p4,
-                 &p5,
-                 &p6,
-                 &p7,
-                 &p8,
-                 &p9);
+        Dispatch(&p1, &p2, &p3, &p4, &p5, &p6, &p7, &p8, &p9);
     }
 
     // -- dispatch method
@@ -3452,6 +3361,7 @@ public:
         CVariableEntry* ve7 = GetContext()->GetParameter(7);
         CVariableEntry* ve8 = GetContext()->GetParameter(8);
         CVariableEntry* ve9 = GetContext()->GetParameter(9);
+
         T1 p1 = ConvertVariableForDispatch<T1>(ve1);
         T2 p2 = ConvertVariableForDispatch<T2>(ve2);
         T3 p3 = ConvertVariableForDispatch<T3>(ve3);
@@ -3509,7 +3419,6 @@ public:
         using T8 = std::tuple_element<7, argument_types>::type;
         using T9 = std::tuple_element<8, argument_types>::type;
 
-
         uint32 classname_hash = Hash(C::_GetClassName());
         CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
         SetScriptContext(script_context);
@@ -3524,7 +3433,6 @@ public:
         GetContext()->AddParameter("_p7", Hash("_p7"), GetRegisteredType(GetTypeID<T7>()), 1, GetTypeID<T7>());
         GetContext()->AddParameter("_p8", Hash("_p8"), GetRegisteredType(GetTypeID<T8>()), 1, GetTypeID<T8>());
         GetContext()->AddParameter("_p9", Hash("_p9"), GetRegisteredType(GetTypeID<T9>()), 1, GetTypeID<T9>());
-
 
         uint32 hash = fe->GetHash();
         tFuncTable* methodtable = script_context->FindNamespace(classname_hash)->GetFuncTable();
@@ -3573,6 +3481,7 @@ public:
         CVariableEntry* ve7 = GetContext()->GetParameter(7);
         CVariableEntry* ve8 = GetContext()->GetParameter(8);
         CVariableEntry* ve9 = GetContext()->GetParameter(9);
+
         T1 p1 = ConvertVariableForDispatch<T1>(ve1);
         T2 p2 = ConvertVariableForDispatch<T2>(ve2);
         T3 p3 = ConvertVariableForDispatch<T3>(ve3);
@@ -3582,6 +3491,7 @@ public:
         T7 p7 = ConvertVariableForDispatch<T7>(ve7);
         T8 p8 = ConvertVariableForDispatch<T8>(ve8);
         T9 p9 = ConvertVariableForDispatch<T9>(ve9);
+
         Dispatch(objaddr, &p1, &p2, &p3, &p4, &p5, &p6, &p7, &p8, &p9);
     }
 
@@ -3708,16 +3618,7 @@ public:
         T9 p9 = ConvertVariableForDispatch<T9>(ve9);
         T10 p10 = ConvertVariableForDispatch<T10>(ve10);
 
-        Dispatch(&p1,
-                 &p2,
-                 &p3,
-                 &p4,
-                 &p5,
-                 &p6,
-                 &p7,
-                 &p8,
-                 &p9,
-                 &p10);
+        Dispatch(&p1, &p2, &p3, &p4, &p5, &p6, &p7, &p8, &p9, &p10);
     }
 
     // -- dispatch method
@@ -3843,16 +3744,7 @@ public:
         T9 p9 = ConvertVariableForDispatch<T9>(ve9);
         T10 p10 = ConvertVariableForDispatch<T10>(ve10);
 
-        Dispatch(&p1,
-                 &p2,
-                 &p3,
-                 &p4,
-                 &p5,
-                 &p6,
-                 &p7,
-                 &p8,
-                 &p9,
-                 &p10);
+        Dispatch(&p1, &p2, &p3, &p4, &p5, &p6, &p7, &p8, &p9, &p10);
     }
 
     // -- dispatch method
@@ -3963,6 +3855,7 @@ public:
         CVariableEntry* ve8 = GetContext()->GetParameter(8);
         CVariableEntry* ve9 = GetContext()->GetParameter(9);
         CVariableEntry* ve10 = GetContext()->GetParameter(10);
+
         T1 p1 = ConvertVariableForDispatch<T1>(ve1);
         T2 p2 = ConvertVariableForDispatch<T2>(ve2);
         T3 p3 = ConvertVariableForDispatch<T3>(ve3);
@@ -4024,7 +3917,6 @@ public:
         using T9 = std::tuple_element<8, argument_types>::type;
         using T10 = std::tuple_element<9, argument_types>::type;
 
-
         uint32 classname_hash = Hash(C::_GetClassName());
         CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
         SetScriptContext(script_context);
@@ -4040,7 +3932,6 @@ public:
         GetContext()->AddParameter("_p8", Hash("_p8"), GetRegisteredType(GetTypeID<T8>()), 1, GetTypeID<T8>());
         GetContext()->AddParameter("_p9", Hash("_p9"), GetRegisteredType(GetTypeID<T9>()), 1, GetTypeID<T9>());
         GetContext()->AddParameter("_p10", Hash("_p10"), GetRegisteredType(GetTypeID<T10>()), 1, GetTypeID<T10>());
-
 
         uint32 hash = fe->GetHash();
         tFuncTable* methodtable = script_context->FindNamespace(classname_hash)->GetFuncTable();
@@ -4091,6 +3982,7 @@ public:
         CVariableEntry* ve8 = GetContext()->GetParameter(8);
         CVariableEntry* ve9 = GetContext()->GetParameter(9);
         CVariableEntry* ve10 = GetContext()->GetParameter(10);
+
         T1 p1 = ConvertVariableForDispatch<T1>(ve1);
         T2 p2 = ConvertVariableForDispatch<T2>(ve2);
         T3 p3 = ConvertVariableForDispatch<T3>(ve3);
@@ -4101,6 +3993,7 @@ public:
         T8 p8 = ConvertVariableForDispatch<T8>(ve8);
         T9 p9 = ConvertVariableForDispatch<T9>(ve9);
         T10 p10 = ConvertVariableForDispatch<T10>(ve10);
+
         Dispatch(objaddr, &p1, &p2, &p3, &p4, &p5, &p6, &p7, &p8, &p9, &p10);
     }
 
@@ -4234,17 +4127,7 @@ public:
         T10 p10 = ConvertVariableForDispatch<T10>(ve10);
         T11 p11 = ConvertVariableForDispatch<T11>(ve11);
 
-        Dispatch(&p1,
-                 &p2,
-                 &p3,
-                 &p4,
-                 &p5,
-                 &p6,
-                 &p7,
-                 &p8,
-                 &p9,
-                 &p10,
-                 &p11);
+        Dispatch(&p1, &p2, &p3, &p4, &p5, &p6, &p7, &p8, &p9, &p10, &p11);
     }
 
     // -- dispatch method
@@ -4377,17 +4260,7 @@ public:
         T10 p10 = ConvertVariableForDispatch<T10>(ve10);
         T11 p11 = ConvertVariableForDispatch<T11>(ve11);
 
-        Dispatch(&p1,
-                 &p2,
-                 &p3,
-                 &p4,
-                 &p5,
-                 &p6,
-                 &p7,
-                 &p8,
-                 &p9,
-                 &p10,
-                 &p11);
+        Dispatch(&p1, &p2, &p3, &p4, &p5, &p6, &p7, &p8, &p9, &p10, &p11);
     }
 
     // -- dispatch method
@@ -4504,6 +4377,7 @@ public:
         CVariableEntry* ve9 = GetContext()->GetParameter(9);
         CVariableEntry* ve10 = GetContext()->GetParameter(10);
         CVariableEntry* ve11 = GetContext()->GetParameter(11);
+
         T1 p1 = ConvertVariableForDispatch<T1>(ve1);
         T2 p2 = ConvertVariableForDispatch<T2>(ve2);
         T3 p3 = ConvertVariableForDispatch<T3>(ve3);
@@ -4569,7 +4443,6 @@ public:
         using T10 = std::tuple_element<9, argument_types>::type;
         using T11 = std::tuple_element<10, argument_types>::type;
 
-
         uint32 classname_hash = Hash(C::_GetClassName());
         CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
         SetScriptContext(script_context);
@@ -4586,7 +4459,6 @@ public:
         GetContext()->AddParameter("_p9", Hash("_p9"), GetRegisteredType(GetTypeID<T9>()), 1, GetTypeID<T9>());
         GetContext()->AddParameter("_p10", Hash("_p10"), GetRegisteredType(GetTypeID<T10>()), 1, GetTypeID<T10>());
         GetContext()->AddParameter("_p11", Hash("_p11"), GetRegisteredType(GetTypeID<T11>()), 1, GetTypeID<T11>());
-
 
         uint32 hash = fe->GetHash();
         tFuncTable* methodtable = script_context->FindNamespace(classname_hash)->GetFuncTable();
@@ -4639,6 +4511,7 @@ public:
         CVariableEntry* ve9 = GetContext()->GetParameter(9);
         CVariableEntry* ve10 = GetContext()->GetParameter(10);
         CVariableEntry* ve11 = GetContext()->GetParameter(11);
+
         T1 p1 = ConvertVariableForDispatch<T1>(ve1);
         T2 p2 = ConvertVariableForDispatch<T2>(ve2);
         T3 p3 = ConvertVariableForDispatch<T3>(ve3);
@@ -4650,6 +4523,7 @@ public:
         T9 p9 = ConvertVariableForDispatch<T9>(ve9);
         T10 p10 = ConvertVariableForDispatch<T10>(ve10);
         T11 p11 = ConvertVariableForDispatch<T11>(ve11);
+
         Dispatch(objaddr, &p1, &p2, &p3, &p4, &p5, &p6, &p7, &p8, &p9, &p10, &p11);
     }
 
@@ -4790,18 +4664,7 @@ public:
         T11 p11 = ConvertVariableForDispatch<T11>(ve11);
         T12 p12 = ConvertVariableForDispatch<T12>(ve12);
 
-        Dispatch(&p1,
-                 &p2,
-                 &p3,
-                 &p4,
-                 &p5,
-                 &p6,
-                 &p7,
-                 &p8,
-                 &p9,
-                 &p10,
-                 &p11,
-                 &p12);
+        Dispatch(&p1, &p2, &p3, &p4, &p5, &p6, &p7, &p8, &p9, &p10, &p11, &p12);
     }
 
     // -- dispatch method
@@ -4941,18 +4804,7 @@ public:
         T11 p11 = ConvertVariableForDispatch<T11>(ve11);
         T12 p12 = ConvertVariableForDispatch<T12>(ve12);
 
-        Dispatch(&p1,
-                 &p2,
-                 &p3,
-                 &p4,
-                 &p5,
-                 &p6,
-                 &p7,
-                 &p8,
-                 &p9,
-                 &p10,
-                 &p11,
-                 &p12);
+        Dispatch(&p1, &p2, &p3, &p4, &p5, &p6, &p7, &p8, &p9, &p10, &p11, &p12);
     }
 
     // -- dispatch method
@@ -5075,6 +4927,7 @@ public:
         CVariableEntry* ve10 = GetContext()->GetParameter(10);
         CVariableEntry* ve11 = GetContext()->GetParameter(11);
         CVariableEntry* ve12 = GetContext()->GetParameter(12);
+
         T1 p1 = ConvertVariableForDispatch<T1>(ve1);
         T2 p2 = ConvertVariableForDispatch<T2>(ve2);
         T3 p3 = ConvertVariableForDispatch<T3>(ve3);
@@ -5144,7 +4997,6 @@ public:
         using T11 = std::tuple_element<10, argument_types>::type;
         using T12 = std::tuple_element<11, argument_types>::type;
 
-
         uint32 classname_hash = Hash(C::_GetClassName());
         CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFuncTypeGlobal, this);
         SetScriptContext(script_context);
@@ -5162,7 +5014,6 @@ public:
         GetContext()->AddParameter("_p10", Hash("_p10"), GetRegisteredType(GetTypeID<T10>()), 1, GetTypeID<T10>());
         GetContext()->AddParameter("_p11", Hash("_p11"), GetRegisteredType(GetTypeID<T11>()), 1, GetTypeID<T11>());
         GetContext()->AddParameter("_p12", Hash("_p12"), GetRegisteredType(GetTypeID<T12>()), 1, GetTypeID<T12>());
-
 
         uint32 hash = fe->GetHash();
         tFuncTable* methodtable = script_context->FindNamespace(classname_hash)->GetFuncTable();
@@ -5217,6 +5068,7 @@ public:
         CVariableEntry* ve10 = GetContext()->GetParameter(10);
         CVariableEntry* ve11 = GetContext()->GetParameter(11);
         CVariableEntry* ve12 = GetContext()->GetParameter(12);
+
         T1 p1 = ConvertVariableForDispatch<T1>(ve1);
         T2 p2 = ConvertVariableForDispatch<T2>(ve2);
         T3 p3 = ConvertVariableForDispatch<T3>(ve3);
@@ -5229,6 +5081,7 @@ public:
         T10 p10 = ConvertVariableForDispatch<T10>(ve10);
         T11 p11 = ConvertVariableForDispatch<T11>(ve11);
         T12 p12 = ConvertVariableForDispatch<T12>(ve12);
+
         Dispatch(objaddr, &p1, &p2, &p3, &p4, &p5, &p6, &p7, &p8, &p9, &p10, &p11, &p12);
     }
 
