@@ -639,8 +639,9 @@ bool8 ExecuteScheduledFunction(CScriptContext* script_context, uint32 objectid, 
         }
 
         // -- ensure the type of the parameter value is converted to the type required
+        // note:  the first parameter is *always* the return value, which we initialize to null
         void* srcaddr = NULL;
-        if (src && dst->GetType() >= FIRST_VALID_TYPE)
+        if (i > 0 && src && dst->GetType() >= FIRST_VALID_TYPE)
             srcaddr = TypeConvert(script_context, src->GetType(), src->GetAddr(NULL), dst->GetType());
         else
             srcaddr = nullvalue;
