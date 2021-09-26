@@ -102,6 +102,7 @@ class CConsoleWindow
         static int32 FontWidth() { return gPaddedFontWidth; }
         static int32 FontHeight() { return gPaddedFontHeight; }
         static int32 TitleHeight() { return gPaddedFontHeight + 8; }
+        static int32 TextEditHeight() { return gPaddedFontHeight + 12; }
         static int32 StringWidth(const QString& in_string);
 
         static void ExpandToParentSize(QWidget* in_console_widget);
@@ -120,7 +121,6 @@ class CConsoleWindow
 
         CConsoleOutput* mConsoleOutput;
 
-        QHBoxLayout* mInputLayout;
         QLabel* mInputLabel;
         CConsoleInput* mConsoleInput;
 
@@ -246,20 +246,24 @@ class CConsoleInput : public QLineEdit
 
         void ExpandToParentSize()
         {
+            // -- make sure our input height is correct (allow padding of 2)
+            setFixedHeight(CConsoleWindow::TextEditHeight() - 4);
+
             // -- leave room at the start for the input label: 3x characters '==>'
 			int labelWidth = (CConsoleWindow::FontWidth() * 3);
             QSize parentSize = parentWidget()->size();
             int newWidth = parentSize.width() - labelWidth;
             if (newWidth < 0)
-                newWidth = 0;
-			int newYOffset = parentSize.height() - CConsoleWindow::TitleHeight();
+                newWidth = 0;  
+			int newYOffset = parentSize.height() - CConsoleWindow::TextEditHeight() + 2;
             if (newYOffset < 0)
                 newYOffset = 0;
-			setGeometry(labelWidth, newYOffset, newWidth, CConsoleWindow::TitleHeight());
+			setGeometry(labelWidth, newYOffset, newWidth, CConsoleWindow::TextEditHeight());
             updateGeometry();
 
             // -- update the label as well
-			mInputLabel->setGeometry(0, newYOffset, labelWidth, CConsoleWindow::TitleHeight());
+            int32 label_y_offset = (CConsoleWindow::TextEditHeight() - CConsoleWindow::FontHeight()) / 2;
+			mInputLabel->setGeometry(0, newYOffset + label_y_offset, labelWidth, CConsoleWindow::FontHeight());
         }
 
         void SetText(const char* text, int cursor_pos);
@@ -342,7 +346,8 @@ class CConsoleOutput : public QListWidget
             // -- leave room at the bottom for the console input
             QSize parentSize = parentWidget()->size();
             int newWidth = parentSize.width();
-            int newHeight = parentSize.height() - CConsoleWindow::TitleHeight() * 2;
+            int newHeight = parentSize.height() - CConsoleWindow::TitleHeight() -
+                            CConsoleWindow::TextEditHeight();
             if (newHeight < CConsoleWindow::TitleHeight())
                 newHeight = CConsoleWindow::TitleHeight();
             setGeometry(0, CConsoleWindow::TitleHeight(), newWidth, newHeight);

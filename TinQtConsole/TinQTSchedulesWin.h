@@ -97,13 +97,13 @@ class CDebugSchedulesWin : public QWidget
             // -- resize to be the parent widget's size, with room for the title
             QSize parentSize = parentWidget()->size();
             int newWidth = parentSize.width();
-            int newHeight = parentSize.height() - CConsoleWindow::FontHeight();
-            if (newHeight < 20)
-                newHeight = 20;
-            setGeometry(0, 20, newWidth, newHeight);
+            int newHeight = parentSize.height();
+            if (newHeight < CConsoleWindow::TitleHeight())
+                newHeight = CConsoleWindow::TitleHeight();
+            setGeometry(0, CConsoleWindow::TitleHeight(), newWidth, newHeight);
             updateGeometry();
 
-            mScrollArea->setGeometry(0, 20, newWidth, newHeight);
+            mScrollArea->setGeometry(0, 20, newWidth, newHeight - CConsoleWindow::FontHeight() * 2);
             mScrollArea->updateGeometry();
         }
 

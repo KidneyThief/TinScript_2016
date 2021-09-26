@@ -48,12 +48,14 @@ CScheduleEntry::CScheduleEntry(uint32 sched_id, bool repeat, int32 time_remainin
     , mScheduleID(sched_id)
     , mParent(parent)
 {
+    // -- set our height
+    setFixedHeight(CConsoleWindow::TextEditHeight());
     // -- get the current number of entries added to this window
     int count = parent->GetEntryCount() + 1;
 
     QSize parentSize = parent->size();
     int newWidth = parentSize.width();
-	parent->GetContent()->setGeometry(0, 20, newWidth, (count + 2) * CConsoleWindow::FontHeight());
+	parent->GetContent()->setGeometry(0, 20, newWidth, (count + 2) * CConsoleWindow::TextEditHeight());
 
     // -- kill button (it's partially checked, if this is a repeated schedule)
     mKillButton = new QCheckBox();
@@ -192,6 +194,7 @@ CDebugSchedulesWin::CDebugSchedulesWin(QWidget* parent)
     mLayout->addWidget(new QLabel("Sched ID"), 0, 2);
     mLayout->addWidget(new QLabel("Object"), 0, 3);
     mLayout->addWidget(new QLabel("Command"), 0, 4);
+    mLayout->setRowMinimumHeight(0, CConsoleWindow::TextEditHeight() + 2);
     mLayout->setRowStretch(0, 1);
     mLayout->setColumnStretch(4, 1);
 
