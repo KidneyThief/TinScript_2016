@@ -33,7 +33,7 @@ void SetTimeScale(int time_ticks)
     float new_time_scale = time_ticks;
     new_time_scale /= 100.0f;
     SimSetTimeScale(new_time_scale);
-    string new_description = StringCat("[", time_ticks, "%%]: Set the simulation time scale.");
+    string new_description = StringCat("[", time_ticks, "%]: Set the simulation time scale.");
     SocketExec(hash("ToolPaletteSetEntryDescription"), "Asteroids::TimeScale", new_description);
 }
-SocketExec(hash("ToolPaletteAddSlider"), "Asteroids", "TimeScale", "[100%%]: Set the simulation time scale", 1, 400, 100, "SetTimeScale");
+SocketExec(hash("ToolPaletteAddSlider"), "Asteroids", "TimeScale", "[100%]: Set the simulation time scale", 1, 400, 100, "SetTimeScale");

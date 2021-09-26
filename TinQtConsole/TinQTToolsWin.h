@@ -188,7 +188,6 @@ class CDebugToolsWin : public QWidget
         virtual void paintEvent(QPaintEvent* e)
         {
             ExpandToParentSize();
-            //QListWidget::paintEvent(e);
         }
 
         void ExpandToParentSize()
@@ -202,7 +201,7 @@ class CDebugToolsWin : public QWidget
 			setGeometry(0, CConsoleWindow::FontHeight(), newWidth, newHeight);
             updateGeometry();
 
-			mScrollArea->setGeometry(0, CConsoleWindow::FontHeight(), newWidth, newHeight);
+			mScrollArea->setGeometry(0, CConsoleWindow::FontHeight(), newWidth, newHeight - CConsoleWindow::FontHeight());
             mScrollArea->updateGeometry();
         }
 

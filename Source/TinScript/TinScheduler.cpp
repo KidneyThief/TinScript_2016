@@ -390,8 +390,9 @@ void CScheduler::InsertCommand(CCommand* newcommand)
     else
     {
         // -- insert it into the list, in after curschedule
+        // note:  if the dispatch times are the same, it goes *after*, so we preserve the insertion order
         CCommand* curschedule = mHead;
-        while (curschedule->mNext && curschedule->mNext->mDispatchTime < newcommand->mDispatchTime)
+        while (curschedule->mNext && curschedule->mNext->mDispatchTime <= newcommand->mDispatchTime)
             curschedule = curschedule->mNext;
         newcommand->mNext = curschedule->mNext;
         newcommand->mPrev = curschedule;
