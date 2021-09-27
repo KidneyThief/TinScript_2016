@@ -97,12 +97,12 @@ class CDebugObjectInspectWin : public QWidget
             QSize parentSize = parentWidget()->size();
             int newWidth = parentSize.width();
             int newHeight = parentSize.height() - CConsoleWindow::FontHeight();
-            if (newHeight < 20)
-                newHeight = 20;
-            setGeometry(0, 20, newWidth, newHeight);
+            if (newHeight < CConsoleWindow::FontHeight())
+                newHeight = CConsoleWindow::FontHeight();
+            setGeometry(0, CConsoleWindow::FontHeight(), newWidth, newHeight);
             updateGeometry();
 
-            mScrollArea->setGeometry(0, 20, newWidth, newHeight);
+            mScrollArea->setGeometry(0, CConsoleWindow::FontHeight(), newWidth, newHeight - CConsoleWindow::FontHeight());
             mScrollArea->updateGeometry();
         }
 

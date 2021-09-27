@@ -76,7 +76,7 @@ void CObjectInspectEntry::Initialize(const TinScript::CDebuggerWatchVarEntry& de
 
     QSize parentSize = mParent->size();
     int newWidth = parentSize.width();
-	mParent->GetContent()->setGeometry(0, 20, newWidth, (count + 2) * CConsoleWindow::FontHeight());
+	mParent->GetContent()->setGeometry(0, CConsoleWindow::TitleHeight(), newWidth, (count + 2) * CConsoleWindow::TextEditHeight());
 
     mNameLabel = new QLabel(debugger_entry.mVarName);
     TinScript::SafeStrcpy(mName, sizeof(mName), debugger_entry.mVarName, TinScript::kMaxNameLength);
@@ -102,9 +102,12 @@ void CObjectInspectEntry::Initialize(const TinScript::CDebuggerWatchVarEntry& de
     // -- add this to the window
     mParent->GetLayout()->addWidget(mTypeLabel, count, 0, 1, 1);
     mParent->GetLayout()->addWidget(mNameLabel, count, 1, 1, 1);
+    mTypeLabel->setFixedHeight(CConsoleWindow::TextEditHeight());
+    mNameLabel->setFixedHeight(CConsoleWindow::TextEditHeight());
     if (mValue)
     {
         mParent->GetLayout()->addWidget(mValue, count, 2, 1, 2);
+        mValue->setFixedHeight(CConsoleWindow::TextEditHeight());
     }
     mParent->AddEntry(this);
 
@@ -160,17 +163,23 @@ CDebugObjectInspectWin::CDebugObjectInspectWin(uint32 object_id, const char* obj
     mScrollArea->setWidget(mScrollContent);
     mScrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
     mScrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
-    ExpandToParentSize();
 
     // -- add the refresh button
     mRefreshButton = new QPushButton("Refresh");
+    mRefreshButton->setFixedHeight(CConsoleWindow::TextEditHeight());
     mLayout->addWidget(mRefreshButton, 0, 0);
     QObject::connect(mRefreshButton, SIGNAL(clicked()), this, SLOT(OnButtonRefreshPressed()));
 
     const char* object_derivation =
         CConsoleWindow::GetInstance()->GetDebugObjectBrowserWin()->GetObjectDerivation(object_id);
-    mLayout->addWidget(new QLabel("Derivation:"), 0, 1);
-    mLayout->addWidget(new QLabel(object_derivation), 0, 2);
+    QLabel* derivation_label = new QLabel("Derivation:");
+    derivation_label->setFixedHeight(CConsoleWindow::TextEditHeight());
+    QLabel* derivation_content = new QLabel(object_derivation);
+    derivation_content->setFixedHeight(CConsoleWindow::TextEditHeight());
+    mLayout->addWidget(derivation_label, 0, 1);
+    mLayout->addWidget(derivation_content, 0, 2);
+
+    ExpandToParentSize();
 }
 
 // ====================================================================================================================
