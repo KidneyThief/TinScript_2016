@@ -2500,7 +2500,7 @@ void CScriptContext::DebuggerSendWatchVariable(CDebuggerWatchVarEntry* watch_var
     *dataPtr++ = valueLength;
 
     // -- write the value string
-    SafeStrcpy((char*)dataPtr, nameLength, watch_var_entry->mValue, valueLength);
+    SafeStrcpy((char*)dataPtr, valueLength, watch_var_entry->mValue, valueLength);
     dataPtr += (valueLength / 4);
 
     // -- write the cached var name hash
@@ -2541,8 +2541,8 @@ void CScriptContext::DebuggerSendObjectMembers(CDebuggerWatchVarEntry* callingFu
 
         // -- TYPE_void marks this as a namespace label, and set the object's name as the value
         watch_entry.mType = TYPE_void;
-        SafeStrcpy(watch_entry.mVarName, sizeof(kMaxNameLength), "self", kMaxNameLength);
-        SafeStrcpy(watch_entry.mValue, sizeof(kMaxNameLength), oe->GetName(), kMaxNameLength);
+        SafeStrcpy(watch_entry.mVarName, sizeof(watch_entry.mVarName), "self", kMaxNameLength);
+        SafeStrcpy(watch_entry.mValue, sizeof(watch_entry.mValue), oe->GetName(), kMaxNameLength);
 
         // -- zero out the size
         watch_entry.mArraySize = 0;
