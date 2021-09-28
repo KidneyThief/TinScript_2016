@@ -61,6 +61,7 @@ class CDebugFunctionAssistWin : public QWidget
 
         void ClearSearch();
         void NotifyFunctionAssistEntry(const TinScript::CDebuggerFunctionAssistEntry& assist_entry);
+        void NotifyListObjectsComplete();
 
         // -- there are three reasons to update the search results - if we haven't changed the
         // -- search string, but we've received potentially acceptable new entries
@@ -71,7 +72,7 @@ class CDebugFunctionAssistWin : public QWidget
         // -- string comparison functions for filtering
         bool StringContainsFilter(const char* string, bool& exact_match, bool& new_object_id);
         bool FunctionContainsFilter(const char* string);
-        void UpdateFilter(const char* filter);
+        void UpdateFilter(const char* filter, bool8 force_refresh = false);
 
         // -- methods to handle selecting and issuing a function
         void SetAssistObjectID(uint32 object_id);

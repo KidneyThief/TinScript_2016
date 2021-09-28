@@ -2329,6 +2329,14 @@ void DebuggerNotifySetRemoveObject(int32 set_id, int32 object_id)
 }
 
 // ====================================================================================================================
+// DebuggerListObjectsComplete():  When DebuggerListObjects() is issued, this completion notification is sent back.
+// ====================================================================================================================
+void DebuggerListObjectsComplete()
+{
+    CConsoleWindow::GetInstance()->GetDebugFunctionAssistWin()->NotifyListObjectsComplete();
+}
+
+// ====================================================================================================================
 // DebuggerNotifyTimeScale():  Receive notification of a canceled or completed schedule.
 // ====================================================================================================================
 void DebuggerNotifyTimeScale(float time_scale)
@@ -2377,6 +2385,8 @@ REGISTER_FUNCTION_P5(DebuggerNotifyCreateObject, DebuggerNotifyCreateObject, voi
 REGISTER_FUNCTION_P1(DebuggerNotifyDestroyObject, DebuggerNotifyDestroyObject, void, int32);
 REGISTER_FUNCTION_P3(DebuggerNotifySetAddObject, DebuggerNotifySetAddObject, void, int32, int32, bool8);
 REGISTER_FUNCTION_P2(DebuggerNotifySetRemoveObject, DebuggerNotifySetRemoveObject, void, int32, int32);
+
+REGISTER_FUNCTION(DebuggerListObjectsComplete, DebuggerListObjectsComplete);
 
 // == Scheduler Registration ==========================================================================================
 

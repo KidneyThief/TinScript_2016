@@ -263,11 +263,10 @@ void CDebugSchedulesWin::RemoveSchedule(uint32 sched_id)
 // ====================================================================================================================
 void CDebugSchedulesWin::RemoveAll()
 {
-    QList<uint32>& keys = mEntryMap.keys();
-    while (keys.size() > 0)
+    // -- delete the entry pointers in the map
+    for (auto iter : mEntryMap)
     {
-        CScheduleEntry* entry = mEntryMap[keys[0]];
-        mEntryMap.remove(keys[0]);
+        CScheduleEntry* entry = iter;
         delete entry;
     }
 

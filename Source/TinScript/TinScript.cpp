@@ -3024,7 +3024,7 @@ void CScriptContext::DebuggerNotifyCreateObject(CObjectEntry* oe)
     // -- send the entry
     SocketManager::SendExec(Hash("DebuggerNotifyCreateObject"), object_id_buf,
                             oe->GetNameHash() != 0 ? oe->GetName() : "", derivation_buf,
-                            created_hash_buf, created_line_buf, nullptr, nullptr);
+                            created_hash_buf, created_line_buf);
 }
 
 // ====================================================================================================================
@@ -3095,6 +3095,9 @@ void CScriptContext::DebuggerListObjects(uint32 parent_id, uint32 object_id)
             // -- next object
             oe = GetObjectDictionary()->Next();
         }
+
+        // -- notify the debugger we've completed sending the list of objects
+        SocketManager::SendExec(Hash("DebuggerListObjectsComplete"));
     }
 
     // -- else we have a specific object to dump
@@ -3717,9 +3720,6 @@ bool8 CScriptContext::BeginThreadExec(uint32 func_hash)
     // -- ensure we have a script context (that we're not shutting down), and the func_hash is valid
     if (GetGlobalNamespace()->GetFuncTable()->FindItem(func_hash) == nullptr)
     {
-        //ScriptAssert_(this, 0, "<internal>", -1, "Error - CScriptContext::BeginThreadExec(): unable to find function hash: 0x%x\n"
-        //              "If remote called SocketExec(), remember it's SocketExec(hash('MyFunction'), args...);", func_hash);
-        // note:  asserts during threaded execution cause crashes - find out why!
         TinPrint(this, "Error - CScriptContext::BeginThreadExec(): unable to find function hash: 0x%x\n"
                        "If remote called SocketExec(), remember it's SocketExec(hash('MyFunction'), args...);\n\n", func_hash);
         return (false);
@@ -4148,8 +4148,7 @@ void DebuggerRequestStringUnhash(uint32 string_hash)
     // -- notify the debugger of the result
     char hash_as_string[16];
     sprintf_s(hash_as_string, "%d", string_hash);
-    SocketManager::SendExec(Hash("DebuggerNotifyStringUnhash"), hash_as_string, string_value, nullptr,
-                            nullptr, nullptr, nullptr, nullptr);
+    SocketManager::SendExec(Hash("DebuggerNotifyStringUnhash"), hash_as_string, string_value);
 }
 
 // -------------------------------------------------------------------------------------------------------------------

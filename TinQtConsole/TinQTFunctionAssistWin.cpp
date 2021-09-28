@@ -160,7 +160,7 @@ void CDebugFunctionAssistWin::ClearSearch()
 // ====================================================================================================================
 void CDebugFunctionAssistWin::NotifyFunctionAssistEntry(const TinScript::CDebuggerFunctionAssistEntry& assist_entry)
 {
-    // -- ensure this is for our current search objectc
+    // -- ensure this is for our current search object
     if (assist_entry.mObjectID != mSearchObjectID)
         return;
 
@@ -175,6 +175,14 @@ void CDebugFunctionAssistWin::NotifyFunctionAssistEntry(const TinScript::CDebugg
 
     // -- update the filtered display (given the new entry - we'll see if it needs to be added to the results)
     UpdateSearchNewEntry(assist_entry.mFunctionHash);
+}
+
+// ====================================================================================================================
+// NotifyListObjectsComplete():  Called when DebuggerListObjects() has completed sending the complete list
+// ====================================================================================================================
+void CDebugFunctionAssistWin::NotifyListObjectsComplete()
+{
+    UpdateFilter(mFilterString, true);
 }
 
 // ====================================================================================================================
@@ -269,14 +277,14 @@ bool CDebugFunctionAssistWin::FunctionContainsFilter(const char* string)
 // ====================================================================================================================
 // void UpdateFilter():  Update the search string, and filter the function list.
 // ====================================================================================================================
-void CDebugFunctionAssistWin::UpdateFilter(const char* filter)
+void CDebugFunctionAssistWin::UpdateFilter(const char* filter, bool8 force_refresh)
 {
     if (!filter)
         filter = "";
 
     // -- trim the whitespace from the front
     const char* filter_ptr = filter;
-    while (*filter_ptr <= 0x20)
+    while (*filter_ptr > 0x00 && *filter_ptr <= 0x20)
         ++filter_ptr;
 
     // -- call the string filter method - we don't actually care about the return value,
@@ -286,7 +294,7 @@ void CDebugFunctionAssistWin::UpdateFilter(const char* filter)
     StringContainsFilter(filter_ptr, exact_match, new_object_search);
 
     // -- if our search object is invalid, then it's by definition, a new search every time the filter changes
-    if (mSearchObjectID == 0)
+    if (mSearchObjectID == 0 || force_refresh)
     {
         new_object_search = true;
         exact_match = false;
@@ -353,7 +361,7 @@ void CDebugFunctionAssistWin::UpdateFilter(const char* filter)
         }
 
         // -- if we found an object, issue the function query
-        if (object_id != mSearchObjectID)
+        if (object_id != mSearchObjectID || force_refresh)
         {
             // -- clear the search, and set the new (possibly invalid) object ID
             ClearSearch();
