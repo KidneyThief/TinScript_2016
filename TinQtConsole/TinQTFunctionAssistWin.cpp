@@ -67,17 +67,18 @@ CDebugFunctionAssistWin::CDebugFunctionAssistWin(QWidget* parent)
     QGridLayout* identifier_layout = new QGridLayout(identifier_widget);
     mObjectIndentifier = new QLabel("<global scope>", identifier_widget);
 	mObjectIndentifier->setFixedHeight(CConsoleWindow::FontHeight());
-	QPushButton* method_button = new QPushButton("Method", identifier_widget);
-	QPushButton* browse_button = new QPushButton("Object", identifier_widget);
+	QPushButton* method_button = new QPushButton("Open Source", identifier_widget);
+	//QPushButton* browse_button = new QPushButton("Object", identifier_widget);
     QPushButton* created_button = new QPushButton("Created", identifier_widget);
     method_button->setFixedHeight(CConsoleWindow::TextEditHeight());
-    browse_button->setFixedHeight(CConsoleWindow::TextEditHeight());
+    //browse_button->setFixedHeight(CConsoleWindow::TextEditHeight());
     created_button->setFixedHeight(CConsoleWindow::TextEditHeight());
 
     identifier_layout->addWidget(mObjectIndentifier, 0, 0, 1, 3);
 	identifier_layout->addWidget(method_button, 1, 0, 1, 1);
-    identifier_layout->addWidget(browse_button, 1, 1, 1, 1);
-    identifier_layout->addWidget(created_button, 1, 2, 1, 1);
+    //identifier_layout->addWidget(browse_button, 1, 1, 1, 1);
+    //identifier_layout->addWidget(created_button, 1, 2, 1, 1);
+    identifier_layout->addWidget(created_button, 1, 1, 1, 1);
 
     identifier_layout->setRowStretch(0, 0);
 
@@ -100,7 +101,7 @@ CDebugFunctionAssistWin::CDebugFunctionAssistWin(QWidget* parent)
 
     // -- hook up the method and browse button
 	QObject::connect(method_button, SIGNAL(clicked()), this, SLOT(OnButtonMethodPressed()));
-	QObject::connect(browse_button, SIGNAL(clicked()), this, SLOT(OnButtonBrowsePressed()));
+	//QObject::connect(browse_button, SIGNAL(clicked()), this, SLOT(OnButtonBrowsePressed()));
     QObject::connect(created_button, SIGNAL(clicked()), this, SLOT(OnButtonCreatedPressed()));
 }
 
@@ -518,6 +519,11 @@ void CDebugFunctionAssistWin::NotifyFunctionDoubleClicked(TinScript::CDebuggerFu
         sprintf_s(new_filter, "%d.", list_entry->mObjectID);
         mFunctionInput->setText(new_filter);
         UpdateFilter(new_filter);
+
+        if (mSearchObjectID > 0)
+        {
+            CConsoleWindow::GetInstance()->GetDebugObjectBrowserWin()->SetSelectedObject(mSearchObjectID);
+        }
     }
     else
     {
@@ -782,8 +788,22 @@ CFunctionListEntry::CFunctionListEntry(TinScript::CDebuggerFunctionAssistEntry* 
         else
             setText(0, "");
 
-        // -- set the function name
-        setText(1, _entry->mFunctionName);
+        // -- set the function name, appended with parenthesis for readability
+        setText(1,QString(_entry->mFunctionName).append("()"));
+
+        // -- set the source, C++, or try to find the actual script
+        if (_entry->mCodeBlockHash == 0)
+        {
+            setText(2, QString("[C++]"));
+        }
+        else
+        {
+            const char* filename = TinScript::UnHash(_entry->mCodeBlockHash);
+            if (filename != nullptr)
+            {
+                setText(2, QString(filename).append(" @ ").append(QString::number(_entry->mLineNumber)));
+            }
+        }
     }
 
     // -- all new entries begin hidden
@@ -806,14 +826,17 @@ CFunctionAssistList::CFunctionAssistList(CDebugFunctionAssistWin* owner, QWidget
     : QTreeWidget(parent)
     , mOwner(owner)
 {
-    setColumnCount(2);
+    setColumnCount(3);
     setItemsExpandable(false);
     setExpandsOnDoubleClick(false);
+    setColumnWidth(0, CConsoleWindow::StringWidth("WWWWWWWWWWWW"));
+    setColumnWidth(1,CConsoleWindow::StringWidth("WWWWWWWWWWWWWWWWWWWW"));
 
     // -- set the header
   	QTreeWidgetItem* header = new QTreeWidgetItem();
 	header->setText(0,QString("Namespace"));
 	header->setText(1,QString("Function"));
+    header->setText(2,QString("Source"));
 	setHeaderItem(header);
 
     // -- connect up both the clicked and double clicked slots

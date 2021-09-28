@@ -132,7 +132,7 @@ class CFunctionAssistInput : public QLineEdit
 };
 
 // ====================================================================================================================
-// class CFunctionListEntry:  An entry in the list of filtered functions availalble.
+// class CFunctionListEntry:  An entry in the list of filtered functions available.
 // ====================================================================================================================
 class CFunctionListEntry : public QTreeWidgetItem
 {
@@ -171,7 +171,7 @@ class CFunctionAssistList : public QTreeWidget
 };
 
 // ====================================================================================================================
-// class CFunctionParameterEntry:  A paraneter specification for the selected function.
+// class CFunctionParameterEntry:  A parameter specification for the selected function.
 // ====================================================================================================================
 class CFunctionParameterEntry : public QTreeWidgetItem
 {
