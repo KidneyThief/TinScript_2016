@@ -53,7 +53,6 @@ CDebugFunctionAssistWin::CDebugFunctionAssistWin(QWidget* parent)
 
     // -- create the input components
     QWidget* input_widget = new QWidget(this);
-    input_widget->setFixedHeight(CConsoleWindow::FontHeight() * 3);
     input_widget->setMinimumWidth(80);
     QHBoxLayout* input_layout = new QHBoxLayout(input_widget);
     mFunctionInput = new CFunctionAssistInput(this, input_widget);
@@ -63,7 +62,7 @@ CDebugFunctionAssistWin::CDebugFunctionAssistWin(QWidget* parent)
 
     // -- create the object identifier
     QWidget* identifier_widget = new QWidget(this);
-    identifier_widget->setFixedHeight(CConsoleWindow::FontHeight() * 3);
+    identifier_widget->setFixedHeight(CConsoleWindow::TextEditHeight() * 2 + 4);
     identifier_widget->setMinimumWidth(80);
     QGridLayout* identifier_layout = new QGridLayout(identifier_widget);
     mObjectIndentifier = new QLabel("<global scope>", identifier_widget);
@@ -71,14 +70,16 @@ CDebugFunctionAssistWin::CDebugFunctionAssistWin(QWidget* parent)
 	QPushButton* method_button = new QPushButton("Method", identifier_widget);
 	QPushButton* browse_button = new QPushButton("Object", identifier_widget);
     QPushButton* created_button = new QPushButton("Created", identifier_widget);
-    method_button->setFixedHeight(CConsoleWindow::FontHeight());
-    browse_button->setFixedHeight(CConsoleWindow::FontHeight());
-    created_button->setFixedHeight(CConsoleWindow::FontHeight());
+    method_button->setFixedHeight(CConsoleWindow::TextEditHeight());
+    browse_button->setFixedHeight(CConsoleWindow::TextEditHeight());
+    created_button->setFixedHeight(CConsoleWindow::TextEditHeight());
 
     identifier_layout->addWidget(mObjectIndentifier, 0, 0, 1, 3);
 	identifier_layout->addWidget(method_button, 1, 0, 1, 1);
     identifier_layout->addWidget(browse_button, 1, 1, 1, 1);
     identifier_layout->addWidget(created_button, 1, 2, 1, 1);
+
+    identifier_layout->setRowStretch(0, 0);
 
     // -- create the function list
     mFunctionList = new CFunctionAssistList(this, this);
@@ -88,12 +89,9 @@ CDebugFunctionAssistWin::CDebugFunctionAssistWin(QWidget* parent)
 
     // add the 4x pieces to the main layout
     main_layout->addWidget(input_widget, 0, 0);
-    main_layout->addWidget(identifier_widget, 0, 1);
-    main_layout->addWidget(mFunctionList, 1, 0);
-    main_layout->addWidget(mParameterList, 1, 1);
-
-    main_layout->setRowStretch(0, 1);
-    main_layout->setColumnStretch(1, 1);
+    main_layout->addWidget(identifier_widget, 1, 0);
+    main_layout->addWidget(mFunctionList, 2, 0);
+    main_layout->addWidget(mParameterList, 3, 0);
 
     // -- ensure we start with a clean search
 	mSelectedFunctionHash = 0;
@@ -335,9 +333,13 @@ void CDebugFunctionAssistWin::UpdateFilter(const char* filter)
 
         // -- set the search scope label
         if (object_id < 0)
+        {
             mObjectIndentifier->setText("<invalid>");
+        }
         else if (object_id == 0)
+        {
             mObjectIndentifier->setText("<global scope>");
+        }
         else
         {
             const char* object_identifier =
@@ -400,8 +402,9 @@ void CDebugFunctionAssistWin::UpdateFilter(const char* filter)
         }
     }
 
-    // -- else, loop through and see which entries must be toggled
-    else
+    // -- if we didn't find an object, we're using the global scope
+    // -- alternatively, we're continuing an existing with an updated filter
+    if (mSearchObjectID == 0 || !new_object_search)
     {
         // -- list objects first
         QList<uint32>& object_id_list = mObjectEntryMap.keys();
@@ -499,10 +502,6 @@ void CDebugFunctionAssistWin::NotifyFunctionDoubleClicked(TinScript::CDebuggerFu
 {
 	// -- clear the selected function
 	mSelectedFunctionHash = 0;
-
-	// -- ensure we have a valid search
-    if (mSearchObjectID == 0)
-        return;
 
     if (list_entry->mIsObjectEntry)
     {

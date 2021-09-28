@@ -422,7 +422,7 @@ bool SendExec(int32 func_hash, const char* arg1, const char* arg2, const char* a
     if (!newPacket)
     {
         ScriptAssert_(TinScript::GetContext(), false, "<internal>", -1,
-                      "Error - SocketManager::SendExec():  unable to construct the packet\n");
+                      "Error - SocketManager::SendExec(): not connected - don't forget to SocketListen()\n");
         return (false);
     }
 
@@ -1385,7 +1385,7 @@ bool CSocket::SendScriptSignature(uint32 func_hash, TinScript::CFunctionContext*
     if (!newPacket)
     {
         ScriptAssert_(mScriptContext, false, "<internal>", -1,
-                      "Error - SendScriptSignature():  unable to construct the packet\n");
+                      "Error - SendScriptSignature():  not connected - don't forget to SocketListen()\n");
         return (false);
     }
 
