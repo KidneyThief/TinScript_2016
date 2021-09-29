@@ -56,9 +56,12 @@ CDebugFunctionAssistWin::CDebugFunctionAssistWin(QWidget* parent)
     input_widget->setMinimumWidth(80);
     QHBoxLayout* input_layout = new QHBoxLayout(input_widget);
     mFunctionInput = new CFunctionAssistInput(this, input_widget);
+    QPushButton* refresh_button = new QPushButton("Refresh",input_widget);
+    refresh_button->setFixedWidth(100);
 
     input_layout->addWidget(new QLabel("Search:"));
     input_layout->addWidget(mFunctionInput, 1);
+    input_layout->addWidget(refresh_button, 2);
 
     // -- create the object identifier
     QWidget* identifier_widget = new QWidget(this);
@@ -96,11 +99,13 @@ CDebugFunctionAssistWin::CDebugFunctionAssistWin(QWidget* parent)
 
     // -- ensure we start with a clean search
 	mSelectedFunctionHash = 0;
+    mSelectedObjectID = 0;
 	mSearchObjectID = 0;
     mFilterString[0] = '\0';
 
-    // -- hook up the method and browse button
-	QObject::connect(method_button, SIGNAL(clicked()), this, SLOT(OnButtonMethodPressed()));
+    // -- hook up the button signals
+	QObject::connect(refresh_button, SIGNAL(clicked()), this, SLOT(OnButtonFilterRefreshPressed()));
+    QObject::connect(method_button,SIGNAL(clicked()),this,SLOT(OnButtonMethodPressed()));
 	//QObject::connect(browse_button, SIGNAL(clicked()), this, SLOT(OnButtonBrowsePressed()));
     QObject::connect(created_button, SIGNAL(clicked()), this, SLOT(OnButtonCreatedPressed()));
 }
@@ -132,6 +137,7 @@ void CDebugFunctionAssistWin::ClearSearch()
 {
     // -- clear the parameter and function list
 	mSelectedFunctionHash = 0;
+    mSelectedObjectID = 0;
 	mParameterList->Clear();
     mFunctionList->Clear();
 
@@ -471,6 +477,7 @@ void CDebugFunctionAssistWin::SetAssistObjectID(uint32 object_id)
     {
 		// -- clear the selected function hash
 		mSelectedFunctionHash = 0;
+        mSelectedObjectID = 0;
 
 		if (object_id == 0)
         {
@@ -494,18 +501,25 @@ void CDebugFunctionAssistWin::NotifyFunctionClicked(TinScript::CDebuggerFunction
 {
 	// -- clear the selected function
 	mSelectedFunctionHash = 0;
+    mSelectedObjectID = 0;
 
     // -- clicking on an object does nothing
-    if (!list_entry || list_entry->mIsObjectEntry)
+    if (!list_entry)
         return;
 
-    if (!mFunctionEntryMap.contains(list_entry->mFunctionHash))
-        return;
-
-	// -- cache the selected function hash, and populate the parameter list
-	mSelectedFunctionHash = list_entry->mFunctionHash;
-    TinScript::CDebuggerFunctionAssistEntry* assist_entry = mFunctionEntryMap[list_entry->mFunctionHash];
-    mParameterList->Populate(assist_entry);
+    if (!list_entry->mIsObjectEntry && mFunctionEntryMap.contains(list_entry->mFunctionHash))
+    {
+	    // -- cache the selected function hash, and populate the parameter list
+	    mSelectedFunctionHash = list_entry->mFunctionHash;
+        mSelectedObjectID = 0;
+        TinScript::CDebuggerFunctionAssistEntry* assist_entry = mFunctionEntryMap[list_entry->mFunctionHash];
+        mParameterList->Populate(assist_entry);
+    }
+    else if (list_entry->mIsObjectEntry && mObjectEntryMap.contains(list_entry->mObjectID))
+    {
+        mSelectedFunctionHash = 0;
+        mSelectedObjectID = list_entry->mObjectID;
+    }
 }
 
 // ====================================================================================================================
@@ -515,6 +529,7 @@ void CDebugFunctionAssistWin::NotifyFunctionDoubleClicked(TinScript::CDebuggerFu
 {
 	// -- clear the selected function
 	mSelectedFunctionHash = 0;
+    mSelectedObjectID = 0;
 
     if (list_entry->mIsObjectEntry)
     {
@@ -578,7 +593,15 @@ void CDebugFunctionAssistWin::NotifyFunctionDoubleClicked(TinScript::CDebuggerFu
 }
 
 // ====================================================================================================================
-// OnButtonMethodPressed():  FOr the search object ID, find the file/line implementation of the selected method.
+// OnButtonFilterRefreshPressed():  Update the filter to reflect target-side changes (new methods, objects, etc...)
+// ====================================================================================================================
+void CDebugFunctionAssistWin::OnButtonFilterRefreshPressed()
+{
+    UpdateFilter(mFilterString, true);
+}
+
+// ====================================================================================================================
+// OnButtonMethodPressed():  For the search object ID, find the file/line implementation of the selected method.
 // ====================================================================================================================
 void CDebugFunctionAssistWin::OnButtonMethodPressed()
 {
@@ -597,7 +620,10 @@ void CDebugFunctionAssistWin::OnButtonMethodPressed()
 // ====================================================================================================================
 void CDebugFunctionAssistWin::OnButtonCreatedPressed()
 {
-    CConsoleWindow::GetInstance()->GetDebugObjectBrowserWin()->DisplayCreatedFileLine(mSearchObjectID);
+    if (mSearchObjectID > 0)
+        CConsoleWindow::GetInstance()->GetDebugObjectBrowserWin()->DisplayCreatedFileLine(mSearchObjectID);
+    else if (mSelectedObjectID > 0)
+        CConsoleWindow::GetInstance()->GetDebugObjectBrowserWin()->DisplayCreatedFileLine(mSelectedObjectID);
 }
 
 // ====================================================================================================================
