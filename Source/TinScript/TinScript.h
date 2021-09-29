@@ -152,45 +152,6 @@ const int32 kCompilerVersion = 12;
 	enum_list(enum_name, REG_ENUM_GLOBAL)
 
 // ====================================================================================================================
-// -- constants
-const int32 kMaxArgs = 256;
-const int32 kMaxArgLength = 256;
-
-// -- change this constant, if you genregclasses.py -maxparam X, to generate higher count templated bindings
-const int32 kMaxRegisteredParameterCount = 8;
-
-const int32 kMaxVariableArraySize = 256;
-
-const int32 kScriptContextThreadSize = 7;
-
-const int32 kDebuggerCallstackSize = 32;
-const int32 kDebuggerWatchWindowSize = 128;
-const int32 kBreakpointTableSize = 17;
-
-const int32 kGlobalFuncTableSize = 251;
-const int32 kGlobalVarTableSize = 251;
-
-const int32 kLocalFuncTableSize = 17;
-const int32 kLocalVarTableSize = 17;
-
-const int32 kExecStackSize = 4096;
-const int32 kExecFuncCallDepth = 2048;
-const int32 kExecFuncCallMaxLocalObjects = 32;
-
-const int32 kStringTableSize = 1024 * 1024;
-const int32 kStringTableDictionarySize = 1553;
-
-const int32 kObjectTableSize = 10007;
-
-const int32 kMasterMembershipTableSize = 97;
-const int32 kObjectGroupTableSize = 17;
-const int32 kHashTableIteratorTableSize = 7;
-
-const int32 kMaxScratchBuffers = 32;
-
-const int32 kThreadExecBufferSize = 32 * 1024;
-
-// ====================================================================================================================
 // -- debugger constants
 const int32 k_DebuggerCurrentWorkingDirPacketID     = 0x01;
 const int32 k_DebuggerCodeblockLoadedPacketID       = 0x02;
@@ -202,6 +163,7 @@ const int32 k_DebuggerWatchVarEntryPacketID         = 0x07;
 const int32 k_DebuggerAssertMsgPacketID             = 0x08;
 const int32 k_DebuggerPrintMsgPacketID              = 0x09;
 const int32 k_DebuggerFunctionAssistPacketID        = 0x0a;
+const int32 k_DebuggerObjectCreatedID               = 0x0b;
 const int32 k_DebuggerMaxPacketID                   = 0xff;
 
 // == namespace TinScript =============================================================================================
@@ -413,7 +375,7 @@ class CScriptContext
         bool8 FunctionExists(const char* function_name, const char* ns_name);
 
         uint32 GetNextObjectID();
-        uint32 CreateObject(uint32 classhash, uint32 objnamehash, uint32 codeblock_hash, int32 line_number);
+        uint32 CreateObject(uint32 classhash, uint32 objnamehash, const CFunctionCallStack* funccallstack = nullptr);
         uint32 RegisterObject(void* objaddr, const char* classname, const char* objectname);
         void UnregisterObject(void* objaddr);
         void DestroyObject(uint32 objectid);

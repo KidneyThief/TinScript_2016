@@ -3215,11 +3215,15 @@ bool8 OpExecCreateObject(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CE
 #if MEMORY_TRACKER_ENABLE
     codeblock_hash = cb->GetFilenameHash();
     cur_line = cb->CalcLineNumber(instrptr);
+
+    // -- note:  the funccallstack stores codeblock hashes and the the line executing the function call to the next
+    // stack entry...  the top of the funccallstack hasn't called anything, therefore the
+    // linenumberfunccall is unused/unset
+    funccallstack.DebuggerUpdateStackTopCurrentLine(codeblock_hash, cur_line);
 #endif
 
     // -- strings are already hashed, when pulled from the stack
-    uint32 objid = cb->GetScriptContext()->CreateObject(classhash, *(uint32*)objnameaddr, codeblock_hash, cur_line);
-
+    uint32 objid = cb->GetScriptContext()->CreateObject(classhash, *(uint32*)objnameaddr, &funccallstack);
 
     // -- if we failed to create the object, assert
     if (objid == 0)

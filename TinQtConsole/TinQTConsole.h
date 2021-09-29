@@ -377,6 +377,7 @@ class CConsoleOutput : public QListWidget
         void HandlePacketAssertMsg(int32* dataPtr);
         void HandlePacketPrintMsg(int32* dataPtr);
         void HandlePacketFunctionAssist(int32* dataPtr);
+        void HandlePacketObjectCreated(int32* dataPtr);
 
         // -- called while handling a breakpoint, to ensure we still get to update our own context
         void DebuggerUpdate();

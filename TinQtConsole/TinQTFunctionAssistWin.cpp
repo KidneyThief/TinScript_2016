@@ -280,13 +280,17 @@ bool CDebugFunctionAssistWin::FunctionContainsFilter(const char* string)
 // ====================================================================================================================
 void CDebugFunctionAssistWin::UpdateFilter(const char* filter, bool8 force_refresh)
 {
-    if (!filter)
-        filter = "";
-
     // -- trim the whitespace from the front
     const char* filter_ptr = filter;
-    while (*filter_ptr > 0x00 && *filter_ptr <= 0x20)
+    while (filter_ptr && *filter_ptr > 0x00 && *filter_ptr <= 0x20)
         ++filter_ptr;
+
+    // -- an empty filter means we want to refresh
+    if (filter_ptr == nullptr || filter_ptr[0] == '\0')
+    {
+        filter_ptr = "";
+        force_refresh = true;
+    }
 
     // -- call the string filter method - we don't actually care about the return value,
     // we only care if they're an exact match, or if we have to completely reset the search
@@ -582,7 +586,9 @@ void CDebugFunctionAssistWin::OnButtonMethodPressed()
 	if (mSelectedFunctionHash != 0 && mFunctionEntryMap.contains(mSelectedFunctionHash))
 	{
 		TinScript::CDebuggerFunctionAssistEntry* entry = mFunctionEntryMap[mSelectedFunctionHash];
-		CConsoleWindow::GetInstance()->GetDebugSourceWin()->SetSourceView(entry->mCodeBlockHash, entry->mLineNumber);
+        // -- function assist line numbers are 1-based... 
+		CConsoleWindow::GetInstance()->GetDebugSourceWin()->SetSourceView(entry->mCodeBlockHash,
+                                                                          entry->mLineNumber - 1);
 	}
 }
 

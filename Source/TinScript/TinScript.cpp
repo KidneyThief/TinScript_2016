@@ -3005,26 +3005,105 @@ void CScriptContext::DebuggerNotifyCreateObject(CObjectEntry* oe)
     derivation_buf[kMaxNameLength - 1] = '\0';
 
     // -- get the file/line from where this object was created
-    uint32 created_file_hash = 0;
-    int32 created_line_number = 0;
-    if (!CMemoryTracker::GetCreatedFileLine(oe->GetID(), created_file_hash, created_line_number))
+    int32 stack_size = 0;
+    uint32 created_file_array[kDebuggerCallstackSize];
+    int32 created_lines_array[kDebuggerCallstackSize];
+    if (!CMemoryTracker::GetCreatedCallstack(oe->GetID(), stack_size, created_file_array, created_lines_array) || stack_size <= 0)
     {
-        created_file_hash = 0;
-        created_line_number = 0;
+        // -- memory tracking is disabled - ensure we have a zero stack size
+        stack_size = 0;
     }
 
-    // -- we're using SendExec() now, so the args must be sent as strings
-    char object_id_buf[16];
-    sprintf_s(object_id_buf, "%d", oe->GetID());
-    char created_hash_buf[16];
-    sprintf_s(created_hash_buf, "%d", created_file_hash);
-    char created_line_buf[16];
-    sprintf_s(created_line_buf, "%d", created_line_number);
+    // -- because we're sending the entire origin callstack, we need to use a data packet instead of a remote SendExec()
+    // -- calculate the size of the data
+    int32 total_size = 0;
 
-    // -- send the entry
-    SocketManager::SendExec(Hash("DebuggerNotifyCreateObject"), object_id_buf,
-                            oe->GetNameHash() != 0 ? oe->GetName() : "", derivation_buf,
-                            created_hash_buf, created_line_buf);
+    // -- first int32 will be identifying this data packet
+    total_size += sizeof(int32);
+
+    // -- object ID
+    total_size += sizeof(int32);
+
+    // -- get the object name and length (plus EOL)
+    const char* obj_name = oe->GetName();
+    int32 obj_name_length = strlen(obj_name) + 1;
+    obj_name_length += 4 - (obj_name_length % 4);
+
+    // -- object name length
+    total_size += sizeof(int32);
+    total_size += obj_name_length;
+
+    // -- derivation string length
+    // -- the next will be mName - we'll round up to a 4-byte aligned length (including the EOL)
+    int32 derivation_length = (int32)strlen(derivation_buf) + 1;
+    derivation_length += 4 - (derivation_length % 4);
+
+    // -- we send first the string length, then the string
+    total_size += sizeof(int32);
+    total_size += derivation_length;
+
+    // -- stack size
+    total_size += sizeof(int32);
+
+    // -- filename_array
+    total_size += sizeof(int32) * stack_size;
+
+    // -- linenumber_array
+    total_size += sizeof(int32) * stack_size;
+
+    // -- now create the packet
+    // -- declare a header
+    // -- note, if we ever implement a request/acknowledge approach, we can use the mID field
+    SocketManager::tPacketHeader header(k_PacketVersion, SocketManager::tPacketHeader::DATA, total_size);
+
+    // -- create the packet (null data, as we'll fill in the data directly into the packet)
+    SocketManager::tDataPacket* newPacket = SocketManager::CreateDataPacket(&header,NULL);
+    if (!newPacket)
+    {
+        TinPrint(this,"Error - DebuggerNotifyCreateObject():  unable to send - not connected\n");
+        return;
+    }
+
+    // -- initialize the ptr to the data buffer
+    int32* dataPtr = (int32*)newPacket->mData;
+
+    // -- write the identifier - defined in the debugger constants near the top of TinScript.h
+    *dataPtr++ = k_DebuggerObjectCreatedID;
+
+    // -- object ID
+    *dataPtr++ = oe->GetID();
+
+    // -- name length
+    *dataPtr++ = obj_name_length;
+
+    // -- name string
+    SafeStrcpy((char*)dataPtr, obj_name_length, obj_name, obj_name_length);
+    dataPtr += (obj_name_length / 4);
+
+    // -- derivation string length
+    *dataPtr++ = derivation_length;
+
+    // -- write the derivation string
+    SafeStrcpy((char*)dataPtr, derivation_length, derivation_buf, derivation_length);
+    dataPtr += (derivation_length / 4);
+
+    // -- origin stack size
+    *dataPtr++ = stack_size;
+
+    // -- if we don't have memory tracking enabled, we'll have a zero stack_size
+    if (stack_size > 0)
+    {
+        // -- file array
+        memcpy(dataPtr, created_file_array, sizeof(uint32) * stack_size);
+        dataPtr += stack_size;
+
+        // -- line number array
+        memcpy(dataPtr, created_lines_array, sizeof(int32) * stack_size);
+        dataPtr += stack_size;
+    }
+
+    // -- send the packet
+    SocketManager::SendDataPacket(newPacket);
 }
 
 // ====================================================================================================================
@@ -4017,9 +4096,6 @@ void DebuggerListObjects(int32 root_object_id)
     int32 debugger_session = 0;
     if (!script_context->IsDebuggerConnected(debugger_session))
         return;
-
-    // -- as we've just received the request, send the initial "clear" response
-    SocketManager::SendCommand("DebuggerClearObjectBrowser();");
 
     // -- send the list of objects
     script_context->DebuggerListObjects(0, root_object_id);

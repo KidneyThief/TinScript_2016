@@ -98,11 +98,32 @@ bool8 CopyStackParameters(CFunctionEntry* fe, CExecStack& execstack, CFunctionCa
 }
 
 // ====================================================================================================================
+// DebuggerUpdateStackTopCurrentLine():  the top of the function call stack is the currently executing function,
+// -- but since it hasn't executed a function call (as it's the top), it's func call line number is unused/unset
+// ====================================================================================================================
+void CFunctionCallStack::DebuggerUpdateStackTopCurrentLine(uint32 cur_codeblock,int32 cur_line)
+{
+    // -- sanity check
+    // -- make sure the stack actually has a function call entry, and that it's executing,
+    // and that it's executing from the code block given
+    if (m_stacktop < 1 || !m_functionEntryStack[m_stacktop - 1].isexecuting ||
+        m_functionEntryStack[m_stacktop - 1].funcentry == nullptr ||
+        m_functionEntryStack[m_stacktop - 1].funcentry->GetCodeBlock() == nullptr ||
+        m_functionEntryStack[m_stacktop - 1].funcentry->GetCodeBlock()->GetFilenameHash() != cur_codeblock)
+    {
+        return;
+    }
+
+    // -- set the function call line number
+    m_functionEntryStack[m_stacktop - 1].linenumberfunccall = cur_line;
+}
+
+// ====================================================================================================================
 // DebuggerGetCallstack():  Fill in the arrays storing the current call stack information, to send to the debugger.
 // ====================================================================================================================
 int32 CFunctionCallStack::DebuggerGetCallstack(uint32* codeblock_array, uint32* objid_array,
                                                uint32* namespace_array, uint32* func_array,
-                                               uint32* linenumber_array, int32 max_array_size)
+                                               uint32* linenumber_array, int32 max_array_size) const
 {
     int32 entry_count = 0;
     int32 temp = m_stacktop - 1;
@@ -806,6 +827,10 @@ bool8 DebuggerBreakLoop(CCodeBlock* cb, const uint32* instrptr, CExecStack& exec
     // -- set the current line we're broken on
     funccallstack.mDebuggerLastBreak = cur_line;
 
+    // -- we're also going to plug the current line into the top entry of the funccallstack, which
+    // is normally unused/unset
+    funccallstack.DebuggerUpdateStackTopCurrentLine(codeblock_hash, cur_line);
+
     // -- build the callstack arrays, in preparation to send them to the debugger
     uint32 codeblock_array[kDebuggerCallstackSize];
     uint32 objid_array[kDebuggerCallstackSize];
@@ -816,10 +841,6 @@ bool8 DebuggerBreakLoop(CCodeBlock* cb, const uint32* instrptr, CExecStack& exec
         funccallstack.DebuggerGetCallstack(codeblock_array, objid_array,
                                             namespace_array, func_array,
                                             linenumber_array, kDebuggerCallstackSize);
-
-    // -- note - the line number for the function we're currently in, won't have been set
-    // -- in the function call stack
-    linenumber_array[0] = cur_line;
 
     script_context->DebuggerSendCallstack(codeblock_array, objid_array,
                                             namespace_array, func_array,

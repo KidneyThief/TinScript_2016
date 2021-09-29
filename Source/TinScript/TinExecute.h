@@ -349,9 +349,11 @@ class CFunctionCallStack
             return (m_stacktop);
         }
 
+        void DebuggerUpdateStackTopCurrentLine(uint32 cur_codeblock, int32 cur_line);
+
         int32 DebuggerGetCallstack(uint32* codeblock_array, uint32* objid_array,
                                    uint32* namespace_array, uint32* func_array,
-                                   uint32* linenumber_array, int32 max_array_size);
+                                   uint32* linenumber_array, int32 max_array_size) const;
 
         int32 DebuggerGetStackVarEntries(CScriptContext* script_context, CExecStack& execstack,
                                          CDebuggerWatchVarEntry* entry_array, int32 max_array_size);

@@ -1796,6 +1796,10 @@ void CConsoleOutput::ProcessDataPackets()
                 HandlePacketFunctionAssist(dataPtr);
                 break;
 
+            case k_DebuggerObjectCreatedID:
+                HandlePacketObjectCreated(dataPtr);
+                break;
+
             default:
                 break;
         }
@@ -2073,7 +2077,7 @@ void CConsoleOutput::HandlePacketFunctionAssist(int32* dataPtr)
     strcpy_s(function_assist_entry.mFunctionName, (const char*)dataPtr);
     dataPtr += (name_length / 4);
 
-	// -- copy the codeblock name hasn, and line number
+	// -- copy the codeblock name hash, and line number
 	function_assist_entry.mCodeBlockHash = *dataPtr++;
 	function_assist_entry.mLineNumber = *dataPtr++;
 
@@ -2095,6 +2099,54 @@ void CConsoleOutput::HandlePacketFunctionAssist(int32* dataPtr)
 
     // -- notify the function assist window
     CConsoleWindow::GetInstance()->GetDebugFunctionAssistWin()->NotifyFunctionAssistEntry(function_assist_entry);
+}
+
+// ====================================================================================================================
+// HandlePacketFunctionAssist():  A handler for packet type "function assist entry"
+// ====================================================================================================================
+void CConsoleOutput::HandlePacketObjectCreated(int32* dataPtr)
+{
+    // -- locals to store the data needed from the packet
+    uint32 obj_id = 0;
+    int32 obj_name_length = 0;
+    const char* obj_name = nullptr;
+    int32 derivation_length = 0;
+    const char* derivation = nullptr;
+    int32 stack_size = 0;
+    uint32 created_file_array[kDebuggerCallstackSize];
+    int32 created_lines_array[kDebuggerCallstackSize];
+
+    // -- skip past the packet ID
+    ++dataPtr;
+
+    // -- object ID
+    obj_id = (uint32)(*dataPtr++);
+
+    // -- get the object name
+    obj_name_length = (uint32)(*dataPtr++);
+    obj_name = (const char*)dataPtr;
+    dataPtr += obj_name_length / 4;
+
+    // -- get the derivation string
+    derivation_length = *dataPtr++;
+    derivation = (const char*)dataPtr;
+    dataPtr += (derivation_length / 4);
+
+    // -- stack_size
+    stack_size = *dataPtr++;
+    if (stack_size > 0 && stack_size <= kDebuggerCallstackSize)
+    {
+        memcpy((char*)created_file_array, (char*)dataPtr, sizeof(uint32) * stack_size);
+        dataPtr += stack_size;
+        memcpy((char*)created_lines_array, (char*)dataPtr, sizeof(uint32) * stack_size);
+        dataPtr += stack_size;
+    }
+
+    // -- note:  if we don't have the memory tracker enabled, we won't have the file/line origin stack
+    CConsoleWindow::GetInstance()->GetDebugObjectBrowserWin()->NotifyCreateObject(
+        obj_id, obj_name, derivation, stack_size > 0 ? created_file_array[0] : 0,
+        stack_size > 0 ? created_lines_array[0] : 0
+    );
 }
 
 // ====================================================================================================================

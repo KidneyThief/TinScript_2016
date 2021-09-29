@@ -38,6 +38,8 @@ enum eAllocType;
 namespace TinScript
 {
 
+class CFunctionCallStack;
+
 // ====================================================================================================================
 // class CMemoryTracker:  Tracks the total bytes allocated, for each TinAlloc() type
 // -- and tracks the file/line location for every object created
@@ -55,10 +57,11 @@ class CMemoryTracker
         static void* Alloc(eAllocType alloc_type, int32 size);
         static void Free(void* addr);
 
-        static void NotifyObjectCreated(uint32 object_id, uint32 codeblock_hash, int32 line_number);
+        static void NotifyObjectCreated(uint32 object_id, const CFunctionCallStack* funccallstack);
         static void NotifyObjectDestroyed(uint32 object_id);
 
-        static bool8 GetCreatedFileLine(uint32 object_id, uint32& out_file_hash, int32& out_line_number);
+        static bool8 GetCreatedCallstack(uint32 object_id, int32& out_stack_size, uint32* out_file_array,
+                                         int32* out_lines_array);
 
         // -- registered methods
         static void DumpTotals();
@@ -93,11 +96,13 @@ class CMemoryTracker
         static uint32 CalculateFileLineHash(uint32 codeblock_hash, int32 line_number);
         struct tObjectCreateEntry
         {
-            tObjectCreateEntry(uint32 object_id, uint32 codeblock_hash, int32 line_number);
+            tObjectCreateEntry(uint32 _object_id,int32 _stack_size,
+                               uint32* _codeblock_array, uint32* _line_number_array);
 
+            int32 stack_size;
             uint32 object_id;
-            uint32 codeblock_hash;
-            int32 line_number;
+            uint32 codeblock_array[kDebuggerCallstackSize];
+            uint32 line_number_array[kDebuggerCallstackSize];
             uint32 file_line_hash;
             tObjectCreateEntry* next;
         };

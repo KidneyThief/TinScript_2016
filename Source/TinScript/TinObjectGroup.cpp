@@ -493,7 +493,7 @@ uint32 CObjectSet::CreateIterator()
 
     // -- the iterator is a scriptable object
     // $$$TZA the memory tracker records the script file/line for created objects - can we find that here?
-    uint32 iteratorID = TinScript::GetContext()->CreateObject(TinScript::Hash("CGroupIterator"), 0, 0, 0);
+    uint32 iteratorID = TinScript::GetContext()->CreateObject(TinScript::Hash("CGroupIterator"), 0, nullptr);
     if (iteratorID == 0)
         return (0);
 

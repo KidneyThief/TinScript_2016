@@ -80,6 +80,7 @@ CDebugObjectBrowserWin::CDebugObjectBrowserWin(QWidget* parent) : QTreeWidget(pa
     setColumnCount(2);
     setItemsExpandable(true);
     setExpandsOnDoubleClick(true);
+    setColumnWidth(0, CConsoleWindow::StringWidth("wwwwwwwwwwwwwwww"));
 
     // -- set the headers
     QStringList headers;
@@ -106,6 +107,7 @@ CDebugObjectBrowserWin::~CDebugObjectBrowserWin()
 void CDebugObjectBrowserWin::NotifyOnConnect()
 {
     // -- request a fresh population of the existing objects
+    RemoveAll();
     SocketManager::SendCommand("DebuggerListObjects();");
 }
 

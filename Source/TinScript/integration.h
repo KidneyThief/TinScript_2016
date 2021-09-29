@@ -77,6 +77,47 @@ typedef float               float32;
 
 #define Assert_(condition) assert(condition)
 
+// ====================================================================================================================
+// -- CONSTANTS
+// ====================================================================================================================
+
+const int32 kMaxArgs = 256;
+const int32 kMaxArgLength = 256;
+
+// -- change this constant, if you genregclasses.py -maxparam X, to generate higher count templated bindings
+const int32 kMaxRegisteredParameterCount = 8;
+
+const int32 kMaxVariableArraySize = 256;
+
+const int32 kScriptContextThreadSize = 7;
+
+const int32 kDebuggerCallstackSize = 32;
+const int32 kDebuggerWatchWindowSize = 128;
+const int32 kBreakpointTableSize = 17;
+
+const int32 kGlobalFuncTableSize = 251;
+const int32 kGlobalVarTableSize = 251;
+
+const int32 kLocalFuncTableSize = 17;
+const int32 kLocalVarTableSize = 17;
+
+const int32 kExecStackSize = 4096;
+const int32 kExecFuncCallDepth = 2048;
+const int32 kExecFuncCallMaxLocalObjects = 32;
+
+const int32 kStringTableSize = 1024 * 1024;
+const int32 kStringTableDictionarySize = 1553;
+
+const int32 kObjectTableSize = 10007;
+
+const int32 kMasterMembershipTableSize = 97;
+const int32 kObjectGroupTableSize = 17;
+const int32 kHashTableIteratorTableSize = 7;
+
+const int32 kMaxScratchBuffers = 32;
+
+const int32 kThreadExecBufferSize = 32 * 1024;
+
 // ------------------------------------------------------------------------------------------------
 // -- MEMORY
 // ------------------------------------------------------------------------------------------------
@@ -147,8 +188,8 @@ namespace TinScript
         delete[] addr; \
     }
 
-#define TinObjectCreated(object_id, codeblock_hash, line_number) \
-    TinScript::CMemoryTracker::NotifyObjectCreated(object_id, codeblock_hash, line_number);
+#define TinObjectCreated(object_id, funccallstack) \
+    TinScript::CMemoryTracker::NotifyObjectCreated(object_id, funccallstack);
 
 #define TinObjectDestroyed(object_id) \
     TinScript::CMemoryTracker::NotifyObjectDestroyed(object_id);
