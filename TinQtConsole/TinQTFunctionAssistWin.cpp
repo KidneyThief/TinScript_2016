@@ -70,23 +70,24 @@ CDebugFunctionAssistWin::CDebugFunctionAssistWin(QWidget* parent)
     QGridLayout* identifier_layout = new QGridLayout(identifier_widget);
     mObjectIndentifier = new QLabel("<global scope>", identifier_widget);
 	mObjectIndentifier->setFixedHeight(CConsoleWindow::FontHeight());
-	QPushButton* method_button = new QPushButton("Open Source", identifier_widget);
-	//QPushButton* browse_button = new QPushButton("Object", identifier_widget);
-    QPushButton* created_button = new QPushButton("Created", identifier_widget);
-    method_button->setFixedHeight(CConsoleWindow::TextEditHeight());
-    //browse_button->setFixedHeight(CConsoleWindow::TextEditHeight());
-    created_button->setFixedHeight(CConsoleWindow::TextEditHeight());
+	QPushButton* show_api_button = new QPushButton("Show Signature", identifier_widget);
+    QPushButton* show_origin_button = new QPushButton("Show Object Creation", identifier_widget);
+    QPushButton* console_input_button = new QPushButton("Copy To Input", identifier_widget);
+    show_api_button->setFixedHeight(CConsoleWindow::TextEditHeight());
+    show_origin_button->setFixedHeight(CConsoleWindow::TextEditHeight());
+    console_input_button->setFixedHeight(CConsoleWindow::TextEditHeight());
 
     identifier_layout->addWidget(mObjectIndentifier, 0, 0, 1, 3);
-	identifier_layout->addWidget(method_button, 1, 0, 1, 1);
-    //identifier_layout->addWidget(browse_button, 1, 1, 1, 1);
-    //identifier_layout->addWidget(created_button, 1, 2, 1, 1);
-    identifier_layout->addWidget(created_button, 1, 1, 1, 1);
+	identifier_layout->addWidget(show_api_button, 1, 0, 1, 1);
+    identifier_layout->addWidget(show_origin_button, 1, 1, 1, 1);
+    identifier_layout->addWidget(console_input_button, 1, 2, 1, 1);
 
     identifier_layout->setRowStretch(0, 0);
 
     // -- create the function list
     mFunctionList = new CFunctionAssistList(this, this);
+
+    mFunctionDisplayLabel = new QLabel("Signature:", this);
 
     // -- create the parameter list
     mParameterList = new CFunctionParameterList(this);
@@ -95,7 +96,8 @@ CDebugFunctionAssistWin::CDebugFunctionAssistWin(QWidget* parent)
     main_layout->addWidget(input_widget, 0, 0);
     main_layout->addWidget(identifier_widget, 1, 0);
     main_layout->addWidget(mFunctionList, 2, 0);
-    main_layout->addWidget(mParameterList, 3, 0);
+    main_layout->addWidget(mFunctionDisplayLabel, 3, 0);
+    main_layout->addWidget(mParameterList, 4, 0);
 
     // -- ensure we start with a clean search
 	mSelectedFunctionHash = 0;
@@ -105,9 +107,9 @@ CDebugFunctionAssistWin::CDebugFunctionAssistWin(QWidget* parent)
 
     // -- hook up the button signals
 	QObject::connect(refresh_button, SIGNAL(clicked()), this, SLOT(OnButtonFilterRefreshPressed()));
-    QObject::connect(method_button,SIGNAL(clicked()),this,SLOT(OnButtonMethodPressed()));
-	//QObject::connect(browse_button, SIGNAL(clicked()), this, SLOT(OnButtonBrowsePressed()));
-    QObject::connect(created_button, SIGNAL(clicked()), this, SLOT(OnButtonCreatedPressed()));
+    QObject::connect(show_api_button,SIGNAL(clicked()),this,SLOT(OnButtonShowAPIPressed()));
+    QObject::connect(show_origin_button, SIGNAL(clicked()), this, SLOT(OnButtonShowOriginPressed()));
+    QObject::connect(console_input_button,SIGNAL(clicked()),this,SLOT(OnButtonCopyToConsolePressed()));
 }
 
 // ====================================================================================================================
@@ -463,6 +465,39 @@ void CDebugFunctionAssistWin::UpdateFilter(const char* filter, bool8 force_refre
 }
 
 // ====================================================================================================================
+// DisplayObjectOrigin():  Populate the "signature/origin" panel with the origin callstack.
+// ====================================================================================================================
+void CDebugFunctionAssistWin::DisplayObjectOrigin(uint32 obj_id)
+{
+    // -- update the label
+    mFunctionDisplayLabel->setText("Creation Callstack:");
+
+    const uint32* file_hash_array = nullptr;
+    const int32* lines_array = nullptr;
+    int32 stack_size = CConsoleWindow::GetInstance()->GetDebugObjectBrowserWin()->GetObjectOriginStack(
+                           obj_id, file_hash_array, lines_array);
+
+    mParameterList->PopulateWithOrigin(stack_size, file_hash_array, lines_array);
+}
+
+// ====================================================================================================================
+// DisplayFunctionSignature():  Populate the "signature/origin" panel with the signature of the selected function.
+// ====================================================================================================================
+void CDebugFunctionAssistWin::DisplayFunctionSignature()
+{
+    // -- update the label
+    mFunctionDisplayLabel->setText("Signature:");
+
+    // -- if not found, we'll at least set the header text
+    TinScript::CDebuggerFunctionAssistEntry* assist_entry = nullptr;
+    if (mSelectedFunctionHash > 0)
+    {
+        assist_entry = mFunctionEntryMap[mSelectedFunctionHash];
+    }
+    mParameterList->PopulateWithSignature(assist_entry);
+}
+
+// ====================================================================================================================
 // void SetAssistObjectID():  Focuses the function assist window, initializing it to the given object
 // ====================================================================================================================
 void CDebugFunctionAssistWin::SetAssistObjectID(uint32 object_id)
@@ -512,14 +547,16 @@ void CDebugFunctionAssistWin::NotifyFunctionClicked(TinScript::CDebuggerFunction
 	    // -- cache the selected function hash, and populate the parameter list
 	    mSelectedFunctionHash = list_entry->mFunctionHash;
         mSelectedObjectID = 0;
-        TinScript::CDebuggerFunctionAssistEntry* assist_entry = mFunctionEntryMap[list_entry->mFunctionHash];
-        mParameterList->Populate(assist_entry);
     }
     else if (list_entry->mIsObjectEntry && mObjectEntryMap.contains(list_entry->mObjectID))
     {
         mSelectedFunctionHash = 0;
         mSelectedObjectID = list_entry->mObjectID;
     }
+
+    // -- will clear the panel and update the header,
+    // and if we actually selected a function, will populate the parameters
+    DisplayFunctionSignature();
 }
 
 // ====================================================================================================================
@@ -552,44 +589,15 @@ void CDebugFunctionAssistWin::NotifyFunctionDoubleClicked(TinScript::CDebuggerFu
 		// -- cache the selected function hash, and populate the parameter list
 		mSelectedFunctionHash = list_entry->mFunctionHash;
 		TinScript::CDebuggerFunctionAssistEntry* assist_entry = mFunctionEntryMap[list_entry->mFunctionHash];
-        mParameterList->Populate(assist_entry);
 
-        // -- create the command string, and send it to the console input
-        char buf[TinScript::kMaxTokenLength];
-        int length_remaining = TinScript::kMaxTokenLength;
-        if (mSearchObjectID > 0)
-            sprintf_s(buf, "%d.%s(", mSearchObjectID, assist_entry->mFunctionName);
-        else
-            sprintf_s(buf, "%s(", assist_entry->mFunctionName);
-
-        int length = strlen(buf);
-        length_remaining -= length;
-        char* buf_ptr = &buf[length];
-
-        // -- note:  we want the cursor to be placed at the beginning of the parameter list
-        int cursor_pos = length;
-
-        // -- fill in the parameters (starting with 1, as we don't include the return value)
-        for (int i = 1; i < assist_entry->mParameterCount; ++i)
-        {
-            if (i != 1)
-                sprintf_s(buf_ptr, length_remaining, ", %s", TinScript::GetRegisteredTypeName(assist_entry->mType[i]));
-            else
-                strcpy_s(buf_ptr, length_remaining, TinScript::GetRegisteredTypeName(assist_entry->mType[i]));
-
-            // -- update the buf pointer,and the length remaining
-            length = strlen(buf_ptr);
-            length_remaining -= length;
-            buf_ptr += strlen(buf_ptr);
-        }
-
-        // -- complete the command
-        strcpy_s(buf_ptr, length_remaining, ");");
-
-        // -- sedn the command
-        CConsoleWindow::GetInstance()->GetInput()->SetText(buf, cursor_pos);
-        CConsoleWindow::GetInstance()->GetInput()->setFocus();
+        // -- open the function implementation in the source view
+        CConsoleWindow::GetInstance()->GetDebugSourceWin()->SetSourceView(assist_entry->mCodeBlockHash,
+                                                                          assist_entry->mLineNumber - 1);
     }
+
+    // -- display the function signature - if an object was double-clicked, then this 
+    // will clear the panel and update the header
+    DisplayFunctionSignature();
 }
 
 // ====================================================================================================================
@@ -603,35 +611,70 @@ void CDebugFunctionAssistWin::OnButtonFilterRefreshPressed()
 // ====================================================================================================================
 // OnButtonMethodPressed():  For the search object ID, find the file/line implementation of the selected method.
 // ====================================================================================================================
-void CDebugFunctionAssistWin::OnButtonMethodPressed()
+void CDebugFunctionAssistWin::OnButtonShowAPIPressed()
 {
-	// -- if we have a selected function
-	if (mSelectedFunctionHash != 0 && mFunctionEntryMap.contains(mSelectedFunctionHash))
-	{
-		TinScript::CDebuggerFunctionAssistEntry* entry = mFunctionEntryMap[mSelectedFunctionHash];
-        // -- function assist line numbers are 1-based... 
-		CConsoleWindow::GetInstance()->GetDebugSourceWin()->SetSourceView(entry->mCodeBlockHash,
-                                                                          entry->mLineNumber - 1);
-	}
+    DisplayFunctionSignature();
 }
 
 // ====================================================================================================================
-// OnButtonCreatedPressed():  For the search object ID, find the file/line where the object was created.
+// OnButtonCreatedPressed():  For the search object ID, populate the parameter list with the creation callstack.
 // ====================================================================================================================
-void CDebugFunctionAssistWin::OnButtonCreatedPressed()
+void CDebugFunctionAssistWin::OnButtonShowOriginPressed()
 {
     if (mSearchObjectID > 0)
-        CConsoleWindow::GetInstance()->GetDebugObjectBrowserWin()->DisplayCreatedFileLine(mSearchObjectID);
+        DisplayObjectOrigin(mSearchObjectID);
     else if (mSelectedObjectID > 0)
-        CConsoleWindow::GetInstance()->GetDebugObjectBrowserWin()->DisplayCreatedFileLine(mSelectedObjectID);
+        DisplayObjectOrigin(mSelectedObjectID);
 }
 
 // ====================================================================================================================
-// OnButtonBrowsePressed():  Finds the search object ID, and selects it in the ObjectBrowser window.
+// OnButtonCopyToConsolePressed():  Construct the command to execute the selected object.method() in the console.
 // ====================================================================================================================
-void CDebugFunctionAssistWin::OnButtonBrowsePressed()
+void CDebugFunctionAssistWin::OnButtonCopyToConsolePressed()
 {
-    CConsoleWindow::GetInstance()->GetDebugObjectBrowserWin()->SetSelectedObject(mSearchObjectID);
+    if(mSearchObjectID == 0 || mSelectedFunctionHash == 0)
+    {
+        return;
+    }
+
+    // -- get the function we want to execute from the console input
+    TinScript::CDebuggerFunctionAssistEntry* assist_entry = mFunctionEntryMap[mSelectedFunctionHash];
+
+    // -- create the command string, and send it to the console input
+    char buf[TinScript::kMaxTokenLength];
+    int length_remaining = TinScript::kMaxTokenLength;
+    if(mSearchObjectID > 0)
+        sprintf_s(buf,"%d.%s(",mSearchObjectID,assist_entry->mFunctionName);
+    else
+        sprintf_s(buf,"%s(",assist_entry->mFunctionName);
+
+    int length = strlen(buf);
+    length_remaining -= length;
+    char* buf_ptr = &buf[length];
+
+    // -- note:  we want the cursor to be placed at the beginning of the parameter list
+    int cursor_pos = length;
+
+    // -- fill in the parameters (starting with 1, as we don't include the return value)
+    for(int i = 1; i < assist_entry->mParameterCount; ++i)
+    {
+        if(i != 1)
+            sprintf_s(buf_ptr,length_remaining,", %s",TinScript::GetRegisteredTypeName(assist_entry->mType[i]));
+        else
+            strcpy_s(buf_ptr,length_remaining,TinScript::GetRegisteredTypeName(assist_entry->mType[i]));
+
+        // -- update the buf pointer,and the length remaining
+        length = strlen(buf_ptr);
+        length_remaining -= length;
+        buf_ptr += strlen(buf_ptr);
+    }
+
+    // -- complete the command
+    strcpy_s(buf_ptr,length_remaining,");");
+
+    // -- send the command
+    CConsoleWindow::GetInstance()->GetInput()->SetText(buf,cursor_pos);
+    CConsoleWindow::GetInstance()->GetInput()->setFocus();
 }
 
 // --------------------------------------------------------------------------------------------------------------------
@@ -968,17 +1011,34 @@ void CFunctionAssistList::OnDoubleClicked(QTreeWidgetItem* item)
 // == class CFunctionParameterEntry ========================================================================================
 
 // ====================================================================================================================
-// Constructor
+// constructor:  For an entry representing a variable (type, name, array, value).
 // ====================================================================================================================
 CFunctionParameterEntry::CFunctionParameterEntry(TinScript::eVarType var_type, bool is_array, const char* _name,
                                                  QTreeWidget* _owner)
     : QTreeWidgetItem(_owner)
 {
+    mIsOriginEntry = false;
+
     const char* type_name = TinScript::GetRegisteredTypeName(var_type);
     char type_buf[TinScript::kMaxNameLength];
     sprintf_s(type_buf, "%s%s", type_name, is_array ? "[]" : "");
     setText(0, type_buf);
     setText(1, _name);
+}
+
+// ====================================================================================================================
+// constructor:  For an entry representing an origin filename and line number.
+// ====================================================================================================================
+CFunctionParameterEntry::CFunctionParameterEntry(const char* _filename, uint32 _file_hash, int32 _line_number,
+                                                 QTreeWidget* _owner) : QTreeWidgetItem(_owner)
+{
+    mIsOriginEntry = true;
+    mFileHash = _file_hash;
+    mLineNumber = _line_number;
+
+    // -- the display should show a 1-based line number
+    QString display_text = QString(_filename).append(" @ ").append(QString::number(_line_number + 1));
+    setText(0, display_text);
 }
 
 // ====================================================================================================================
@@ -988,10 +1048,23 @@ CFunctionParameterEntry::~CFunctionParameterEntry()
 {
 }
 
-// == class CFunctionParameterList =======================================================================================
+// ====================================================================================================================
+// GetOriginFileLine():  Returns the file name and line number, if this is an entry representing the origin
+// ====================================================================================================================
+bool8 CFunctionParameterEntry::GetOriginFileLine(uint32& out_file_hash, int32& out_line_number)
+{
+    if (mIsOriginEntry)
+    {
+        out_file_hash = mFileHash;
+        out_line_number = mLineNumber;
+    }
+    return mIsOriginEntry;
+}
+
+// == class CFunctionParameterList ====================================================================================
 
 // ====================================================================================================================
-// Constructor
+// constructor
 // ====================================================================================================================
 CFunctionParameterList::CFunctionParameterList(QWidget* parent)
     : QTreeWidget(parent)
@@ -1001,14 +1074,17 @@ CFunctionParameterList::CFunctionParameterList(QWidget* parent)
     setExpandsOnDoubleClick(false);
 
     // -- set the header
-  	QTreeWidgetItem* header = new QTreeWidgetItem();
-	header->setText(0,QString("Type"));
-	header->setText(1,QString("Name"));
-	setHeaderItem(header);
+  	mHeader = new QTreeWidgetItem();
+	mHeader->setText(0, QString("Type"));
+	mHeader->setText(1, QString("Name"));
+	setHeaderItem(mHeader);
+
+    // -- connect up both the clicked and double clicked slots
+    QObject::connect(this,SIGNAL(itemDoubleClicked(QTreeWidgetItem*,int)),this,SLOT(OnDoubleClicked(QTreeWidgetItem*)));
 }
 
 // ====================================================================================================================
-// Deconstructor
+// deconstructor
 // ====================================================================================================================
 CFunctionParameterList::~CFunctionParameterList()
 {
@@ -1028,11 +1104,18 @@ void CFunctionParameterList::Clear()
 }
 
 // ====================================================================================================================
-// Populate():  Given the function entry, extract the list of parameters and populate the view.
+// PopulateWithSignature():  Given the function entry, extract the list of parameters and populate the view.
 // ====================================================================================================================
-void CFunctionParameterList::Populate(TinScript::CDebuggerFunctionAssistEntry* assist_entry)
+void CFunctionParameterList::PopulateWithSignature(TinScript::CDebuggerFunctionAssistEntry* assist_entry)
 {
     Clear();
+
+    // -- set the header labels
+    mHeader->setText(0, QString("Type"));
+    mHeader->setText(1, QString("Name"));
+    setColumnWidth(0, 120);
+
+    // -- the button was pressed, but if we don't actually have a function to populate, we're done
     if (!assist_entry)
         return;
 
@@ -1043,6 +1126,50 @@ void CFunctionParameterList::Populate(TinScript::CDebuggerFunctionAssistEntry* a
         const char* var_name = TinScript::UnHash(assist_entry->mNameHash[i]);
         CFunctionParameterEntry* new_parameter = new CFunctionParameterEntry(var_type, is_array, var_name, this);
         mParameterList.append(new_parameter);
+    }
+}
+
+// ====================================================================================================================
+// PopulateWithOrigin():  For a given object, populate the output with the origin file and line numbers callstack.
+// ====================================================================================================================
+void CFunctionParameterList::PopulateWithOrigin(int32 stack_size,const uint32* file_hash_array,const int32* line_array)
+{
+    Clear();
+
+    // -- set the header labels
+    mHeader->setText(0,QString("Source File/Line"));
+    mHeader->setText(1,QString(""));
+    setColumnWidth(0, 400);
+	
+	// -- sanity check
+	if (file_hash_array == nullptr || line_array == nullptr)
+		stack_size = 0;
+
+    for (int i = 0; i < stack_size; ++i)
+    {
+        const char* file_name = TinScript::UnHash(file_hash_array[i]);
+        CFunctionParameterEntry* new_parameter =
+            new CFunctionParameterEntry(file_name, file_hash_array[i], line_array[i], this);
+        mParameterList.append(new_parameter);
+    }
+}
+
+// ====================================================================================================================
+// OnDoubleClicked():  If the item is an origin file/line, we open it in the source view
+// ====================================================================================================================
+void CFunctionParameterList::OnDoubleClicked(QTreeWidgetItem* _item)
+{
+    CFunctionParameterEntry* entry = static_cast<CFunctionParameterEntry*>(_item);
+    if (entry == nullptr)
+        return;
+
+
+    bool8 GetOriginFileLine(QString& out_file_name,int32& out_line_number);
+    uint32 file_hash = 0;
+    int32 line_number = -1;
+    if (entry->GetOriginFileLine(file_hash, line_number))
+    {
+        CConsoleWindow::GetInstance()->GetDebugSourceWin()->SetSourceView(file_hash, line_number);
     }
 }
 

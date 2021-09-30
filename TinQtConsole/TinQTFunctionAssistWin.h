@@ -74,6 +74,10 @@ class CDebugFunctionAssistWin : public QWidget
         bool FunctionContainsFilter(const char* string);
         void UpdateFilter(const char* filter, bool8 force_refresh = false);
 
+        // -- the Signature panel also doubles as the origin callstack
+        void DisplayObjectOrigin(uint32 obj_id);
+        void DisplayFunctionSignature();
+
         // -- methods to handle selecting and issuing a function
         void SetAssistObjectID(uint32 object_id);
         void NotifyFunctionClicked(TinScript::CDebuggerFunctionAssistEntry* list_entry);
@@ -81,13 +85,14 @@ class CDebugFunctionAssistWin : public QWidget
 
     public slots:
         void OnButtonFilterRefreshPressed();
-	    void OnButtonMethodPressed();
-	    void OnButtonBrowsePressed();
-        void OnButtonCreatedPressed();
+	    void OnButtonShowAPIPressed();
+        void OnButtonShowOriginPressed();
+        void OnButtonCopyToConsolePressed();
 
     private:
         CFunctionAssistInput* mFunctionInput;
         QLabel* mObjectIndentifier;
+        QLabel* mFunctionDisplayLabel;
         CFunctionAssistList* mFunctionList;
 
 		// -- for the selected function
@@ -179,7 +184,14 @@ class CFunctionParameterEntry : public QTreeWidgetItem
 {
     public:
         CFunctionParameterEntry(TinScript::eVarType var_type, bool is_array, const char* _name, QTreeWidget* _owner);
+        CFunctionParameterEntry(const char* _filename, uint32 _filehash, int32 _line_number, QTreeWidget* _owner);
         ~CFunctionParameterEntry();
+
+        bool mIsOriginEntry;
+        uint32 mFileHash;
+        int32 mLineNumber;
+
+        bool8 GetOriginFileLine(uint32& out_file_hash, int32& out_line_number);
 };
 
 // ====================================================================================================================
@@ -194,9 +206,14 @@ class CFunctionParameterList : public QTreeWidget
         virtual ~CFunctionParameterList();
 
         void Clear();
-        void Populate(TinScript::CDebuggerFunctionAssistEntry* assist_entry);
+        void PopulateWithSignature(TinScript::CDebuggerFunctionAssistEntry* assist_entry);
+        void PopulateWithOrigin(int32 stack_size, const uint32* file_hash_array, const int32* line_array);
+
+    public slots:
+        void OnDoubleClicked(QTreeWidgetItem* _item);
 
     private:
+        QTreeWidgetItem* mHeader;
         QList<CFunctionParameterEntry*> mParameterList;
 };
 

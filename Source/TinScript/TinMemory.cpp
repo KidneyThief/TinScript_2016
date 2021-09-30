@@ -269,8 +269,7 @@ CMemoryTracker::tObjectCreatedFileLine::tObjectCreatedFileLine(uint32 _file_line
 // ====================================================================================================================
 void CMemoryTracker::NotifyObjectCreated(uint32 object_id, const CFunctionCallStack* funccallstack)
 {
-    if (g_memoryTrackerInstance == nullptr || funccallstack == nullptr ||
-                                              funccallstack->GetStackDepth() == 0)
+    if (g_memoryTrackerInstance == nullptr || funccallstack == nullptr)
     {
         return;
     }
@@ -295,18 +294,11 @@ void CMemoryTracker::NotifyObjectCreated(uint32 object_id, const CFunctionCallSt
 
     // -- now add the object entry to the file_line hashtable
     int32 file_line_bucket = object_entry->file_line_hash % k_trackedAllocationTableSize;
-    tObjectCreatedFileLine* file_line_entry = g_memoryTrackerInstance->m_objectCreatedFileLineTable[file_line_bucket];
-    while (file_line_entry != nullptr && file_line_entry->file_line_hash != object_entry->file_line_hash)
-        file_line_entry = file_line_entry->next;
-
-    // -- if we found our file_line_entry, create one
-    if (file_line_entry == nullptr)
-    {
-        file_line_entry = new tObjectCreatedFileLine(object_entry->file_line_hash,
-                                                     codeblock_array[0], linenumber_array[0]);
-        file_line_entry->next = g_memoryTrackerInstance->m_objectCreatedFileLineTable[file_line_bucket];
-        g_memoryTrackerInstance->m_objectCreatedFileLineTable[file_line_bucket] = file_line_entry;
-    }
+    tObjectCreatedFileLine* file_line_entry = new tObjectCreatedFileLine(object_entry->file_line_hash,
+                                                    stack_size > 0 ? codeblock_array[0] : 0,
+                                                    stack_size > 0 ? linenumber_array[0] : -1);
+    file_line_entry->next = g_memoryTrackerInstance->m_objectCreatedFileLineTable[file_line_bucket];
+    g_memoryTrackerInstance->m_objectCreatedFileLineTable[file_line_bucket] = file_line_entry;
 
     // -- increment the count
     ++file_line_entry->object_count;
@@ -475,7 +467,7 @@ void CMemoryTracker::DumpObjects()
 // ====================================================================================================================
 // FindObject():  Given a object_id, print the script file/line from which this object was created.
 // ====================================================================================================================
-void CMemoryTracker::FindObject(uint32 object_id)
+void CMemoryTracker::FindObject(const char* object_name)
 {
     // -- nothing to do if the memory tracker isn't enabled
     if (g_memoryTrackerInstance == nullptr)
@@ -485,23 +477,42 @@ void CMemoryTracker::FindObject(uint32 object_id)
         return;
     }
 
+    // -- find the object - first by name, then if the string was a number, by ID instead
+    CObjectEntry* oe = TinScript::GetContext()->FindObjectByName(object_name);
+    uint32 object_id = oe != nullptr ? oe->GetID() : 0;
+    if (object_id == 0)
+    {
+        object_id = TinScript::Atoi(object_name, -1);
+    }
+
     int32 bucket = object_id % k_trackedAllocationTableSize;
     tObjectCreateEntry* object_entry = g_memoryTrackerInstance->m_objectCreatedTable[bucket];
     while (object_entry != nullptr && object_entry->object_id != object_id)
         object_entry = object_entry->next;
 
     // -- if we found our entry, print out the file/line origin  (add 1 since editors don't count from 0)
-    if (object_entry != nullptr && object_entry->stack_size > 0)
+    if (object_entry != nullptr)
     {
         CObjectEntry* oe = TinScript::GetContext()->FindObjectEntry(object_id);
         if (oe != nullptr)
             TinScript::GetContext()->PrintObject(oe);
-        TinPrint(TinScript::GetContext(), "MemoryFindObject(): object %d created at %s: %d\n",
-                 object_id, UnHash(object_entry->codeblock_array[0]), object_entry->line_number_array[0] + 1);
+        if (object_entry->stack_size > 0)
+        {
+            TinPrint(TinScript::GetContext(), "MemoryFindObject(): object %d creation callstack:\n",  object_id);
+            for (int32 i = 0; i < object_entry->stack_size; ++i)
+            {
+                TinPrint(TinScript::GetContext(),"    %s: %d\n", UnHash(object_entry->codeblock_array[i]),
+                         object_entry->line_number_array[i] + 1);
+            }
+        }
+        else
+        {
+            TinPrint(TinScript::GetContext(),"MemoryFindObject(): object %d created from <stdin>\n",object_id);
+        }
     }
     else
     {
-        TinPrint(TinScript::GetContext(), "MemoryFindObject(): object %d not found\n", object_id);
+        TinPrint(TinScript::GetContext(), "MemoryFindObject(): object '%s' not found\n", object_name);
     }
 }
 

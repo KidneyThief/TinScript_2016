@@ -48,7 +48,7 @@
 // -- TYPES
 // ------------------------------------------------------------------------------------------------
 
-// NOTE:  if you change typedef int32 from an int (to say, a long), the regeistered types in TinTypes.h will not match
+// NOTE:  if you change typedef int32 from an int (to say, a long), the registered types in TinTypes.h will not match
 typedef bool                bool8;
 typedef char                int8;
 typedef unsigned char       uint8;

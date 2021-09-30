@@ -2144,8 +2144,7 @@ void CConsoleOutput::HandlePacketObjectCreated(int32* dataPtr)
 
     // -- note:  if we don't have the memory tracker enabled, we won't have the file/line origin stack
     CConsoleWindow::GetInstance()->GetDebugObjectBrowserWin()->NotifyCreateObject(
-        obj_id, obj_name, derivation, stack_size > 0 ? created_file_array[0] : 0,
-        stack_size > 0 ? created_lines_array[0] : 0
+        obj_id, obj_name, derivation, stack_size, created_file_array, created_lines_array
     );
 }
 
@@ -2348,11 +2347,13 @@ void DebuggerClearObjectBrowser()
 // DebuggerNotifyAddObject():  Add an entry for an object to the ObjectBrowser.
 // ====================================================================================================================
 void DebuggerNotifyCreateObject(int32 object_id, const char* object_name, const char* derivation,
-                                int32 created_file_hash, int32 created_line_number)
+                                uint32 created_file_hash, int32 created_line_number)
 {
+    // -- deprecated, but in case we want a simpler API than sending a socket packet...
+    // force the call with a "stack size" of only 1
     CConsoleWindow::GetInstance()->GetDebugObjectBrowserWin()->NotifyCreateObject(object_id, object_name, derivation,
-                                                                                  created_file_hash,
-                                                                                  created_line_number);
+                                                                                  1, &created_file_hash,
+                                                                                  &created_line_number);
 }
 
 // ====================================================================================================================
@@ -2432,11 +2433,11 @@ void DebuggerNotifyStringUnhash(uint32 string_hash, const char* string_result)
 
 // == ObjectBrowser Registration ======================================================================================
 
-REGISTER_FUNCTION_P0(DebuggerClearObjectBrowser, DebuggerClearObjectBrowser, void);
-REGISTER_FUNCTION_P5(DebuggerNotifyCreateObject, DebuggerNotifyCreateObject, void, int32, const char*, const char*, int32, int32);
-REGISTER_FUNCTION_P1(DebuggerNotifyDestroyObject, DebuggerNotifyDestroyObject, void, int32);
-REGISTER_FUNCTION_P3(DebuggerNotifySetAddObject, DebuggerNotifySetAddObject, void, int32, int32, bool8);
-REGISTER_FUNCTION_P2(DebuggerNotifySetRemoveObject, DebuggerNotifySetRemoveObject, void, int32, int32);
+REGISTER_FUNCTION(DebuggerClearObjectBrowser, DebuggerClearObjectBrowser);
+REGISTER_FUNCTION(DebuggerNotifyCreateObject, DebuggerNotifyCreateObject);
+REGISTER_FUNCTION(DebuggerNotifyDestroyObject, DebuggerNotifyDestroyObject);
+REGISTER_FUNCTION(DebuggerNotifySetAddObject, DebuggerNotifySetAddObject);
+REGISTER_FUNCTION(DebuggerNotifySetRemoveObject, DebuggerNotifySetRemoveObject);
 
 REGISTER_FUNCTION(DebuggerListObjectsComplete, DebuggerListObjectsComplete);
 

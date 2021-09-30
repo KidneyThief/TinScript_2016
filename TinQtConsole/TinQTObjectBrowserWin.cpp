@@ -42,7 +42,8 @@
 // Constructor
 // ====================================================================================================================
 CBrowserEntry::CBrowserEntry(uint32 parent_id, uint32 object_id, bool8 owned, const char* object_name,
-                             const char* derivation, uint32 created_file_hash, int32 created_line_number)
+                             const char* derivation, int32 created_stack_size, uint32* created_file_array,
+                             int32* created_line_array)
     : QTreeWidgetItem()
 {
     mObjectID = object_id;
@@ -55,8 +56,16 @@ CBrowserEntry::CBrowserEntry(uint32 parent_id, uint32 object_id, bool8 owned, co
     sprintf_s(mFormattedName, TinScript::kMaxNameLength, "[%d] %s", object_id, mName);
 
     //-- store the origin info
-    mCreatedFileHash = created_file_hash;
-    mCreatedLineNumber = created_line_number;
+    mCreatedStackSize = created_stack_size;
+    if (mCreatedStackSize == 0 || created_file_array == nullptr || created_line_array == nullptr)
+    {
+        mCreatedStackSize = 0;
+    }
+    else
+    {
+        memcpy(mCreatedFileHashArray, created_file_array, sizeof(uint32) * mCreatedStackSize);;
+        memcpy(mCreatedLineNumberArray, created_line_array, sizeof(int32) * mCreatedStackSize);;
+    }
 
     // -- set the QT elements
     setText(0, mFormattedName);
@@ -115,7 +124,8 @@ void CDebugObjectBrowserWin::NotifyOnConnect()
 // NotifyCreateObject():  Notify a new object has been created.
 // ====================================================================================================================
 void CDebugObjectBrowserWin::NotifyCreateObject(uint32 object_id, const char* object_name, const char* derivation,
-                                                uint32 created_file_hash, int32 created_line_number)
+                                                int32 created_stack_size, uint32* created_file_array,
+                                                int32* created_line_array)
 {
     // -- if we already have an entry for this object, we're done
     if (mObjectDictionary.contains(object_id))
@@ -126,8 +136,8 @@ void CDebugObjectBrowserWin::NotifyCreateObject(uint32 object_id, const char* ob
     mObjectDictionary.insert(object_id, entry_list);
 
     // -- now create the actual entry, and add it to the list
-    CBrowserEntry* new_entry = new CBrowserEntry(0, object_id, false, object_name, derivation, created_file_hash,
-                                                 created_line_number);
+    CBrowserEntry* new_entry = new CBrowserEntry(0, object_id, false, object_name, derivation, created_stack_size,
+                                                 created_file_array, created_line_array);
     entry_list->append(new_entry);
 
     // -- until we're parented, we want to display the entry
@@ -160,14 +170,13 @@ void CDebugObjectBrowserWin::NotifyDestroyObject(uint32 object_id)
 // ====================================================================================================================
 void CDebugObjectBrowserWin::RecursiveSetAddObject(CBrowserEntry* parent_entry, uint32 child_id, bool8 owned)
 {
-    // -- get the list of entries refering to this object, and the first entry
+    // -- get the list of entries referring to this object, and the first entry
     QList<CBrowserEntry*>* object_entry_list = mObjectDictionary[child_id];
     CBrowserEntry* object_entry = (*object_entry_list)[0];
 
     // -- we need to duplicate the object entry, add add it as a child to the new parent entry
     CBrowserEntry* new_entry = new CBrowserEntry(parent_entry->mObjectID, child_id, owned, object_entry->mName,
-                                                 object_entry->mDerivation, object_entry->mCreatedFileHash,
-                                                 object_entry->mCreatedLineNumber);
+                                                 object_entry->mDerivation, 0, nullptr, nullptr);
     // -- add the new entry as a child
     parent_entry->addChild(new_entry);
 
@@ -362,6 +371,26 @@ const char* CDebugObjectBrowserWin::GetObjectDerivation(uint32 object_id)
 }
 
 // ====================================================================================================================
+// GetObjectOriginStack():  Returns the stack size, and arrays of file and lines of the origin callstack.
+// ====================================================================================================================
+int32 CDebugObjectBrowserWin::GetObjectOriginStack(uint32 object_id, const uint32*& out_file_hash_array,
+                                                   const int32*& out_lines_array)
+{
+    if(mObjectDictionary.contains(object_id))
+    {
+        // -- dereference to get the List, and then again to get the first item in the list
+        CBrowserEntry* entry = (*(mObjectDictionary[object_id]))[0];
+        out_file_hash_array = entry->mCreatedFileHashArray;
+        out_lines_array = entry->mCreatedLineNumberArray;
+
+        return (entry->mCreatedStackSize);
+    }
+
+    // -- not found
+    return 0;
+}
+
+// ====================================================================================================================
 // SetSelectedObject():  Find the object in the browser window, and set it as the selected item.
 // ====================================================================================================================
 void CDebugObjectBrowserWin::SetSelectedObject(uint32 object_id)
@@ -438,31 +467,6 @@ void CDebugObjectBrowserWin::PopulateObjectIDList(QList<uint32>& object_id_list)
     {
         object_id_list.push_back(key_list[i]);
     }
-}
-
-// ====================================================================================================================
-// DisplayCreatedFileLine():  Display an objects created file/line in the source view
-// ====================================================================================================================
-void CDebugObjectBrowserWin::DisplayCreatedFileLine(uint32 object_id)
-{
-    // -- sanity check
-    if (object_id == 0)
-        return;
-
-    if (mObjectDictionary.contains(object_id))
-    {
-        // -- dereference to get the List, and then again to get the first item in the list
-        CBrowserEntry* entry = (*(mObjectDictionary[object_id]))[0];
-        if (entry->mCreatedFileHash != 0 && entry->mCreatedLineNumber >= 0)
-        {
-            CConsoleWindow::GetInstance()->GetDebugSourceWin()->SetSourceView(entry->mCreatedFileHash,
-                                                                              entry->mCreatedLineNumber);
-            return;
-        }
-    }
-
-    // -- failed to find the object's created instruction
-    ConsolePrint("Failed to find the script file/line used to create object: %d\n", object_id);
 }
 
 // ====================================================================================================================

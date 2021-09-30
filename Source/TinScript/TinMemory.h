@@ -66,7 +66,7 @@ class CMemoryTracker
         // -- registered methods
         static void DumpTotals();
         static void DumpObjects();
-        static void FindObject(uint32 object_id);
+        static void FindObject(const char* object_name);
 
 
     private:

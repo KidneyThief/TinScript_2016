@@ -45,7 +45,8 @@ class CBrowserEntry : public QTreeWidgetItem
 {
     public:
         CBrowserEntry(uint32 parent_id, uint32 object_id, bool8 owned, const char* object_name,
-                      const char* derivation, uint32 created_file_hash, int32 created_line_number);
+                      const char* derivation, int32 stack_size, uint32* created_file_array,
+                      int32* created_line_array);
         virtual ~CBrowserEntry();
 
         uint32 mObjectID;
@@ -54,11 +55,12 @@ class CBrowserEntry : public QTreeWidgetItem
         char mName[TinScript::kMaxNameLength];
         char mFormattedName[TinScript::kMaxNameLength];
         char mDerivation[TinScript::kMaxNameLength];
-        uint32 mCreatedFileHash;
-        int32 mCreatedLineNumber;
+        int32 mCreatedStackSize;
+        uint32 mCreatedFileHashArray[kDebuggerCallstackSize];
+        int32 mCreatedLineNumberArray[kDebuggerCallstackSize];
 };
 
-// ------------------------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------------------------------------
 class CDebugObjectBrowserWin : public QTreeWidget
 {
     Q_OBJECT
@@ -70,7 +72,7 @@ class CDebugObjectBrowserWin : public QTreeWidget
         void NotifyOnConnect();
 
         void NotifyCreateObject(uint32 object_id, const char* object_name, const char* derivation,
-                                uint32 created_file_hash, int32 created_line_number);
+                                int32 created_stack_size,uint32* created_file_array, int32* created_line_array);
         void NotifyDestroyObject(uint32 object_id);
 
         void RecursiveSetAddObject(CBrowserEntry* parent_entry, uint32 child_id, bool8 owned);
@@ -84,14 +86,11 @@ class CDebugObjectBrowserWin : public QTreeWidget
         const char* GetObjectName(uint32 object_id);
         const char* GetObjectIdentifier(uint32 object_id);
         const char* GetObjectDerivation(uint32 object_id);
+        int32 GetObjectOriginStack(uint32 object_id, const uint32*& out_file_hash_array, const int32*& out_lines_array);
         void SetSelectedObject(uint32 object_id);
 
         // -- this is used by the FunctionAssist to allow it to search for objects by name
         void PopulateObjectIDList(QList<uint32>& object_id_list);
-
-        // -- used by the FUnctionAssist, to look up the script file/line for where an
-        // -- object was created, and to set that location in the source view
-        void DisplayCreatedFileLine(uint32 object_id);
 
         virtual void paintEvent(QPaintEvent* e)
         {
