@@ -336,6 +336,7 @@ int32 CalcVarTableSize(tVarTable* vartable);
 void DumpVarTable(CObjectEntry* oe, const char* partial = nullptr);
 void DumpVarTable(CScriptContext* script_context, CObjectEntry* oe, const tVarTable* vartable,
                   const char* partial = nullptr);
+void DumpFuncEntry(CScriptContext* script_context, CFunctionEntry* fe);
 void DumpFuncTable(CObjectEntry* oe, const char* partial = nullptr);
 void DumpFuncTable(CScriptContext* script_context, const tFuncTable* functable, const char* partial = nullptr);
 

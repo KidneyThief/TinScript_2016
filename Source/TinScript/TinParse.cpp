@@ -946,6 +946,35 @@ void DumpVarTable(CScriptContext* script_context, CObjectEntry* oe, const tVarTa
 }
 
 // ====================================================================================================================
+// DumpFuncEntry():  Debug function to print a function signature
+// ====================================================================================================================
+void DumpFuncEntry(CScriptContext* script_context, CFunctionEntry* fe)
+{
+    // -- sanity check
+    if (script_context == nullptr || fe == nullptr || fe->GetContext() == nullptr)
+    {
+        TinPrint(script_context, "Error - Unable to find function\n");
+        return;
+    }
+
+    // -- get the function context (containing parameters...)
+	// -- parameter 0 is always the return value
+    CFunctionContext* func_context = fe->GetContext();
+    eVarType return_type = func_context->GetParameterCount() > 0 ? func_context->GetParameter(0)->GetType()
+                                                                 : TYPE_void;
+    // -- print the signature start, and the input parameters (starting at 1)
+    TinPrint(script_context,"    %s %s(", GetRegisteredTypeName(return_type), UnHash(fe->GetHash()));
+    for (int32 i = 1; i < func_context->GetParameterCount(); ++i)
+    {
+        // -- subsequent params need commas...
+        CVariableEntry* param = func_context->GetParameter(i);
+        TinPrint(script_context, "%s%s %s", (i >= 2 ? ", " : ""), GetRegisteredTypeName(param->GetType()),
+                                            UnHash(param->GetHash()));
+    }
+    TinPrint(script_context,")\n");
+}
+
+// ====================================================================================================================
 // DumpFuncTable():  Debug function to print the hierarchy of methods for a specific object.
 // ====================================================================================================================
 void DumpFuncTable(CObjectEntry* oe, const char* partial)
@@ -1008,7 +1037,7 @@ void DumpFuncTable(CScriptContext* script_context, const tFuncTable* functable, 
         const char* func_name = UnHash(function_list[i]->GetHash());
         if (!partial || !partial[0]|| SafeStrStr(func_name, partial) != nullptr)
         {
-            TinPrint(script_context, "    %s()\n", UnHash(function_list[i]->GetHash()));
+            DumpFuncEntry(script_context, function_list[i]);
         }
     }
 }
