@@ -227,18 +227,15 @@ void CDebugSchedulesWin::AddEntry(CScheduleEntry* entry)
 void CDebugSchedulesWin::AddSchedule(uint32 sched_id, bool repeat, int32 time_remaining_ms, uint32 object_id,
                                      const char* command)
 {
-    if (mEntryMap.contains(sched_id))
+    CScheduleEntry* entry = mEntryMap[sched_id];
+    if (entry == nullptr)
     {
-        CScheduleEntry* entry = mEntryMap[sched_id];
-        entry->SetTimeRemaining(time_remaining_ms);
+        entry = new CScheduleEntry(sched_id,repeat,time_remaining_ms,object_id,command,this);
+        mEntryMap.insert(sched_id,entry);
     }
 
-    // -- otherwise we need to create the entry
-    else
-    {
-        CScheduleEntry* entry = new CScheduleEntry(sched_id, repeat, time_remaining_ms, object_id, command, this);
-        mEntryMap.insert(sched_id, entry);
-    }
+    // -- update the time remaining
+    entry->SetTimeRemaining(time_remaining_ms);
 
     // -- schedule entries are sorted by time remaining
     SortSchedules();
