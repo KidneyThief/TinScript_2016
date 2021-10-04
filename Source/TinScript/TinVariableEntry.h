@@ -25,10 +25,21 @@
 
 #pragma once
 
+#include "integration.h"
+#include "TinTypes.h"
+#include "TinScript.h"
+
 // == namespace TinScript =============================================================================================
 
 namespace TinScript
 {
+
+// -- forward declarations --------------------------------------------------------------------------------------------
+class CObjectEntry;
+class CExecStack;
+class CFunctionCallStack;
+class CFunctionEntry;
+class CDebuggerWatchExpression;
 
 // ====================================================================================================================
 // class CVariableEntry:  Contains the information for any created or registered variable/member.
@@ -99,110 +110,18 @@ public:
     // -- this method is used only for registered arrays of const char*
     // -- the address is actually a const char*[], and there's a parallel
     // -- array of hash values, to keep the string table up to date
-    void* GetStringArrayHashAddr(void* objaddr, int32 array_index) const
-    {
-        // -- sanity check
-        if (GetType() != TYPE_string || array_index < 0 || (array_index > 0 && !IsArray()) ||
-            (mArraySize >= 0 && array_index > mArraySize))
-        {
-            ScriptAssert_(GetScriptContext(), false, "<internal>", -1,
-                          "Error - GetStringAddr() called with an invalid array index: %s\n", UnHash(GetHash()));
-            return (NULL);
-        }
-
-        // -- if this is an array with a size > 1, then mStringValueHash is actually an array of hashes
-        if (mArraySize > 1)
-            return (void*)(&mStringHashArray[array_index]);
-        else
-            return (void*)(&mStringValueHash);
-    }
+    void* GetStringArrayHashAddr(void* objaddr, int32 array_index) const;
 
     // -- this method is called by registered methods (dispatch templated implementation),
     // -- and as it is used to cross into cpp, it returns a const char* for strings
-    void* GetValueAddr(void* objaddr) const
-    {
-        // -- strings are special
-        if (mType == TYPE_string)
-        {
-            return (void*)mContextOwner->GetStringTable()->FindString(mStringValueHash);
-        }
-
-        // -- if we're providing an object address, this var is a member
-        // -- if it's a dynamic var, it belongs to the object,
-        // -- but lives in a local dyanmic hashtable
-        void* valueaddr = NULL;
-        if(objaddr && !mIsDynamic)
-            valueaddr = (void*)((char*)objaddr + mOffset);
-        else
-            valueaddr = mAddr;
-
-        // -- return the value address
-        return valueaddr;
-    }
+    void* GetValueAddr(void* objaddr) const;
 
     // -- this method is used only on the script side.  The address it returns must *never*
     // -- be written to - instead, the SetValue() method for variables is used.
     // -- for strings, this returns the address of the hash value found in the string dictionary
-    void* GetAddr(void* objaddr) const
-    {
-        // -- strings are special...
-        if (mType == TYPE_string)
-        {
-            return (GetStringArrayHashAddr(objaddr, 0));
-        }
+    void* GetAddr(void* objaddr) const;
 
-        // -- find the value address
-        void* valueaddr = NULL;
-
-        // -- if we're providing an object address, this var is a member
-        if(objaddr && !mIsDynamic)
-            valueaddr = (void*)((char*)objaddr + mOffset);
-        else
-            valueaddr = mAddr;
-
-        // -- return the address
-        return (valueaddr);
-    }
-
-    void* GetArrayVarAddr(void* objaddr, int32 array_index) const
-    {
-        // -- strings are special
-        if (mType == TYPE_string)
-        {
-            return  (GetStringArrayHashAddr(objaddr, array_index));
-        }
-
-        // -- can only call this if this actually is an array
-        if (!IsArray())
-        {
-            ScriptAssert_(GetScriptContext(), false, "<internal>", -1,
-                          "Error - GetArrayVarAddr() called on a non-array variable: %s\n", UnHash(GetHash()));
-            return (NULL);
-        }
-
-        // -- if the array hasn't yet been allocated (e.g. during declaration), return NULL
-        if (mArraySize < 0)
-        {
-            // -- this had better be a parameter, otherwise we're trying to access an uninitialized array
-            ScriptAssert_(GetScriptContext(), mIsParameter, "<internal>", -1,
-                          "Error - GetArrayVarAddr() called on an uninitialized array variable: %s\n",
-                          UnHash(GetHash()));
-            return (NULL);
-        }
-
-        // -- ensure we're within range
-        if (array_index < 0 || array_index >= mArraySize)
-        {
-            ScriptAssert_(GetScriptContext(), false, "<internal>", -1,
-                          "Error - GetArrayVarAddr() index %d out of range [%d],\nvariable: %s\n", array_index,
-                          mArraySize, UnHash(GetHash()));
-            return (NULL);
-        } 
-
-        // -- get the base address for this variable
-        void* addr = (void*)((char*)GetAddr(objaddr) + (gRegisteredTypeSize[mType] * array_index));
-        return (addr);
-    }
+    void* GetArrayVarAddr(void* objaddr, int32 array_index) const;
 
     uint32 GetOffset() const
     {

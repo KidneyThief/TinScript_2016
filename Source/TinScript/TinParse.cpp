@@ -5453,7 +5453,7 @@ CFunctionEntry* FuncDeclaration(CScriptContext* script_context, CNamespace* nsen
     }
 
 	// -- create the function entry, and add it to the global table
-	fe = TinAlloc(ALLOC_FuncEntry, CFunctionEntry, script_context, nsentry->GetHash(), funcname,
+	fe = TinAlloc(ALLOC_FuncEntry, CFunctionEntry, nsentry->GetHash(), funcname,
                                                    funchash, type, (void*)NULL);
 	uint32 hash = fe->GetHash();
 	nsentry->GetFuncTable()->AddItem(*fe, hash);

@@ -1,7 +1,7 @@
 // ------------------------------------------------------------------------------------------------
 //  The MIT License
 //  
-//  Copyright (c) 2016 Tim Andersen
+//  Copyright (c) 2021 Tim Andersen
 //  
 //  Permission is hereby granted, free of charge, to any person obtaining a copy of this software
 //  and associated documentation files (the "Software"), to deal in the Software without
@@ -37,7 +37,7 @@ namespace TinScript
 template<typename R>
 inline bool8 ExecFunction(R& return_value, const char* func_name)
 {
-    CScriptContext* script_context = GetContext();
+    CScriptContext* script_context = TinScript::GetContext();
     if (!script_context->GetGlobalNamespace() || !func_name || !func_name[0])
         return false;
 
@@ -47,7 +47,7 @@ inline bool8 ExecFunction(R& return_value, const char* func_name)
 template<typename R>
 inline bool8 ExecFunction(R& return_value, uint32 func_hash)
 {
-    CScriptContext* script_context = GetContext();
+    CScriptContext* script_context = TinScript::GetContext();
     if (!script_context->GetGlobalNamespace())
         return false;
 
@@ -57,7 +57,7 @@ inline bool8 ExecFunction(R& return_value, uint32 func_hash)
 template<typename R>
 inline bool8 ObjExecMethod(void* obj_addr, R& return_value, const char* method_name)
 {
-    CScriptContext* script_context = GetContext();
+    CScriptContext* script_context = TinScript::GetContext();
     if (!script_context->GetGlobalNamespace() || !method_name || !method_name[0])
         return false;
 
@@ -74,7 +74,7 @@ inline bool8 ObjExecMethod(void* obj_addr, R& return_value, const char* method_n
 template<typename R>
 inline bool8 ObjExecMethod(void* obj_addr, R& return_value, uint32 method_hash)
 {
-    CScriptContext* script_context = GetContext();
+    CScriptContext* script_context = TinScript::GetContext();
     if (!script_context->GetGlobalNamespace())
         return false;
 
@@ -97,7 +97,7 @@ inline bool8 ObjExecNSMethod(uint32 object_id, R& return_value, uint32 ns_hash, 
 template<typename R>
 inline bool8 ObjExecMethod(uint32 object_id, R& return_value, const char* method_name)
 {
-    CScriptContext* script_context = GetContext();
+    CScriptContext* script_context = TinScript::GetContext();
     if (!script_context->GetGlobalNamespace() || !method_name || !method_name[0])
         return false;
 
@@ -107,7 +107,7 @@ inline bool8 ObjExecMethod(uint32 object_id, R& return_value, const char* method
 template<typename R>
 inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash, uint32 func_hash)
 {
-    CScriptContext* script_context = GetContext();
+    CScriptContext* script_context = TinScript::GetContext();
     if (!script_context->GetGlobalNamespace())
         return false;
 
@@ -159,7 +159,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 template<typename R, typename T1>
 inline bool8 ExecFunction(R& return_value, const char* func_name, T1 p1)
 {
-    CScriptContext* script_context = GetContext();
+    CScriptContext* script_context = TinScript::GetContext();
     if (!script_context->GetGlobalNamespace() || !func_name || !func_name[0])
         return false;
 
@@ -169,7 +169,7 @@ inline bool8 ExecFunction(R& return_value, const char* func_name, T1 p1)
 template<typename R, typename T1>
 inline bool8 ExecFunction(R& return_value, uint32 func_hash, T1 p1)
 {
-    CScriptContext* script_context = GetContext();
+    CScriptContext* script_context = TinScript::GetContext();
     if (!script_context->GetGlobalNamespace())
         return false;
 
@@ -179,7 +179,7 @@ inline bool8 ExecFunction(R& return_value, uint32 func_hash, T1 p1)
 template<typename R, typename T1>
 inline bool8 ObjExecMethod(void* obj_addr, R& return_value, const char* method_name, T1 p1)
 {
-    CScriptContext* script_context = GetContext();
+    CScriptContext* script_context = TinScript::GetContext();
     if (!script_context->GetGlobalNamespace() || !method_name || !method_name[0])
         return false;
 
@@ -196,7 +196,7 @@ inline bool8 ObjExecMethod(void* obj_addr, R& return_value, const char* method_n
 template<typename R, typename T1>
 inline bool8 ObjExecMethod(void* obj_addr, R& return_value, uint32 method_hash, T1 p1)
 {
-    CScriptContext* script_context = GetContext();
+    CScriptContext* script_context = TinScript::GetContext();
     if (!script_context->GetGlobalNamespace())
         return false;
 
@@ -219,7 +219,7 @@ inline bool8 ObjExecNSMethod(uint32 object_id, R& return_value, uint32 ns_hash, 
 template<typename R, typename T1>
 inline bool8 ObjExecMethod(uint32 object_id, R& return_value, const char* method_name, T1 p1)
 {
-    CScriptContext* script_context = GetContext();
+    CScriptContext* script_context = TinScript::GetContext();
     if (!script_context->GetGlobalNamespace() || !method_name || !method_name[0])
         return false;
 
@@ -229,7 +229,7 @@ inline bool8 ObjExecMethod(uint32 object_id, R& return_value, const char* method
 template<typename R, typename T1>
 inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash, uint32 func_hash, T1 p1)
 {
-    CScriptContext* script_context = GetContext();
+    CScriptContext* script_context = TinScript::GetContext();
     if (!script_context->GetGlobalNamespace())
         return false;
 
@@ -295,7 +295,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 template<typename R, typename T1, typename T2>
 inline bool8 ExecFunction(R& return_value, const char* func_name, T1 p1, T2 p2)
 {
-    CScriptContext* script_context = GetContext();
+    CScriptContext* script_context = TinScript::GetContext();
     if (!script_context->GetGlobalNamespace() || !func_name || !func_name[0])
         return false;
 
@@ -305,7 +305,7 @@ inline bool8 ExecFunction(R& return_value, const char* func_name, T1 p1, T2 p2)
 template<typename R, typename T1, typename T2>
 inline bool8 ExecFunction(R& return_value, uint32 func_hash, T1 p1, T2 p2)
 {
-    CScriptContext* script_context = GetContext();
+    CScriptContext* script_context = TinScript::GetContext();
     if (!script_context->GetGlobalNamespace())
         return false;
 
@@ -315,7 +315,7 @@ inline bool8 ExecFunction(R& return_value, uint32 func_hash, T1 p1, T2 p2)
 template<typename R, typename T1, typename T2>
 inline bool8 ObjExecMethod(void* obj_addr, R& return_value, const char* method_name, T1 p1, T2 p2)
 {
-    CScriptContext* script_context = GetContext();
+    CScriptContext* script_context = TinScript::GetContext();
     if (!script_context->GetGlobalNamespace() || !method_name || !method_name[0])
         return false;
 
@@ -332,7 +332,7 @@ inline bool8 ObjExecMethod(void* obj_addr, R& return_value, const char* method_n
 template<typename R, typename T1, typename T2>
 inline bool8 ObjExecMethod(void* obj_addr, R& return_value, uint32 method_hash, T1 p1, T2 p2)
 {
-    CScriptContext* script_context = GetContext();
+    CScriptContext* script_context = TinScript::GetContext();
     if (!script_context->GetGlobalNamespace())
         return false;
 
@@ -355,7 +355,7 @@ inline bool8 ObjExecNSMethod(uint32 object_id, R& return_value, uint32 ns_hash, 
 template<typename R, typename T1, typename T2>
 inline bool8 ObjExecMethod(uint32 object_id, R& return_value, const char* method_name, T1 p1, T2 p2)
 {
-    CScriptContext* script_context = GetContext();
+    CScriptContext* script_context = TinScript::GetContext();
     if (!script_context->GetGlobalNamespace() || !method_name || !method_name[0])
         return false;
 
@@ -365,7 +365,7 @@ inline bool8 ObjExecMethod(uint32 object_id, R& return_value, const char* method
 template<typename R, typename T1, typename T2>
 inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash, uint32 func_hash, T1 p1, T2 p2)
 {
-    CScriptContext* script_context = GetContext();
+    CScriptContext* script_context = TinScript::GetContext();
     if (!script_context->GetGlobalNamespace())
         return false;
 
@@ -445,7 +445,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 template<typename R, typename T1, typename T2, typename T3>
 inline bool8 ExecFunction(R& return_value, const char* func_name, T1 p1, T2 p2, T3 p3)
 {
-    CScriptContext* script_context = GetContext();
+    CScriptContext* script_context = TinScript::GetContext();
     if (!script_context->GetGlobalNamespace() || !func_name || !func_name[0])
         return false;
 
@@ -455,7 +455,7 @@ inline bool8 ExecFunction(R& return_value, const char* func_name, T1 p1, T2 p2, 
 template<typename R, typename T1, typename T2, typename T3>
 inline bool8 ExecFunction(R& return_value, uint32 func_hash, T1 p1, T2 p2, T3 p3)
 {
-    CScriptContext* script_context = GetContext();
+    CScriptContext* script_context = TinScript::GetContext();
     if (!script_context->GetGlobalNamespace())
         return false;
 
@@ -465,7 +465,7 @@ inline bool8 ExecFunction(R& return_value, uint32 func_hash, T1 p1, T2 p2, T3 p3
 template<typename R, typename T1, typename T2, typename T3>
 inline bool8 ObjExecMethod(void* obj_addr, R& return_value, const char* method_name, T1 p1, T2 p2, T3 p3)
 {
-    CScriptContext* script_context = GetContext();
+    CScriptContext* script_context = TinScript::GetContext();
     if (!script_context->GetGlobalNamespace() || !method_name || !method_name[0])
         return false;
 
@@ -482,7 +482,7 @@ inline bool8 ObjExecMethod(void* obj_addr, R& return_value, const char* method_n
 template<typename R, typename T1, typename T2, typename T3>
 inline bool8 ObjExecMethod(void* obj_addr, R& return_value, uint32 method_hash, T1 p1, T2 p2, T3 p3)
 {
-    CScriptContext* script_context = GetContext();
+    CScriptContext* script_context = TinScript::GetContext();
     if (!script_context->GetGlobalNamespace())
         return false;
 
@@ -505,7 +505,7 @@ inline bool8 ObjExecNSMethod(uint32 object_id, R& return_value, uint32 ns_hash, 
 template<typename R, typename T1, typename T2, typename T3>
 inline bool8 ObjExecMethod(uint32 object_id, R& return_value, const char* method_name, T1 p1, T2 p2, T3 p3)
 {
-    CScriptContext* script_context = GetContext();
+    CScriptContext* script_context = TinScript::GetContext();
     if (!script_context->GetGlobalNamespace() || !method_name || !method_name[0])
         return false;
 
@@ -515,7 +515,7 @@ inline bool8 ObjExecMethod(uint32 object_id, R& return_value, const char* method
 template<typename R, typename T1, typename T2, typename T3>
 inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash, uint32 func_hash, T1 p1, T2 p2, T3 p3)
 {
-    CScriptContext* script_context = GetContext();
+    CScriptContext* script_context = TinScript::GetContext();
     if (!script_context->GetGlobalNamespace())
         return false;
 
@@ -609,7 +609,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 template<typename R, typename T1, typename T2, typename T3, typename T4>
 inline bool8 ExecFunction(R& return_value, const char* func_name, T1 p1, T2 p2, T3 p3, T4 p4)
 {
-    CScriptContext* script_context = GetContext();
+    CScriptContext* script_context = TinScript::GetContext();
     if (!script_context->GetGlobalNamespace() || !func_name || !func_name[0])
         return false;
 
@@ -619,7 +619,7 @@ inline bool8 ExecFunction(R& return_value, const char* func_name, T1 p1, T2 p2, 
 template<typename R, typename T1, typename T2, typename T3, typename T4>
 inline bool8 ExecFunction(R& return_value, uint32 func_hash, T1 p1, T2 p2, T3 p3, T4 p4)
 {
-    CScriptContext* script_context = GetContext();
+    CScriptContext* script_context = TinScript::GetContext();
     if (!script_context->GetGlobalNamespace())
         return false;
 
@@ -629,7 +629,7 @@ inline bool8 ExecFunction(R& return_value, uint32 func_hash, T1 p1, T2 p2, T3 p3
 template<typename R, typename T1, typename T2, typename T3, typename T4>
 inline bool8 ObjExecMethod(void* obj_addr, R& return_value, const char* method_name, T1 p1, T2 p2, T3 p3, T4 p4)
 {
-    CScriptContext* script_context = GetContext();
+    CScriptContext* script_context = TinScript::GetContext();
     if (!script_context->GetGlobalNamespace() || !method_name || !method_name[0])
         return false;
 
@@ -646,7 +646,7 @@ inline bool8 ObjExecMethod(void* obj_addr, R& return_value, const char* method_n
 template<typename R, typename T1, typename T2, typename T3, typename T4>
 inline bool8 ObjExecMethod(void* obj_addr, R& return_value, uint32 method_hash, T1 p1, T2 p2, T3 p3, T4 p4)
 {
-    CScriptContext* script_context = GetContext();
+    CScriptContext* script_context = TinScript::GetContext();
     if (!script_context->GetGlobalNamespace())
         return false;
 
@@ -669,7 +669,7 @@ inline bool8 ObjExecNSMethod(uint32 object_id, R& return_value, uint32 ns_hash, 
 template<typename R, typename T1, typename T2, typename T3, typename T4>
 inline bool8 ObjExecMethod(uint32 object_id, R& return_value, const char* method_name, T1 p1, T2 p2, T3 p3, T4 p4)
 {
-    CScriptContext* script_context = GetContext();
+    CScriptContext* script_context = TinScript::GetContext();
     if (!script_context->GetGlobalNamespace() || !method_name || !method_name[0])
         return false;
 
@@ -679,7 +679,7 @@ inline bool8 ObjExecMethod(uint32 object_id, R& return_value, const char* method
 template<typename R, typename T1, typename T2, typename T3, typename T4>
 inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash, uint32 func_hash, T1 p1, T2 p2, T3 p3, T4 p4)
 {
-    CScriptContext* script_context = GetContext();
+    CScriptContext* script_context = TinScript::GetContext();
     if (!script_context->GetGlobalNamespace())
         return false;
 
@@ -787,7 +787,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 template<typename R, typename T1, typename T2, typename T3, typename T4, typename T5>
 inline bool8 ExecFunction(R& return_value, const char* func_name, T1 p1, T2 p2, T3 p3, T4 p4, T5 p5)
 {
-    CScriptContext* script_context = GetContext();
+    CScriptContext* script_context = TinScript::GetContext();
     if (!script_context->GetGlobalNamespace() || !func_name || !func_name[0])
         return false;
 
@@ -797,7 +797,7 @@ inline bool8 ExecFunction(R& return_value, const char* func_name, T1 p1, T2 p2, 
 template<typename R, typename T1, typename T2, typename T3, typename T4, typename T5>
 inline bool8 ExecFunction(R& return_value, uint32 func_hash, T1 p1, T2 p2, T3 p3, T4 p4, T5 p5)
 {
-    CScriptContext* script_context = GetContext();
+    CScriptContext* script_context = TinScript::GetContext();
     if (!script_context->GetGlobalNamespace())
         return false;
 
@@ -807,7 +807,7 @@ inline bool8 ExecFunction(R& return_value, uint32 func_hash, T1 p1, T2 p2, T3 p3
 template<typename R, typename T1, typename T2, typename T3, typename T4, typename T5>
 inline bool8 ObjExecMethod(void* obj_addr, R& return_value, const char* method_name, T1 p1, T2 p2, T3 p3, T4 p4, T5 p5)
 {
-    CScriptContext* script_context = GetContext();
+    CScriptContext* script_context = TinScript::GetContext();
     if (!script_context->GetGlobalNamespace() || !method_name || !method_name[0])
         return false;
 
@@ -824,7 +824,7 @@ inline bool8 ObjExecMethod(void* obj_addr, R& return_value, const char* method_n
 template<typename R, typename T1, typename T2, typename T3, typename T4, typename T5>
 inline bool8 ObjExecMethod(void* obj_addr, R& return_value, uint32 method_hash, T1 p1, T2 p2, T3 p3, T4 p4, T5 p5)
 {
-    CScriptContext* script_context = GetContext();
+    CScriptContext* script_context = TinScript::GetContext();
     if (!script_context->GetGlobalNamespace())
         return false;
 
@@ -847,7 +847,7 @@ inline bool8 ObjExecNSMethod(uint32 object_id, R& return_value, uint32 ns_hash, 
 template<typename R, typename T1, typename T2, typename T3, typename T4, typename T5>
 inline bool8 ObjExecMethod(uint32 object_id, R& return_value, const char* method_name, T1 p1, T2 p2, T3 p3, T4 p4, T5 p5)
 {
-    CScriptContext* script_context = GetContext();
+    CScriptContext* script_context = TinScript::GetContext();
     if (!script_context->GetGlobalNamespace() || !method_name || !method_name[0])
         return false;
 
@@ -857,7 +857,7 @@ inline bool8 ObjExecMethod(uint32 object_id, R& return_value, const char* method
 template<typename R, typename T1, typename T2, typename T3, typename T4, typename T5>
 inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash, uint32 func_hash, T1 p1, T2 p2, T3 p3, T4 p4, T5 p5)
 {
-    CScriptContext* script_context = GetContext();
+    CScriptContext* script_context = TinScript::GetContext();
     if (!script_context->GetGlobalNamespace())
         return false;
 
@@ -979,7 +979,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 template<typename R, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
 inline bool8 ExecFunction(R& return_value, const char* func_name, T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6)
 {
-    CScriptContext* script_context = GetContext();
+    CScriptContext* script_context = TinScript::GetContext();
     if (!script_context->GetGlobalNamespace() || !func_name || !func_name[0])
         return false;
 
@@ -989,7 +989,7 @@ inline bool8 ExecFunction(R& return_value, const char* func_name, T1 p1, T2 p2, 
 template<typename R, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
 inline bool8 ExecFunction(R& return_value, uint32 func_hash, T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6)
 {
-    CScriptContext* script_context = GetContext();
+    CScriptContext* script_context = TinScript::GetContext();
     if (!script_context->GetGlobalNamespace())
         return false;
 
@@ -999,7 +999,7 @@ inline bool8 ExecFunction(R& return_value, uint32 func_hash, T1 p1, T2 p2, T3 p3
 template<typename R, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
 inline bool8 ObjExecMethod(void* obj_addr, R& return_value, const char* method_name, T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6)
 {
-    CScriptContext* script_context = GetContext();
+    CScriptContext* script_context = TinScript::GetContext();
     if (!script_context->GetGlobalNamespace() || !method_name || !method_name[0])
         return false;
 
@@ -1016,7 +1016,7 @@ inline bool8 ObjExecMethod(void* obj_addr, R& return_value, const char* method_n
 template<typename R, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
 inline bool8 ObjExecMethod(void* obj_addr, R& return_value, uint32 method_hash, T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6)
 {
-    CScriptContext* script_context = GetContext();
+    CScriptContext* script_context = TinScript::GetContext();
     if (!script_context->GetGlobalNamespace())
         return false;
 
@@ -1039,7 +1039,7 @@ inline bool8 ObjExecNSMethod(uint32 object_id, R& return_value, uint32 ns_hash, 
 template<typename R, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
 inline bool8 ObjExecMethod(uint32 object_id, R& return_value, const char* method_name, T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6)
 {
-    CScriptContext* script_context = GetContext();
+    CScriptContext* script_context = TinScript::GetContext();
     if (!script_context->GetGlobalNamespace() || !method_name || !method_name[0])
         return false;
 
@@ -1049,7 +1049,7 @@ inline bool8 ObjExecMethod(uint32 object_id, R& return_value, const char* method
 template<typename R, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
 inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash, uint32 func_hash, T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6)
 {
-    CScriptContext* script_context = GetContext();
+    CScriptContext* script_context = TinScript::GetContext();
     if (!script_context->GetGlobalNamespace())
         return false;
 
@@ -1185,7 +1185,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 template<typename R, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7>
 inline bool8 ExecFunction(R& return_value, const char* func_name, T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6, T7 p7)
 {
-    CScriptContext* script_context = GetContext();
+    CScriptContext* script_context = TinScript::GetContext();
     if (!script_context->GetGlobalNamespace() || !func_name || !func_name[0])
         return false;
 
@@ -1195,7 +1195,7 @@ inline bool8 ExecFunction(R& return_value, const char* func_name, T1 p1, T2 p2, 
 template<typename R, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7>
 inline bool8 ExecFunction(R& return_value, uint32 func_hash, T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6, T7 p7)
 {
-    CScriptContext* script_context = GetContext();
+    CScriptContext* script_context = TinScript::GetContext();
     if (!script_context->GetGlobalNamespace())
         return false;
 
@@ -1205,7 +1205,7 @@ inline bool8 ExecFunction(R& return_value, uint32 func_hash, T1 p1, T2 p2, T3 p3
 template<typename R, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7>
 inline bool8 ObjExecMethod(void* obj_addr, R& return_value, const char* method_name, T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6, T7 p7)
 {
-    CScriptContext* script_context = GetContext();
+    CScriptContext* script_context = TinScript::GetContext();
     if (!script_context->GetGlobalNamespace() || !method_name || !method_name[0])
         return false;
 
@@ -1222,7 +1222,7 @@ inline bool8 ObjExecMethod(void* obj_addr, R& return_value, const char* method_n
 template<typename R, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7>
 inline bool8 ObjExecMethod(void* obj_addr, R& return_value, uint32 method_hash, T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6, T7 p7)
 {
-    CScriptContext* script_context = GetContext();
+    CScriptContext* script_context = TinScript::GetContext();
     if (!script_context->GetGlobalNamespace())
         return false;
 
@@ -1245,7 +1245,7 @@ inline bool8 ObjExecNSMethod(uint32 object_id, R& return_value, uint32 ns_hash, 
 template<typename R, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7>
 inline bool8 ObjExecMethod(uint32 object_id, R& return_value, const char* method_name, T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6, T7 p7)
 {
-    CScriptContext* script_context = GetContext();
+    CScriptContext* script_context = TinScript::GetContext();
     if (!script_context->GetGlobalNamespace() || !method_name || !method_name[0])
         return false;
 
@@ -1255,7 +1255,7 @@ inline bool8 ObjExecMethod(uint32 object_id, R& return_value, const char* method
 template<typename R, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7>
 inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash, uint32 func_hash, T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6, T7 p7)
 {
-    CScriptContext* script_context = GetContext();
+    CScriptContext* script_context = TinScript::GetContext();
     if (!script_context->GetGlobalNamespace())
         return false;
 
@@ -1405,7 +1405,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 template<typename R, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8>
 inline bool8 ExecFunction(R& return_value, const char* func_name, T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6, T7 p7, T8 p8)
 {
-    CScriptContext* script_context = GetContext();
+    CScriptContext* script_context = TinScript::GetContext();
     if (!script_context->GetGlobalNamespace() || !func_name || !func_name[0])
         return false;
 
@@ -1415,7 +1415,7 @@ inline bool8 ExecFunction(R& return_value, const char* func_name, T1 p1, T2 p2, 
 template<typename R, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8>
 inline bool8 ExecFunction(R& return_value, uint32 func_hash, T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6, T7 p7, T8 p8)
 {
-    CScriptContext* script_context = GetContext();
+    CScriptContext* script_context = TinScript::GetContext();
     if (!script_context->GetGlobalNamespace())
         return false;
 
@@ -1425,7 +1425,7 @@ inline bool8 ExecFunction(R& return_value, uint32 func_hash, T1 p1, T2 p2, T3 p3
 template<typename R, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8>
 inline bool8 ObjExecMethod(void* obj_addr, R& return_value, const char* method_name, T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6, T7 p7, T8 p8)
 {
-    CScriptContext* script_context = GetContext();
+    CScriptContext* script_context = TinScript::GetContext();
     if (!script_context->GetGlobalNamespace() || !method_name || !method_name[0])
         return false;
 
@@ -1442,7 +1442,7 @@ inline bool8 ObjExecMethod(void* obj_addr, R& return_value, const char* method_n
 template<typename R, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8>
 inline bool8 ObjExecMethod(void* obj_addr, R& return_value, uint32 method_hash, T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6, T7 p7, T8 p8)
 {
-    CScriptContext* script_context = GetContext();
+    CScriptContext* script_context = TinScript::GetContext();
     if (!script_context->GetGlobalNamespace())
         return false;
 
@@ -1465,7 +1465,7 @@ inline bool8 ObjExecNSMethod(uint32 object_id, R& return_value, uint32 ns_hash, 
 template<typename R, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8>
 inline bool8 ObjExecMethod(uint32 object_id, R& return_value, const char* method_name, T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6, T7 p7, T8 p8)
 {
-    CScriptContext* script_context = GetContext();
+    CScriptContext* script_context = TinScript::GetContext();
     if (!script_context->GetGlobalNamespace() || !method_name || !method_name[0])
         return false;
 
@@ -1475,7 +1475,7 @@ inline bool8 ObjExecMethod(uint32 object_id, R& return_value, const char* method
 template<typename R, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8>
 inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash, uint32 func_hash, T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6, T7 p7, T8 p8)
 {
-    CScriptContext* script_context = GetContext();
+    CScriptContext* script_context = TinScript::GetContext();
     if (!script_context->GetGlobalNamespace())
         return false;
 
@@ -1639,7 +1639,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 template<typename R, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9>
 inline bool8 ExecFunction(R& return_value, const char* func_name, T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6, T7 p7, T8 p8, T9 p9)
 {
-    CScriptContext* script_context = GetContext();
+    CScriptContext* script_context = TinScript::GetContext();
     if (!script_context->GetGlobalNamespace() || !func_name || !func_name[0])
         return false;
 
@@ -1649,7 +1649,7 @@ inline bool8 ExecFunction(R& return_value, const char* func_name, T1 p1, T2 p2, 
 template<typename R, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9>
 inline bool8 ExecFunction(R& return_value, uint32 func_hash, T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6, T7 p7, T8 p8, T9 p9)
 {
-    CScriptContext* script_context = GetContext();
+    CScriptContext* script_context = TinScript::GetContext();
     if (!script_context->GetGlobalNamespace())
         return false;
 
@@ -1659,7 +1659,7 @@ inline bool8 ExecFunction(R& return_value, uint32 func_hash, T1 p1, T2 p2, T3 p3
 template<typename R, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9>
 inline bool8 ObjExecMethod(void* obj_addr, R& return_value, const char* method_name, T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6, T7 p7, T8 p8, T9 p9)
 {
-    CScriptContext* script_context = GetContext();
+    CScriptContext* script_context = TinScript::GetContext();
     if (!script_context->GetGlobalNamespace() || !method_name || !method_name[0])
         return false;
 
@@ -1676,7 +1676,7 @@ inline bool8 ObjExecMethod(void* obj_addr, R& return_value, const char* method_n
 template<typename R, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9>
 inline bool8 ObjExecMethod(void* obj_addr, R& return_value, uint32 method_hash, T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6, T7 p7, T8 p8, T9 p9)
 {
-    CScriptContext* script_context = GetContext();
+    CScriptContext* script_context = TinScript::GetContext();
     if (!script_context->GetGlobalNamespace())
         return false;
 
@@ -1699,7 +1699,7 @@ inline bool8 ObjExecNSMethod(uint32 object_id, R& return_value, uint32 ns_hash, 
 template<typename R, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9>
 inline bool8 ObjExecMethod(uint32 object_id, R& return_value, const char* method_name, T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6, T7 p7, T8 p8, T9 p9)
 {
-    CScriptContext* script_context = GetContext();
+    CScriptContext* script_context = TinScript::GetContext();
     if (!script_context->GetGlobalNamespace() || !method_name || !method_name[0])
         return false;
 
@@ -1709,7 +1709,7 @@ inline bool8 ObjExecMethod(uint32 object_id, R& return_value, const char* method
 template<typename R, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9>
 inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash, uint32 func_hash, T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6, T7 p7, T8 p8, T9 p9)
 {
-    CScriptContext* script_context = GetContext();
+    CScriptContext* script_context = TinScript::GetContext();
     if (!script_context->GetGlobalNamespace())
         return false;
 
@@ -1887,7 +1887,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 template<typename R, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10>
 inline bool8 ExecFunction(R& return_value, const char* func_name, T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6, T7 p7, T8 p8, T9 p9, T10 p10)
 {
-    CScriptContext* script_context = GetContext();
+    CScriptContext* script_context = TinScript::GetContext();
     if (!script_context->GetGlobalNamespace() || !func_name || !func_name[0])
         return false;
 
@@ -1897,7 +1897,7 @@ inline bool8 ExecFunction(R& return_value, const char* func_name, T1 p1, T2 p2, 
 template<typename R, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10>
 inline bool8 ExecFunction(R& return_value, uint32 func_hash, T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6, T7 p7, T8 p8, T9 p9, T10 p10)
 {
-    CScriptContext* script_context = GetContext();
+    CScriptContext* script_context = TinScript::GetContext();
     if (!script_context->GetGlobalNamespace())
         return false;
 
@@ -1907,7 +1907,7 @@ inline bool8 ExecFunction(R& return_value, uint32 func_hash, T1 p1, T2 p2, T3 p3
 template<typename R, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10>
 inline bool8 ObjExecMethod(void* obj_addr, R& return_value, const char* method_name, T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6, T7 p7, T8 p8, T9 p9, T10 p10)
 {
-    CScriptContext* script_context = GetContext();
+    CScriptContext* script_context = TinScript::GetContext();
     if (!script_context->GetGlobalNamespace() || !method_name || !method_name[0])
         return false;
 
@@ -1924,7 +1924,7 @@ inline bool8 ObjExecMethod(void* obj_addr, R& return_value, const char* method_n
 template<typename R, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10>
 inline bool8 ObjExecMethod(void* obj_addr, R& return_value, uint32 method_hash, T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6, T7 p7, T8 p8, T9 p9, T10 p10)
 {
-    CScriptContext* script_context = GetContext();
+    CScriptContext* script_context = TinScript::GetContext();
     if (!script_context->GetGlobalNamespace())
         return false;
 
@@ -1947,7 +1947,7 @@ inline bool8 ObjExecNSMethod(uint32 object_id, R& return_value, uint32 ns_hash, 
 template<typename R, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10>
 inline bool8 ObjExecMethod(uint32 object_id, R& return_value, const char* method_name, T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6, T7 p7, T8 p8, T9 p9, T10 p10)
 {
-    CScriptContext* script_context = GetContext();
+    CScriptContext* script_context = TinScript::GetContext();
     if (!script_context->GetGlobalNamespace() || !method_name || !method_name[0])
         return false;
 
@@ -1957,7 +1957,7 @@ inline bool8 ObjExecMethod(uint32 object_id, R& return_value, const char* method
 template<typename R, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10>
 inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash, uint32 func_hash, T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6, T7 p7, T8 p8, T9 p9, T10 p10)
 {
-    CScriptContext* script_context = GetContext();
+    CScriptContext* script_context = TinScript::GetContext();
     if (!script_context->GetGlobalNamespace())
         return false;
 
@@ -2149,7 +2149,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 template<typename R, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10, typename T11>
 inline bool8 ExecFunction(R& return_value, const char* func_name, T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6, T7 p7, T8 p8, T9 p9, T10 p10, T11 p11)
 {
-    CScriptContext* script_context = GetContext();
+    CScriptContext* script_context = TinScript::GetContext();
     if (!script_context->GetGlobalNamespace() || !func_name || !func_name[0])
         return false;
 
@@ -2159,7 +2159,7 @@ inline bool8 ExecFunction(R& return_value, const char* func_name, T1 p1, T2 p2, 
 template<typename R, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10, typename T11>
 inline bool8 ExecFunction(R& return_value, uint32 func_hash, T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6, T7 p7, T8 p8, T9 p9, T10 p10, T11 p11)
 {
-    CScriptContext* script_context = GetContext();
+    CScriptContext* script_context = TinScript::GetContext();
     if (!script_context->GetGlobalNamespace())
         return false;
 
@@ -2169,7 +2169,7 @@ inline bool8 ExecFunction(R& return_value, uint32 func_hash, T1 p1, T2 p2, T3 p3
 template<typename R, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10, typename T11>
 inline bool8 ObjExecMethod(void* obj_addr, R& return_value, const char* method_name, T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6, T7 p7, T8 p8, T9 p9, T10 p10, T11 p11)
 {
-    CScriptContext* script_context = GetContext();
+    CScriptContext* script_context = TinScript::GetContext();
     if (!script_context->GetGlobalNamespace() || !method_name || !method_name[0])
         return false;
 
@@ -2186,7 +2186,7 @@ inline bool8 ObjExecMethod(void* obj_addr, R& return_value, const char* method_n
 template<typename R, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10, typename T11>
 inline bool8 ObjExecMethod(void* obj_addr, R& return_value, uint32 method_hash, T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6, T7 p7, T8 p8, T9 p9, T10 p10, T11 p11)
 {
-    CScriptContext* script_context = GetContext();
+    CScriptContext* script_context = TinScript::GetContext();
     if (!script_context->GetGlobalNamespace())
         return false;
 
@@ -2209,7 +2209,7 @@ inline bool8 ObjExecNSMethod(uint32 object_id, R& return_value, uint32 ns_hash, 
 template<typename R, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10, typename T11>
 inline bool8 ObjExecMethod(uint32 object_id, R& return_value, const char* method_name, T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6, T7 p7, T8 p8, T9 p9, T10 p10, T11 p11)
 {
-    CScriptContext* script_context = GetContext();
+    CScriptContext* script_context = TinScript::GetContext();
     if (!script_context->GetGlobalNamespace() || !method_name || !method_name[0])
         return false;
 
@@ -2219,7 +2219,7 @@ inline bool8 ObjExecMethod(uint32 object_id, R& return_value, const char* method
 template<typename R, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10, typename T11>
 inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash, uint32 func_hash, T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6, T7 p7, T8 p8, T9 p9, T10 p10, T11 p11)
 {
-    CScriptContext* script_context = GetContext();
+    CScriptContext* script_context = TinScript::GetContext();
     if (!script_context->GetGlobalNamespace())
         return false;
 
@@ -2425,7 +2425,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
 template<typename R, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10, typename T11, typename T12>
 inline bool8 ExecFunction(R& return_value, const char* func_name, T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6, T7 p7, T8 p8, T9 p9, T10 p10, T11 p11, T12 p12)
 {
-    CScriptContext* script_context = GetContext();
+    CScriptContext* script_context = TinScript::GetContext();
     if (!script_context->GetGlobalNamespace() || !func_name || !func_name[0])
         return false;
 
@@ -2435,7 +2435,7 @@ inline bool8 ExecFunction(R& return_value, const char* func_name, T1 p1, T2 p2, 
 template<typename R, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10, typename T11, typename T12>
 inline bool8 ExecFunction(R& return_value, uint32 func_hash, T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6, T7 p7, T8 p8, T9 p9, T10 p10, T11 p11, T12 p12)
 {
-    CScriptContext* script_context = GetContext();
+    CScriptContext* script_context = TinScript::GetContext();
     if (!script_context->GetGlobalNamespace())
         return false;
 
@@ -2445,7 +2445,7 @@ inline bool8 ExecFunction(R& return_value, uint32 func_hash, T1 p1, T2 p2, T3 p3
 template<typename R, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10, typename T11, typename T12>
 inline bool8 ObjExecMethod(void* obj_addr, R& return_value, const char* method_name, T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6, T7 p7, T8 p8, T9 p9, T10 p10, T11 p11, T12 p12)
 {
-    CScriptContext* script_context = GetContext();
+    CScriptContext* script_context = TinScript::GetContext();
     if (!script_context->GetGlobalNamespace() || !method_name || !method_name[0])
         return false;
 
@@ -2462,7 +2462,7 @@ inline bool8 ObjExecMethod(void* obj_addr, R& return_value, const char* method_n
 template<typename R, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10, typename T11, typename T12>
 inline bool8 ObjExecMethod(void* obj_addr, R& return_value, uint32 method_hash, T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6, T7 p7, T8 p8, T9 p9, T10 p10, T11 p11, T12 p12)
 {
-    CScriptContext* script_context = GetContext();
+    CScriptContext* script_context = TinScript::GetContext();
     if (!script_context->GetGlobalNamespace())
         return false;
 
@@ -2485,7 +2485,7 @@ inline bool8 ObjExecNSMethod(uint32 object_id, R& return_value, uint32 ns_hash, 
 template<typename R, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10, typename T11, typename T12>
 inline bool8 ObjExecMethod(uint32 object_id, R& return_value, const char* method_name, T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6, T7 p7, T8 p8, T9 p9, T10 p10, T11 p11, T12 p12)
 {
-    CScriptContext* script_context = GetContext();
+    CScriptContext* script_context = TinScript::GetContext();
     if (!script_context->GetGlobalNamespace() || !method_name || !method_name[0])
         return false;
 
@@ -2495,7 +2495,7 @@ inline bool8 ObjExecMethod(uint32 object_id, R& return_value, const char* method
 template<typename R, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10, typename T11, typename T12>
 inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash, uint32 func_hash, T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6, T7 p7, T8 p8, T9 p9, T10 p10, T11 p11, T12 p12)
 {
-    CScriptContext* script_context = GetContext();
+    CScriptContext* script_context = TinScript::GetContext();
     if (!script_context->GetGlobalNamespace())
         return false;
 

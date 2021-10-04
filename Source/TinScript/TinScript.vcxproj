@@ -77,6 +77,7 @@
     <ClCompile Include="stdafx.cpp" />
     <ClCompile Include="TinCompile.cpp" />
     <ClCompile Include="TinExecute.cpp" />
+    <ClCompile Include="TinFunctionEntry.cpp" />
     <ClCompile Include="TinMemory.cpp" />
     <ClCompile Include="TinNamespace.cpp" />
     <ClCompile Include="TinObjectGroup.cpp" />
@@ -89,6 +90,7 @@
     <ClCompile Include="TinStringTable.cpp" />
     <ClCompile Include="TinTypes.cpp" />
     <ClCompile Include="TinTypeVector3f.cpp" />
+    <ClCompile Include="TinVariableEntry.cpp" />
     <ClCompile Include="unittest.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -103,6 +105,7 @@
     <ClInclude Include="targetver.h" />
     <ClInclude Include="TinCompile.h" />
     <ClInclude Include="TinExecute.h" />
+    <ClInclude Include="TinFunctionEntry.h" />
     <ClInclude Include="TinHash.h" />
     <ClInclude Include="TinInterface.h" />
     <ClInclude Include="TinNamespace.h" />

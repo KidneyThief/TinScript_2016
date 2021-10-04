@@ -735,7 +735,8 @@ void CScriptContext::DestroyObject(uint32 objectid)
 // ====================================================================================================================
 CObjectEntry* CScriptContext::FindObjectEntry(uint32 objectid)
 {
-    CObjectEntry* oe = GetObjectDictionary()->FindItem(objectid);
+    // -- note:  on shutdown, there may not be an object dictionary anymore
+    CObjectEntry* oe = objectid != 0 && GetObjectDictionary() ? GetObjectDictionary()->FindItem(objectid) : nullptr;
     return oe;
 }
 

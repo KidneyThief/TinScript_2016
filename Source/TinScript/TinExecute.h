@@ -296,10 +296,10 @@ class CFunctionCallStack
 			{
 				// -- if the object still exists, destroy it
 				CObjectEntry* local_object =
-					function_entry->GetScriptContext()->FindObjectEntry(*local_object_id_ptr++);
+					TinScript::GetContext()->FindObjectEntry(*local_object_id_ptr++);
 				if (local_object != nullptr)
 				{
-					function_entry->GetScriptContext()->DestroyObject(local_object->GetID());
+					TinScript::GetContext()->DestroyObject(local_object->GetID());
 				}
 			}
 

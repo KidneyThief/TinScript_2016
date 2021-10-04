@@ -61,8 +61,7 @@ bool8 CopyStackParameters(CFunctionEntry* fe, CExecStack& execstack, CFunctionCa
     // -- sanity check
     if (fe == NULL || !fe->GetContext())
     {
-        ScriptAssert_(fe->GetScriptContext(), 0, "<internal>", -1,
-                      "Error - invalid function entry\n");
+        ScriptAssert_(TinScript::GetContext(), 0, "<internal>", -1, "Error - invalid function entry\n");
         return false;
     }
 
@@ -72,11 +71,11 @@ bool8 CopyStackParameters(CFunctionEntry* fe, CExecStack& execstack, CFunctionCa
     for (int32 i = 0; i < srcparamcount; ++i)
     {
         CVariableEntry* src = parameters->GetParameter(i);
-        void* dst = GetStackVarAddr(fe->GetScriptContext(), execstack, funccallstack,
+        void* dst = GetStackVarAddr(TinScript::GetContext(), execstack, funccallstack,
                                     src->GetStackOffset());
         if (!dst)
         {
-            ScriptAssert_(fe->GetScriptContext(), 0, "<internal>", -1,
+            ScriptAssert_(TinScript::GetContext(), 0, "<internal>", -1,
                           "Error - unable to assign parameter %d, calling function %s()\n",
                           i, UnHash(fe->GetHash()));
             return false;
@@ -527,7 +526,7 @@ bool8 CodeBlockCallFunction(CFunctionEntry* fe, CObjectEntry* oe, CExecStack& ex
         uint32 funcoffset = fe->GetCodeBlockOffset(funccb);
         if (!funccb)
         {
-            ScriptAssert_(fe->GetScriptContext(), 0, "<internal>", -1,
+            ScriptAssert_(TinScript::GetContext(), 0, "<internal>", -1,
                           "Error - Undefined function: %s()\n", UnHash(fe->GetHash()));
             return false;
         }
@@ -539,7 +538,7 @@ bool8 CodeBlockCallFunction(CFunctionEntry* fe, CObjectEntry* oe, CExecStack& ex
         {
             if (funccallstack.mDebuggerObjectDeleted == 0 && funccallstack.mDebuggerFunctionReload == 0)
             {
-                ScriptAssert_(fe->GetScriptContext(), 0, "<internal>", -1,
+                ScriptAssert_(TinScript::GetContext(), 0, "<internal>", -1,
                               "Error - error executing function: %s()\n",
                               UnHash(fe->GetHash()));
             }
@@ -548,7 +547,7 @@ bool8 CodeBlockCallFunction(CFunctionEntry* fe, CObjectEntry* oe, CExecStack& ex
     }
 
     // -- registered 'C' function
-    else if (fe->GetType() == eFuncTypeGlobal)
+    else if (fe->GetType() == eFuncTypeRegistered)
     {
         fe->GetRegObject()->DispatchFunction(oe ? oe->GetAddr() : NULL);
 
@@ -571,7 +570,7 @@ bool8 CodeBlockCallFunction(CFunctionEntry* fe, CObjectEntry* oe, CExecStack& ex
         // -- clear all parameters for the function - this will ensure all
         // -- strings are decremented, keeping the string table clear of unassigned values
         fe->GetContext()->ClearParameters();
-        fe->GetScriptContext()->GetStringTable()->RemoveUnreferencedStrings();
+        TinScript::GetContext()->GetStringTable()->RemoveUnreferencedStrings();
         
         // -- since we called a 'C' function, there's no OP_FuncReturn - pop the function call stack
         int32 var_offset = 0;
@@ -692,7 +691,7 @@ bool8 ExecuteScheduledFunction(CScriptContext* script_context, uint32 objectid, 
     funccallstack.Push(fe, oe, 0);
     
     // -- create space on the execstack, if this is a script function
-    if (fe->GetType() != eFuncTypeGlobal)
+    if (fe->GetType() != eFuncTypeRegistered)
     {
         int32 localvarcount = fe->GetContext()->CalculateLocalVarStackSize();
         execstack.Reserve(localvarcount * MAX_TYPE_SIZE);

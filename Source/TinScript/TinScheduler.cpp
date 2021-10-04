@@ -325,7 +325,7 @@ CScheduler::CCommand::CCommand(CScriptContext* script_context, int32 _reqid, uin
 
     // -- command string, null out the direct function call members
     mFuncHash = _funchash;
-    mFuncContext = TinAlloc(ALLOC_FuncContext, CFunctionContext, script_context);
+    mFuncContext = TinAlloc(ALLOC_FuncContext, CFunctionContext);
 }
 
 // ====================================================================================================================

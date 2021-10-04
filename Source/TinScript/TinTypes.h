@@ -413,12 +413,11 @@ void* TypeConvert(CScriptContext* script_context, eVarType fromtype, void* froma
 const char* DebugPrintVar(void* addr, eVarType vartype);
 
 // ====================================================================================================================
-// -- three types of registered functions: script, global, and method
+// -- only two types of functions: registered (from code), and script
 #define FunctionTypeTuple \
 	FunctionTypeEntry(NULL)		    	\
 	FunctionTypeEntry(Script)			\
-	FunctionTypeEntry(Global)			\
-	FunctionTypeEntry(Method)			\
+	FunctionTypeEntry(Registered)		\
 
 enum EFunctionType {
 	#define FunctionTypeEntry(a) eFuncType##a,

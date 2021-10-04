@@ -39,7 +39,7 @@ def OutputLicense(outputfile):
     outputfile.write("// ------------------------------------------------------------------------------------------------\n");
     outputfile.write("//  The MIT License\n");
     outputfile.write("//  \n");
-    outputfile.write("//  Copyright (c) 2016 Tim Andersen\n");
+    outputfile.write("//  Copyright (c) 2021 Tim Andersen\n");
     outputfile.write("//  \n");
     outputfile.write("//  Permission is hereby granted, free of charge, to any person obtaining a copy of this software\n");
     outputfile.write("//  and associated documentation files (the \"Software\"), to deal in the Software without\n");
@@ -153,7 +153,9 @@ def GenerateClasses(maxparamcount, outputfilename):
     outputfile.write("// ------------------------------------------------------------------------------------------------\n");
     outputfile.write("\n");
     
+    outputfile.write('#include "TinRegistration.h"\n');
     outputfile.write('#include "TinVariableEntry.h"\n');
+    outputfile.write('#include "TinFunctionEntry.h"\n');
 
     paramcount = 0;
     while (paramcount <= maxparamcount):
@@ -188,7 +190,7 @@ def GenerateClasses(maxparamcount, outputfilename):
 
         outputfile.write("    // -- CRegisterFunctionP%d\n" % paramcount);
         outputfile.write("    CRegFunctionP%d(const char* _funcname, funcsignature _funcptr) :\n" % paramcount);
-        outputfile.write("                    CRegFunctionBase(_funcname) {\n");
+        outputfile.write("                    CRegFunctionBase(\"\", _funcname) {\n");
         outputfile.write("        funcptr = _funcptr;\n");
         outputfile.write("    }\n");
         outputfile.write("\n");
@@ -248,19 +250,13 @@ def GenerateClasses(maxparamcount, outputfilename):
         outputfile.write("\n");
         
         outputfile.write("    // -- registration method\n");
-        outputfile.write("    virtual void Register(CScriptContext* script_context) {\n");
-        outputfile.write("        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFuncTypeGlobal, this);\n");
-        outputfile.write("        SetScriptContext(script_context);\n");
-        outputfile.write("        SetContext(fe->GetContext());\n");
-        outputfile.write("        GetContext()->AddParameter(\"__return\", Hash(\"__return\"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());\n");
+        outputfile.write("    virtual void Register() {\n");
+        outputfile.write("        CFunctionContext* fc = CreateContext();\n");
+        outputfile.write("        fc->AddParameter(\"__return\", Hash(\"__return\"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());\n");
         i = 1;
         while (i <= paramcount):
-            outputfile.write("        GetContext()->AddParameter(\"_p%d\", Hash(\"_p%d\"), GetRegisteredType(GetTypeID<T%d>()), 1, GetTypeID<T%d>());\n" % (i, i, i, i));
+            outputfile.write("        fc->AddParameter(\"_p%d\", Hash(\"_p%d\"), GetRegisteredType(GetTypeID<T%d>()), 1, GetTypeID<T%d>());\n" % (i, i, i, i));
             i = i + 1;
-        outputfile.write("\n");
-        outputfile.write("        uint32 hash = fe->GetHash();\n");
-        outputfile.write("        tFuncTable* globalfunctable = script_context->FindNamespace(0)->GetFuncTable();\n");
-        outputfile.write("        globalfunctable->AddItem(*fe, hash);\n");
         outputfile.write("    }\n");
         outputfile.write("\n");
         outputfile.write("private:\n");
@@ -304,7 +300,7 @@ def GenerateClasses(maxparamcount, outputfilename):
 
         outputfile.write("    // -- CRegisterFunctionP%d\n" % paramcount);
         outputfile.write("    CRegFunctionP%d(const char* _funcname, funcsignature _funcptr) :\n" % paramcount);
-        outputfile.write("                    CRegFunctionBase(_funcname) {\n");
+        outputfile.write("                    CRegFunctionBase(\"\", _funcname) {\n");
         outputfile.write("        funcptr = _funcptr;\n");
         outputfile.write("    }\n");
         outputfile.write("\n");
@@ -360,19 +356,14 @@ def GenerateClasses(maxparamcount, outputfilename):
         outputfile.write("\n");
         
         outputfile.write("    // -- registration method\n");
-        outputfile.write("    virtual void Register(CScriptContext* script_context) {\n");
-        outputfile.write("        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFuncTypeGlobal, this);\n");
-        outputfile.write("        SetScriptContext(script_context);\n");
-        outputfile.write("        SetContext(fe->GetContext());\n");
-        outputfile.write("        GetContext()->AddParameter(\"__return\", Hash(\"__return\"), TYPE_void, 1, 0);\n");
+        outputfile.write("    virtual void Register() {\n");
+        outputfile.write("        CFunctionContext* fc = CreateContext();\n");
+        outputfile.write("        fc->AddParameter(\"__return\", Hash(\"__return\"), TYPE_void, 1, 0);\n");
         i = 1;
         while (i <= paramcount):
-            outputfile.write("        GetContext()->AddParameter(\"_p%d\", Hash(\"_p%d\"), GetRegisteredType(GetTypeID<T%d>()), 1, GetTypeID<T%d>());\n" % (i, i, i, i));
+            outputfile.write("        fc->AddParameter(\"_p%d\", Hash(\"_p%d\"), GetRegisteredType(GetTypeID<T%d>()), 1, GetTypeID<T%d>());\n" % (i, i, i, i));
             i = i + 1;
         outputfile.write("\n");
-        outputfile.write("        uint32 hash = fe->GetHash();\n");
-        outputfile.write("        tFuncTable* globalfunctable = script_context->FindNamespace(0)->GetFuncTable();\n");
-        outputfile.write("        globalfunctable->AddItem(*fe, hash);\n");
         outputfile.write("    }\n");
         outputfile.write("\n");
         outputfile.write("private:\n");
@@ -406,7 +397,7 @@ def GenerateClasses(maxparamcount, outputfilename):
 
         outputfile.write("    // -- CRegisterMethodP%d\n" % paramcount);
         outputfile.write("    CRegMethodP%d(const char* _funcname, methodsignature _funcptr) :\n" % paramcount);
-        outputfile.write("                  CRegFunctionBase(_funcname) {\n");
+        outputfile.write("                  CRegFunctionBase(C::_GetClassName(), _funcname) {\n");
         outputfile.write("        funcptr = _funcptr;\n");
         outputfile.write("    }\n");
         outputfile.write("\n");
@@ -462,20 +453,15 @@ def GenerateClasses(maxparamcount, outputfilename):
         outputfile.write("\n");
         
         outputfile.write("    // -- registration method\n");
-        outputfile.write("    virtual void Register(CScriptContext* script_context) {\n");
+        outputfile.write("    virtual void Register() {\n");
         outputfile.write("        uint32 classname_hash = Hash(C::_GetClassName());\n");
-        outputfile.write("        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFuncTypeGlobal, this);\n");
-        outputfile.write("        SetScriptContext(script_context);\n");
-        outputfile.write("        SetContext(fe->GetContext());\n");
-        outputfile.write("        GetContext()->AddParameter(\"__return\", Hash(\"__return\"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());\n");
+        outputfile.write("        CFunctionContext* fc = CreateContext();\n");
+        outputfile.write("        fc->AddParameter(\"__return\", Hash(\"__return\"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());\n");
         i = 1;
         while (i <= paramcount):
-            outputfile.write("        GetContext()->AddParameter(\"_p%d\", Hash(\"_p%d\"), GetRegisteredType(GetTypeID<T%d>()), 1, GetTypeID<T%d>());\n" % (i, i, i, i));
+            outputfile.write("        fc->AddParameter(\"_p%d\", Hash(\"_p%d\"), GetRegisteredType(GetTypeID<T%d>()), 1, GetTypeID<T%d>());\n" % (i, i, i, i));
             i = i + 1;
         outputfile.write("\n");
-        outputfile.write("        uint32 hash = fe->GetHash();\n");
-        outputfile.write("        tFuncTable* methodtable = script_context->FindNamespace(classname_hash)->GetFuncTable();\n");
-        outputfile.write("        methodtable->AddItem(*fe, hash);\n");
         outputfile.write("    }\n");
         outputfile.write("\n");
         outputfile.write("private:\n");
@@ -516,7 +502,7 @@ def GenerateClasses(maxparamcount, outputfilename):
 
         outputfile.write("    // -- CRegisterMethodP%d\n" % paramcount);
         outputfile.write("    CRegMethodP%d(const char* _funcname, methodsignature _funcptr) :\n" % paramcount);
-        outputfile.write("                  CRegFunctionBase(_funcname) {\n");
+        outputfile.write("                  CRegFunctionBase(C::_GetClassName(), _funcname) {\n");
         outputfile.write("        funcptr = _funcptr;\n");
         outputfile.write("    }\n");
         outputfile.write("\n");
@@ -568,20 +554,14 @@ def GenerateClasses(maxparamcount, outputfilename):
         outputfile.write("\n");
         
         outputfile.write("    // -- registration method\n");
-        outputfile.write("    virtual void Register(CScriptContext* script_context) {\n");
-        outputfile.write("        uint32 classname_hash = Hash(C::_GetClassName());\n");
-        outputfile.write("        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFuncTypeGlobal, this);\n");
-        outputfile.write("        SetScriptContext(script_context);\n");
-        outputfile.write("        SetContext(fe->GetContext());\n");
-        outputfile.write("        GetContext()->AddParameter(\"__return\", Hash(\"__return\"), TYPE_void, 1, 0);\n");
+        outputfile.write("    virtual void Register() {\n");
+        outputfile.write("        CFunctionContext* fc = CreateContext();\n");
+        outputfile.write("        fc->AddParameter(\"__return\", Hash(\"__return\"), TYPE_void, 1, 0);\n");
         i = 1;
         while (i <= paramcount):
-            outputfile.write("        GetContext()->AddParameter(\"_p%d\", Hash(\"_p%d\"), GetRegisteredType(GetTypeID<T%d>()), 1, GetTypeID<T%d>());\n" % (i, i, i, i));
+            outputfile.write("        fc->AddParameter(\"_p%d\", Hash(\"_p%d\"), GetRegisteredType(GetTypeID<T%d>()), 1, GetTypeID<T%d>());\n" % (i, i, i, i));
             i = i + 1;
         outputfile.write("\n");
-        outputfile.write("        uint32 hash = fe->GetHash();\n");
-        outputfile.write("        tFuncTable* methodtable = script_context->FindNamespace(classname_hash)->GetFuncTable();\n");
-        outputfile.write("        methodtable->AddItem(*fe, hash);\n");
         outputfile.write("    }\n");
         outputfile.write("\n");
         outputfile.write("private:\n");
@@ -680,7 +660,7 @@ def GenerateVariadicClasses(maxparamcount, outputfilename):
 
 
         outputfile.write('    CRegisterFunction(const char* _funcname, funcsignature _funcptr)\n');
-        outputfile.write('        : CRegFunctionBase(_funcname)\n');
+        outputfile.write('        : CRegFunctionBase(\"\", _funcname)\n');
         outputfile.write('    {\n');
         outputfile.write('        funcptr = _funcptr;\n');
         outputfile.write('    }\n');
@@ -768,7 +748,7 @@ def GenerateVariadicClasses(maxparamcount, outputfilename):
         outputfile.write("\n");
         
         outputfile.write("    // -- registration method\n");
-        outputfile.write("    virtual void Register(CScriptContext* script_context)\n    {\n");
+        outputfile.write("    virtual void Register()\n    {\n");
 
         i = 1;
         while (i <= paramcount):
@@ -777,18 +757,13 @@ def GenerateVariadicClasses(maxparamcount, outputfilename):
         if (paramcount > 0):
             outputfile.write("\n");
 
-        outputfile.write("        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFuncTypeGlobal, this);\n");
-        outputfile.write("        SetScriptContext(script_context);\n");
-        outputfile.write("        SetContext(fe->GetContext());\n");
-        outputfile.write("        GetContext()->AddParameter(\"__return\", Hash(\"__return\"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());\n");
+        outputfile.write("        CFunctionContext* fc = CreateContext();\n");
+        outputfile.write("        fc->AddParameter(\"__return\", Hash(\"__return\"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());\n");
         i = 1;
         while (i <= paramcount):
-            outputfile.write("        GetContext()->AddParameter(\"_p%d\", Hash(\"_p%d\"), GetRegisteredType(GetTypeID<T%d>()), 1, GetTypeID<T%d>());\n" % (i, i, i, i));
+            outputfile.write("        fc->AddParameter(\"_p%d\", Hash(\"_p%d\"), GetRegisteredType(GetTypeID<T%d>()), 1, GetTypeID<T%d>());\n" % (i, i, i, i));
             i = i + 1;
         outputfile.write("\n");
-        outputfile.write("        uint32 hash = fe->GetHash();\n");
-        outputfile.write("        tFuncTable* globalfunctable = script_context->FindNamespace(0)->GetFuncTable();\n");
-        outputfile.write("        globalfunctable->AddItem(*fe, hash);\n");
         outputfile.write("    }\n");
         outputfile.write("\n");
         outputfile.write("private:\n");
@@ -809,7 +784,7 @@ def GenerateVariadicClasses(maxparamcount, outputfilename):
 
         outputfile.write("    // -- constructor\n");
         outputfile.write('    CRegisterFunction(const char* _funcname, funcsignature _funcptr)\n');
-        outputfile.write('        : CRegFunctionBase(_funcname)\n');
+        outputfile.write('        : CRegFunctionBase(\"\", _funcname)\n');
         outputfile.write('    {\n');
         outputfile.write('        funcptr = _funcptr;\n');
         outputfile.write('    }\n');
@@ -893,7 +868,7 @@ def GenerateVariadicClasses(maxparamcount, outputfilename):
         outputfile.write("\n");
         
         outputfile.write("    // -- registration method\n");
-        outputfile.write("    virtual void Register(CScriptContext* script_context)\n    {\n");
+        outputfile.write("    virtual void Register()\n    {\n");
 
         i = 1;
         while (i <= paramcount):
@@ -902,21 +877,15 @@ def GenerateVariadicClasses(maxparamcount, outputfilename):
         if (paramcount > 0):
             outputfile.write("\n");
 
-
-        outputfile.write("        CFunctionEntry* fe = new CFunctionEntry(script_context, 0, GetName(), Hash(GetName()), eFuncTypeGlobal, this);\n");
-        outputfile.write("        SetScriptContext(script_context);\n");
-        outputfile.write("        SetContext(fe->GetContext());\n");
-        outputfile.write("        GetContext()->AddParameter(\"__return\", Hash(\"__return\"), TYPE_void, 1, 0);\n");
+        outputfile.write("        CFunctionContext* fc = CreateContext();\n");
+        outputfile.write("        fc->AddParameter(\"__return\", Hash(\"__return\"), TYPE_void, 1, 0);\n");
         i = 1;
         while (i <= paramcount):
-            outputfile.write("        GetContext()->AddParameter(\"_p%d\", Hash(\"_p%d\"), GetRegisteredType(GetTypeID<T%d>()), 1, GetTypeID<T%d>());\n" % (i, i, i, i));
+            outputfile.write("        fc->AddParameter(\"_p%d\", Hash(\"_p%d\"), GetRegisteredType(GetTypeID<T%d>()), 1, GetTypeID<T%d>());\n" % (i, i, i, i));
             i = i + 1;
         if (paramcount > 0):
             outputfile.write("\n");
 
-        outputfile.write("        uint32 hash = fe->GetHash();\n");
-        outputfile.write("        tFuncTable* globalfunctable = script_context->FindNamespace(0)->GetFuncTable();\n");
-        outputfile.write("        globalfunctable->AddItem(*fe, hash);\n");
         outputfile.write("    }\n");
         outputfile.write("\n");
         outputfile.write("private:\n");
@@ -938,7 +907,7 @@ def GenerateVariadicClasses(maxparamcount, outputfilename):
         outputfile.write('\n');
         outputfile.write('    // -- CRegisterMethod\n');
         outputfile.write('    CRegisterMethod(const char* _methodname, methodsignature _methodptr) :\n');
-        outputfile.write('                  CRegFunctionBase(_methodname) {\n');
+        outputfile.write('                  CRegFunctionBase(C::_GetClassName(), _methodname) {\n');
         outputfile.write('        methodptr = _methodptr;\n');
         outputfile.write('    }\n');
         outputfile.write('\n');
@@ -1021,7 +990,7 @@ def GenerateVariadicClasses(maxparamcount, outputfilename):
         outputfile.write('\n');
 
         outputfile.write('    // -- registration method\n');
-        outputfile.write('    virtual void Register(TinScript::CScriptContext* script_context)\n');
+        outputfile.write('    virtual void Register()\n');
         outputfile.write('    {\n');
 
         i = 1;
@@ -1031,22 +1000,16 @@ def GenerateVariadicClasses(maxparamcount, outputfilename):
         if (paramcount > 0):
             outputfile.write("\n");
 
-        outputfile.write('        uint32 classname_hash = Hash(C::_GetClassName());\n');
-        outputfile.write('        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFuncTypeGlobal, this);\n');
-        outputfile.write('        SetScriptContext(script_context);\n');
-        outputfile.write('        SetContext(fe->GetContext());\n');
-        outputfile.write('        GetContext()->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());\n');
+        outputfile.write("        CFunctionContext* fc = CreateContext();\n");
+        outputfile.write('        fc->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());\n');
 
         i = 1;
         while (i <= paramcount):
-            outputfile.write('        GetContext()->AddParameter("_p%d", Hash("_p%d"), GetRegisteredType(GetTypeID<T%d>()), 1, GetTypeID<T%d>());\n' % (i, i, i, i));
+            outputfile.write('        fc->AddParameter("_p%d", Hash("_p%d"), GetRegisteredType(GetTypeID<T%d>()), 1, GetTypeID<T%d>());\n' % (i, i, i, i));
             i = i + 1;
         if (paramcount > 0):
             outputfile.write("\n");
 
-        outputfile.write('        uint32 hash = fe->GetHash();\n');
-        outputfile.write('        tFuncTable* methodtable = script_context->FindNamespace(classname_hash)->GetFuncTable();\n');
-        outputfile.write('        methodtable->AddItem(*fe, hash);\n');
         outputfile.write('    }\n');
         outputfile.write('\n');
         outputfile.write('private:\n');
@@ -1066,7 +1029,7 @@ def GenerateVariadicClasses(maxparamcount, outputfilename):
         outputfile.write('\n');
         outputfile.write('    // -- CRegisterMethod\n');
         outputfile.write('    CRegisterMethod(const char* _methodname, methodsignature _methodptr) :\n');
-        outputfile.write('                  CRegFunctionBase(_methodname) {\n');
+        outputfile.write('                  CRegFunctionBase(C::_GetClassName(), _methodname) {\n');
         outputfile.write('        methodptr = _methodptr;\n');
         outputfile.write('    }\n');
         outputfile.write('\n');
@@ -1145,7 +1108,7 @@ def GenerateVariadicClasses(maxparamcount, outputfilename):
         outputfile.write('\n');
 
         outputfile.write('    // -- registration method\n');
-        outputfile.write('    virtual void Register(TinScript::CScriptContext* script_context)\n');
+        outputfile.write('    virtual void Register()\n');
         outputfile.write('    {\n');
 
         i = 1;
@@ -1156,23 +1119,17 @@ def GenerateVariadicClasses(maxparamcount, outputfilename):
             outputfile.write("\n");
 
         outputfile.write('\n');
-        outputfile.write('        uint32 classname_hash = Hash(C::_GetClassName());\n');
-        outputfile.write('        CFunctionEntry* fe = new CFunctionEntry(script_context, classname_hash, GetName(), Hash(GetName()), eFuncTypeGlobal, this);\n');
-        outputfile.write('        SetScriptContext(script_context);\n');
-        outputfile.write('        SetContext(fe->GetContext());\n');
-        outputfile.write("        GetContext()->AddParameter(\"__return\", Hash(\"__return\"), TYPE_void, 1, 0);\n");
+        outputfile.write("        CFunctionContext* fc = CreateContext();\n");
+        outputfile.write("        fc->AddParameter(\"__return\", Hash(\"__return\"), TYPE_void, 1, 0);\n");
 
         i = 1;
         while (i <= paramcount):
-            outputfile.write('        GetContext()->AddParameter("_p%d", Hash("_p%d"), GetRegisteredType(GetTypeID<T%d>()), 1, GetTypeID<T%d>());\n' % (i, i, i, i));
+            outputfile.write('        fc->AddParameter("_p%d", Hash("_p%d"), GetRegisteredType(GetTypeID<T%d>()), 1, GetTypeID<T%d>());\n' % (i, i, i, i));
             i = i + 1;
         if (paramcount > 0):
             outputfile.write("\n");
 
         outputfile.write('\n');
-        outputfile.write('        uint32 hash = fe->GetHash();\n');
-        outputfile.write('        tFuncTable* methodtable = script_context->FindNamespace(classname_hash)->GetFuncTable();\n');
-        outputfile.write('        methodtable->AddItem(*fe, hash);\n');
         outputfile.write('    }\n');
         outputfile.write('\n');
         outputfile.write('private:\n');
@@ -1230,7 +1187,7 @@ def GenerateExecs(maxparamcount, outputfilename):
         function_string = function_string + ")\n";
         outputfile.write(function_string);
         outputfile.write("{\n");
-        outputfile.write("    CScriptContext* script_context = GetContext();\n");
+        outputfile.write("    CScriptContext* script_context = TinScript::GetContext();\n");
         outputfile.write("    if (!script_context->GetGlobalNamespace() || !func_name || !func_name[0])\n");
         outputfile.write("        return false;\n\n");
 
@@ -1260,7 +1217,7 @@ def GenerateExecs(maxparamcount, outputfilename):
         function_string = function_string + ")\n";
         outputfile.write(function_string);
         outputfile.write("{\n");
-        outputfile.write("    CScriptContext* script_context = GetContext();\n");
+        outputfile.write("    CScriptContext* script_context = TinScript::GetContext();\n");
         outputfile.write("    if (!script_context->GetGlobalNamespace())\n");
         outputfile.write("        return false;\n\n");
         call_string = "    return (ExecFunctionImpl<R>(return_value, 0, 0, func_hash"
@@ -1289,7 +1246,7 @@ def GenerateExecs(maxparamcount, outputfilename):
         function_string = function_string + ")\n";
         outputfile.write(function_string);
         outputfile.write("{\n");
-        outputfile.write("    CScriptContext* script_context = GetContext();\n");
+        outputfile.write("    CScriptContext* script_context = TinScript::GetContext();\n");
         outputfile.write("    if (!script_context->GetGlobalNamespace() || !method_name || !method_name[0])\n");
         outputfile.write("        return false;\n\n");
         outputfile.write("    uint32 object_id = script_context->FindIDByAddress(obj_addr);\n");
@@ -1324,7 +1281,7 @@ def GenerateExecs(maxparamcount, outputfilename):
         function_string = function_string + ")\n";
         outputfile.write(function_string);
         outputfile.write("{\n");
-        outputfile.write("    CScriptContext* script_context = GetContext();\n");
+        outputfile.write("    CScriptContext* script_context = TinScript::GetContext();\n");
         outputfile.write("    if (!script_context->GetGlobalNamespace())\n");
         outputfile.write("        return false;\n\n");
         outputfile.write("    uint32 object_id = script_context->FindIDByAddress(obj_addr);\n");
@@ -1385,7 +1342,7 @@ def GenerateExecs(maxparamcount, outputfilename):
         function_string = function_string + ")\n";
         outputfile.write(function_string);
         outputfile.write("{\n");
-        outputfile.write("    CScriptContext* script_context = GetContext();\n");
+        outputfile.write("    CScriptContext* script_context = TinScript::GetContext();\n");
         outputfile.write("    if (!script_context->GetGlobalNamespace() || !method_name || !method_name[0])\n");
         outputfile.write("        return false;\n\n");
         call_string = "    return (ExecFunctionImpl<R>(return_value, object_id, 0, Hash(method_name)"
@@ -1415,7 +1372,7 @@ def GenerateExecs(maxparamcount, outputfilename):
         outputfile.write(function_string);
         outputfile.write("{\n");
 
-        outputfile.write("    CScriptContext* script_context = GetContext();\n");
+        outputfile.write("    CScriptContext* script_context = TinScript::GetContext();\n");
         outputfile.write("    if (!script_context->GetGlobalNamespace())\n");
         outputfile.write("        return false;\n\n");
 

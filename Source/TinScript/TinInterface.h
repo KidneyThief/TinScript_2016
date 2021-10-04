@@ -56,6 +56,11 @@ void DestroyContext();
 CScriptContext* GetContext();
 
 // ====================================================================================================================
+// GetMainThreadContext():  returns the script context from the MainThread, needed if we receive remote commands
+// ====================================================================================================================
+CScriptContext* GetMainThreadContext();
+
+// ====================================================================================================================
 // ExecCommand():  Executes a text block of valid script code
 // ====================================================================================================================
 bool8 ExecCommand(const char* statement);

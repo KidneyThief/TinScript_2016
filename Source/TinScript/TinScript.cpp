@@ -70,6 +70,7 @@ uint32 CScriptContext::kGlobalNamespaceHash = Hash(CScriptContext::kGlobalNamesp
 
 // -- this is a *thread* variable, each thread can reference a separate context
 _declspec(thread) CScriptContext* gThreadContext = NULL;
+CScriptContext* gMainThreadContext = NULL;
 
 // == Interface implementation ========================================================================================
 
@@ -107,6 +108,15 @@ void DestroyContext()
 CScriptContext* GetContext()
 {
     return (gThreadContext);
+}
+
+// ====================================================================================================================
+// GetMainThreadContext():  returns the script context for the MainThread... needed if we receive a
+// a remote command via the socket...
+// ====================================================================================================================
+CScriptContext* GetMainThreadContext()
+{
+    return (gMainThreadContext);
 }
 
 // ====================================================================================================================
@@ -228,17 +238,45 @@ CScriptContext* CScriptContext::Create(TinPrintHandler printhandler, TinAssertHa
 // ====================================================================================================================
 void CScriptContext::Destroy()
 {
-    if (gThreadContext)
-    {
-        // -- shutdown the memory tracker
-        CMemoryTracker::Shutdown();
+    assert(gThreadContext != nullptr);
 
-		// -- we clear the thread context first, so destructors can tell we're
-		// -- shutting down
-		CScriptContext* currentContext = gThreadContext;
-		gThreadContext = NULL;
-		TinFree(currentContext);
+    // -- shutdown the memory tracker
+    CMemoryTracker::Shutdown();
+
+    // -- cleanup the namespace context
+    // -- note:  the global namespace is owned by the namespace dictionary
+    // -- within the context - it'll be automatically cleaned up
+    gThreadContext->ShutdownDictionaries();
+
+    // -- cleanup all related codeblocks
+    // -- by deleting the namespace dictionaries, all codeblocks should now be unused
+    CCodeBlock::DestroyUnusedCodeBlocks(gThreadContext->mCodeBlockList);
+    assert(gThreadContext->mCodeBlockList->IsEmpty());
+    TinFree(gThreadContext->mCodeBlockList);
+
+    // -- clean up the scheduler
+    TinFree(gThreadContext->mScheduler);
+
+    // -- cleanup the membership list
+    TinFree(gThreadContext->mMasterMembershipList);
+
+    // -- clean up the string table
+    TinFree(gThreadContext->mStringTable);
+
+    // -- if this is the MainThread context, shutdown types
+    if (gThreadContext->mIsMainThread)
+    {
+        ShutdownTypes();
     }
+
+    if (gThreadContext == gMainThreadContext)
+        gMainThreadContext = nullptr;
+
+	// -- we clear the thread context first, so destructors can tell we're
+	// -- shutting down
+	CScriptContext* currentContext = gThreadContext;
+	gThreadContext = NULL;
+	TinFree(currentContext);
 }
 
 // ====================================================================================================================
@@ -254,6 +292,11 @@ CScriptContext::CScriptContext(TinPrintHandler printfunction, TinAssertHandler a
 
     // -- set the thread local singleton
     gThreadContext = this;
+    if (is_main_thread)
+    {
+        assert(gMainThreadContext == nullptr);
+        gMainThreadContext = this;
+    }
 
     // -- initialize and populate the string table
     mStringTable = TinAlloc(ALLOC_StringTable, CStringTable, this, kStringTableSize);
@@ -282,7 +325,7 @@ CScriptContext::CScriptContext(TinPrintHandler printfunction, TinAssertHandler a
     CRegFunctionBase* regfunc = CRegFunctionBase::gRegistrationList;
     while (regfunc != NULL)
     {
-        regfunc->Register(this);
+        regfunc->Register();
         regfunc = regfunc->GetNext();
     }
 
@@ -440,31 +483,8 @@ void CScriptContext::InitializeDictionaries()
 // ====================================================================================================================
 CScriptContext::~CScriptContext()
 {
-    // -- cleanup the namespace context
-    // -- note:  the global namespace is owned by the namespace dictionary
-    // -- within the context - it'll be automatically cleaned up
-    ShutdownDictionaries();
-
-    // -- cleanup all related codeblocks
-    // -- by deleting the namespace dictionaries, all codeblocks should now be unused
-    CCodeBlock::DestroyUnusedCodeBlocks(mCodeBlockList);
-    assert(mCodeBlockList->IsEmpty());
-    TinFree(mCodeBlockList);
-
-    // -- clean up the scheduleer
-    TinFree(mScheduler);
-
-    // -- cleanup the membership list
-    TinFree(mMasterMembershipList);
-
-    // -- clean up the string table
-    TinFree(mStringTable);
-
-    // -- if this is the MainThread context, shutdown types
-    if (mIsMainThread)
-    {
-        ShutdownTypes();
-    }
+    // -- ensure TinScript::Destroy() is called for a clean shutdown
+    assert(gThreadContext == nullptr);
 }
 
 void CScriptContext::ShutdownDictionaries()
@@ -3874,10 +3894,11 @@ bool8 CScriptContext::AddThreadExecParam(eVarType param_type, void* value)
     }
 
     // -- add the parameter to the schedule context
+    // note:  we'll be executing this function on the MainThread, as it's via a remote SocketExec()
     char param_name[4] = "_px";
     param_name[2] = '0' + current_param;
-    if (!m_socketCurrentCommand->mFuncContext->AddParameter(param_name, Hash(param_name), fe_param->GetType(), 1,
-                                                            current_param, 0))
+    if (!m_socketCurrentCommand->mFuncContext->AddParameter(param_name, Hash(param_name),
+                                                            fe_param->GetType(), 1, current_param, 0, true))
     {
         ScriptAssert_(this, 0, "<internal>", -1, "Error - invalid parameter for function: %s()\n",
                       UnHash(m_socketCurrentCommand->mFuncHash));

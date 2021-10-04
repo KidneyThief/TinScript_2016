@@ -40,7 +40,6 @@ namespace TinScript
 
 // --------------------------------------------------------------------------------------------------------------------
 // -- statics
-CRegFunctionBase* CRegFunctionBase::gRegistrationList = NULL;
 CRegisterGlobal* CRegisterGlobal::head = NULL;
 
 // == class CRegisterGlobal ===========================================================================================
