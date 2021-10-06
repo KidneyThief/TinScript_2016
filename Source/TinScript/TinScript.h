@@ -332,6 +332,7 @@ class CScriptContext
         bool8 IsMainThread() const { return (mIsMainThread); }
 
         CCodeBlock* CompileScript(const char* filename);
+        bool8 SetDirectory(const char* path);
         bool8 ExecScript(const char* filename, bool8 must_exist, bool8 re_exec);
 
         CCodeBlock* CompileCommand(const char* statement);
@@ -553,6 +554,9 @@ class CScriptContext
 
         // -- context scheduler
         CScheduler* mScheduler;
+
+        // -- current working directory 
+        char mCurrentWorkingDirectory[kMaxNameLength];
 
         // -- when a script function returns (even void), a value is always pushed
         // -- if ExecF() calls a script function, we'll want to return that value to code

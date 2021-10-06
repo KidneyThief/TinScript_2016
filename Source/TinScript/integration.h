@@ -66,10 +66,10 @@ typedef float               float32;
 // -- pointer conversion macros to assist with compiler complaints
 #ifdef WIN32
 #define kPointerToUInt32(a) ((uint32)(*(uint32*)(&a)))
-#define kPointerDiffUInt32(a, b) ((uint32)((*(uint32*)(&a)) - (*(uint32*)(&b))))
+#define kPointerDiffUInt32(a, b) ((uint32)(((uint32)(a)) - ((uint32)(b))))
 #else
 #define kPointerToUInt32(a) ((uint32)(*(uint64*)(&a)))
-#define kPointerDiffUInt32(a, b) ((uint32)((*(uint64*)(&a)) - (*(uint64*)(&b))))
+#define kPointerDiffUInt32(a, b) ((uint32)(((uint64)(a)) - ((uint64)(b))))
 #endif
 
 #define Unused_(var) __pragma(warning(suppress:4100)) var

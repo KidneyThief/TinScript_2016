@@ -880,7 +880,7 @@ bool CSocket::ProcessSendPackets()
                 packetToSend->mHeader.mSendPtr = (const char*)&packetToSend->mHeader;
             }
 
-            bytesToSend = sizeof(tPacketHeader) -
+            bytesToSend = tPacketHeader::HeaderSize -
                           ((int)packetToSend->mHeader.mSendPtr - (int)((const char*)&packetToSend->mHeader));
         }
         else
@@ -1448,8 +1448,8 @@ bool CSocket::ProcessRecvData(void* data, int dataSize)
     {
         // -- set up the pointers to fill in either the header, of the data of a packet
         bool processHeader = (mRecvPacket == NULL);
-        char* basePtr = (processHeader) ? mRecvHeader : mRecvPacket->mData;
-        int bufferSize = (processHeader) ? sizeof(tPacketHeader) : mRecvPacket->mHeader.mSize;
+        char* basePtr = processHeader ? mRecvHeader : mRecvPacket->mData;
+        int bufferSize = processHeader ? tPacketHeader::HeaderSize : mRecvPacket->mHeader.mSize;
         int bytesRequired = bufferSize - ((int)mRecvPtr - (int)basePtr);
 
         // -- find out how many bytes we've received, and copy as many as we're able

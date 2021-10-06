@@ -140,6 +140,11 @@ struct tPacketHeader
 
     // -- send() can still send a partial byte stream - need to track how much still needs to be sent
     bool mHeaderSent;
+    char mPadding[3];
+
+    // -- note:  we're 8-byte aligned at this point
+    // -- we define a HeaderSize, because sizeof(tPacketHeader) is different between 32-bit and 64-bit
+    static const int HeaderSize = 4 * sizeof(int32);
     const char* mSendPtr;
 };
 
@@ -151,8 +156,9 @@ struct tDataPacket
     // -- constructor
     explicit tDataPacket(tPacketHeader* header, void* data)
     {
-        // -- copy the header
-        memcpy(&mHeader, header, sizeof(tPacketHeader));
+        // -- copy the header (the relevant data)
+        memset(&mHeader, 0, sizeof(tPacketHeader));
+        memcpy(&mHeader, header, tPacketHeader::HeaderSize);
 
         // -- allocate the buffer
         mData = NULL;
@@ -283,7 +289,7 @@ class CSocket
 
         // -- we need to reconstitute packets as they arrive
         bool ProcessRecvData(void* data, int dataSize);
-        char mRecvHeader[sizeof(tPacketHeader)];
+        char mRecvHeader[tPacketHeader::HeaderSize];
         char* mRecvPtr;
         tDataPacket* mRecvPacket;
 

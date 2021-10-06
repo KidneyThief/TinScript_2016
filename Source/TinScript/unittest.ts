@@ -379,7 +379,7 @@ void UnitTest_CodeStringArray()
 
 void UnitTest_CodeMemberIntArray()
 {
-    object test_obj = create CBase();
+    object test_obj = create CBase('testBase2');
     test_obj.intArray[2] = 19;
     TestParameterIntArray(test_obj.intArray);
     gUnitTestScriptResult = StringCat(test_obj.intArray[2], " ", test_obj.intArray[3]);
@@ -388,7 +388,7 @@ void UnitTest_CodeMemberIntArray()
 
 void UnitTest_CodeMemberStringArray()
 {
-    object test_obj = create CBase();
+    object test_obj = create CBase('testBase3');
     test_obj.stringArray[8] = "Foobar";
     TestParameterStringArray(test_obj.stringArray);
     gUnitTestScriptResult = StringCat(test_obj.stringArray[8], " ", test_obj.stringArray[9]);

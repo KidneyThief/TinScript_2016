@@ -152,6 +152,16 @@ bool8 CompileToC(const char* filename)
 }
 
 // ====================================================================================================================
+// SetDirectory():  sets the current working directory, so all scripts executed will have their path prepended
+// ====================================================================================================================
+bool8 SetDirectory(const char* path)
+{
+    CScriptContext* script_context = GetContext();
+    assert(script_context != NULL);
+    return (script_context->SetDirectory(path));
+}
+
+// ====================================================================================================================
 // ExecScript():  Executes a text file containing script code
 // ====================================================================================================================
 bool8 ExecScript(const char* filename)
@@ -184,6 +194,7 @@ void SetTimeScale(float time_scale)
 // -- Registration ----------------------------------------------------------------------------------------------------
 
 REGISTER_FUNCTION(Compile, CompileScript);
+REGISTER_FUNCTION(SetDirectory, SetDirectory);
 REGISTER_FUNCTION(Exec, ExecScript);
 REGISTER_FUNCTION(Include, IncludeScript);
 REGISTER_FUNCTION(CompileToC, CompileToC);
@@ -314,6 +325,9 @@ CScriptContext::CScriptContext(TinPrintHandler printfunction, TinAssertHandler a
     mTinAssertHandler = asserthandler ? asserthandler : NullAssertHandler;
     mAssertStackSkipped = false;
     mAssertEnableTrace = false;
+
+    // -- initialize the current working directory
+    mCurrentWorkingDirectory[0] = '\0';
 
     // -- initialize the namespaces dictionary, and all object dictionaries
     InitializeDictionaries();
@@ -800,15 +814,7 @@ bool8 GetLastWriteTime(const char* filename, FILETIME& writetime)
     if (!filename || !filename[0])
         return (false);
 
-    // -- convert the filename to a wchar_t array
-	/*
-    int32 length = (int32)strlen(filename);
-    wchar_t wfilename[kMaxNameLength];
-    for(int32 i = 0; i < length + 1; ++i)
-        wfilename[i] = filename[i];
-	*/
-
-	HANDLE hFile = CreateFile(filename, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
+	HANDLE hFile = CreateFileA(filename, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
 
     // Retrieve the file times for the file.
     FILETIME ftCreate, ftAccess;
@@ -855,7 +861,10 @@ bool8 NeedToCompile(const char* filename, const char* binfilename)
     // -- if fail, then we have nothing to compile
     FILETIME scriptft;
     if (!GetLastWriteTime(filename, scriptft))
+    {
+		TinPrint(TinScript::GetContext(), "Error - Compile() - file not found: %s\n", filename);
         return (false);
+    }
 
     // -- get the filetime for the binary file
     // -- if fail, we need to compile
@@ -917,19 +926,32 @@ bool8 GetSourceCFileName(const char* filename, char* source_C_name, int32 maxnam
 // ====================================================================================================================
 CCodeBlock* CScriptContext::CompileScript(const char* filename)
 {
+    // -- get the full path name, by pre-pending the current working directory (if required)
+    char full_path_buf[kMaxNameLength];
+    full_path_buf[0] = '\0';
+    const char* full_path = filename;
+    if(mCurrentWorkingDirectory[0] != '\0')
+    {
+        int fn_length = strlen(filename);
+        int dir_length = strlen(mCurrentWorkingDirectory);
+        SafeStrcpy(full_path_buf, sizeof(full_path_buf), mCurrentWorkingDirectory);
+        SafeStrcpy(&full_path_buf[dir_length],kMaxNameLength - dir_length,filename);
+        full_path = full_path_buf;
+    }
+
     // -- get the name of the output binary file
     char binfilename[kMaxNameLength];
-    if (!GetBinaryFileName(filename, binfilename, kMaxNameLength))
+    if (!GetBinaryFileName(full_path, binfilename, kMaxNameLength))
     {
         ScriptAssert_(this, 0, "<internal>", -1, "Error - invalid script filename: %s\n", filename ? filename : "");
         return NULL;
     }
 
     // -- compile the source
-    CCodeBlock* codeblock = ParseFile(this, filename);
+    CCodeBlock* codeblock = ParseFile(this, full_path);
     if (codeblock == NULL)
     {
-        ScriptAssert_(this, 0, "<internal>", -1, "Error - unable to parse file: %s\n", filename);
+        ScriptAssert_(this, 0, "<internal>", -1, "Error - unable to parse file: %s\n", full_path);
         return NULL;
     }
 
@@ -948,17 +970,77 @@ CCodeBlock* CScriptContext::CompileScript(const char* filename)
 }
 
 // ====================================================================================================================
+// SetDirectory():  sets the current working directory for executing scripts
+// ====================================================================================================================
+bool8 CScriptContext::SetDirectory(const char* path)
+{
+    // -- if the path doesn't exist, we're done (and all scripts will execute from whatever the .exe directory is)
+    if (path == nullptr)
+    {
+        // -- an empty (default) cwd is valid, return true
+        mCurrentWorkingDirectory[0] = '\0';
+        return (true);
+    }
+
+    // note:  -2, because we might need to append a '/' (and EOL)
+    SafeStrcpy(mCurrentWorkingDirectory, sizeof(mCurrentWorkingDirectory), path, kMaxNameLength - 2);
+
+    bool is_valid = false;
+    DWORD ftyp = GetFileAttributesA(mCurrentWorkingDirectory);
+    if (ftyp != INVALID_FILE_ATTRIBUTES && ftyp & FILE_ATTRIBUTE_DIRECTORY)
+    {
+        // -- ensure the last character is a '/'
+        size_t length = strlen(mCurrentWorkingDirectory);
+        if (mCurrentWorkingDirectory[length - 1] != '/')
+        {
+            mCurrentWorkingDirectory[length] = '/';
+            mCurrentWorkingDirectory[length + 1] = '\0';
+        }
+
+        TinPrint(this, "SetDirectory():  cwd: %s\n", mCurrentWorkingDirectory);
+    }
+    else
+    {
+        mCurrentWorkingDirectory[0] = '\0';
+        TinPrint(this,"Error - SetDirectory():  directory not found %s\n", path);
+        return (false);
+    }
+
+    // -- success
+    return (true);
+}
+
+// ====================================================================================================================
 // ExecScript():  Execute a script, compiles if necessary.
 // ====================================================================================================================
 bool8 CScriptContext::ExecScript(const char* filename, bool8 must_exist, bool8 re_exec)
 {
+    // -- sanity check
+    if (filename == nullptr)
+    {
+        return (false);
+    }
+
+    // -- get the full path name, by pre-pending the current working directory (if required)
+    char full_path_buf[kMaxNameLength];
+    full_path_buf[0] = '\0';
+    const char* full_path = filename;
+    if (mCurrentWorkingDirectory[0] != '\0')
+    {
+        int dir_length = strlen(mCurrentWorkingDirectory);
+        int fn_length = strlen(filename);
+        SafeStrcpy(full_path_buf, sizeof(full_path_buf), mCurrentWorkingDirectory);
+        SafeStrcpy(&full_path_buf[dir_length], kMaxNameLength - dir_length, filename);
+        full_path = full_path_buf;
+    }
+
     char binfilename[kMaxNameLength];
-    if (!GetBinaryFileName(filename, binfilename, kMaxNameLength))
+    if (!GetBinaryFileName(full_path, binfilename, kMaxNameLength))
     {
         if (must_exist)
         {
             ScriptAssert_(this, 0, "<internal>", -1, "Error - invalid script filename: %s\n",
-                          filename ? filename : "");
+                          full_path ? filename : "");
             ResetAssertStack();
         }
         return false;
@@ -966,7 +1048,8 @@ bool8 CScriptContext::ExecScript(const char* filename, bool8 must_exist, bool8 r
 
     CCodeBlock* codeblock = NULL;
 
-    bool8 needtocompile = NeedToCompile(filename, binfilename);
+    // -- note:  Compile() also prepends the CWD, so we use filename to call CompileScript()
+    bool8 needtocompile = NeedToCompile(full_path, binfilename);
     if (needtocompile)
     {
         codeblock = CompileScript(filename);
@@ -982,7 +1065,7 @@ bool8 CScriptContext::ExecScript(const char* filename, bool8 must_exist, bool8 r
         // -- if we already have this codeblock loaded, we're done
         if (!re_exec)
         {
-            uint32 filename_hash = Hash(filename, -1, false);
+            uint32 filename_hash = Hash(full_path, -1, false);
             CCodeBlock* already_executed = GetCodeBlockList()->FindItem(filename_hash);
             if (already_executed)
             {
@@ -991,11 +1074,12 @@ bool8 CScriptContext::ExecScript(const char* filename, bool8 must_exist, bool8 r
         }
 
         bool8 old_version = false;
-        codeblock = LoadBinary(this, filename, binfilename, must_exist, old_version);
+        codeblock = LoadBinary(this, full_path, binfilename, must_exist, old_version);
 
         // -- if we have an old version, recompile
         if (!codeblock && old_version)
         {
+            // -- note:  Compile() also prepends the CWD, so we use filename to call CompileScript()
             codeblock = CompileScript(filename);
         }
     }
@@ -1191,19 +1275,29 @@ void CScriptContext::SetDebuggerConnected(bool connected)
     if (connected)
     {
         bool error = false;
-        char* cwdBuffer = _getcwd(NULL, 0);
-        if (cwdBuffer == NULL)
+
+        // -- if we don't have a user defined cwd, get the system one (where the .exe lives)
+        if (mCurrentWorkingDirectory[0] == '\0')
         {
-            error = true;
-            cwdBuffer = ".";
+		    char* cwdBuffer =_getcwd(NULL, 0);
+            if (cwdBuffer == NULL)
+            {
+                error = true;
+                cwdBuffer = ".";
+            }
+
+            // -- send the command
+            DebuggerCurrentWorkingDir(cwdBuffer);
+
+            // -- if we successfully got the current working directory, we need to free the buffer
+            if (!error)
+                delete [] cwdBuffer;
         }
-
-        // -- send the command
-        DebuggerCurrentWorkingDir(cwdBuffer);
-
-        // -- if we successfully got the current working directory, we need to free the buffer
-        if (!error)
-            delete [] cwdBuffer;
+        else
+        {
+			// -- send the command
+			DebuggerCurrentWorkingDir(mCurrentWorkingDirectory);
+        }
 
         // -- now notify the debugger of all the codeblocks loaded
         CCodeBlock* code_block = GetCodeBlockList()->First();
