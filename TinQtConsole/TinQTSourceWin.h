@@ -67,8 +67,10 @@ class CDebugSourceWin : public QListWidget
         void NotifyCodeblockLoaded(uint32 codeblock_hash);
         void NotifyCodeblockLoaded(const char* filename);
 
-        // -- get just the file name, given a full path
-        static const char* GetFileName(const char* fullPath);
+        // -- get the full path, given a file name, and vice versa
+        // note:  tolerate when the full path or file name only is already given
+        static const char* GetFullPath(const char* file_name, char* out_full_path, int max_length);
+        static const char* GetFileName(const char* full_path);
 
     public slots:
         void OnDoubleClicked(QListWidgetItem*);

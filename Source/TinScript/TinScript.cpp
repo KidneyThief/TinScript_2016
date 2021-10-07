@@ -327,7 +327,7 @@ CScriptContext::CScriptContext(TinPrintHandler printfunction, TinAssertHandler a
     mAssertEnableTrace = false;
 
     // -- initialize the current working directory
-    mCurrentWorkingDirectory[0] = '\0';
+    InitializeDirectory();
 
     // -- initialize the namespaces dictionary, and all object dictionaries
     InitializeDictionaries();
@@ -832,6 +832,49 @@ bool8 GetLastWriteTime(const char* filename, FILETIME& writetime)
 }
 
 // ====================================================================================================================
+// GetFullPath():  given a source filename, pre-pend the file name with the current working directory
+// ====================================================================================================================
+bool8 CScriptContext::GetFullPath(const char* in_file_name, char* out_full_path, int32 in_max_length)
+{
+    // -- sanity check
+    if (in_file_name == nullptr || out_full_path == nullptr || in_max_length <= 0)
+        return (false);
+
+    // -- if there's no current working directory, or our in_file_name is *already* prepended, simply copy
+    if (mCurrentWorkingDirectory[0] == '\0' ||
+        _strnicmp(in_file_name, mCurrentWorkingDirectory, strlen(mCurrentWorkingDirectory)) == 0)
+    {
+        SafeStrcpy(out_full_path, in_max_length, in_file_name);
+        return (true);
+    }
+
+    // -- get the full path name, by pre-pending the current working directory (if required)
+    int fn_length = strlen(in_file_name);
+    int dir_length = strlen(mCurrentWorkingDirectory);
+    if (fn_length + dir_length > in_max_length)
+    {
+        TinPrint(this, "Error GetFullPath() - full path length exceeds %d: %s%s",
+                       in_max_length, mCurrentWorkingDirectory, in_file_name);
+        return false;
+    }
+
+    SafeStrcpy(out_full_path, in_max_length, mCurrentWorkingDirectory);
+    SafeStrcpy(&out_full_path[dir_length], in_max_length - dir_length, in_file_name);
+
+    // -- the current working directory is *always* using '/', so ensure the final path is correct,
+    // in case someone passes a filename with a '\\'
+    char* fix_dir_char = out_full_path;
+    while(*fix_dir_char != '\0')
+    {
+        if(*fix_dir_char == '\\')
+            *fix_dir_char = '/';
+        ++fix_dir_char;
+    }
+
+    return true;
+}
+
+// ====================================================================================================================
 // GetBinaryFileName():  Given a source filename, return the file to write the compiled byte code to.
 // ====================================================================================================================
 bool8 GetBinaryFileName(const char* filename, char* binfilename, int32 maxnamelength)
@@ -844,8 +887,11 @@ bool8 GetBinaryFileName(const char* filename, char* binfilename, int32 maxnamele
     if (!extptr || Strncmp_(extptr, ".ts", 4) != 0)
         return false;
 
-    // -- copy the root name
+    // -- copy the root name (make sure we've got room)
     uint32 length = kPointerDiffUInt32(extptr, filename);
+    if (length + 5 > (uint32)maxnamelength)
+        return false;
+
     SafeStrcpy(binfilename, maxnamelength, filename, maxnamelength);
     SafeStrcpy(&binfilename[length], maxnamelength, ".tso", maxnamelength - length);
 
@@ -855,14 +901,14 @@ bool8 GetBinaryFileName(const char* filename, char* binfilename, int32 maxnamele
 // ====================================================================================================================
 // NeedToCompile():  Returns 'true' if the source file needs to be compiled.
 // ====================================================================================================================
-bool8 NeedToCompile(const char* filename, const char* binfilename)
+bool8 NeedToCompile(const char* full_path_name, const char* binfilename)
 {
     // -- get the filetime for the original script
     // -- if fail, then we have nothing to compile
     FILETIME scriptft;
-    if (!GetLastWriteTime(filename, scriptft))
+    if (!GetLastWriteTime(full_path_name, scriptft))
     {
-		TinPrint(TinScript::GetContext(), "Error - Compile() - file not found: %s\n", filename);
+		TinPrint(TinScript::GetContext(), "Error - Compile() - file not found: %s\n", full_path_name);
         return (false);
     }
 
@@ -888,7 +934,7 @@ bool8 NeedToCompile(const char* filename, const char* binfilename)
 
         if (force_compile)
         {
-            uint32 filename_hash = Hash(filename, -1, false);
+            uint32 filename_hash = Hash(full_path_name, -1, false);
             CCodeBlock* already_executed = GetContext()->GetCodeBlockList()->FindItem(filename_hash);
             return (!already_executed);
         }
@@ -927,20 +973,15 @@ bool8 GetSourceCFileName(const char* filename, char* source_C_name, int32 maxnam
 CCodeBlock* CScriptContext::CompileScript(const char* filename)
 {
     // -- get the full path name, by pre-pending the current working directory (if required)
-    char full_path_buf[kMaxNameLength];
-    full_path_buf[0] = '\0';
-    const char* full_path = filename;
-    if(mCurrentWorkingDirectory[0] != '\0')
+    char full_path[kMaxNameLength * 2];
+    if (!GetFullPath(filename, full_path, kMaxNameLength * 2))
     {
-        int fn_length = strlen(filename);
-        int dir_length = strlen(mCurrentWorkingDirectory);
-        SafeStrcpy(full_path_buf, sizeof(full_path_buf), mCurrentWorkingDirectory);
-        SafeStrcpy(&full_path_buf[dir_length],kMaxNameLength - dir_length,filename);
-        full_path = full_path_buf;
+        ScriptAssert_(this,0,"<internal>",-1,"Error - invalid script filename: %s\n",filename ? filename : "");
+        return NULL;
     }
 
     // -- get the name of the output binary file
-    char binfilename[kMaxNameLength];
+    char binfilename[kMaxNameLength * 2];
     if (!GetBinaryFileName(full_path, binfilename, kMaxNameLength))
     {
         ScriptAssert_(this, 0, "<internal>", -1, "Error - invalid script filename: %s\n", filename ? filename : "");
@@ -970,6 +1011,46 @@ CCodeBlock* CScriptContext::CompileScript(const char* filename)
 }
 
 // ====================================================================================================================
+// InitializeDirectory():  initialize the current working directory
+// ====================================================================================================================
+void CScriptContext::InitializeDirectory()
+{
+    // -- get the current working directory
+    char* cwdBuffer = _getcwd(NULL,0);
+    if (cwdBuffer == NULL)
+    {
+        mCurrentWorkingDirectory[0] = '.';
+        mCurrentWorkingDirectory[1] = '\0';
+        return;
+    }
+
+    // -- copy the current working directory, and delete the buffer
+    SafeStrcpy(mCurrentWorkingDirectory, sizeof(mCurrentWorkingDirectory), cwdBuffer);
+
+    delete[] cwdBuffer;
+
+    // -- ensure the path uses '/' characters
+    // -- the current working directory is *always* using '/', so ensure the final path is correct,
+    // in case someone passes a filename with a '\\'
+    char* fix_dir_char = mCurrentWorkingDirectory;
+    while(*fix_dir_char != '\0')
+    {
+        if(*fix_dir_char == '\\')
+            *fix_dir_char = '/';
+        ++fix_dir_char;
+    }
+
+    // -- ensure the last character is a '/'
+    size_t length = strlen(mCurrentWorkingDirectory);
+    assert(length < sizeof(mCurrentWorkingDirectory) - 2);
+    if (mCurrentWorkingDirectory[length - 1] != '/')
+   {
+        mCurrentWorkingDirectory[length] = '/';
+        mCurrentWorkingDirectory[length + 1] = '\0';
+    }
+}
+
+// ====================================================================================================================
 // SetDirectory():  sets the current working directory for executing scripts
 // ====================================================================================================================
 bool8 CScriptContext::SetDirectory(const char* path)
@@ -977,20 +1058,30 @@ bool8 CScriptContext::SetDirectory(const char* path)
     // -- if the path doesn't exist, we're done (and all scripts will execute from whatever the .exe directory is)
     if (path == nullptr)
     {
-        // -- an empty (default) cwd is valid, return true
-        mCurrentWorkingDirectory[0] = '\0';
+        // -- on an empty path, we'll reset to the current
+        InitializeDirectory();
         return (true);
     }
 
-    // note:  -2, because we might need to append a '/' (and EOL)
-    SafeStrcpy(mCurrentWorkingDirectory, sizeof(mCurrentWorkingDirectory), path, kMaxNameLength - 2);
-
     bool is_valid = false;
-    DWORD ftyp = GetFileAttributesA(mCurrentWorkingDirectory);
+    DWORD ftyp = GetFileAttributesA(path);
     if (ftyp != INVALID_FILE_ATTRIBUTES && ftyp & FILE_ATTRIBUTE_DIRECTORY)
     {
+        // -- copy the new cwd
+        SafeStrcpy(mCurrentWorkingDirectory, sizeof(mCurrentWorkingDirectory), path);
+
+        // -- scrub the directory to ensure all '\\' characters are actually '/'
+        char* fix_dir_char = mCurrentWorkingDirectory;
+        while(*fix_dir_char != '\0')
+        {
+            if(*fix_dir_char == '\\')
+                *fix_dir_char = '/';
+            ++fix_dir_char;
+        }
+
         // -- ensure the last character is a '/'
         size_t length = strlen(mCurrentWorkingDirectory);
+        assert(length < sizeof(mCurrentWorkingDirectory) - 2);
         if (mCurrentWorkingDirectory[length - 1] != '/')
         {
             mCurrentWorkingDirectory[length] = '/';
@@ -1001,8 +1092,8 @@ bool8 CScriptContext::SetDirectory(const char* path)
     }
     else
     {
-        mCurrentWorkingDirectory[0] = '\0';
         TinPrint(this,"Error - SetDirectory():  directory not found %s\n", path);
+        TinPrint(this,"cwd: %s\n", mCurrentWorkingDirectory);
         return (false);
     }
 
@@ -1022,20 +1113,16 @@ bool8 CScriptContext::ExecScript(const char* filename, bool8 must_exist, bool8 r
     }
 
     // -- get the full path name, by pre-pending the current working directory (if required)
-    char full_path_buf[kMaxNameLength];
-    full_path_buf[0] = '\0';
-    const char* full_path = filename;
-    if (mCurrentWorkingDirectory[0] != '\0')
+    char full_path[kMaxNameLength * 2];
+    if (!GetFullPath(filename, full_path, kMaxNameLength * 2))
     {
-        int dir_length = strlen(mCurrentWorkingDirectory);
-        int fn_length = strlen(filename);
-        SafeStrcpy(full_path_buf, sizeof(full_path_buf), mCurrentWorkingDirectory);
-        SafeStrcpy(&full_path_buf[dir_length], kMaxNameLength - dir_length, filename);
-        full_path = full_path_buf;
+        ScriptAssert_(this,0,"<internal>",-1,"Error - invalid script filename: %s\n",
+                      full_path ? filename : "");
+        return false;
     }
 
-    char binfilename[kMaxNameLength];
-    if (!GetBinaryFileName(full_path, binfilename, kMaxNameLength))
+    char binfilename[kMaxNameLength * 2];
+    if (!GetBinaryFileName(full_path, binfilename, kMaxNameLength * 2))
     {
         if (must_exist)
         {
@@ -1274,30 +1361,8 @@ void CScriptContext::SetDebuggerConnected(bool connected)
     // -- if we're now connected, send back the current working directory
     if (connected)
     {
-        bool error = false;
-
-        // -- if we don't have a user defined cwd, get the system one (where the .exe lives)
-        if (mCurrentWorkingDirectory[0] == '\0')
-        {
-		    char* cwdBuffer =_getcwd(NULL, 0);
-            if (cwdBuffer == NULL)
-            {
-                error = true;
-                cwdBuffer = ".";
-            }
-
-            // -- send the command
-            DebuggerCurrentWorkingDir(cwdBuffer);
-
-            // -- if we successfully got the current working directory, we need to free the buffer
-            if (!error)
-                delete [] cwdBuffer;
-        }
-        else
-        {
-			// -- send the command
-			DebuggerCurrentWorkingDir(mCurrentWorkingDirectory);
-        }
+		// -- send the command
+		DebuggerCurrentWorkingDir(mCurrentWorkingDirectory);
 
         // -- now notify the debugger of all the codeblocks loaded
         CCodeBlock* code_block = GetCodeBlockList()->First();
@@ -1340,8 +1405,16 @@ void CScriptContext::AddBreakpoint(const char* filename, int32 line_number, bool
     if (!filename || !filename[0])
         return;
 
+    // -- we use the full path for code block hashes
+    char full_path[kMaxNameLength * 2];
+    if (!GetFullPath(filename, full_path, kMaxNameLength * 2))
+    {
+        TinPrint(this, "Error AddBreakpoint(): %s @ %d", filename, line_number);
+        return;
+    }
+
     // -- find the code block within the thread
-    uint32 filename_hash = Hash(filename);
+    uint32 filename_hash = Hash(full_path);
     CCodeBlock* code_block = GetCodeBlockList()->FindItem(filename_hash);
     if (! code_block)
         return;

@@ -123,7 +123,7 @@ void CBreakpointEntry::UpdateLabel(uint32 codeblock_hash, int32 line_number)
                         line_number >= 1e1 ? 4 : 5;
     spaces[space_count] = '\0';
 
-    // -- fill in the condition and trace lables
+    // -- fill in the condition and trace labels
     bool condition_enabled = mConditionEnabled && mCondition[0];
     char condition_buf[TinScript::kMaxNameLength];
     if (condition_enabled)
@@ -142,7 +142,9 @@ void CBreakpointEntry::UpdateLabel(uint32 codeblock_hash, int32 line_number)
         tracepoint_buf[0] = '\0';
 
     // -- note:  all line numbers are stored accurately (0 based), but displayed +1, to match text editors
-    sprintf_s(linebuf, 256, "%s : %s%d    %s    %s", TinScript::UnHash(codeblock_hash), spaces, line_number + 1,
+    const char* full_path = TinScript::UnHash(codeblock_hash);
+    const char* file_name_ptr = CConsoleWindow::GetInstance()->GetDebugSourceWin()->GetFileName(full_path);
+    sprintf_s(linebuf, 256, "%s : %s%d    %s    %s", file_name_ptr, spaces, line_number + 1,
               condition_buf, tracepoint_buf);
 
     // -- set the text in the QWidget
@@ -151,7 +153,7 @@ void CBreakpointEntry::UpdateLabel(uint32 codeblock_hash, int32 line_number)
 
 void CBreakpointEntry::UpdateLabel(int32 watch_request_id, uint32 var_object_id, uint32 var_name_hash)
 {
-    // -- fill in the condition and trace lables
+    // -- fill in the condition and trace labels
     bool condition_enabled = mConditionEnabled && mCondition[0];
     char condition_buf[TinScript::kMaxNameLength];
     if (condition_enabled)
@@ -729,8 +731,10 @@ CCallstackEntry::CCallstackEntry(uint32 codeblock_hash, int32 line_number, uint3
     mFunctionHash = function_hash;
 
     char buf[2048];
+    const char* full_path = TinScript::UnHash(codeblock_hash);
+    const char* file_name_ptr = CConsoleWindow::GetInstance()->GetDebugSourceWin()->GetFileName(full_path);
     sprintf_s(buf, 2048, "[ %d ] %s::%s   %s @ %d", object_id, TinScript::UnHash(namespace_hash),
-              TinScript::UnHash(function_hash), TinScript::UnHash(codeblock_hash), line_number);
+              TinScript::UnHash(function_hash), file_name_ptr, line_number);
     setText(buf);
 };
 

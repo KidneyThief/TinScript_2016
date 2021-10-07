@@ -331,8 +331,12 @@ class CScriptContext
 
         bool8 IsMainThread() const { return (mIsMainThread); }
 
-        CCodeBlock* CompileScript(const char* filename);
+        void InitializeDirectory();
         bool8 SetDirectory(const char* path);
+        const char* GetDirectory() const { return mCurrentWorkingDirectory; }
+        bool8 GetFullPath(const char* in_file_name,char* out_full_path,int32 in_max_length);
+
+        CCodeBlock* CompileScript(const char* filename);
         bool8 ExecScript(const char* filename, bool8 must_exist, bool8 re_exec);
 
         CCodeBlock* CompileCommand(const char* statement);

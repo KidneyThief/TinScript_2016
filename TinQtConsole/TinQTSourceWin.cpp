@@ -143,35 +143,29 @@ void CDebugSourceWin::NotifyCurrentDir(const char* cwd)
     TinScript::LoadStringTable(remoteStringTableName);
 }
 
-bool CDebugSourceWin::OpenSourceFile(const char* filename, bool reload)
+bool CDebugSourceWin::OpenSourceFile(const char* file_name, bool reload)
 {
     // -- sanity check
-    if(!filename || !filename[0])
+    if(!file_name || !file_name[0])
         return (false);
 
     // -- see if we actually need to reload this file
-    const char* fileNamePtr = GetFileName(filename);
-    uint32 filehash = TinScript::Hash(fileNamePtr);
+    char full_path_buf[kMaxArgLength * 2];
+    const char* full_path = GetFullPath(file_name, full_path_buf, kMaxArgLength * 2);
+    uint32 filehash = TinScript::Hash(full_path);
     if (filehash == mCurrentCodeblockHash && !reload)
     {
         parentWidget()->raise();
         return (true);
     }
-
-    // -- create the full path
-    char fullPath[kMaxArgLength];
-    int length = sprintf_s(fullPath, "%s%s", mDebuggerDir, filename);
-    if (length >= kMaxArgLength)
-        return (false);
-
-    return (OpenFullPathFile(fullPath, reload));
+    return (OpenFullPathFile(full_path, reload));
 }
 
-bool CDebugSourceWin::OpenFullPathFile(const char* fullPath, bool reload)
+bool CDebugSourceWin::OpenFullPathFile(const char* full_path, bool reload)
 {
-    const char* fileNamePtr = GetFileName(fullPath);
-    uint32 filehash = TinScript::Hash(fileNamePtr);
-    char* filebuf = ReadFileAllocBuf(fullPath);
+    const char* fileNamePtr = GetFileName(full_path);
+    uint32 filehash = TinScript::Hash(full_path);
+    char* filebuf = ReadFileAllocBuf(full_path);
     if (filebuf)
     {
         // -- set the file line edit
@@ -234,19 +228,22 @@ bool CDebugSourceWin::OpenFullPathFile(const char* fullPath, bool reload)
 
 // ------------------------------------------------------------------------------------------------
 bool CDebugSourceWin::SetSourceView(uint32 codeblock_hash, int32 line_number) {
-    const char* filename = TinScript::UnHash(codeblock_hash);
-    if(filename) {
-        bool result = OpenSourceFile(filename);
-        if(result) {
+    const char* full_path = TinScript::UnHash(codeblock_hash);
+    if (full_path)
+    {
+        bool result = OpenSourceFile(full_path);
+        if (result)
+        {
             // -- set the selected line
-            if(line_number >= 0 && line_number < mSourceText.size()) {
+            if (line_number >= 0 && line_number < mSourceText.size())
+            {
                 mSourceText.at(line_number)->setSelected(true);
-                if(line_number < mSourceText.size() - 6)
+                if (line_number < mSourceText.size() - 6)
                     scrollToItem(mSourceText.at(line_number + 5));
                 else
                     scrollToItem(mSourceText.at(mSourceText.size() - 1));
 
-                if(line_number >= 5)
+                if (line_number >= 5)
                     scrollToItem(mSourceText.at(line_number - 5));
                 else
                     scrollToItem(mSourceText.at(0));
@@ -264,12 +261,15 @@ bool CDebugSourceWin::SetSourceView(uint32 codeblock_hash, int32 line_number) {
 
 // ------------------------------------------------------------------------------------------------
 void CDebugSourceWin::SetCurrentPC(uint32 codeblock_hash, int32 line_number) {
-    const char* filename = TinScript::UnHash(codeblock_hash);
-    if(filename) {
-        bool result = OpenSourceFile(filename);
-        if(result) {
+    const char* full_path = TinScript::UnHash(codeblock_hash);
+    if (full_path)
+    {
+        bool result = OpenSourceFile(full_path);
+        if (result)
+        {
             // -- if we have a current line number, and it's different, we need to clear it
-            if(mCurrentLineNumber >= 0 && mCurrentLineNumber != line_number) {
+            if (mCurrentLineNumber >= 0 && mCurrentLineNumber != line_number)
+            {
                 // -- find the CSourceLine for the actual_line
                 CSourceLine* source_line = mSourceText.at(mCurrentLineNumber);
                 QString source_text = source_line->text();
@@ -280,7 +280,8 @@ void CDebugSourceWin::SetCurrentPC(uint32 codeblock_hash, int32 line_number) {
             }
 
             // -- now set the new current line
-            if(line_number >= 0 && line_number < mSourceText.size()) {
+            if (line_number >= 0 && line_number < mSourceText.size())
+            {
                 mCurrentLineNumber = line_number;
                 CSourceLine* source_line = mSourceText.at(mCurrentLineNumber);
                 QString source_text = source_line->text();
@@ -320,7 +321,7 @@ void CDebugSourceWin::FindInFile(const char* search_string)
     if (line_count <= 0)
         return;
 
-    // -- we'll use the QString class to do the searchinh
+    // -- we'll use the QString class to do the search
     QString search(search_string);
 
     // -- start searching from the line after the current line
@@ -400,7 +401,7 @@ void CDebugSourceWin::NotifyCodeblockLoaded(uint32 codeblock_hash)
     const char* filename = TinScript::UnHash(codeblock_hash);
 
     // -- open the file in the source window, unless it's already open
-    if(mCurrentCodeblockHash == 0 && mCurrentCodeblockHash != codeblock_hash)
+    if (mCurrentCodeblockHash == 0 && mCurrentCodeblockHash != codeblock_hash)
     {
         // -- get the file name, and open the file
         OpenSourceFile(filename, true);
@@ -416,31 +417,56 @@ void CDebugSourceWin::NotifyCodeblockLoaded(uint32 codeblock_hash)
     CConsoleWindow::GetInstance()->GetMainWindow()->AddScriptOpenAction(fullPath);
 }
 
-void CDebugSourceWin::NotifyCodeblockLoaded(const char* filename)
+void CDebugSourceWin::NotifyCodeblockLoaded(const char* full_path)
 {
     // -- sanity check
-    if (!filename || !filename[0])
+    if (!full_path || !full_path[0])
         return;
 
     // -- get the codeblock_hash
-    uint32 codeblock_hash = TinScript::Hash(filename);
+    uint32 codeblock_hash = TinScript::Hash(full_path);
 
     // -- do nothing if we've already got a file open,
     // -- unless we're reloading the current file
     if (mCurrentCodeblockHash == 0 && mCurrentCodeblockHash != codeblock_hash)
     {
         // -- open the file
-        OpenSourceFile(filename, true);
+        OpenSourceFile(full_path, true);
     }
 
-    // -- add an action to the main menu
-    char fullPath[kMaxArgLength];
-    int length = sprintf_s(fullPath, "%s%s", mDebuggerDir, filename);
-    if (length >= kMaxArgLength)
-        return;
-
     // -- add an entry to the Scripts menu
-    CConsoleWindow::GetInstance()->GetMainWindow()->AddScriptOpenAction(fullPath);
+    CConsoleWindow::GetInstance()->GetMainWindow()->AddScriptOpenAction(full_path);
+}
+
+// --------------------------------------------------------------------------------------------------------------------
+// GetFullPath():  Return the complete full path, prepending the directory to the file name (if necessary)
+// --------------------------------------------------------------------------------------------------------------------
+const char* CDebugSourceWin::GetFullPath(const char* in_file_name, char* out_full_path, int in_max_length)
+{
+    // -- sanity check
+    if (in_file_name == nullptr || out_full_path == nullptr || in_max_length <= 0)
+        return (in_file_name);
+
+    // -- if there's no current working directory, or our in_file_name is *already* prepended, simply copy
+    if (mDebuggerDir[0] == '\0' ||
+        _strnicmp(in_file_name, mDebuggerDir, strlen(mDebuggerDir)) == 0)
+    {
+        TinScript::SafeStrcpy(out_full_path, in_max_length, in_file_name);
+        return (out_full_path);
+    }
+
+    // -- get the full path name, by pre-pending the current working directory (if required)
+    int fn_length = strlen(in_file_name);
+    int dir_length = strlen(mDebuggerDir);
+    if (fn_length + dir_length > in_max_length)
+    {
+        return in_file_name;
+    }
+
+    TinScript::SafeStrcpy(out_full_path,in_max_length,mDebuggerDir);
+    TinScript::SafeStrcpy(&out_full_path[dir_length], in_max_length - dir_length,in_file_name);
+
+    return out_full_path;
 }
 
 // --------------------------------------------------------------------------------------------------------------------
@@ -488,7 +514,8 @@ const char* CDebugSourceWin::GetFileName(const char* fullPath)
     }
 
     // -- return the result
-    return (file_name_ptr);}
+    return (file_name_ptr);
+}
 
 // ------------------------------------------------------------------------------------------------
 #include "TinQTSourceWinMoc.cpp"

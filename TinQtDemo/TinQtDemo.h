@@ -40,32 +40,32 @@
 const int k_maxKeyCode = 160;
 #define KeyCodes(Key, Key_Entry)            \
     Key_Entry(Key, space,           32)     \
-    Key_Entry(Key, a,               65)     \
-    Key_Entry(Key, b,               66)     \
-    Key_Entry(Key, c,               67)     \
-    Key_Entry(Key, d,               68)     \
-    Key_Entry(Key, e,               69)     \
-    Key_Entry(Key, f,               70)     \
-    Key_Entry(Key, g,               71)     \
-    Key_Entry(Key, h,               72)     \
-    Key_Entry(Key, i,               73)     \
-    Key_Entry(Key, j,               74)     \
-    Key_Entry(Key, k,               75)     \
-    Key_Entry(Key, l,               76)     \
-    Key_Entry(Key, m,               77)     \
-    Key_Entry(Key, n,               78)     \
-    Key_Entry(Key, o,               79)     \
-    Key_Entry(Key, p,               80)     \
-    Key_Entry(Key, q,               81)     \
-    Key_Entry(Key, r,               82)     \
-    Key_Entry(Key, s,               83)     \
-    Key_Entry(Key, t,               84)     \
-    Key_Entry(Key, u,               85)     \
-    Key_Entry(Key, v,               86)     \
-    Key_Entry(Key, w,               87)     \
-    Key_Entry(Key, x,               88)     \
-    Key_Entry(Key, y,               89)     \
-    Key_Entry(Key, z,               90)     \
+    Key_Entry(Key, A,               65)     \
+    Key_Entry(Key, B,               66)     \
+    Key_Entry(Key, C,               67)     \
+    Key_Entry(Key, D,               68)     \
+    Key_Entry(Key, E,               69)     \
+    Key_Entry(Key, F,               70)     \
+    Key_Entry(Key, G,               71)     \
+    Key_Entry(Key, H,               72)     \
+    Key_Entry(Key, I,               73)     \
+    Key_Entry(Key, J,               74)     \
+    Key_Entry(Key, K,               75)     \
+    Key_Entry(Key, L,               76)     \
+    Key_Entry(Key, M,               77)     \
+    Key_Entry(Key, N,               78)     \
+    Key_Entry(Key, O,               79)     \
+    Key_Entry(Key, P,               80)     \
+    Key_Entry(Key, Q,               81)     \
+    Key_Entry(Key, R,               82)     \
+    Key_Entry(Key, S,               83)     \
+    Key_Entry(Key, T,               84)     \
+    Key_Entry(Key, U,               85)     \
+    Key_Entry(Key, V,               86)     \
+    Key_Entry(Key, W,               87)     \
+    Key_Entry(Key, X,               88)     \
+    Key_Entry(Key, Y,               89)     \
+    Key_Entry(Key, Z,               90)     \
     Key_Entry(Key, tilde,           96)     \
     Key_Entry(Key, zero,            48)     \
     Key_Entry(Key, one,             49)     \

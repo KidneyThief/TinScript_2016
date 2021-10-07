@@ -575,10 +575,6 @@ void CConsoleWindow::NotifyOnClose()
 // ====================================================================================================================
 void CConsoleWindow::ToggleBreakpoint(uint32 codeblock_hash, int32 line_number, bool add, bool enable)
 {
-    const char* filename = TinScript::UnHash(codeblock_hash);
-    if (!filename)
-        return;
-
     // -- notify the Source Window
     GetDebugSourceWin()->ToggleBreakpoint(codeblock_hash, line_number, add, enable);
 
@@ -1875,10 +1871,10 @@ void CConsoleOutput::HandlePacketBreakpointConfirm(int32* dataPtr)
     // -- get the line number
     int32 line_number = *dataPtr++;
 
-    // -- get the correctedline number
+    // -- get the corrected line number
     int32 actual_line = *dataPtr++;
 
-    // -- notifiy the debugger
+    // -- notify the debugger
     DebuggerConfirmBreakpoint(codeblock_hash, line_number, actual_line);
 }
 

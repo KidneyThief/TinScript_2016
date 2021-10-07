@@ -527,15 +527,15 @@ void AsteroidsGame::UpdateKeys(int update_time)
         return;
 
     // -- rotate left
-    if (IsKeyPressed(KeyCode_j))
+    if (IsKeyPressed(KeyCode_J))
         self.ship.rotation -= g_rotateSpeed;
     
     // -- rotate right
-    if (IsKeyPressed(KeyCode_l))
+    if (IsKeyPressed(KeyCode_L))
         self.ship.rotation += g_rotateSpeed;
     
     // -- thrust
-    if (IsKeyPressed(KeyCode_i))
+    if (IsKeyPressed(KeyCode_I))
         self.ship.ApplyThrust(gThrust);
     
     // -- fire
@@ -543,7 +543,7 @@ void AsteroidsGame::UpdateKeys(int update_time)
         self.ship.OnFire();
 
     // -- SuperFire: a
-    //if (KeyPressedSinceTime(KeyCode_q, update_time))
+    //if (KeyPressedSinceTime(KeyCode_Q, update_time))
     //    self.ship.OnSuperFire();
 }
 
