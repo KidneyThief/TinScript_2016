@@ -141,7 +141,6 @@ public:
 
     // -- registration method
     virtual void Register() {
-        uint32 classname_hash = Hash(C::_GetClassName());
         CFunctionContext* fc = CreateContext();
         fc->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());
 
@@ -310,7 +309,6 @@ public:
 
     // -- registration method
     virtual void Register() {
-        uint32 classname_hash = Hash(C::_GetClassName());
         CFunctionContext* fc = CreateContext();
         fc->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());
         fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>());
@@ -491,7 +489,6 @@ public:
 
     // -- registration method
     virtual void Register() {
-        uint32 classname_hash = Hash(C::_GetClassName());
         CFunctionContext* fc = CreateContext();
         fc->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());
         fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>());
@@ -684,7 +681,6 @@ public:
 
     // -- registration method
     virtual void Register() {
-        uint32 classname_hash = Hash(C::_GetClassName());
         CFunctionContext* fc = CreateContext();
         fc->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());
         fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>());
@@ -889,7 +885,6 @@ public:
 
     // -- registration method
     virtual void Register() {
-        uint32 classname_hash = Hash(C::_GetClassName());
         CFunctionContext* fc = CreateContext();
         fc->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());
         fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>());
@@ -1106,7 +1101,6 @@ public:
 
     // -- registration method
     virtual void Register() {
-        uint32 classname_hash = Hash(C::_GetClassName());
         CFunctionContext* fc = CreateContext();
         fc->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());
         fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>());
@@ -1335,7 +1329,6 @@ public:
 
     // -- registration method
     virtual void Register() {
-        uint32 classname_hash = Hash(C::_GetClassName());
         CFunctionContext* fc = CreateContext();
         fc->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());
         fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>());
@@ -1576,7 +1569,6 @@ public:
 
     // -- registration method
     virtual void Register() {
-        uint32 classname_hash = Hash(C::_GetClassName());
         CFunctionContext* fc = CreateContext();
         fc->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());
         fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>());
@@ -1829,7 +1821,6 @@ public:
 
     // -- registration method
     virtual void Register() {
-        uint32 classname_hash = Hash(C::_GetClassName());
         CFunctionContext* fc = CreateContext();
         fc->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());
         fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>());
@@ -2094,7 +2085,6 @@ public:
 
     // -- registration method
     virtual void Register() {
-        uint32 classname_hash = Hash(C::_GetClassName());
         CFunctionContext* fc = CreateContext();
         fc->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());
         fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>());
@@ -2371,7 +2361,6 @@ public:
 
     // -- registration method
     virtual void Register() {
-        uint32 classname_hash = Hash(C::_GetClassName());
         CFunctionContext* fc = CreateContext();
         fc->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());
         fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>());
@@ -2660,7 +2649,6 @@ public:
 
     // -- registration method
     virtual void Register() {
-        uint32 classname_hash = Hash(C::_GetClassName());
         CFunctionContext* fc = CreateContext();
         fc->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());
         fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>());
@@ -2961,7 +2949,6 @@ public:
 
     // -- registration method
     virtual void Register() {
-        uint32 classname_hash = Hash(C::_GetClassName());
         CFunctionContext* fc = CreateContext();
         fc->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());
         fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>());

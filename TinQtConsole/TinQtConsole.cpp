@@ -1128,7 +1128,7 @@ int32 CConsoleWindow::StringWidth(const QString& in_string)
         return 16 * in_string.length();
     }
 
-    // -- we'll use a captial 'W' as the "font width", since it's the widest character
+    // -- we'll use a capital 'W' as the "font width", since it's the widest character
     QFontMetrics my_font_metrics = my_app->fontMetrics();
     return my_font_metrics.width(in_string);
 }
@@ -1276,9 +1276,82 @@ void CConsoleInput::RequestTabComplete()
     if (mTabCompletionBuf[0] != '\0')
     {
         ++mTabCompleteRequestID;
-        SocketManager::SendCommandf("DebuggerRequestTabComplete(%d, `%s`, %d);", mTabCompleteRequestID,
-                                    mTabCompletionBuf, mTabCompletionIndex);
+
+        // -- see if we're tab completing locally or remotely
+        bool8 is_connected = CConsoleWindow::GetInstance()->IsConnected();
+        if (!is_connected || mTabCompletionBuf[0] == '/')
+        {
+            LocalTabComplete(mTabCompletionBuf, mTabCompletionIndex);
+        }
+        else
+        {
+            SocketManager::SendCommandf("DebuggerRequestTabComplete(%d, `%s`, %d);", mTabCompleteRequestID,
+                                        mTabCompletionBuf, mTabCompletionIndex);
+        }
     }
+}
+
+// ====================================================================================================================
+// LocalTabComplete():  Send the current input to the local context, and see if we can complete the command/object/...
+// ====================================================================================================================
+bool8 CConsoleInput::LocalTabComplete(const char* partial_input, int32 tab_complete_index)
+{
+    // -- sanity check
+    if (partial_input == nullptr || partial_input[0] == '\0')
+        return (false);
+
+    // -- if the input string started with a '/', we're performing the tab complete locally,
+    // and need to ignore the first char for tab completion, but preserve it in the input buffer
+    int32 slash_offset = (partial_input[0] == '/') ? 1 : 0;
+
+    // -- get the local context
+    TinScript::CScriptContext* script_context = TinScript::GetContext();
+    if (script_context == nullptr)
+        return (false);
+
+    // -- methods for tab completion
+    int32 tab_string_offset = 0;
+    const char* tab_result = nullptr;
+    TinScript::CFunctionEntry* fe = nullptr;
+    TinScript::CVariableEntry* ve = nullptr;
+    if (script_context->TabComplete(&partial_input[slash_offset], tab_complete_index, tab_string_offset,
+                                    tab_result, fe, ve))
+    {
+        // -- update the input buf with the new string
+        int32 tab_complete_length = (int32)strlen(tab_result);
+
+        // -- build the function prototype string
+        char prototype_string[TinScript::kMaxTokenLength];
+        if (slash_offset == 1)
+            prototype_string[0] = '/';
+        char* prototype_ptr = &prototype_string[slash_offset];
+
+        // -- see if we are to preserve the preceding part of the tab completion buf
+        if (tab_string_offset > 0)
+            strncpy_s(prototype_string, &partial_input[slash_offset], tab_string_offset);
+
+        // -- eventually, the tab completion will fill in the prototype arg types...
+        if (fe != nullptr)
+        {
+            // -- if we have parameters (more than 1, since the first parameter is always the return value)
+            if(fe->GetContext()->GetParameterCount() > 1)
+                sprintf_s(&prototype_ptr[tab_string_offset], TinScript::kMaxTokenLength - tab_string_offset - slash_offset, "%s(", tab_result);
+            else
+                sprintf_s(&prototype_ptr[tab_string_offset], TinScript::kMaxTokenLength - tab_string_offset - slash_offset, "%s()", tab_result);
+        }
+        else
+        {
+            sprintf_s(&prototype_ptr[tab_string_offset], TinScript::kMaxTokenLength - tab_string_offset, "%s", tab_result);
+        }
+
+        mTabCompletionIndex = tab_complete_index;
+        SetText(prototype_string, -1);
+
+        // -- success
+        return (true);
+    }
+
+    return (false);
 }
 
 void CConsoleInput::NotifyTabComplete(int32 request_id, const char* result, int32 tab_complete_index)
@@ -1388,14 +1461,23 @@ void CConsoleInput::OnReturnPressed()
 
     // -- add this to the history buf
     const char* historyptr = (mHistoryLastIndex < 0) ? NULL : mHistory[mHistoryLastIndex].text;
-    if(input_text[0] != '\0' && (!historyptr || strcmp(historyptr, input_text) != 0)) {
+    if (input_text[0] != '\0' && (!historyptr || strcmp(historyptr, input_text) != 0))
+    {
         mHistoryFull = mHistoryFull || mHistoryLastIndex == kMaxHistory - 1;
         mHistoryLastIndex = (mHistoryLastIndex + 1) % kMaxHistory;
         strcpy_s(mHistory[mHistoryLastIndex].text, TinScript::kMaxTokenLength, input_text);
     }
     mHistoryIndex = -1;
 
-    if (is_connected)
+    // -- if the first character is a '/', we want to send the command to the *local* TinScript context
+    bool8 send_local = !is_connected;
+    if (input_text != nullptr && input_text[0] == '/')
+    {
+        send_local = true;
+        input_text++;
+    }
+
+    if (!send_local)
         SocketManager::SendCommand(input_text);
     else
         TinScript::ExecCommand(input_text);

@@ -268,6 +268,7 @@ class CConsoleInput : public QLineEdit
 
         void SetText(const char* text, int cursor_pos);
         void RequestTabComplete();
+        bool8 LocalTabComplete(const char* partial_input, int32 tab_complete_index);
         void NotifyTabComplete(int32 request_id, const char* tab_completed_string, int32 tab_complete_index);
 
         void NotifyStringUnhash(uint32 string_hash, const char* string_result);

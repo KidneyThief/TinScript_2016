@@ -346,6 +346,11 @@ CScriptContext::CScriptContext(TinPrintHandler printfunction, TinAssertHandler a
     // -- register globals
     CRegisterGlobal::RegisterGlobals(this);
 
+    // -- after registration, we want to save the string table to ensure all registered
+    // functions and global name hashes are available
+    if (mIsMainThread)
+        SaveStringTable();
+
     // -- initialize the scheduler
     mScheduler = TinAlloc(ALLOC_SchedCmd, CScheduler, this);
 

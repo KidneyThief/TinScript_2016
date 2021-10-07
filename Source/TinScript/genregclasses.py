@@ -454,7 +454,6 @@ def GenerateClasses(maxparamcount, outputfilename):
         
         outputfile.write("    // -- registration method\n");
         outputfile.write("    virtual void Register() {\n");
-        outputfile.write("        uint32 classname_hash = Hash(C::_GetClassName());\n");
         outputfile.write("        CFunctionContext* fc = CreateContext();\n");
         outputfile.write("        fc->AddParameter(\"__return\", Hash(\"__return\"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());\n");
         i = 1;

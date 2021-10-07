@@ -64,10 +64,15 @@ CFunctionContext* CRegFunctionBase::CreateContext()
 {
     // -- if we don't already have a function context, we need to create and register a function entry
     CFunctionContext* found = GetContext();
-    if(found == nullptr)
+    if (found == nullptr)
     {
         CFunctionEntry* fe =
-            new CFunctionEntry(m_ClassNameHash,m_FunctionName,m_FunctionNameHash,eFuncTypeRegistered,this);
+            new CFunctionEntry(m_ClassNameHash, m_FunctionName, m_FunctionNameHash, eFuncTypeRegistered, this);
+
+        // -- we also want to be sure the function and class names are in the string table
+        if (m_ClassNameHash != 0)
+            TinScript::GetContext()->GetStringTable()->AddString(m_ClassName,-1, m_ClassNameHash,true);
+        TinScript::GetContext()->GetStringTable()->AddString(m_FunctionName, -1, m_FunctionNameHash, true);
 
         tFuncTable* methodtable = TinScript::GetContext()->FindNamespace(m_ClassNameHash)->GetFuncTable();
         methodtable->AddItem(*fe,m_FunctionNameHash);
