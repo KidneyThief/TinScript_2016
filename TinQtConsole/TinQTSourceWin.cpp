@@ -114,7 +114,7 @@ CDebugSourceWin::~CDebugSourceWin() {
     }
 }
 
-void CDebugSourceWin::NotifyCurrentDir(const char* cwd)
+void CDebugSourceWin::NotifyCurrentDir(const char* cwd, const char* exe_dir)
 {
     if (!cwd)
         cwd = "./";
@@ -138,9 +138,14 @@ void CDebugSourceWin::NotifyCurrentDir(const char* cwd)
     }
 
     // -- because communication is remote, we must be sure our string table is up to date with our target's
-    char remoteStringTableName[256];
-    sprintf_s(remoteStringTableName, "%s%s", mDebuggerDir, TinScript::GetStringTableName());
-    TinScript::LoadStringTable(remoteStringTableName);
+    TinScript::LoadStringTable(mDebuggerDir);
+
+    // -- we don't have any need to store the target executable directory, but it may contain
+    // a string table as well
+    if (_stricmp(cwd, exe_dir) != 0)
+    {
+        TinScript::LoadStringTable(exe_dir);
+    }
 }
 
 bool CDebugSourceWin::OpenSourceFile(const char* file_name, bool reload)

@@ -56,7 +56,7 @@ class CDebugSourceWin : public QListWidget
             QListWidget::paintEvent(e);
         }
 
-        void NotifyCurrentDir(const char* cwd);
+        void NotifyCurrentDir(const char* cwd, const char* exe_dir);
         bool OpenSourceFile(const char* filename, bool reload = false);
         bool OpenFullPathFile(const char* fullPath, bool reload = false);
         bool SetSourceView(uint32 codeblock_hash, int32 line_number);

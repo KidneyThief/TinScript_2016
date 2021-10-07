@@ -864,7 +864,7 @@ CFunctionListEntry::CFunctionListEntry(TinScript::CDebuggerFunctionAssistEntry* 
             setText(0, "");
 
         // -- set the function name, appended with parenthesis for readability
-        setText(1,QString(_entry->mFunctionName).append("()"));
+        setText(1, QString(_entry->mFunctionName).append("()"));
 
         // -- set the source, C++, or try to find the actual script
         if (_entry->mCodeBlockHash == 0)

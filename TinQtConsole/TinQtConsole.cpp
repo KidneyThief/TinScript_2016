@@ -1079,9 +1079,9 @@ void NotifyCodeblockLoaded(const char* filename)
 // ====================================================================================================================
 // NotifyCodeblockLoaded():  Called upon connection, so looking for file source text matches the target
 // ====================================================================================================================
-void NotifyCurrentDir(const char* cwd)
+void NotifyCurrentDir(const char* cwd, const char* exe_dir)
 {
-    CConsoleWindow::GetInstance()->GetDebugSourceWin()->NotifyCurrentDir(cwd);
+    CConsoleWindow::GetInstance()->GetDebugSourceWin()->NotifyCurrentDir(cwd, exe_dir);
 
     // -- set the status message
     char msg[1024];
@@ -1752,8 +1752,8 @@ void CConsoleOutput::ProcessDataPackets()
         // -- see if we have a handler for this packet
         switch (dataType)
         {
-            case k_DebuggerCurrentWorkingDirPacketID:
-                HandlePacketCurrentWorkingDir(dataPtr);
+            case k_DebuggerScriptAndExeDirsPacketID:
+                HandlePacketNotifyDirectories(dataPtr);
                 break;
 
             case k_DebuggerCodeblockLoadedPacketID:
@@ -1805,18 +1805,24 @@ void CConsoleOutput::ProcessDataPackets()
     }
 }
 // ====================================================================================================================
-// HandlePacketCurrentWorkingDir():  A callback handler for a packet of type "current working directory"
+// HandlePacketNotifyDirectories():  A callback handler for a packet of type "current working directory"
 // ====================================================================================================================
-void CConsoleOutput::HandlePacketCurrentWorkingDir(int32* dataPtr)
+void CConsoleOutput::HandlePacketNotifyDirectories(int32* dataPtr)
 {
     // -- skip past the packet ID
     ++dataPtr;
 
     // -- notification is of the filename, as the codeblock hash may not yet be in the dictionary
+    int32 cwd_length = *dataPtr++;
     const char* cwd = (const char*)dataPtr;
+    dataPtr += cwd_length / 4;
+
+    // -- get the exe directory as well
+    int32 exe_length = *dataPtr++;
+    const char* exe_dir = (const char*)dataPtr;
 
     // -- notify the debugger
-    NotifyCurrentDir(cwd);
+    NotifyCurrentDir(cwd, exe_dir);
 }
 
 // ====================================================================================================================

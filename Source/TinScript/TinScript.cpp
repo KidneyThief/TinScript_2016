@@ -327,7 +327,7 @@ CScriptContext::CScriptContext(TinPrintHandler printfunction, TinAssertHandler a
     mAssertEnableTrace = false;
 
     // -- initialize the current working directory
-    InitializeDirectory();
+    InitializeDirectory(true);
 
     // -- initialize the namespaces dictionary, and all object dictionaries
     InitializeDictionaries();
@@ -384,7 +384,7 @@ CScriptContext::CScriptContext(TinPrintHandler printfunction, TinAssertHandler a
 // ====================================================================================================================
 void CScriptContext::InitializeDictionaries()
 {
-    // -- allocate the dictinary to store creation functions
+    // -- allocate the dictionary to store creation functions
     mNamespaceDictionary = TinAlloc(ALLOC_HashTable, CHashTable<CNamespace>, kGlobalFuncTableSize);
 
     // -- allocate the dictionary to store the address of all objects created from script.
@@ -624,13 +624,12 @@ const char* GetStringTableName()
 }
 
 // ====================================================================================================================
-// SaveStringTable():  Write the string table to a file.
+// SaveStringTable():  Write the string table to a file (always writes to the .exe directory)
 // ====================================================================================================================
-void SaveStringTable(const char* filename)
+void SaveStringTable()
 {
     // -- ensure we have a valid filename
-    if (!filename || !filename[0])
-        filename = GetStringTableName();
+    const char* string_table_fn = GetStringTableName();
 
     // -- get the context for this thread
     CScriptContext* script_context = TinScript::GetContext();
@@ -645,16 +644,16 @@ void SaveStringTable(const char* filename)
 
   	// -- open the file
 	FILE* filehandle = NULL;
-	int32 result = fopen_s(&filehandle, gStringTableFileName, "wb");
+	int32 result = fopen_s(&filehandle, string_table_fn, "wb");
 	if (result != 0)
     {
-        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - unable to write file %s\n", filename);
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - unable to write file %s\n", string_table_fn);
 		return;
     }
 
 	if (!filehandle)
     {
-        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - unable to write file %s\n", filename);
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - unable to write file %s\n", string_table_fn);
 		return;
     }
 
@@ -680,7 +679,7 @@ void SaveStringTable(const char* filename)
         if (count != 12)
         {
             fclose(filehandle);
-            ScriptAssert_(script_context, 0, "<internal>", -1, "Error - unable to write file %s\n", filename);
+            ScriptAssert_(script_context, 0, "<internal>", -1, "Error - unable to write file %s\n", string_table_fn);
             return;
         }
 
@@ -690,7 +689,7 @@ void SaveStringTable(const char* filename)
         if (count != 6)
         {
             fclose(filehandle);
-            ScriptAssert_(script_context, 0, "<internal>", -1, "Error - unable to write file %s\n", filename);
+            ScriptAssert_(script_context, 0, "<internal>", -1, "Error - unable to write file %s\n", string_table_fn);
             return;
         }
 
@@ -699,7 +698,7 @@ void SaveStringTable(const char* filename)
         if (count != length)
         {
             fclose(filehandle);
-            ScriptAssert_(script_context, 0, "<internal>", -1, "Error - unable to write file %s\n", filename);
+            ScriptAssert_(script_context, 0, "<internal>", -1, "Error - unable to write file %s\n", string_table_fn);
             return;
         }
 
@@ -708,7 +707,7 @@ void SaveStringTable(const char* filename)
         if (count != 2)
         {
             fclose(filehandle);
-            ScriptAssert_(script_context, 0, "<internal>", -1, "Error - unable to write file %s\n", filename);
+            ScriptAssert_(script_context, 0, "<internal>", -1, "Error - unable to write file %s\n", string_table_fn);
             return;
         }
 
@@ -723,11 +722,27 @@ void SaveStringTable(const char* filename)
 // ====================================================================================================================
 // LoadStringTable():  Load the string table from a file.
 // ====================================================================================================================
-void LoadStringTable(const char* filename)
+void LoadStringTable(const char* from_dir)
 {
     // -- ensure we have a valid filename
-    if (!filename || !filename[0])
-        filename = GetStringTableName();
+    const char* filename = GetStringTableName();
+
+    // -- build the full path
+    if (from_dir == nullptr)
+        from_dir = "";
+    char full_path[kMaxNameLength * 2];
+    size_t dir_len = strlen(from_dir);
+    if (dir_len > 0)
+    {
+        SafeStrcpy(full_path, sizeof(full_path), from_dir);
+        if (full_path[dir_len - 1] != '/')
+        {
+            full_path[dir_len++] = '/';
+            full_path[dir_len] = '\0';
+        }
+    }
+    SafeStrcpy(&full_path[dir_len], sizeof(full_path) - dir_len, filename);
+
 
     // -- get the context for this thread
     CScriptContext* script_context = TinScript::GetContext();
@@ -736,13 +751,13 @@ void LoadStringTable(const char* filename)
 
   	// -- open the file
 	FILE* filehandle = NULL;
-	int32 result = fopen_s(&filehandle, filename, "rb");
+	int32 result = fopen_s(&filehandle, full_path, "rb");
 	if (result != 0)
 		return;
 
 	if (!filehandle)
     {
-        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - unable to read file %s\n", filename);
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - unable to read file %s\n", full_path);
 		return;
     }
 
@@ -773,7 +788,7 @@ void LoadStringTable(const char* filename)
         if (ferror(filehandle) || count != 6)
         {
             fclose(filehandle);
-            ScriptAssert_(script_context, 0, "<internal>", -1, "Error - unable to read file: %s\n", filename);
+            ScriptAssert_(script_context, 0, "<internal>", -1, "Error - unable to read file: %s\n", full_path);
             return;
         }
         tempbuf[count] = '\0';
@@ -784,7 +799,7 @@ void LoadStringTable(const char* filename)
         if (ferror(filehandle) || count != length)
         {
             fclose(filehandle);
-            ScriptAssert_(script_context, 0, "<internal>", -1, "Error - unable to read file: %s\n", filename);
+            ScriptAssert_(script_context, 0, "<internal>", -1, "Error - unable to read file: %s\n", full_path);
             return;
         }
         string[length] = '\0';
@@ -794,7 +809,7 @@ void LoadStringTable(const char* filename)
         if (ferror(filehandle) || count != 2)
         {
             fclose(filehandle);
-            ScriptAssert_(script_context, 0, "<internal>", -1, "Error - unable to read file: %s\n", filename);
+            ScriptAssert_(script_context, 0, "<internal>", -1, "Error - unable to read file: %s\n", full_path);
             return;
         }
 
@@ -1013,21 +1028,47 @@ CCodeBlock* CScriptContext::CompileScript(const char* filename)
 // ====================================================================================================================
 // InitializeDirectory():  initialize the current working directory
 // ====================================================================================================================
-void CScriptContext::InitializeDirectory()
+void CScriptContext::InitializeDirectory(bool init_exe)
 {
-    // -- get the current working directory
-    char* cwdBuffer = _getcwd(NULL,0);
-    if (cwdBuffer == NULL)
+    if (init_exe)
     {
-        mCurrentWorkingDirectory[0] = '.';
-        mCurrentWorkingDirectory[1] = '\0';
-        return;
+        // -- get the executable directory
+        char* cwdBuffer = _getcwd(NULL,0);
+        if (cwdBuffer == NULL)
+        {
+            // -- stub the executable directory
+            mExecutableDirectory[0] = '.';
+            mExecutableDirectory[1] = '/';
+            mExecutableDirectory[2] = '\0';
+        }
+        else
+        {
+            SafeStrcpy(mExecutableDirectory, sizeof(mExecutableDirectory), cwdBuffer);
+            delete[] cwdBuffer;
+
+            // -- ensure the last character in the directory is a '/'
+            size_t dir_len = strlen(mExecutableDirectory);
+            if (mExecutableDirectory[dir_len - 1] != '/')
+            {
+                mExecutableDirectory[dir_len++] = '/';
+                mExecutableDirectory[dir_len] = '\0';
+            }
+
+            // -- ensure the path uses '/' characters
+            // -- the current working directory is *always* using '/', so ensure the final path is correct,
+            // in case someone passes a filename with a '\\'
+            char* fix_dir_char = mExecutableDirectory;
+            while(*fix_dir_char != '\0')
+            {
+                if(*fix_dir_char == '\\')
+                    *fix_dir_char = '/';
+                ++fix_dir_char;
+            }
+        }
     }
 
     // -- copy the current working directory, and delete the buffer
-    SafeStrcpy(mCurrentWorkingDirectory, sizeof(mCurrentWorkingDirectory), cwdBuffer);
-
-    delete[] cwdBuffer;
+    SafeStrcpy(mCurrentWorkingDirectory, sizeof(mCurrentWorkingDirectory), mExecutableDirectory);
 
     // -- ensure the path uses '/' characters
     // -- the current working directory is *always* using '/', so ensure the final path is correct,
@@ -1059,7 +1100,7 @@ bool8 CScriptContext::SetDirectory(const char* path)
     if (path == nullptr)
     {
         // -- on an empty path, we'll reset to the current
-        InitializeDirectory();
+        InitializeDirectory(false);
         return (true);
     }
 
@@ -1362,7 +1403,7 @@ void CScriptContext::SetDebuggerConnected(bool connected)
     if (connected)
     {
 		// -- send the command
-		DebuggerCurrentWorkingDir(mCurrentWorkingDirectory);
+		DebuggerNotifyDirectories(mCurrentWorkingDirectory, mExecutableDirectory);
 
         // -- now notify the debugger of all the codeblocks loaded
         CCodeBlock* code_block = GetCodeBlockList()->First();
@@ -2271,10 +2312,12 @@ void CScriptContext::ToggleVarWatch(int32 watch_request_id, uint32 object_id, ui
 // ====================================================================================================================
 // DebuggerCurrentWorkingDir():  Use the packet type DATA, and notify the debugger of our current working directory
 // ====================================================================================================================
-void CScriptContext::DebuggerCurrentWorkingDir(const char* cwd)
+void CScriptContext::DebuggerNotifyDirectories(const char* cwd, const char* exe_dir)
 {
     if (!cwd)
         cwd = "./";
+    if (!exe_dir)
+        exe_dir = "./";
 
     // -- calculate the size of the data
     int32 total_size = 0;
@@ -2282,9 +2325,18 @@ void CScriptContext::DebuggerCurrentWorkingDir(const char* cwd)
     // -- first int32 will be identifying this data packet
     total_size += sizeof(int32);
 
-    // -- we're sending the file name as a atring, since the debugger may not be able to unhash it yet
-    int strLength = (int32)strlen(cwd) + 1;
-    total_size += strLength;
+    // -- we're sending the cwd as a string, since the debugger may not be able to unhash it yet
+    // first the length, then the actual string, rounded up to 4-byte aligned
+    int cwd_length = (int32)strlen(cwd) + 1;
+    cwd_length += 4 - (cwd_length % 4);
+    total_size += 4;
+    total_size += cwd_length;
+
+    // -- we're also sending the .exe dir
+    int exe_length = (int32)strlen(exe_dir) + 1;
+    exe_length += 4 - (exe_length % 4);
+    total_size += 4;
+    total_size += exe_length;
 
     // -- declare a header
     // -- note, if we ever implement a request/acknowledge approach, we can use the mID field
@@ -2294,7 +2346,7 @@ void CScriptContext::DebuggerCurrentWorkingDir(const char* cwd)
     SocketManager::tDataPacket* newPacket = SocketManager::CreateDataPacket(&header, NULL);
     if (!newPacket)
     {
-        TinPrint(this, "Error - DebuggerCurrentWorkingDir():  unable to send\n");
+        TinPrint(this, "Error - DebuggerNotifyDirectories():  unable to send\n");
         return;
     }
 
@@ -2302,10 +2354,17 @@ void CScriptContext::DebuggerCurrentWorkingDir(const char* cwd)
     int32* dataPtr = (int32*)newPacket->mData;
 
     // -- write the identifier - defined in the debugger constants near the top of TinScript.h
-    *dataPtr++ = k_DebuggerCurrentWorkingDirPacketID;
+    *dataPtr++ = k_DebuggerScriptAndExeDirsPacketID;
 
-    // -- write the string
-    SafeStrcpy((char*)dataPtr, strLength, cwd, strLength);
+    // -- write the cwd string (first the length)
+    *dataPtr++ = cwd_length;
+    SafeStrcpy((char*)dataPtr, cwd_length, cwd, cwd_length);
+    dataPtr += (cwd_length / 4);
+
+    // -- write the exe string
+    *dataPtr++ = exe_length;
+    SafeStrcpy((char*)dataPtr, exe_length, exe_dir, exe_length);
+    dataPtr += (exe_length / 4);
 
     // -- send the packet
     SocketManager::SendDataPacket(newPacket);

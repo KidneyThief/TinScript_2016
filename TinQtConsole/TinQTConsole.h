@@ -367,7 +367,7 @@ class CConsoleOutput : public QListWidget
         void ProcessDataPackets();
 
         // -- handlers for the data packet
-        void HandlePacketCurrentWorkingDir(int32* dataPtr);
+        void HandlePacketNotifyDirectories(int32* dataPtr);
         void HandlePacketCodeblockLoaded(int32* dataPtr);
         void HandlePacketBreakpointConfirm(int32* dataPtr);
         void HandlePacketVarWatchConfirm(int32* dataPtr);

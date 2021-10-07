@@ -153,7 +153,7 @@ const int32 kCompilerVersion = 12;
 
 // ====================================================================================================================
 // -- debugger constants
-const int32 k_DebuggerCurrentWorkingDirPacketID     = 0x01;
+const int32 k_DebuggerScriptAndExeDirsPacketID     = 0x01;
 const int32 k_DebuggerCodeblockLoadedPacketID       = 0x02;
 const int32 k_DebuggerBreakpointHitPacketID         = 0x03;
 const int32 k_DebuggerBreakpointConfirmPacketID     = 0x04;
@@ -190,8 +190,8 @@ typedef CHashTable<CVariableEntry> tVarTable;
 typedef CHashTable<CFunctionEntry> tFuncTable;
 
 const char* GetStringTableName();
-void SaveStringTable(const char* filename = NULL);
-void LoadStringTable(const char* filename = NULL);
+void SaveStringTable();
+void LoadStringTable(const char* from_dir = NULL);
 
 // -- CThreadMutex is only functional in Win32
 // ====================================================================================================================
@@ -210,7 +210,7 @@ class CThreadMutex
 };
 
 // ====================================================================================================================
-// class CRegisterGlobal:  Instantiated in the global namespace to stor info needed to register global variables.
+// class CRegisterGlobal:  Instantiated in the global namespace to store info needed to register global variables.
 // ====================================================================================================================
 class CRegisterGlobal
 {
@@ -331,7 +331,7 @@ class CScriptContext
 
         bool8 IsMainThread() const { return (mIsMainThread); }
 
-        void InitializeDirectory();
+        void InitializeDirectory(bool init_exe);
         bool8 SetDirectory(const char* path);
         const char* GetDirectory() const { return mCurrentWorkingDirectory; }
         bool8 GetFullPath(const char* in_file_name,char* out_full_path,int32 in_max_length);
@@ -465,7 +465,7 @@ class CScriptContext
         int32 mDebuggerVarWatchRequestID;
 
         // -- communication with the debugger
-        void DebuggerCurrentWorkingDir(const char* cwd);
+        void DebuggerNotifyDirectories(const char* cwd, const char* exe_dir);
         void DebuggerCodeblockLoaded(uint32 codeblock_hash);
         void DebuggerBreakpointHit(int32 watch_var_request_id, uint32 codeblock_hash, int32 line_number);
         void DebuggerBreakpointConfirm(uint32 codeblock_hash, int32 line_number, int32 actual_line_number);
@@ -560,6 +560,7 @@ class CScriptContext
         CScheduler* mScheduler;
 
         // -- current working directory 
+        char mExecutableDirectory[kMaxNameLength];
         char mCurrentWorkingDirectory[kMaxNameLength];
 
         // -- when a script function returns (even void), a value is always pushed
