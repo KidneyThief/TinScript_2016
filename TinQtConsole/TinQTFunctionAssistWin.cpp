@@ -1147,7 +1147,8 @@ void CFunctionParameterList::PopulateWithOrigin(int32 stack_size,const uint32* f
 
     for (int i = 0; i < stack_size; ++i)
     {
-        const char* file_name = TinScript::UnHash(file_hash_array[i]);
+        const char* full_path = TinScript::UnHash(file_hash_array[i]);
+        const char* file_name = CConsoleWindow::GetInstance()->GetDebugSourceWin()->GetFileName(full_path);
         CFunctionParameterEntry* new_parameter =
             new CFunctionParameterEntry(file_name, file_hash_array[i], line_array[i], this);
         mParameterList.append(new_parameter);

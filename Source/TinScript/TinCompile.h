@@ -980,13 +980,27 @@ class CCodeBlock
 
         void AddLineNumber(int32 linenumber, uint32* instrptr)
         {
+            // -- sanity check
+            if (linenumber < 0)
+                return;
+
+            // -- if this instruction is for the same line number, we only track the first
+            if (linenumber == mLineNumberCurrent)
+                return;
+
+            mLineNumberCurrent = linenumber;
+
+            // -- if we have a line numbers array, then we've already allocated our instruction block,
+            // and we're about to populate the array with actual instruction offsets
             if (mLineNumbers)
             {
                 uint32 offset = CalcOffset(instrptr);
                 mLineNumbers[mLineNumberIndex++] = (offset << 16) + (linenumber & (0xffff));
             }
             else
+            {
                 ++mLineNumberCount;
+            }
         }
 
 		const uint32 GetInstructionCount() const { return (mInstrCount); }
@@ -994,19 +1008,16 @@ class CCodeBlock
 		uint32* GetInstructionPtr() { return (mInstrBlock); }
 
 		const uint32 GetLineNumberCount() const { return (mLineNumberCount); }
+
         void SetLineNumberCount(uint32 line_count) { mLineNumberCount = line_count; }
 		uint32* GetLineNumberPtr() { return (mLineNumbers); }
 
-        uint32 CalcLineNumber(const uint32* instrptr, bool* isNewLine = NULL) const
+        uint32 CalcLineNumber(const uint32* instrptr) const
         {
 
 #if !TIN_DEBUGGER
     return (0);
 #endif
-            // -- initialize the result
-            if (isNewLine)
-                *isNewLine = false;
-
             if (!instrptr || mLineNumberCount == 0)
                 return (0);
 
@@ -1018,32 +1029,10 @@ class CCodeBlock
             {
                 uint32 offset = mLineNumbers[lineindex] >> 16;
                 uint32 line = mLineNumbers[lineindex] & 0xffff;
-                if (line != 0xffff)
-                {
-                    // -- see if the current offset falls within range of this line
-                    if (offset <= curoffset)
-                        linenumber = line;
-                    if (offset >= curoffset)
-                    {
-                        // -- set the result
-                        if (isNewLine)
-                        {
-                            // -- check the previous valid instruction - see if it's on the same line or not
-                            *isNewLine = true;
-                            int32 testlineindex = lineindex;
-                            while (--testlineindex >= 0)
-                            {
-                                uint32 testline = mLineNumbers[testlineindex] & 0xffff;
-                                if (testline != 0xffff)
-                                {
-                                    *isNewLine = (testline != linenumber);
-                                    break;
-                                }
-                            }
-                        }
-                        break;
-                    }
-                }
+
+                if (offset > curoffset)
+                    break;
+                linenumber = line;
             }
 
             return (linenumber);
@@ -1135,6 +1124,7 @@ class CCodeBlock
         // -- keep track of the linenumber offsets
         uint32 mLineNumberIndex;
         uint32 mLineNumberCount;
+        int32 mLineNumberCurrent;
         uint32* mLineNumbers;
 
         // -- need to keep a list of all functions that are tied to this codeblock

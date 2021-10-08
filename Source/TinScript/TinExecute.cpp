@@ -972,6 +972,10 @@ bool8 CCodeBlock::Execute(uint32 offset, CExecStack& execstack, CFunctionCallSta
     }
 #endif
 
+    // -- we'll track which line is we're on, so breakpoints only trigger
+    // for the instrution, the *first* time the requested line number is being executed
+    mLineNumberCurrent = -1;
+
     // -- initialize the function return value
     GetScriptContext()->SetFunctionReturnValue(NULL, TYPE_NULL);
 
@@ -995,8 +999,9 @@ bool8 CCodeBlock::Execute(uint32 offset, CExecStack& execstack, CFunctionCallSta
             script_context->mDebuggerConnected && (funccallstack.mDebuggerBreakStep || HasBreakpoints()))
         {
             // -- get the current line number - see if we should break
-            bool isNewLine = false;
-            int32 cur_line = CalcLineNumber(instrptr, &isNewLine);
+            int32 cur_line = CalcLineNumber(instrptr);
+            bool isNewLine = mLineNumberCurrent != cur_line;
+            mLineNumberCurrent = cur_line;
 
             // -- break if we're stepping, and on a new line
             // -- if we're stepping out or over, then there's a stack depth we want to be at or below

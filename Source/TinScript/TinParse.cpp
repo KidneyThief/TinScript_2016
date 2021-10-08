@@ -962,16 +962,33 @@ void DumpFuncEntry(CScriptContext* script_context, CFunctionEntry* fe)
     CFunctionContext* func_context = fe->GetContext();
     eVarType return_type = func_context->GetParameterCount() > 0 ? func_context->GetParameter(0)->GetType()
                                                                  : TYPE_void;
-    // -- print the signature start, and the input parameters (starting at 1)
-    TinPrint(script_context,"    %s %s(", GetRegisteredTypeName(return_type), UnHash(fe->GetHash()));
+
+    // -- some engines have print functions that auto-append EOL, so we want to print the signature as one line
+    int32 length_left = kMaxTokenLength;
+    char signature_buf[kMaxTokenLength];
+    char* sig_ptr = signature_buf;
+
+    // -- print the signature start
+    int len = sprintf_s(sig_ptr, length_left, "    %s %s(", GetRegisteredTypeName(return_type), UnHash(fe->GetHash()));
+    length_left -= len;
+    sig_ptr += len;
+
+    // -- print the input parameters (starting at 1)
     for (int32 i = 1; i < func_context->GetParameterCount(); ++i)
     {
         // -- subsequent params need commas...
         CVariableEntry* param = func_context->GetParameter(i);
-        TinPrint(script_context, "%s%s %s", (i >= 2 ? ", " : ""), GetRegisteredTypeName(param->GetType()),
-                                            UnHash(param->GetHash()));
+        len = sprintf_s(sig_ptr, length_left, "%s%s %s", (i >= 2 ? ", " : ""), GetRegisteredTypeName(param->GetType()),
+                                              UnHash(param->GetHash()));
+        length_left -= len;
+        sig_ptr += len;
+        if (length_left <= 0)
+            break;
     }
-    TinPrint(script_context,")\n");
+
+    // -- close the signature string, and print
+    sprintf_s(sig_ptr, length_left, ")\n");
+    TinPrint(script_context, signature_buf);
 }
 
 // ====================================================================================================================
@@ -2660,7 +2677,7 @@ bool8 TryParseSwitchStatement(CCodeBlock* codeblock, tReadToken& filebuf, CCompi
                 }
                 else
                 {
-                    // -- setdefault...  make sure it's the only one
+                    // -- set default...  make sure it's the only one
                     case_statement->SetDefaultCase();
                     if (!switch_node->SetDefaultNode(case_statement))
                     {
@@ -4834,7 +4851,7 @@ bool8 SaveBinary(CCodeBlock* codeblock, const char* binfilename)
     remaining = codeblock->GetLineNumberCount();
     instrptr = codeblock->GetLineNumberPtr();
 
-    while (remaining > 0) {
+    while (instrptr != nullptr && remaining > 0) {
         int32 writecount = remaining > (BUFSIZ >> 2) ? (BUFSIZ >> 2) : remaining;
         remaining -= writecount;
         int32 instrwritten = (int32)fwrite((void*)instrptr, (int32)sizeof(uint32), writecount, filehandle);
@@ -4985,10 +5002,10 @@ CCodeBlock* LoadBinary(CScriptContext* script_context, const char* filename, con
     // -- read the debug symbols into the codeblock
     // -- note:  the compile flag is only to prevent writing excess debug info
     // -- if the debug line offsets are already in the binary, might as well read them
-    if (linenumbercount > 0)
+    if (linenumbercount > 0 && codeblock->GetLineNumberPtr() != nullptr)
     {
-        uint32* readptr = codeblock->GetLineNumberPtr();
-        instrread = (int32)fread(readptr, sizeof(uint32), (int32)linenumbercount, filehandle);
+        uint32* readptr_0 = codeblock->GetLineNumberPtr();
+        instrread = (int32)fread(readptr_0, sizeof(uint32), (int32)linenumbercount, filehandle);
         if (ferror(filehandle))
         {
             fclose(filehandle);

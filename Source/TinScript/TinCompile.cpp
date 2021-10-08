@@ -3567,7 +3567,8 @@ CCodeBlock::CCodeBlock(CScriptContext* script_context, const char* _filename)
     // -- keep track of the linenumber offsets
     mLineNumberIndex = 0;
     mLineNumberCount = 0;
-    mLineNumbers = NULL;
+    mLineNumberCurrent = -1;
+    mLineNumbers = nullptr;
 }
 
 // ====================================================================================================================
@@ -3579,7 +3580,7 @@ CCodeBlock::~CCodeBlock()
 		TinFreeArray(mInstrBlock);
 
 	// -- clear out the breakpoints list
-	// -- do this before clearing functions, since conditionals/trace points contain funtion definitions
+	// -- do this before clearing functions, since conditionals/trace points contain function definitions
 	mBreakpoints->DestroyAll();
 	TinFree(mBreakpoints);
 
@@ -3603,7 +3604,7 @@ int32 CCodeBlock::CalcInstrCount(const CCompileTreeNode& root)
 {
 	// -- the root is always a NOP, which will loop through and eval its siblings
 	uint32* instrptr = NULL;
-    int32 mInstrCount = 0;
+    int32 instr_count = 0;
 
     // -- add the size needed to store this block's global variables
     int32 var_table_instr_count = CompileVarTable(smCurrentGlobalVarTable, instrptr, true);
@@ -3613,7 +3614,7 @@ int32 CCodeBlock::CalcInstrCount(const CCompileTreeNode& root)
                       "Error - Unable to calculate the var table size for file: %s\n", GetFileName());
         return (-1);
     }
-    mInstrCount += var_table_instr_count;
+    instr_count += var_table_instr_count;
 
     // -- run through the tree, calculating the size needed to contain the compiled code
     int32 instruction_count = root.Eval(instrptr, TYPE_void, true);
@@ -3624,12 +3625,12 @@ int32 CCodeBlock::CalcInstrCount(const CCompileTreeNode& root)
         return (-1);
     }
 
-	mInstrCount += instruction_count;
+    instr_count += instruction_count;
 
     // -- add one to account for the OP_EOF added to the end of every code block
-    ++mInstrCount;
+    ++instr_count;
 
-    return mInstrCount;
+    return instr_count;
 }
 
 // ====================================================================================================================
