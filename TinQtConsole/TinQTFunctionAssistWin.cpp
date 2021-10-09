@@ -530,6 +530,17 @@ void CDebugFunctionAssistWin::SetAssistObjectID(uint32 object_id)
 }
 
 // ====================================================================================================================
+// GetAssistObjectID():  returns the assist object if set, otherwise the selected object in the search
+// ====================================================================================================================
+uint32 CDebugFunctionAssistWin::GetAssistObjectID() const
+{
+    if (mSearchObjectID > 0)
+        return (mSearchObjectID);
+    else
+        return (mSelectedObjectID);
+}
+
+// ====================================================================================================================
 // NotifyFunctionClicked():  Selecting a function entry populates the parameter list.
 // ====================================================================================================================
 void CDebugFunctionAssistWin::NotifyFunctionClicked(TinScript::CDebuggerFunctionAssistEntry* list_entry)
@@ -621,10 +632,9 @@ void CDebugFunctionAssistWin::OnButtonShowAPIPressed()
 // ====================================================================================================================
 void CDebugFunctionAssistWin::OnButtonShowOriginPressed()
 {
-    if (mSearchObjectID > 0)
-        DisplayObjectOrigin(mSearchObjectID);
-    else if (mSelectedObjectID > 0)
-        DisplayObjectOrigin(mSelectedObjectID);
+    uint32 assist_object_id = GetAssistObjectID();
+    if (assist_object_id > 0)
+        DisplayObjectOrigin(assist_object_id);
 }
 
 // ====================================================================================================================
@@ -757,10 +767,9 @@ bool CDebugFunctionAssistWin::GetSelectedWatchExpression(int32& out_use_watch_id
     *out_watch_string = '\0';
     *out_value_string = '\0';
 
-    if (mSearchObjectID > 0)
-        sprintf_s(out_watch_string, max_expr_length,"%d", mSearchObjectID);
-    else if (mSelectedObjectID > 0)
-        sprintf_s(out_watch_string, max_expr_length,"%d", mSelectedObjectID);
+    uint32 assist_object_id = GetAssistObjectID();
+    if (assist_object_id > 0)
+        sprintf_s(out_watch_string, max_expr_length,"%d", assist_object_id);
 
     return true;
 }

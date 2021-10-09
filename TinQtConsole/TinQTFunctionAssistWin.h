@@ -84,7 +84,8 @@ class CDebugFunctionAssistWin : public QWidget
         void NotifyFunctionDoubleClicked(TinScript::CDebuggerFunctionAssistEntry* list_entry);
 
         // -- if this window is selected when we try to create a new watch expression, use
-        // the assist object 
+        // the assist object (from the browser), or the selected object from the search
+        uint32 GetAssistObjectID() const;
         bool GetSelectedWatchExpression(int32& out_use_watch_id, char* out_watch_string, int32 max_expr_length,
                                         char* out_value, int32 max_value_length);
 

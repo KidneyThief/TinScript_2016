@@ -483,8 +483,11 @@ void MainWindow::menuCreateObjectInspector()
 	    object_id = CConsoleWindow::GetInstance()->GetDebugWatchesWin()->GetSelectedObjectID();
     else if (CConsoleWindow::GetInstance()->GetDebugAutosWin()->hasFocus())
 	    object_id = CConsoleWindow::GetInstance()->GetDebugAutosWin()->GetSelectedObjectID();
-    else if (CConsoleWindow::GetInstance()->GetDebugObjectBrowserWin()->hasFocus())
-        object_id = CConsoleWindow::GetInstance()->GetDebugObjectBrowserWin()->GetSelectedObjectID();
+
+    // $$$TZA having difficulty determining ObjectBrowserWin()->hasFocus()
+    // -- if we haven't set an object ID yet from a watch, then use the assist object id
+    if (object_id == 0)
+        object_id = CConsoleWindow::GetInstance()->GetDebugFunctionAssistWin()->GetAssistObjectID();
 
     // -- if we found a valid object, initialize the dialog
     if (object_id > 0)
