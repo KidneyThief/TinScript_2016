@@ -71,8 +71,15 @@ class CExecStack
             // -- if we're pushing a hash table, we don't want to dereference the pointer
             if (contenttype == TYPE_hashtable)
             {
+// -- in 64-bit, we push the actual HashTable address, and TinTypes.h
+// defines TYPE_hashtable as needing an extra 4 bytes
+#if BUILD_64								
+                *mStackTop++ = kPointer64UpperUInt32(content);
+				*mStackTop++ = kPointer64LowerUInt32(content);
+#else
 			    uint32* contentptr = (uint32*)content;
                 *mStackTop++ = (uint32)contentptr;
+#endif				
             }
             else
             {
@@ -128,7 +135,17 @@ class CExecStack
             // -- for hashtables, match the Push(), where the address was assigned directly to the contents
             else if (contenttype == TYPE_hashtable)
             {
+// -- in 64-bit, we push the actual HashTable address, and TinTypes.h
+// defines TYPE_hashtable as needing an extra 4 byte
+// -- note:  the upper and lower are in reverse order on the stack
+#if BUILD_64												
+				uint32 ht_addr_upper = mStackTop[0];
+				uint32 ht_addr_lower = mStackTop[1];
+                uint64* void_ptr_64 = kPointer64FromUInt32(ht_addr_upper, ht_addr_lower);
+                return void_ptr_64;
+#else
                 return ((void*)(*mStackTop));
+#endif				
             }
 
 			return ((void*)mStackTop);

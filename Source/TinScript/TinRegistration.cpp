@@ -75,7 +75,7 @@ CFunctionContext* CRegFunctionBase::CreateContext()
         TinScript::GetContext()->GetStringTable()->AddString(m_FunctionName, -1, m_FunctionNameHash, true);
 
         tFuncTable* methodtable = TinScript::GetContext()->FindNamespace(m_ClassNameHash)->GetFuncTable();
-        methodtable->AddItem(*fe,m_FunctionNameHash);
+        methodtable->AddItem(*fe, m_FunctionNameHash);
         found = fe->GetContext();
     }
 

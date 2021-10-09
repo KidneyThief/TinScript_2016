@@ -30,6 +30,7 @@
 // -- system includes -------------------------------------------------------------------------------------------------
 
 #include <new>
+#include <cstdint>
 
 // -- The stack size is a limiting factor, if TinScript is to be used for any recursive scripting.
 // -- Highly recommended to avoid this, as there are no optimizations (such as tail-end recursion)
@@ -44,32 +45,52 @@
     #define MEMORY_TRACKER_ENABLE 0
 #endif
 
+// -- define whether we're 64-bit
+// note:  not overly robust, as otherwise, we force 32-bit
+// -- until we actually port TinScript to other platforms,
+// 32-bit windows and 64-bit windows UE4 are my only tested environments
+#if INTPTR_MAX == INT64_MAX
+    #define BUILD_64 1
+#else
+    #define BUILD_64 0
+#endif
+
+// -- some platforms (e.g. UE4) need special treatment
+// -- modify the target copy of this file with the appropriate define(s)
+#define PLATFORM_UE4 0
+
 // ------------------------------------------------------------------------------------------------
 // -- TYPES
 // ------------------------------------------------------------------------------------------------
 
 // NOTE:  if you change typedef int32 from an int (to say, a long), the registered types in TinTypes.h will not match
+#if !PLATFORM_UE4
+    typedef char                int8;
+    typedef unsigned char       uint8;
+    typedef short               int16;
+    typedef unsigned short      uint16;
+    typedef int                 int32;
+    typedef unsigned int        uint32;
+    typedef long long           int64;
+    typedef unsigned long long  uint64;
+#endif
+// -- a little unusual - pre-Cx11, I wanted all types to have a width specifier
 typedef bool                bool8;
-typedef char                int8;
-typedef unsigned char       uint8;
-typedef short               int16;
-typedef unsigned short      uint16;
-typedef int                 int32;
-typedef unsigned int        uint32;
-typedef long long           int64;
-typedef unsigned long long  uint64;
 typedef float               float32;
 
 #define kBytesToWordCount(a) ((a) + 3) / 4;
 #define kPointerToUInt64(a) (*(uint64*)(&a))
 
 // -- pointer conversion macros to assist with compiler complaints
-#ifdef WIN32
-#define kPointerToUInt32(a) ((uint32)(*(uint32*)(&a)))
-#define kPointerDiffUInt32(a, b) ((uint32)(((uint32)(a)) - ((uint32)(b))))
+#if !BUILD_64
+    #define kPointerToUInt32(a) ((uint32)(*(uint32*)(&a)))
+    #define kPointerDiffUInt32(a, b) ((uint32)(((uint32)(a)) - ((uint32)(b))))
 #else
-#define kPointerToUInt32(a) ((uint32)(*(uint64*)(&a)))
-#define kPointerDiffUInt32(a, b) ((uint32)(((uint64)(a)) - ((uint64)(b))))
+    #define kPointerToUInt32(a) ((uint32)(*(uint64*)(&a)))
+    #define kPointerDiffUInt32(a, b) ((uint32)(((uint64)(a)) - ((uint64)(b))))
+    #define kPointer64FromUInt32(a, b) ((uint64*)((static_cast<uint64>(a) << 32) + (static_cast<uint64>(b))))
+    #define kPointer64UpperUInt32(a) ((uint32)(((uint64)a) >> 32))
+    #define kPointer64LowerUInt32(a) ((uint32)(((uint64)a) & 0xffffffff))
 #endif
 
 #define Unused_(var) __pragma(warning(suppress:4100)) var
@@ -226,7 +247,7 @@ typedef bool8 (*TinAssertHandler)(TinScript::CScriptContext* script_context, con
 							!scriptcontext->mDebuggerBreakLoopGuard)) {                         \
             if(!scriptcontext->GetAssertHandler()(scriptcontext, #condition, file, linenumber,  \
                                                   fmt, ##__VA_ARGS__)) {                        \
-                __asm   int 3                                                                   \
+                __debugbreak();                                                                 \
             }                                                                                   \
         }                                                                                       \
     }

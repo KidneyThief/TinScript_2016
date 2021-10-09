@@ -23,8 +23,18 @@
 // unittest.cpp
 // ------------------------------------------------------------------------------------------------
 
+#include "integration.h"
+
+#if PLATFORM_UE4
+	#undef TEXT
+	#define WIN32_LEAN_AND_MEAN
+#endif
+
 // -- lib includes
 #include "stdio.h"
+
+// -- platform includes
+#include <Windows.h>
 
 #include "mathutil.h"
 
@@ -32,6 +42,7 @@
 #include "TinHash.h"
 #include "TinScript.h"
 #include "TinRegistration.h"
+#include "registrationexecs.h"
 
 // -- use the DECLARE_FILE/REGISTER_FILE macros to prevent deadstripping
 DECLARE_FILE(unittest_cpp);
@@ -145,13 +156,23 @@ IMPLEMENT_SCRIPT_CLASS_BEGIN(CBase, VOID)
     REGISTER_MEMBER(CBase, stringArray, stringArray);
 IMPLEMENT_SCRIPT_CLASS_END()
 
-REGISTER_METHOD(CBase, GetFloatValue, GetFloatValue);
-REGISTER_METHOD(CBase, GetIntValue, GetIntValue);
-REGISTER_METHOD(CBase, GetBoolValue, GetBoolValue);
+#if PLATFORM_UE4
+    REGISTER_METHOD_P0(CBase, GetFloatValue, GetFloatValue, float32);
+    REGISTER_METHOD_P0(CBase, GetIntValue, GetIntValue, int32);
+    REGISTER_METHOD_P0(CBase, GetBoolValue, GetBoolValue, bool8);
 
-REGISTER_METHOD(CBase, SetFloatValue, SetFloatValue);
-REGISTER_METHOD(CBase, SetIntValue, SetIntValue);
-REGISTER_METHOD(CBase, SetBoolValue, SetBoolValue);
+    REGISTER_METHOD_P1(CBase, SetFloatValue, SetFloatValue, void, float32);
+    REGISTER_METHOD_P1(CBase, SetIntValue, SetIntValue, void, int32);
+    REGISTER_METHOD_P1(CBase, SetBoolValue, SetBoolValue, void, bool8);
+#else
+    REGISTER_METHOD(CBase, GetFloatValue, GetFloatValue);
+    REGISTER_METHOD(CBase, GetIntValue, GetIntValue);
+    REGISTER_METHOD(CBase, GetBoolValue, GetBoolValue);
+
+    REGISTER_METHOD(CBase, SetFloatValue, SetFloatValue);
+    REGISTER_METHOD(CBase, SetIntValue, SetIntValue);
+    REGISTER_METHOD(CBase, SetBoolValue, SetBoolValue);
+#endif	
 
 class CChild : public CBase {
     public:
@@ -872,9 +893,6 @@ void BeginUnitTests(bool8 results_only = false, const char* specific_test = NULL
     }
 }
 
-#ifdef WIN32
-
-#include <Windows.h>
 DWORD WINAPI MyThreadFunction(LPVOID lpParam)
 {
     // -- create a new script context
@@ -997,43 +1015,30 @@ void BeginMultiThreadTest()
     MTPrint("*** MULTI THREAD TEST COMPLETE ****\n");
 }
 
-#else
-
-void BeginMultiThreadTest()
-{
-    MTPrint("BeginThreadTest() is only implemented in WIN32\n");
-}
-
-#endif
-
 REGISTER_FUNCTION(BeginUnitTests, BeginUnitTests);
 REGISTER_FUNCTION(BeginMultiThreadTest, BeginMultiThreadTest);
 
 // -- useful for profiling
-#ifdef WIN32
-	#include "windows.h"
-    #include "TinExecute.h"
-	void BeginProfilingTests()
-	{
-        TinScript::ExecScript(kProfilingTestScriptName);
+void BeginProfilingTests()
+{
+    TinScript::ExecScript(kProfilingTestScriptName);
 
-        uint32 func_hash = TinScript::Hash("CallFromCode");
+    uint32 func_hash = TinScript::Hash("CallFromCode");
 
-        printf("TinScript Start CallMe()\n");
-        int count = 10000;
-        int32 cur_time = GetTickCount();
-        for (int i = 0; i < count; ++i)
-        {
-            int32 result = 0;
-            //TinScript::ExecF(result, "CallMe();", 56, 24);
-            TinScript::ExecFunction(result, func_hash, 56, 24, "cat ");
-        }
-        int32 elapsed = GetTickCount() - cur_time;
-        printf("TinScript time: %d\n", elapsed);
-	}
+    printf("TinScript Start CallMe()\n");
+    int count = 10000;
+    int32 cur_time = GetTickCount();
+    for (int i = 0; i < count; ++i)
+    {
+        int32 result = 0;
+        //TinScript::ExecF(result, "CallMe();", 56, 24);
+        TinScript::ExecFunction(result, func_hash, 56, 24, "cat ");
+    }
+    int32 elapsed = GetTickCount() - cur_time;
+    printf("TinScript time: %d\n", elapsed);
+}
 
-	REGISTER_FUNCTION(BeginProfilingTests, BeginProfilingTests);
-#endif
+REGISTER_FUNCTION(BeginProfilingTests, BeginProfilingTests);
 
 // --------------------------------------------
 
@@ -1053,7 +1058,6 @@ void PrintType(int index)
 {
     printf("t%d: %s\n", index, TinScript::GetRegisteredTypeName(TinScript::GetRegisteredType(TinScript::GetTypeID<T>())));
 }
-
 
 // -- macro is simply a wrapper to the templated implementations - it'll find the one with the matching number of args...
 #define PRINT_TYPES(...) PrintTypes<__VA_ARGS__>();
@@ -1197,8 +1201,13 @@ REGISTER_FUNCTION(TestArg3, TestArg3)
 REGISTER_FUNCTION(VoidArg1, VoidArg1)
 REGISTER_FUNCTION(VoidStr1, VoidStr1)
 
-REGISTER_METHOD(CBase, TestP1, TestP1)
-REGISTER_METHOD(CBase, VoidP1, VoidP1)
+#if PLATFORM_UE4
+	REGISTER_METHOD_P1(CBase, TestP1, TestP1, int32, int32)
+	REGISTER_METHOD_P1(CBase, VoidP1, VoidP1, void, int32)
+#else
+    REGISTER_METHOD(CBase, TestP1, TestP1)
+    REGISTER_METHOD(CBase, VoidP1, VoidP1)
+#endif	
 
 // ------------------------------------------------------------------------------------------------
 // eof

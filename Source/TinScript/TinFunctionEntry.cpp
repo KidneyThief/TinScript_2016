@@ -246,7 +246,6 @@ void CFunctionContext::InitStackVarOffsets(CFunctionEntry* fe)
     int32 stackoffset = 0;
 
     // -- loop the parameters
-    int32 paramcount = GetParameterCount();
     for(int32 i = 0; i < paramcount; ++i)
     {
         CVariableEntry* ve = GetParameter(i);

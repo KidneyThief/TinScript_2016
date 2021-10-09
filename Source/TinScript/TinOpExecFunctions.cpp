@@ -357,8 +357,8 @@ bool8 GetStackValue(CScriptContext* script_context, CExecStack& execstack,
 
         // -- get the corresponding stack variable
         int32 stacktop = 0;
-        CObjectEntry* oe = NULL;
-        CFunctionEntry* fe = funccallstack.GetExecuting(oe, stacktop);
+        CObjectEntry* stack_oe = NULL;
+        CFunctionEntry* fe = funccallstack.GetExecuting(stack_oe, stacktop);
         if (!fe)
             return (false);
 
@@ -382,9 +382,9 @@ bool8 GetStackValue(CScriptContext* script_context, CExecStack& execstack,
 		    int32 debugger_session = 0;
 		    if (script_context->IsDebuggerConnected(debugger_session))
 		    {
-			    int32 stacktop = 0;
-			    CObjectEntry* oe = NULL;
-			    CFunctionEntry* fe = funccallstack.GetExecuting(oe, stacktop);
+			    stacktop = 0;
+			    stack_oe = NULL;
+			    fe = funccallstack.GetExecuting(stack_oe, stacktop);
 			    if (fe && fe->GetLocalVarTable())
 			    {
 				    // -- find the variable with the matching stackvaroffset
@@ -429,8 +429,16 @@ bool8 GetStackValue(CScriptContext* script_context, CExecStack& execstack,
     else if (valtype == TYPE__podmember)
     {
         // -- the type and address of the variable/value has already been pushed
+// -- in a 64-bit environment, we need to pull the type, and re-assemble
+// the address from the stack		
+#if BUILD_64		
+        uint32* val_addr_64 = (uint32*)(valaddr);
+        valtype = (eVarType)(val_addr_64[0]);
+        valaddr = kPointer64FromUInt32(val_addr_64[1], val_addr_64[2]);
+#else
         valtype = (eVarType)((uint32*)valaddr)[0];
         valaddr = (void*)((uint32*)valaddr)[1];
+#endif
     }
 
     // -- if we weren't able to resolve the address for the actual value storage, then we'd better
@@ -589,7 +597,7 @@ bool8 PerformBinaryOpPush(CScriptContext* script_context, CExecStack& execstack,
 
     // -- if we found an operation, see if it can be performed successfully
     char result[MAX_TYPE_SIZE * sizeof(uint32)];
-    eVarType result_type;
+    eVarType result_type = TYPE__resolve;
 
     bool success = (priority_op_func && priority_op_func(script_context, op, result_type, (void*)result,
                                                          val0type, val0, val1type, val1));
@@ -716,7 +724,6 @@ bool8 PerformAssignOp(CScriptContext* script_context, CExecStack& execstack, CFu
         return (false);
 
     // -- if the variable is a local variable, we also have the actual address already
-    // $$$TZA FIXME!
     use_var_addr = use_var_addr || (ve0 && ve0->IsStackVariable(funccallstack, false));
 
     // -- ensure we're assigning to a variable, an object member, or a local stack variable
@@ -1762,9 +1769,18 @@ bool8 OpExecPushPODMember(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, C
 
     // -- the new type we're going to push is a TYPE__podmember
     // -- which is of the format:  TYPE__podmember vartype, varaddr
+// note:  64-bit, we push the upper and lower 64-bit address
+#if BUILD_64
+    uint32 varbuf[3];
+    varbuf[0] = pod_member_type;
+    varbuf[1] = kPointer64UpperUInt32(pod_member_addr);
+	varbuf[2] = kPointer64LowerUInt32(pod_member_addr);
+#else
     uint32 varbuf[2];
     varbuf[0] = pod_member_type;
     varbuf[1] = (uint32)pod_member_addr;
+#endif	
+
     execstack.Push((void*)varbuf, TYPE__podmember);
     DebugTrace(op, "POD Mem %s: %s", UnHash(varhash), DebugPrintVar(pod_member_addr, pod_member_type));
 
@@ -2655,8 +2671,8 @@ bool8 OpExecArrayVarDecl(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CE
     // -- note:  by definition, hash table entries are dynamic
     else if (!hte)
     {
-        CVariableEntry* hte = TinAlloc(ALLOC_VarEntry, CVariableEntry, cb->GetScriptContext(), UnHash(hashvalue),
-                                       hashvalue, vartype, 1, false, 0, true);
+        hte = TinAlloc(ALLOC_VarEntry, CVariableEntry, cb->GetScriptContext(), UnHash(hashvalue),
+                       hashvalue, vartype, 1, false, 0, true);
         hashtable->AddItem(*hte, hashvalue);
     }
 

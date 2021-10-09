@@ -363,6 +363,16 @@ typedef void* (*TypeConvertFunction)(CScriptContext* script_context, eVarType fr
 // -- for example if one of the values is a float, and one is an int, the float version of the operation
 // -- will be chosen.  E.g. (3.5f * 10) is 35 using a float op, whereas (3.5f * 10) is 30 in integer math
 
+// note:  a difference between 64-bit and 32-bit is pointer size, which affects
+// hashtables and pod members, as both var types are pushed on the exec stack by pointer value
+#if BUILD_64
+	#define POD_SIZE 12
+	#define HT_SIZE 8
+#else
+	#define POD_SIZE 8
+	#define HT_SIZE 4
+#endif		
+
 #define FIRST_VALID_TYPE TYPE_hashtable
 #define LAST_VALID_TYPE TYPE_vector3f
 #define VarTypeTuple \
@@ -372,9 +382,9 @@ typedef void* (*TypeConvertFunction)(CScriptContext* script_context, eVarType fr
 	VarTypeEntry(_stackvar,     12,		IntToString,		StringToInt,        uint8,          NULL)   	        \
 	VarTypeEntry(_var,          12,		IntToString,		StringToInt,        uint8,          NULL)   	        \
 	VarTypeEntry(_member,       8,		IntToString,		StringToInt,        sMember,        NULL)           	\
-	VarTypeEntry(_podmember,    8,		IntToString,		StringToInt,        sPODMember,     NULL)           	\
+	VarTypeEntry(_podmember,    POD_SIZE,		IntToString,		StringToInt,        sPODMember,     NULL)           	\
 	VarTypeEntry(_hashvarindex, 16,		IntToString,		StringToInt,        sHashVarIndex,  NULL)           	\
-    VarTypeEntry(hashtable,     4,      IntToString,        StringToInt,        sHashTable,     NULL)               \
+    VarTypeEntry(hashtable,     HT_SIZE,      IntToString,        StringToInt,        sHashTable,     NULL)               \
 	VarTypeEntry(object,        4,		IntToString,		StringToInt,        uint32,         ObjectConfig)       \
     VarTypeEntry(string,        4,      STEToString,        StringToSTE,        const char*,    StringConfig)       \
 	VarTypeEntry(float,		    4,		FloatToString,		StringToFloat,      float32,        FloatConfig)        \

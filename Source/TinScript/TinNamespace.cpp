@@ -140,7 +140,7 @@ void CObjectEntry::CallFunctionHierarchy(uint32 function_hash, bool8 ascending)
     {
         int32 depth = 0;
         CNamespace* namespace_stack[256];
-        CNamespace *obj_ns = GetNamespace();
+        CNamespace* obj_ns = GetNamespace();
         while (obj_ns)
         {
             namespace_stack[depth++] = obj_ns;
@@ -150,7 +150,7 @@ void CObjectEntry::CallFunctionHierarchy(uint32 function_hash, bool8 ascending)
         // -- now that we have the stack, work backwards and execute the function (if it exists) at each level
         while (depth > 0)
         {
-            CNamespace *obj_ns = namespace_stack[--depth];
+            obj_ns = namespace_stack[--depth];
             CFunctionEntry* fe = obj_ns->GetFuncTable()->FindItem(function_hash);
             if (fe)
             {
@@ -165,10 +165,10 @@ void CObjectEntry::CallFunctionHierarchy(uint32 function_hash, bool8 ascending)
         }
     }
 
-    // -- not asending - simply call through the hierarchy directly
+    // -- not ascending - simply call through the hierarchy directly
     else
     {
-        CNamespace *obj_ns = GetNamespace();
+        CNamespace* obj_ns = GetNamespace();
         while (obj_ns)
         {
             CFunctionEntry* fe = obj_ns->GetFuncTable()->FindItem(function_hash);
@@ -1320,7 +1320,7 @@ bool8 CScriptContext::SaveObjectTree(uint32 object_id, const char* savefilename)
     {
         // -- create the objects
         FileWritef(filehandle, "\n    // -- Create the objects --");
-        CObjectEntry* oe = GetObjectDictionary()->First();
+        oe = GetObjectDictionary()->First();
         while (oe)
         {
             if (!oe->GetObjectGroup())

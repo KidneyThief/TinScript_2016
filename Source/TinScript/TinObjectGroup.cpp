@@ -765,47 +765,85 @@ uint32 CGroupIterator::GetGroup()
 IMPLEMENT_SCRIPT_CLASS_BEGIN(CObjectSet, VOID)
 IMPLEMENT_SCRIPT_CLASS_END()
 
-REGISTER_METHOD(CObjectSet, Contains, Contains);
-REGISTER_METHOD(CObjectSet, AddObject, AddObject);
-REGISTER_METHOD(CObjectSet, InsertObject, InsertObject);
-REGISTER_METHOD(CObjectSet, RemoveObject, RemoveObject);
-REGISTER_METHOD(CObjectSet, ListObjects, ListObjects);
-REGISTER_METHOD(CObjectSet, RemoveAll, RemoveAll);
+#if PLATFORM_UE4
+    REGISTER_METHOD_P1(CObjectSet,Contains,Contains,bool8,uint32);
+    REGISTER_METHOD_P1(CObjectSet,AddObject,AddObject,void,uint32);
+    REGISTER_METHOD_P2(CObjectSet,InsertObject,InsertObject,void,uint32,int32);
+    REGISTER_METHOD_P1(CObjectSet,RemoveObject,RemoveObject,void,uint32);
+    REGISTER_METHOD_P1(CObjectSet,ListObjects,ListObjects,void,int32);
+    REGISTER_METHOD_P0(CObjectSet,RemoveAll,RemoveAll,void);
 
-REGISTER_METHOD(CObjectSet, First, First);
-REGISTER_METHOD(CObjectSet, Next, Next);
-REGISTER_METHOD(CObjectSet, Prev, Prev);
-REGISTER_METHOD(CObjectSet, Last, Last);
-REGISTER_METHOD(CObjectSet, Current, Current);
+    REGISTER_METHOD_P0(CObjectSet,First,First,uint32);
+    REGISTER_METHOD_P0(CObjectSet,Next,Next,uint32);
+    REGISTER_METHOD_P0(CObjectSet,Prev,Prev,uint32);
+    REGISTER_METHOD_P0(CObjectSet,Last,Last,uint32);
+    REGISTER_METHOD_P0(CObjectSet,Current,Current,uint32);
 
-REGISTER_METHOD(CObjectSet, IsFirst, IsFirst);
-REGISTER_METHOD(CObjectSet, IsLast, IsLast);
+    REGISTER_METHOD_P1(CObjectSet,IsFirst,IsFirst,bool8,uint32);
+    REGISTER_METHOD_P1(CObjectSet,IsLast,IsLast,bool8,uint32);
 
-REGISTER_METHOD(CObjectSet, Used, Used);
+    REGISTER_METHOD_P0(CObjectSet,Used,Used,int32);
 
-REGISTER_METHOD(CObjectSet, GetObjectByIndex, GetObjectByIndex);
+    REGISTER_METHOD_P1(CObjectSet,GetObjectByIndex,GetObjectByIndex,uint32,int32);
 
-REGISTER_METHOD(CObjectSet, CreateIterator, CreateIterator);
+    REGISTER_METHOD_P0(CObjectSet,CreateIterator,CreateIterator,uint32);
+#else
+    REGISTER_METHOD(CObjectSet, Contains, Contains);
+    REGISTER_METHOD(CObjectSet, AddObject, AddObject);
+    REGISTER_METHOD(CObjectSet, InsertObject, InsertObject);
+    REGISTER_METHOD(CObjectSet, RemoveObject, RemoveObject);
+    REGISTER_METHOD(CObjectSet, ListObjects, ListObjects);
+    REGISTER_METHOD(CObjectSet, RemoveAll, RemoveAll);
+
+    REGISTER_METHOD(CObjectSet, First, First);
+    REGISTER_METHOD(CObjectSet, Next, Next);
+    REGISTER_METHOD(CObjectSet, Prev, Prev);
+    REGISTER_METHOD(CObjectSet, Last, Last);
+    REGISTER_METHOD(CObjectSet, Current, Current);
+
+    REGISTER_METHOD(CObjectSet, IsFirst, IsFirst);
+    REGISTER_METHOD(CObjectSet, IsLast, IsLast);
+
+    REGISTER_METHOD(CObjectSet, Used, Used);
+
+    REGISTER_METHOD(CObjectSet, GetObjectByIndex, GetObjectByIndex);
+
+    REGISTER_METHOD(CObjectSet, CreateIterator, CreateIterator);
+#endif
 
 // =====================================================================================================================
 // -- CObjectGroup member/method registration
 IMPLEMENT_SCRIPT_CLASS_BEGIN(CObjectGroup, CObjectSet)
 IMPLEMENT_SCRIPT_CLASS_END()
 
-REGISTER_METHOD(CObjectGroup, AddObject, AddObject);
-REGISTER_METHOD(CObjectGroup, RemoveObject, RemoveObject);
+#if PLATFORM_UE4
+    REGISTER_METHOD_P1(CObjectGroup,AddObject,AddObject,void,uint32);
+    REGISTER_METHOD_P1(CObjectGroup,RemoveObject,RemoveObject,void,uint32);
+#else
+    REGISTER_METHOD(CObjectGroup, AddObject, AddObject);
+    REGISTER_METHOD(CObjectGroup, RemoveObject, RemoveObject);
+#endif
 
 // =====================================================================================================================
 // -- CGroupIterator member/method registration
 IMPLEMENT_SCRIPT_CLASS_BEGIN(CGroupIterator, VOID)
 IMPLEMENT_SCRIPT_CLASS_END()
 
-REGISTER_METHOD(CGroupIterator, First, First);
-REGISTER_METHOD(CGroupIterator, Next, Next);
-REGISTER_METHOD(CGroupIterator, Prev, Prev);
-REGISTER_METHOD(CGroupIterator, Last, Last);
-REGISTER_METHOD(CGroupIterator, Current, Current);
-REGISTER_METHOD(CGroupIterator, GetGroup, GetGroup);
+#if PLATFORM_UE4
+    REGISTER_METHOD_P0(CGroupIterator,First,First,uint32);
+    REGISTER_METHOD_P0(CGroupIterator,Next,Next,uint32);
+    REGISTER_METHOD_P0(CGroupIterator,Prev,Prev,uint32);
+    REGISTER_METHOD_P0(CGroupIterator,Last,Last,uint32);
+    REGISTER_METHOD_P0(CGroupIterator,Current,Current,uint32);
+    REGISTER_METHOD_P0(CGroupIterator,GetGroup,GetGroup,uint32);
+#else
+    REGISTER_METHOD(CGroupIterator, First, First);
+    REGISTER_METHOD(CGroupIterator, Next, Next);
+    REGISTER_METHOD(CGroupIterator, Prev, Prev);
+    REGISTER_METHOD(CGroupIterator, Last, Last);
+    REGISTER_METHOD(CGroupIterator, Current, Current);
+    REGISTER_METHOD(CGroupIterator, GetGroup, GetGroup);
+#endif
 
 } // TinScript
 

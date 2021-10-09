@@ -493,7 +493,7 @@ void CMemoryTracker::FindObject(const char* object_name)
     // -- if we found our entry, print out the file/line origin  (add 1 since editors don't count from 0)
     if (object_entry != nullptr)
     {
-        CObjectEntry* oe = TinScript::GetContext()->FindObjectEntry(object_id);
+        oe = TinScript::GetContext()->FindObjectEntry(object_id);
         if (oe != nullptr)
             TinScript::GetContext()->PrintObject(oe);
         if (object_entry->stack_size > 0)

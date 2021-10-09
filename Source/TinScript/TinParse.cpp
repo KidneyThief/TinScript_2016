@@ -23,6 +23,13 @@
 // TinParse.cpp : Parses text and creates the tree of nodes, to be compiled
 // ====================================================================================================================
 
+#include "integration.h"
+
+#if PLATFORM_UE4
+	#undef TEXT
+	#define WIN32_LEAN_AND_MEAN
+#endif
+
 // -- includes
 #include "stdlib.h"
 #include "stdio.h"
@@ -587,8 +594,8 @@ const char* GetToken(const char*& inbuf, int32& length, eTokenType& type, const 
             // -- handle the exception - if we find '=', ensure i's not '=='
             if (i == ASSOP_Assign)
             {
-        		int32 operatorlength = (int32)strlen(gBinOperatorString[BINOP_CompareEqual]);
-        		if (!Strncmp_(tokenptr, gBinOperatorString[BINOP_CompareEqual], operatorlength))
+        		int32 operatorlength_0 = (int32)strlen(gBinOperatorString[BINOP_CompareEqual]);
+        		if (!Strncmp_(tokenptr, gBinOperatorString[BINOP_CompareEqual], operatorlength_0))
                 {
                     continue;
                 }
@@ -2492,7 +2499,7 @@ bool8 TryParseIfStatement(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTr
 	// -- we're done, unless we find an an 'else', or an 'else if'
 	if (peektoken.type == TOKEN_KEYWORD)
     {
-		int32 reservedwordtype = GetReservedKeywordType(peektoken.tokenptr, peektoken.length);
+		reservedwordtype = GetReservedKeywordType(peektoken.tokenptr, peektoken.length);
 		if (reservedwordtype != KEYWORD_else)
 			return (true);
 
@@ -2641,7 +2648,7 @@ bool8 TryParseSwitchStatement(CCodeBlock* codeblock, tReadToken& filebuf, CCompi
         if (peek_token.type == TOKEN_KEYWORD)
         {
             // -- starts with the keyword 'switch'
-            int32 reservedwordtype = GetReservedKeywordType(peek_token.tokenptr, peek_token.length);
+            reservedwordtype = GetReservedKeywordType(peek_token.tokenptr, peek_token.length);
             if (reservedwordtype == KEYWORD_case || reservedwordtype == KEYWORD_default)
             {
                 // -- update the filebuf
@@ -2666,8 +2673,8 @@ bool8 TryParseSwitchStatement(CCodeBlock* codeblock, tReadToken& filebuf, CCompi
                     // -- read the value expression
                     // $$$TZA TinScript doesn't yet enforce a constant expression -
                     // -- perhaps validate a single CValue non-var node?
-                    bool8 result = TryParseExpression(codeblock, filebuf, case_statement->leftchild);
-                    if (!result || case_statement->leftchild == nullptr)
+                    bool8 result_0 = TryParseExpression(codeblock, filebuf, case_statement->leftchild);
+                    if (!result_0 || case_statement->leftchild == nullptr)
                     {
                         ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
                                       "Error - expecting 'case' expression\n");
@@ -2738,7 +2745,7 @@ bool8 TryParseSwitchStatement(CCodeBlock* codeblock, tReadToken& filebuf, CCompi
                     // -- else a new case is about to be defined, concluding our current case
                     if (!handled && peek_token.type == TOKEN_KEYWORD)
                     {
-                        int32 reservedwordtype = GetReservedKeywordType(peek_token.tokenptr, peek_token.length);
+                        reservedwordtype = GetReservedKeywordType(peek_token.tokenptr, peek_token.length);
                         if (reservedwordtype == KEYWORD_case || reservedwordtype == KEYWORD_default)
                         {
                             break;
@@ -3480,27 +3487,27 @@ bool8 TryParseFuncDefinition(CCodeBlock* codeblock, tReadToken& filebuf, CCompil
         ++paramcount;
 
         // -- see if we've got a comma
-        tReadToken peektoken(filebuf);
-        if (!GetToken(peektoken) || (peektoken.type != TOKEN_COMMA && peektoken.type != TOKEN_PAREN_CLOSE))
+        tReadToken peektoken_0(filebuf);
+        if (!GetToken(peektoken_0) || (peektoken_0.type != TOKEN_COMMA && peektoken_0.type != TOKEN_PAREN_CLOSE))
         {
             ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
                           filebuf.linenumber, "Error - expecting ')'\n");
             return (false);
         }
 
-        if (peektoken.type == TOKEN_COMMA)
+        if (peektoken_0.type == TOKEN_COMMA)
         {
             // -- if we do have a comma, ensure the token after it is the next param type
-            tReadToken peektoken2(peektoken);
+            tReadToken peektoken2(peektoken_0);
             if (!GetToken(peektoken2) || peektoken2.type != TOKEN_REGTYPE)
             {
                 ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
-                              peektoken.linenumber, "Error - expecting ')'\n");
+                              peektoken_0.linenumber, "Error - expecting ')'\n");
                 return (false);
             }
 
             // -- consume the comma
-            filebuf = peektoken;
+            filebuf = peektoken_0;
         }
     }
 
@@ -3689,18 +3696,18 @@ bool8 TryParseFuncCall(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeN
     while (true)
     {
         // -- see if we have a closing parenthesis
-        tReadToken peektoken(filebuf);
-        if (!GetToken(peektoken))
+        tReadToken peektoken_0(filebuf);
+        if (!GetToken(peektoken_0))
         {
             ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
-                          peektoken.linenumber, "Error - expecting ')'\n");
+                          peektoken_0.linenumber, "Error - expecting ')'\n");
             return (false);
         }
 
-        if (peektoken.type == TOKEN_PAREN_CLOSE)
+        if (peektoken_0.type == TOKEN_PAREN_CLOSE)
         {
             // -- we've found all the parameters we're going to find
-            filebuf = peektoken;
+            filebuf = peektoken_0;
             break;
         }
 
@@ -4325,8 +4332,8 @@ bool8 TryParseSchedule(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeN
     }
     else
     {
-        bool8 result = TryParseStatement(codeblock, filebuf, binary_tree_node->rightchild);
-        if (!result)
+        bool8 result_0 = TryParseStatement(codeblock, filebuf, binary_tree_node->rightchild);
+        if (!result_0)
         {
             ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
                           "Error - Unable to resolve a 'delay time' expression in a schedule/execute() call\n");
@@ -4370,19 +4377,19 @@ bool8 TryParseSchedule(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeN
     while (true)
     {
         // -- see if we have a closing parenthesis
-        tReadToken peektoken(filebuf);
-        if (!GetToken(peektoken))
+        tReadToken peektoken_0(filebuf);
+        if (!GetToken(peektoken_0))
         {
             ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
-                          peektoken.linenumber,
+                          peektoken_0.linenumber,
                           "Error - expecting ')'\n");
             return (false);
         }
 
-        if (peektoken.type == TOKEN_PAREN_CLOSE)
+        if (peektoken_0.type == TOKEN_PAREN_CLOSE)
         {
             // -- we've found all the parameters we're going to find
-            filebuf = peektoken;
+            filebuf = peektoken_0;
             break;
         }
 
@@ -4404,8 +4411,8 @@ bool8 TryParseSchedule(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeN
                                                    AppendToRoot(*assignments), filebuf.linenumber,
                                                    paramindex);
 
-        bool8 result = TryParseStatement(codeblock, filebuf, schedparamnode->leftchild);
-        if (!result)
+        bool8 result_0 = TryParseStatement(codeblock, filebuf, schedparamnode->leftchild);
+        if (!result_0)
         {
             ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
                           filebuf.linenumber,
@@ -4834,9 +4841,9 @@ bool8 SaveBinary(CCodeBlock* codeblock, const char* binfilename)
     {
         int32 writecount = remaining > (BUFSIZ >> 2) ? (BUFSIZ >> 2) : remaining;
         remaining -= writecount;
-        int32 instrwritten = (int32)fwrite((void*)instrptr, (int32)sizeof(uint32), writecount, filehandle);
+        int32 instrwritten_0 = (int32)fwrite((void*)instrptr, (int32)sizeof(uint32), writecount, filehandle);
         fflush(filehandle);
-        if (instrwritten != writecount)
+        if (instrwritten_0 != writecount)
         {
             ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), -1,
                           "Error - unable to write file %s\n", binfilename);
@@ -4854,9 +4861,9 @@ bool8 SaveBinary(CCodeBlock* codeblock, const char* binfilename)
     while (instrptr != nullptr && remaining > 0) {
         int32 writecount = remaining > (BUFSIZ >> 2) ? (BUFSIZ >> 2) : remaining;
         remaining -= writecount;
-        int32 instrwritten = (int32)fwrite((void*)instrptr, (int32)sizeof(uint32), writecount, filehandle);
+        int32 instrwritten_0 = (int32)fwrite((void*)instrptr, (int32)sizeof(uint32), writecount, filehandle);
         fflush(filehandle);
-        if (instrwritten != writecount) {
+        if (instrwritten_0 != writecount) {
             ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), -1,
                           "Error - unable to write file %s\n", binfilename);
             return (false);
@@ -4869,7 +4876,7 @@ bool8 SaveBinary(CCodeBlock* codeblock, const char* binfilename)
     // -- close the file before we leave
 	fclose(filehandle);
 
-#if DEBUG
+#if MEMORY_TRACKER_ENABLE
 
     // -- the total byte size, is:
     // --     version (uint32)
@@ -4938,7 +4945,7 @@ CCodeBlock* LoadBinary(CScriptContext* script_context, const char* filename, con
         return (NULL);
     }
 
-    // -- if the version is not current, close and recomile
+    // -- if the version is not current, close and recompile
     if (version != kCompilerVersion)
     {
         fclose(filehandle);

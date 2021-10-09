@@ -3580,7 +3580,7 @@ CCodeBlock::~CCodeBlock()
 		TinFreeArray(mInstrBlock);
 
 	// -- clear out the breakpoints list
-	// -- do this before clearing functions, since conditionals/trace points contain function definitions
+	// -- do this before clearing functions, since conditionals/trace points contain funtion definitions
 	mBreakpoints->DestroyAll();
 	TinFree(mBreakpoints);
 

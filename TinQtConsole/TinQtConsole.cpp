@@ -24,6 +24,7 @@
 //
 
 #include <tchar.h>
+#include <Windows.h>
 
 #include <QApplication>
 #include <QPushButton>

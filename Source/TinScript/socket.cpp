@@ -19,14 +19,19 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ------------------------------------------------------------------------------------------------
 
+#include "integration.h"
+
+#if PLATFORM_UE4
+	#undef TEXT
+	#define WIN32_LEAN_AND_MEAN
+#endif
+
 // -- system includes
 #include <map>
 
 // -- sockets are only implemented in WIN32
-#ifdef WIN32
-    #include <winsock2.h>
-    #include <ws2tcpip.h>
-#endif
+#include <winsock2.h>
+#include <ws2tcpip.h>
 
 #include <vector>
 
@@ -52,17 +57,15 @@ namespace SocketManager
 
 // --------------------------------------------------------------------------------------------------------------------
 // -- statics
-#ifdef WIN32
-    static bool mInitialized = false;
-    static DWORD mThreadID = 0;
-    static HANDLE mThreadHandle = NULL;
-    static CSocket* mThreadSocket = NULL;
-    static int mThreadSocketID = 1;
+static bool mInitialized = false;
+static DWORD mThreadID = 0;
+static HANDLE mThreadHandle = NULL;
+static CSocket* mThreadSocket = NULL;
+static int mThreadSocketID = 1;
 
-    // -- WSA variables
-    bool mWSAInitialized = false;
-    static WSADATA mWSAdata;
-#endif // WIN32
+// -- WSA variables
+bool mWSAInitialized = false;
+static WSADATA mWSAdata;
 
 // --------------------------------------------------------------------------------------------------------------------
 // class cSocketFunctionSignature
@@ -95,26 +98,25 @@ typedef std::map<uint32, cSocketFunctionSignature>::iterator tSignatureIterator;
 // -- a custom data handler
 static ProcessRecvDataCallback mRecvDataCallback = NULL;
 
+DWORD WINAPI ThreadUpdate(void* script_context);
+
 // ====================================================================================================================
 // Initialize():  Initialize the SocketManager
 // ====================================================================================================================
 void Initialize()
 {
-    #ifdef WIN32
-        // -- create the thread
-        mThreadHandle = CreateThread(NULL,                      // default security attributes
-                                     0,                         // use default stack size  
-                                     ThreadUpdate,              // thread function name
-                                     TinScript::GetContext(),   // argument to thread function 
-                                     0,                         // use default creation flags 
-                                     &mThreadID);               // returns the thread identifier 
-    #endif // WIN32
+    // -- create the thread
+    mThreadHandle = CreateThread(NULL,                      // default security attributes
+                                    0,                         // use default stack size  
+                                    ThreadUpdate,              // thread function name
+                                    TinScript::GetContext(),   // argument to thread function 
+                                    0,                         // use default creation flags 
+                                    &mThreadID);               // returns the thread identifier 
 }
 
 // ====================================================================================================================
 // ThreadUpdate():  Update loop for the SocketManager, run inside the thread
 // ====================================================================================================================
-#ifdef WIN32
 DWORD WINAPI ThreadUpdate(void* script_context)
 {
     // -- see if we need to create the socket
@@ -162,34 +164,31 @@ DWORD WINAPI ThreadUpdate(void* script_context)
     // -- no errors
     return (0);
 }
-#endif // WIN32
 
 // ====================================================================================================================
 // Termintate():  Perform all shutdown and cleanup of the SocketManager
 // ====================================================================================================================
 void Terminate()
 {
-    #ifdef WIN32
-        // -- first disconnect the socket
-        Disconnect();
+    // -- first disconnect the socket
+    Disconnect();
 
-        // -- kill the thread
-        TerminateThread(mThreadHandle, 0);
+    // -- kill the thread
+    TerminateThread(mThreadHandle, 0);
 
-        // -- kill the socket
-        if (mThreadSocket)
-        {
-            delete mThreadSocket;
-            mThreadSocket = NULL;
-        }
+    // -- kill the socket
+    if (mThreadSocket)
+    {
+        delete mThreadSocket;
+        mThreadSocket = NULL;
+    }
 
-        // -- see if we need to shutdown WSA
-        if (mWSAInitialized)
-        {
-            WSACleanup();
-            mWSAInitialized = false;
-        }
-    #endif // WIN32
+    // -- see if we need to shutdown WSA
+    if (mWSAInitialized)
+    {
+        WSACleanup();
+        mWSAInitialized = false;
+    }
 }
 
 // ====================================================================================================================
@@ -197,14 +196,12 @@ void Terminate()
 // ====================================================================================================================
 bool Listen()
 {
-    #ifdef WIN32
-        // -- see if we can enable listening
-        if (mThreadSocket && !mThreadSocket->IsConnected())
-        {
-            mThreadSocket->SetListen(true);
-            return (true);
-        }
-    #endif // WIN32
+    // -- see if we can enable listening
+    if (mThreadSocket && !mThreadSocket->IsConnected())
+    {
+        mThreadSocket->SetListen(true);
+        return (true);
+    }
 
     // -- unable to listen for new connections
     return (false);
@@ -217,28 +214,26 @@ bool Connect(const char* ipAddress)
 {
     bool result = false;
 
-    #ifdef WIN32
-        if (!mThreadSocket)
-        {
-            TinPrint(TinScript::GetContext(), "Error - Connect(): SocketManager has not been initialized.\n");
-        }
-        else if (mThreadSocket->GetListen())
-        {
-            TinPrint(TinScript::GetContext(), "Error - Connect(): SocketManager is set to listen.\n");
-            return (false);
-        }
+    if (!mThreadSocket)
+    {
+        TinPrint(TinScript::GetContext(), "Error - Connect(): SocketManager has not been initialized.\n");
+    }
+    else if (mThreadSocket->GetListen())
+    {
+        TinPrint(TinScript::GetContext(), "Error - Connect(): SocketManager is set to listen.\n");
+        return (false);
+    }
 
-        // -- default address is loopback
-        if (!ipAddress || !ipAddress[0])
-            ipAddress = "127.0.0.1";
+    // -- default address is loopback
+    if (!ipAddress || !ipAddress[0])
+        ipAddress = "127.0.0.1";
 
-        result = mThreadSocket->Connect(ipAddress);
-        if (!result)
-        {
-            TinPrint(TinScript::GetContext(),
-                     "Error - Connect(): unable to connect - execute SocketListen() on target IP.\n");
-        }
-    #endif // WIN32
+    result = mThreadSocket->Connect(ipAddress);
+    if (!result)
+    {
+        TinPrint(TinScript::GetContext(),
+                    "Error - Connect(): unable to connect - execute SocketListen() on target IP.\n");
+    }
 
     return (result);
 }
@@ -250,13 +245,11 @@ bool IsConnected()
 {
     bool result = false;
 
-    #ifdef WIN32
-        // -- sanity check
-        if (!mThreadSocket)
-            return (false);
+    // -- sanity check
+    if (!mThreadSocket)
+        return (false);
 
-        result = mThreadSocket->IsConnected();
-    #endif // WIN32
+    result = mThreadSocket->IsConnected();
 
     // -- return the result
     return (result);
@@ -267,16 +260,13 @@ bool IsConnected()
 // ====================================================================================================================
 void Disconnect()
 {
-    #ifdef WIN32
-        // -- sanity check
-        if (!mThreadSocket)
-            return;
+    // -- sanity check
+    if (!mThreadSocket)
+        return;
 
-        // -- call disconnect
-       mThreadSocket->RequestDisconnect();
-       mThreadSocket->SetListen(false);
-
-    #endif // WIN32
+    // -- call disconnect
+    mThreadSocket->RequestDisconnect();
+    mThreadSocket->SetListen(false);
 }
 
 // ====================================================================================================================
@@ -286,14 +276,12 @@ bool SendCommand(const char* command)
 {
     bool result = false;
 
-    #ifdef WIN32
-        if (!mThreadSocket)
-        {
-            return (false);
-        }
+    if (!mThreadSocket)
+    {
+        return (false);
+    }
 
-        result = mThreadSocket->SendScriptCommand(command);
-    #endif
+    result = mThreadSocket->SendScriptCommand(command);
 
     return (result);
 }
@@ -305,20 +293,18 @@ bool SendCommandf(const char* fmt, ...)
 {
     bool result = false;
 
-    #ifdef WIN32
-        // -- ensure we're innitialized, and have a command to send
-        if (!mThreadSocket || !fmt || !fmt[0])
-            return (false);
+    // -- ensure we're innitialized, and have a command to send
+    if (!mThreadSocket || !fmt || !fmt[0])
+        return (false);
 
-        // -- create the script command
-        va_list args;
-        va_start(args, fmt);
-        char cmdBuf[2048];
-        vsprintf_s(cmdBuf, 2048, fmt, args);
-        va_end(args);
+    // -- create the script command
+    va_list args;
+    va_start(args, fmt);
+    char cmdBuf[2048];
+    vsprintf_s(cmdBuf, 2048, fmt, args);
+    va_end(args);
 
-        result = mThreadSocket->SendScriptCommand(cmdBuf);
-    #endif // WIN32
+    result = mThreadSocket->SendScriptCommand(cmdBuf);
 
     return (result);
 }
@@ -438,12 +424,10 @@ bool SendExec(int32 func_hash, const char* arg1, const char* arg2, const char* a
 // ====================================================================================================================
 void SendDebuggerBreak()
 {
-    #ifdef WIN32
-        // -- construct and send a debugger break packet
-        tPacketHeader header(k_PacketVersion, tPacketHeader::DEBUGGER_BREAK, 0);
-        tDataPacket* newPacket = new tDataPacket(&header, NULL);
-        SendDataPacket(newPacket);
-    #endif // WIN32
+    // -- construct and send a debugger break packet
+    tPacketHeader header(k_PacketVersion, tPacketHeader::DEBUGGER_BREAK, 0);
+    tDataPacket* newPacket = new tDataPacket(&header, NULL);
+    SendDataPacket(newPacket);
 }
 
 // ====================================================================================================================
@@ -460,17 +444,15 @@ void RegisterProcessRecvDataCallback(ProcessRecvDataCallback recvCallback)
 tDataPacket* CreateDataPacket(tPacketHeader* header, void* data)
 {
     tDataPacket* newPacket = NULL;
-    #ifdef WIN32
-        // -- ensure we've initialized and connected the socket
-        if (!mThreadSocket || !mThreadSocket->IsConnected())
-        {
-            return (NULL);
-        }
 
-        // -- create the packet, given a header, and possibly data
-        newPacket = new tDataPacket(header, data);
+    // -- ensure we've initialized and connected the socket
+    if (!mThreadSocket || !mThreadSocket->IsConnected())
+    {
+        return (NULL);
+    }
 
-    #endif // WIN32
+    // -- create the packet, given a header, and possibly data
+    newPacket = new tDataPacket(header, data);
 
     // -- return the result
     return (newPacket);
@@ -484,15 +466,13 @@ bool SendDataPacket(tDataPacket* dataPacket)
     // -- initialize the result
     bool result = false;
 
-    #ifdef WIN32
-        // -- ensure we've initialized and connected the socket
-        if (!mThreadSocket || !mThreadSocket->IsConnected())
-        {
-            return (NULL);
-        }
+    // -- ensure we've initialized and connected the socket
+    if (!mThreadSocket || !mThreadSocket->IsConnected())
+    {
+        return (NULL);
+    }
 
-        result = mThreadSocket->SendDataPacket(dataPacket);
-    #endif // WIN32
+    result = mThreadSocket->SendDataPacket(dataPacket);
 
     // -- return the result
     return (result);
@@ -570,17 +550,14 @@ void DataQueue::Clear()
 
 // == CSocket =========================================================================================================
 
-// -- only implmeented in WIN32
-#ifdef WIN32
-
 // ====================================================================================================================
 // Constructor
 // ====================================================================================================================
 CSocket::CSocket(TinScript::CScriptContext* script_context)
     : mListen(false)
     , mConnected(false)
-    , mListenSocket(INVALID_SOCKET)
-    , mConnectSocket(INVALID_SOCKET)
+    , mListenSocket(nullptr)
+    , mConnectSocket(nullptr)
     , mScriptContext(script_context)
 {
     // -- initialize the incoming packet members
@@ -603,12 +580,12 @@ CSocket::~CSocket()
     }
 
     // -- close the socket if it exists
-    if (mListenSocket != INVALID_SOCKET)
-        closesocket(mConnectSocket);
+    if (mListenSocket != nullptr)
+        closesocket((SOCKET)mConnectSocket);
 
     // -- if we have an open connection socket, we also need to cleanup WSA
-    if (mConnectSocket != INVALID_SOCKET)
-        closesocket(mConnectSocket);
+    if (mConnectSocket != nullptr)
+        closesocket((SOCKET)mConnectSocket);
 }
 
 // ====================================================================================================================
@@ -623,7 +600,7 @@ bool CSocket::Listen()
     }
 
     // -- if we don't have a listen socket, create one
-    if (mListenSocket == INVALID_SOCKET)
+    if (mListenSocket == nullptr)
     {
         // -- this is executed within a thread - enqueue a thread command to print the message
         ScriptCommand("Print('CSocket::Listen(): listening for connection.\n');");
@@ -643,52 +620,52 @@ bool CSocket::Listen()
         addr.sin_addr.s_addr = htonl(INADDR_ANY);
 
         // Create socket
-        mListenSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-        if (mListenSocket == INVALID_SOCKET)
+        mListenSocket = (uint32*)socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+        if (mListenSocket == nullptr)
         {
             // -- failed to create a socket
             return (false); 
         }
 
         // -- bind the socket to this address
-        if (bind(mListenSocket, (LPSOCKADDR)&addr, sizeof(addr)) == SOCKET_ERROR)
+        if (bind((SOCKET)mListenSocket, (LPSOCKADDR)&addr, sizeof(addr)) == SOCKET_ERROR)
         {
             // -- failed to bind
-            closesocket(mListenSocket);
-            mListenSocket = INVALID_SOCKET;
+            closesocket((SOCKET)mListenSocket);
+            mListenSocket = nullptr;
             return (false);
         }
 
         // -- only one connection - use SOMAXCONN if you want multiple
-        if (listen(mListenSocket, 1) != 0)
+        if (listen((SOCKET)mListenSocket, 1) != 0)
         {
             // -- failed to listen
             ScriptCommand("Print('Error - CSocket: listen() failed with error %d\n');", WSAGetLastError());
-            closesocket(mListenSocket);
-            mListenSocket = INVALID_SOCKET;
+            closesocket((SOCKET)mListenSocket);
+            mListenSocket = nullptr;
             return (false);
         }
 
         // -- accept a socket request
-        mConnectSocket = accept(mListenSocket, NULL, NULL);
-        if (mConnectSocket == INVALID_SOCKET)
+        mConnectSocket = (uint32*)accept((SOCKET)mListenSocket, NULL, NULL);
+        if (mConnectSocket == nullptr)
         {
             // -- failed to listen - note, if we chose to disconnect, this will also fail
             // -- so we still return true, to allow the thread to continue
             ScriptCommand("Print('Error - CSocket: accept() failed with error %d\n');", WSAGetLastError());
-            closesocket(mListenSocket);
-            mListenSocket = INVALID_SOCKET;
+            closesocket((SOCKET)mListenSocket);
+            mListenSocket = nullptr;
             return (true);
         }
 
         // -- ensure the connect socket is non-blocking
         u_long iMode=1;
-        ioctlsocket(mConnectSocket, FIONBIO, &iMode);
+        ioctlsocket((SOCKET)mConnectSocket, FIONBIO, &iMode);
 
         // -- we're connected
         ScriptCommand("Print('CSocket: Connected.');");
-        closesocket(mListenSocket);
-        mListenSocket = INVALID_SOCKET;
+        closesocket((SOCKET)mListenSocket);
+        mListenSocket = nullptr;
         mConnected = true;
 
         // -- initialize the heartbeat
@@ -728,20 +705,20 @@ bool CSocket::Connect(const char* ipAddress)
     }
 
     // -- create the connect socket
-    mConnectSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    if (mConnectSocket == INVALID_SOCKET)
+    mConnectSocket = (uint32*)socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    if (mConnectSocket == nullptr)
     {
         // -- failed to create a socket
         return (false); 
     }
 
-    // -- see if we can request a conenction
-    int32 connectResult = (int32)connect(mConnectSocket, addressResult->ai_addr, (int32)addressResult->ai_addrlen);
+    // -- see if we can request a connection
+    int32 connectResult = (int32)connect((SOCKET)mConnectSocket, addressResult->ai_addr, (int32)addressResult->ai_addrlen);
     if (connectResult == SOCKET_ERROR)
     {
         ScriptCommand("Print('Error CSocket: connect() failed.\n');");
-        closesocket(mConnectSocket);
-        mConnectSocket = INVALID_SOCKET;
+        closesocket((SOCKET)mConnectSocket);
+        mConnectSocket = nullptr;
         return (false);
     }
 
@@ -749,7 +726,7 @@ bool CSocket::Connect(const char* ipAddress)
     freeaddrinfo(addressResult);
 
     // -- see if we actually created a socket
-    if (mConnectSocket == INVALID_SOCKET)
+    if (mConnectSocket == nullptr)
     {
         ScriptCommand("Print('Error CSocket: connect() failed.\n');");
         return (false);
@@ -757,16 +734,16 @@ bool CSocket::Connect(const char* ipAddress)
 
     // -- ensure the socket is non-blocking
     u_long iMode=1;
-    ioctlsocket(mConnectSocket, FIONBIO, &iMode);
+    ioctlsocket((SOCKET)mConnectSocket, FIONBIO, &iMode);
 
     // -- success
     ScriptCommand("Print('CSocket: Connected.\n');");
 
     // -- connection was successful - close down the listening connection
-    if (mListenSocket != INVALID_SOCKET)
+    if (mListenSocket != nullptr)
     {
-        closesocket(mListenSocket);
-        mListenSocket = INVALID_SOCKET;
+        closesocket((SOCKET)mListenSocket);
+        mListenSocket = nullptr;
     }
 
     // -- set the bool, return the result
@@ -812,17 +789,17 @@ void CSocket::Disconnect()
     mThreadLock.Lock();
 
     // -- close the listening socket as well
-    if (mListenSocket != INVALID_SOCKET)
+    if (mListenSocket != nullptr)
     {
         // -- close the socket
-        shutdown(mListenSocket, 2);
-        closesocket(mListenSocket);
-        mListenSocket = INVALID_SOCKET;
+        shutdown((SOCKET)mListenSocket, 2);
+        closesocket((SOCKET)mListenSocket);
+        mListenSocket = nullptr;
     }
 
     // -- close the socket
-    closesocket(mConnectSocket);
-    mConnectSocket = INVALID_SOCKET;
+    closesocket((SOCKET)mConnectSocket);
+    mConnectSocket = nullptr;
     mConnected = false;
 
     // -- notify TinScript, in case this connection was from a debugger
@@ -880,20 +857,21 @@ bool CSocket::ProcessSendPackets()
                 packetToSend->mHeader.mSendPtr = (const char*)&packetToSend->mHeader;
             }
 
-            bytesToSend = tPacketHeader::HeaderSize -
-                          ((int)packetToSend->mHeader.mSendPtr - (int)((const char*)&packetToSend->mHeader));
+			// $$$TZA TEST ME!
+            void* header_ptr = &packetToSend->mHeader;
+            bytesToSend = tPacketHeader::HeaderSize - kPointerDiffUInt32(packetToSend->mHeader.mSendPtr, header_ptr);
         }
         else
         {
-            bytesToSend = packetToSend->mHeader.mSize -
-                          ((int)packetToSend->mHeader.mSendPtr - (int)packetToSend->mData);
+			// $$$TZA TEST ME!
+            bytesToSend = packetToSend->mHeader.mSize - kPointerDiffUInt32(packetToSend->mHeader.mSendPtr, packetToSend->mData);
         }
 
         // -- send (skip this, if we the packet has no data
         int bytesSent = 0;
         if (bytesToSend > 0)
         {
-            bytesSent = send(mConnectSocket, packetToSend->mHeader.mSendPtr, bytesToSend, 0);
+            bytesSent = send((SOCKET)mConnectSocket, packetToSend->mHeader.mSendPtr, bytesToSend, 0);
         }
 
         // -- if we received an error, we'll have to disconnect
@@ -976,7 +954,7 @@ bool CSocket::ReceivePackets()
     // -- recv data from the socket
     while (true)
     {
-        int bytesRecv = recv(mConnectSocket, recvbuf, recvbuflen, 0);
+        int bytesRecv = recv((SOCKET)mConnectSocket, recvbuf, recvbuflen, 0);
 
         // -- check for a disconnecct
         int error = WSAGetLastError();
@@ -1218,7 +1196,7 @@ bool CSocket::SendDataPacket(tDataPacket* dataPacket)
 
     // -- return the result
     // -- note:  if this returns false, the packet will not have been enqueued,
-    // -- so the requestor must either try again, or delete the memory
+    // -- so the requester must either try again, or delete the memory
     return (result);
 }
 
@@ -1446,11 +1424,12 @@ bool CSocket::ProcessRecvData(void* data, int dataSize)
     // -- keep processing, as long as we have data
     while (bytesToProcess)
     {
-        // -- set up the pointers to fill in either the header, of the data of a packet
+	    // $$$TZA TEST ME!
+        // -- set up the pointers to fill in either the header, or the data of a packet
         bool processHeader = (mRecvPacket == NULL);
-        char* basePtr = processHeader ? mRecvHeader : mRecvPacket->mData;
-        int bufferSize = processHeader ? tPacketHeader::HeaderSize : mRecvPacket->mHeader.mSize;
-        int bytesRequired = bufferSize - ((int)mRecvPtr - (int)basePtr);
+        char* basePtr = (processHeader) ? mRecvHeader : mRecvPacket->mData;
+        int bufferSize = (processHeader) ? tPacketHeader::HeaderSize : mRecvPacket->mHeader.mSize;
+        int bytesRequired = bufferSize - kPointerDiffUInt32(mRecvPtr, basePtr);
 
         // -- find out how many bytes we've received, and copy as many as we're able
         int bytesToCopy = (bytesToProcess >= bytesRequired) ? bytesRequired : bytesToProcess;
@@ -1524,8 +1503,6 @@ bool CSocket::ProcessRecvData(void* data, int dataSize)
     // -- success
     return (true);
 }
-
-#endif // WIN32
 
 } // namespace SocketManager
 

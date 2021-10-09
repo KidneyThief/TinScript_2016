@@ -23,16 +23,21 @@
 // TinScript.cpp
 // ====================================================================================================================
 
+#include "integration.h"
+
+#if PLATFORM_UE4
+	#undef TEXT
+	#define WIN32_LEAN_AND_MEAN
+#endif
+
 // -- includes
 #include "stdlib.h"
 #include "stdio.h"
 #include "string.h"
 
-#ifdef WIN32
-    #include "windows.h"
-    #include "conio.h"
-    #include "direct.h"
-#endif
+#include "windows.h"
+#include "conio.h"
+#include "direct.h"
 
 #include "integration.h"
 
@@ -1049,7 +1054,11 @@ void CScriptContext::InitializeDirectory(bool init_exe)
         else
         {
             SafeStrcpy(mExecutableDirectory, sizeof(mExecutableDirectory), cwdBuffer);
+
+// $$$TZA in UE4, this causes a crash...???
+#if !PLATFORM_UE4			
             delete[] cwdBuffer;
+#endif			
 
             // -- ensure the last character in the directory is a '/'
             size_t dir_len = strlen(mExecutableDirectory);
@@ -1709,8 +1718,8 @@ void CScriptContext::AddVariableWatch(int32 request_id, const char* variable_wat
 		{
 			// -- if we have a period, and a valid object
 			tReadToken next_token(token);
-			bool8 found_token = GetToken(next_token);
-			if (found_token && next_token.type == TOKEN_PERIOD && oe != NULL)
+			bool8 found_token_0 = GetToken(next_token);
+			if (found_token_0 && next_token.type == TOKEN_PERIOD && oe != NULL)
 			{
 				// -- if our period is followed by a valid member
 				tReadToken member_token(next_token);
@@ -1748,7 +1757,7 @@ void CScriptContext::AddVariableWatch(int32 request_id, const char* variable_wat
 			}
 
 			// -- else if we found a token, but it's not a period, or we don't have an object, we fail this pattern
-			else if (found_token)
+			else if (found_token_0)
 			{
 				success = false;
 				break;
@@ -1893,9 +1902,9 @@ void CScriptContext::AddVariableWatch(int32 request_id, const char* variable_wat
                 if (returnType == TYPE_object)
                 {
                     // -- ensure the object actually exists
-                    CObjectEntry* oe = FindObjectEntry(*(uint32*)returnValue);
-                    if (oe)
-                        watch_result.mVarObjectID = oe->GetID();
+                    CObjectEntry* oe_0 = FindObjectEntry(*(uint32*)returnValue);
+                    if (oe_0)
+                        watch_result.mVarObjectID = oe_0->GetID();
                 }
 
 			    // -- send the response
@@ -3837,12 +3846,12 @@ bool CScriptContext::TabComplete(const char* partial_input, int32& ref_tab_compl
                 else
                 {
                     // -- find the variable
-                    CVariableEntry* ve = GetGlobalNamespace()->GetVarTable()->FindItem(Hash(identifier_stack[stack_index]));
-                    if (ve == nullptr || ve->GetType() != eVarType::TYPE_object)
+                    CVariableEntry* ve_0 = GetGlobalNamespace()->GetVarTable()->FindItem(Hash(identifier_stack[stack_index]));
+                    if (ve_0 == nullptr || ve_0->GetType() != eVarType::TYPE_object)
                         return (false);
 
                     // -- get the variable value, and search for an object with that ID
-                    object_id = *(uint32*)(ve->GetValueAddr(nullptr));
+                    object_id = *(uint32*)(ve_0->GetValueAddr(nullptr));
                     oe = TinScript::GetContext()->FindObjectEntry(object_id);
                 }
             }
@@ -3960,7 +3969,6 @@ bool CScriptContext::TabComplete(const char* partial_input, int32& ref_tab_compl
 // AddThreadCommand():  This enqueues a command, to be process during the normal update
 // ====================================================================================================================
 // -- Thread commands are only supported in WIN32
-#ifdef WIN32
 bool8 CScriptContext::AddThreadCommand(const char* command)
 {
     // -- sanity check
@@ -3980,7 +3988,7 @@ bool8 CScriptContext::AddThreadCommand(const char* command)
 
     // -- ensure we've got room
     uint32 cmdLength = (int32)strlen(command);
-    uint32 lengthRemaining = kThreadExecBufferSize - ((uint32)mThreadBufPtr - (uint32)mThreadExecBuffer);
+    uint32 lengthRemaining = kThreadExecBufferSize - kPointerDiffUInt32(mThreadBufPtr, mThreadExecBuffer);
     if (lengthRemaining < cmdLength)
     {
         // -- no need to assert - the socket will re-enqueue the command after the buffer has been processed
@@ -4174,8 +4182,6 @@ void CScriptContext::QueueThreadExec()
     // -- unlock the thread
     mThreadLock.Unlock();
 }
-
-#endif // WIN32
 
 // -- Debugger Registration -------------------------------------------------------------------------------------------
 
@@ -4513,9 +4519,7 @@ REGISTER_FUNCTION(DebuggerRequestTabComplete, DebuggerRequestTabComplete);
 CThreadMutex::CThreadMutex()
     : mIsLocked(false)
 {
-    #ifdef WIN32
-        mThreadMutex = CreateMutex(NULL, false, NULL);
-    #endif
+    mThreadMutex = CreateMutex(NULL, false, NULL);
 }
 
 // ====================================================================================================================
@@ -4525,9 +4529,7 @@ void CThreadMutex::Lock()
 {
     mIsLocked = true;
     //printf("[0x%x] Thread locked: %s\n", (unsigned int)this, mIsLocked ? "true" : "false");
-    #ifdef WIN32
-        WaitForSingleObject(mThreadMutex, INFINITE);
-    #endif
+    WaitForSingleObject(mThreadMutex, INFINITE);
 }
 
 // ====================================================================================================================
@@ -4535,9 +4537,7 @@ void CThreadMutex::Lock()
 // ====================================================================================================================
 void CThreadMutex::Unlock()
 {
-    #ifdef WIN32
-        ReleaseMutex(mThreadMutex);
-    #endif
+    ReleaseMutex(mThreadMutex);
     mIsLocked = false;
     //printf("[0x%x] Thread locked: %s\n", (unsigned int)this, mIsLocked ? "true" : "false");
 }

@@ -19,16 +19,7 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ------------------------------------------------------------------------------------------------
 
-#ifndef __SOCKET_H
-#define __SOCKET_H
-
-// -- sockets are only implemented in win32
-#ifdef WIN32
-    #include <Windows.h>
-    #include <winsock.h>
-#else
-    #define SOCKET uint32*
-#endif // WIN32
+#pragma once
 
 #include <vector>
 
@@ -62,11 +53,6 @@ struct tDataPacket;
 
 // -- initialize the SocketManager
 void Initialize();
-
-// -- update loop for the SocketManager, run inside the thread
-#ifdef WIN32
-    DWORD WINAPI ThreadUpdate(LPVOID lpParam);
-#endif
 
 // -- perform all shutdown and cleanup of the SocketManager
 void Terminate();
@@ -210,7 +196,6 @@ class DataQueue
 // ====================================================================================================================
 // class CSocket:  an instance of a winsock connection
 // ====================================================================================================================
-#ifdef WIN32
 class CSocket
 {
     public:
@@ -281,8 +266,8 @@ class CSocket
     protected:
         bool mListen;
         bool mConnected;
-        SOCKET mListenSocket;
-        SOCKET mConnectSocket;
+        uint32* mListenSocket;
+        uint32* mConnectSocket;
 
         // -- we need access to the script context for which this socket was created
         TinScript::CScriptContext* mScriptContext;
@@ -304,11 +289,8 @@ class CSocket
         // -- we need to ensure the queues are thread safe
         TinScript::CThreadMutex mThreadLock;
 };
-#endif // WIN32
 
 } // SocketManager
-
-#endif // __SOCKET_H
 
 // ====================================================================================================================
 // EOF

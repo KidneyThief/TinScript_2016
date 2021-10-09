@@ -23,6 +23,13 @@
 // TinExecute.cpp : Implementation of the virtual machine
 // ====================================================================================================================
 
+#include "integration.h"
+
+#if PLATFORM_UE4
+	#undef TEXT
+	#define WIN32_LEAN_AND_MEAN
+#endif
+
 // -- lib includes
 #include "assert.h"
 #include "string.h"
@@ -30,6 +37,7 @@
 
 // -- external includes
 #include "socket.h"
+#include <windows.h>
 
 // -- TinScript includes
 #include "TinScript.h"
@@ -221,7 +229,7 @@ int32 CFunctionCallStack::DebuggerGetStackVarEntries(CScriptContext* script_cont
                 if (entry_count >= max_array_size)
                     return (entry_count);
 
-                CDebuggerWatchVarEntry* cur_entry = &entry_array[entry_count++];
+                cur_entry = &entry_array[entry_count++];
 
 				// -- debugger stack dumps are well defined and aren't a response to a dynamic request
 				cur_entry->mWatchRequestID = 0;
@@ -266,7 +274,7 @@ int32 CFunctionCallStack::DebuggerGetStackVarEntries(CScriptContext* script_cont
                     return (entry_count);
 
                 // -- fill in the current entry
-                CDebuggerWatchVarEntry* cur_entry = &entry_array[entry_count++];
+                cur_entry = &entry_array[entry_count++];
                 if (entry_count >= max_array_size)
                     return max_array_size;
 
@@ -986,7 +994,6 @@ bool8 CCodeBlock::Execute(uint32 offset, CExecStack& execstack, CFunctionCallSta
     {
 
 // -- Debugging is done through a remote connection, which right now is only supported through WIN32
-#ifdef WIN32
 #if TIN_DEBUGGER
 
         // -- see if there's a breakpoint set for this line
@@ -1086,7 +1093,6 @@ bool8 CCodeBlock::Execute(uint32 offset, CExecStack& execstack, CFunctionCallSta
         }
 
 #endif // TIN_DEBUGGER
-#endif // WIN32
 
 		// -- get the operation and process it
 		eOpCode curoperation = (eOpCode)(*instrptr++);

@@ -295,7 +295,13 @@ const char* IntToChar(int32 ascii_value)
     return (buffer);
 }
 
-REGISTER_FUNCTION(IntToChar, IntToChar);
+// -- UE4 needs the param specific registration
+// $$$TZA related to using a pointer as an arg?  (const char* is 64-bit)??
+#if PLATFORM_UE4
+    REGISTER_FUNCTION_P1(IntToChar, IntToChar, const char*, int32);
+#else	
+	REGISTER_FUNCTION(IntToChar, IntToChar);
+#endif
 
 // ====================================================================================================================
 // CharToInt():  Converts from char to the ascii int value

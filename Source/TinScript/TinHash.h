@@ -324,10 +324,10 @@ class CHashTable
 
         // -- insert it into the index table - note, we need to bump up the indices of all entries after this
         // -- also note used has not yet been incremented
-        // -- update all entries after cur_entry, by decrimenting and updating the index table
+        // -- update all entries after cur_entry, by decrementing and updating the index table
         for (int32 bump_index = used - 1; bump_index >= _index; --bump_index)
         {
-            CHashTableEntry* prev_hte = NULL;
+            prev_hte = NULL;
             CHashTableEntry* bump_hte = FindRawEntryByIndex(bump_index, prev_hte);
 
             // -- remove the hte from the linked list in the index_table bucket
@@ -420,8 +420,8 @@ class CHashTable
         // -- update all entries after cur_entry, by decrimenting and updating the index table
         for (int _index = cur_entry->index + 1; _index < used; ++_index)
         {
-            CHashTableEntry* prev_hte = NULL;
-            CHashTableEntry* hte = FindRawEntryByIndex(_index, prev_hte);
+            prev_hte = NULL;
+            hte = FindRawEntryByIndex(_index, prev_hte);
 
             // -- remove the hte from the linked list in the index_table bucket
             assert(hte != 0);
@@ -430,7 +430,7 @@ class CHashTable
             else
                 index_table[_index % size] = hte->index_next;
 
-            // -- decriment the index add it to the previous index bucket
+            // -- decrement the index add it to the previous index bucket
             --hte->index;
             hte->index_next = index_table[hte->index % size];
             index_table[hte->index % size] = hte;
