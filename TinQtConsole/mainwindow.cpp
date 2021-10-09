@@ -122,10 +122,10 @@ CreateVarWatchDialog::CreateVarWatchDialog(QWidget *parent)
     mRequestID = -1;
 
 	setWindowTitle("Watch Expression");
-	setMinimumWidth(280);
+	setMinimumWidth(400);
     QGridLayout *layout = new QGridLayout(this);
 
-    layout->addWidget(new QLabel(tr("Variable:")), 0, 0);
+    layout->addWidget(new QLabel(tr("Expression:")), 0, 0);
     mVariableName = new SafeLineEdit(parent);
     layout->addWidget(mVariableName, 0, 1);
 
@@ -224,8 +224,8 @@ private:
 CreateBreakConditionDialog::CreateBreakConditionDialog(QWidget *parent)
     : QDialog(parent)
 {
-	setWindowTitle("Set Breakpoint Condition");
-	setMinimumWidth(280);
+	setWindowTitle("Set Condition");
+	setMinimumWidth(400);
     QGridLayout *layout = new QGridLayout(this);
 
     mIsEnabled = new QCheckBox;
@@ -762,7 +762,7 @@ void MainWindow::setupMenuBar()
     action = debug_menu->addAction(tr("Inspect Object  [Ctrl + I]"));
     connect(action, SIGNAL(triggered()), this, SLOT(menuCreateObjectInspector()));
 
-    action = debug_menu->addAction(tr("Break Condition  [Ctrl + Shift + B]"));
+    action = debug_menu->addAction(tr("Break Condition  [Ctrl + B]"));
     connect(action, SIGNAL(triggered()), this, SLOT(menuSetBreakCondition()));
 
     action = debug_menu->addAction(tr("Function Assist  [F1]"));

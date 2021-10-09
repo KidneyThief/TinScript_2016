@@ -403,12 +403,57 @@ void CDebugWatchWin::AddObjectMemberEntry(const TinScript::CDebuggerWatchVarEntr
 }
 
 // ====================================================================================================================
+// ====================================================================================================================
+CWatchEntry* CDebugWatchWin::FindTopLevelWatchEntry(const char* watch_expr)
+{
+    // -- sanity check
+    if (watch_expr == nullptr || watch_expr[0] == '\0')
+        return (nullptr);
+
+    // -- find out what function call is currently selected on the stack
+    uint32 cur_func_ns_hash = 0;
+    uint32 cur_func_hash = 0;
+    uint32 cur_func_object_id = 0;
+    int32 current_stack_index = CConsoleWindow::GetInstance()->GetDebugCallstackWin()->
+                                                               GetSelectedStackEntry(cur_func_ns_hash,cur_func_hash,
+                                                                                     cur_func_object_id);
+    
+    int32 entry_index = 0;
+    while (entry_index < mWatchList.size())
+    {
+        // -- ensure this is a top level watch (mObjectID == 0)
+        // $$$TZA we'll need to check other things like watches for array entries...
+        CWatchEntry* entry = mWatchList.at(entry_index);
+        if (entry->mDebuggerEntry.mObjectID == 0)
+        {
+            if (_stricmp(entry->mDebuggerEntry.mVarName, watch_expr) == 0)
+            {
+                return (entry);
+            }
+        }
+        ++entry_index;
+    }
+
+    // -- not found
+    return (nullptr);
+}
+
+// ====================================================================================================================
 // AddVariableWatch():  Dynamically add a watch to be updated by the debugger
 // ====================================================================================================================
 void CDebugWatchWin::AddVariableWatch(const char* variableWatch, bool breakOnWrite)
 {
 	if (!variableWatch || !variableWatch[0])
 		return;
+
+    // -- before we create a new variable watch, see if we have one that already matches exactly
+    CWatchEntry* found = FindTopLevelWatchEntry(variableWatch);
+    if (found)
+    {
+        found->mBreakOnWrite = breakOnWrite;
+        ResendVariableWatch(found);
+        return;
+    }
 
     // -- ensure this window is the top level (visible in front of the other docked widgets)
     parentWidget()->show();
@@ -447,16 +492,38 @@ void CDebugWatchWin::AddVariableWatch(const char* variableWatch, bool breakOnWri
     addTopLevelItem(new_entry);
     mWatchList.append(new_entry);
 
-	// -- send the request to the target, if we're currently in a break point
-    //if (CConsoleWindow::GetInstance()->mBreakpointHit)
-    {
-        SocketManager::SendCommandf("DebuggerAddVariableWatch(%d, `%s`, %s);",
-                                    new_watch.mWatchRequestID, variableWatch,
-                                    breakOnWrite ? "true" : "false");
-        new_entry->mRequestSent = true;
-    }
+    // -- send the request to the target
+    // note:  complex (e.g. function call) expressions can't be evaluated unless at a breakpoint
+    ResendVariableWatch(new_entry);
+    SocketManager::SendCommandf("DebuggerAddVariableWatch(%d, `%s`, %s);",
+                                new_watch.mWatchRequestID, variableWatch,
+                                breakOnWrite ? "true" : "false");
+    new_entry->mRequestSent = true;
 }
 
+// ====================================================================================================================
+// ResendVariableWatch():  (Re)send the debugger command for a given watch entry
+// ====================================================================================================================
+void CDebugWatchWin::ResendVariableWatch(CWatchEntry* watch_entry)
+{
+    // -- sanity check
+    if (watch_entry == nullptr)
+        return;
+
+    // -- send the request to the target, if we're currently in a break point
+    SocketManager::SendCommandf("DebuggerAddVariableWatch(%d, `%s`, %s);",
+                                watch_entry->mDebuggerEntry.mWatchRequestID,
+                                watch_entry->mDebuggerEntry.mVarName,
+                                watch_entry->mBreakOnWrite ? "true" : "false");
+    watch_entry->mRequestSent = true;
+
+    // -- as this is a new (or duplicated) watch, we want to see it in the window
+    setCurrentItem(watch_entry);
+}
+
+// ====================================================================================================================
+// GetSelectedWatchExpression():  if the watch window is focused, we use its selection to populate the new var watch
+// ====================================================================================================================
 bool CDebugWatchWin::GetSelectedWatchExpression(int32& out_use_watch_id, char* out_watch_string, int32 max_expr_length,
                                                 char* out_value_string, int32 max_value_length)
 {
@@ -577,19 +644,6 @@ void CDebugWatchWin::NotifyWatchVarEntry(TinScript::CDebuggerWatchVarEntry* watc
 	// -- sanity check
     if (!watch_var_entry)
         return;
-
-    // -- find out what function call is currently selected on the stack
-    uint32 cur_func_ns_hash = 0;
-    uint32 cur_func_hash = 0;
-    uint32 cur_func_object_id = 0;
-    int32 current_stack_index = CConsoleWindow::GetInstance()->GetDebugCallstackWin()->
-                                                               GetSelectedStackEntry(cur_func_ns_hash, cur_func_hash,
-                                                                                     cur_func_object_id);
-    // $$$TZA Do we need this?  if the entry is for an object, then it shouldn't matter if we're currently at a breakpoint
-    //if (current_stack_index < 0)
-    //{
-    //    return;
-    //}
 
     // -- if we're adding a namespace label
     if (watch_var_entry->mObjectID > 0)

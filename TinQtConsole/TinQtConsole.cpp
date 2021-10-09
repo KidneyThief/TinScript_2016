@@ -307,7 +307,7 @@ CConsoleWindow::CConsoleWindow()
     QShortcut* shortcut_cmdHistory = new QShortcut(QKeySequence("Ctrl+H"), mMainWindow);
     QObject::connect(shortcut_cmdHistory, SIGNAL(activated()), mMainWindow, SLOT(menuCommandHistory()));
 
-    // Ctrl + Shift + w - Watch Variable
+    // Ctrl + w - Watch Variable
     QShortcut* shortcut_WatchVar = new QShortcut(QKeySequence("Ctrl+W"), mMainWindow);
     QObject::connect(shortcut_WatchVar, SIGNAL(activated()), mMainWindow, SLOT(menuCreateVariableWatch()));
 
@@ -315,8 +315,8 @@ CConsoleWindow::CConsoleWindow()
     QShortcut* shortcut_inspectObj = new QShortcut(QKeySequence("Ctrl+I"), mMainWindow);
     QObject::connect(shortcut_inspectObj, SIGNAL(activated()), mMainWindow, SLOT(menuCreateObjectInspector()));
 
-    // Ctrl + Shift + b - Break condition
-    QShortcut* shortcut_BreakCond = new QShortcut(QKeySequence("Ctrl+Shift+B"), mMainWindow);
+    // Ctrl + b - Break condition
+    QShortcut* shortcut_BreakCond = new QShortcut(QKeySequence("Ctrl+B"), mMainWindow);
     QObject::connect(shortcut_BreakCond, SIGNAL(activated()), mMainWindow, SLOT(menuSetBreakCondition()));
 
     // Ctrl + g - Go to line in the source view
