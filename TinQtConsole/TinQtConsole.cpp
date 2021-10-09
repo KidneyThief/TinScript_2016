@@ -98,6 +98,7 @@ CConsoleWindow::CConsoleWindow()
     // -- create the output widget
     QDockWidget* outputDockWidget = new QDockWidget();
     outputDockWidget->setObjectName("Console Output");
+    outputDockWidget->setWindowTitle("Console Output");
     outputDockWidget->setTitleBarWidget(CreateTitleLabel("Console Ouptut", outputDockWidget));
     mConsoleOutput = new CConsoleOutput(outputDockWidget);
     mConsoleOutput->addItem("Welcome to the TinConsole!");
@@ -202,6 +203,7 @@ CConsoleWindow::CConsoleWindow()
     // -- create the source window
     mSourceWinDockWidget = new QDockWidget();
     mSourceWinDockWidget->setObjectName("Source View");
+    mSourceWinDockWidget->setWindowTitle("Source View");
     mSourceWinDockWidget->setTitleBarWidget(CreateTitleLabel("Source View", mSourceWinDockWidget));
     mDebugSourceWin = new CDebugSourceWin(mSourceWinDockWidget);
 
@@ -215,6 +217,7 @@ CConsoleWindow::CConsoleWindow()
     // -- create the breakpoints window
     QDockWidget* breakpointsDockWidget = new QDockWidget();
     breakpointsDockWidget->setObjectName("Breakpoints");
+    breakpointsDockWidget->setWindowTitle("Breakpoints");
     breakpointsDockWidget->setTitleBarWidget(CreateTitleLabel("Breakpoints", breakpointsDockWidget));
     mBreakpointsWin = new CDebugBreakpointsWin(breakpointsDockWidget);
 
@@ -235,18 +238,21 @@ CConsoleWindow::CConsoleWindow()
     // -- create the object browser window
     QDockWidget* browserDockWidget = new QDockWidget();
     browserDockWidget->setObjectName("Object Browser");
+    browserDockWidget->setWindowTitle("Object Browser");
     browserDockWidget->setTitleBarWidget(CreateTitleLabel("Object Browser", browserDockWidget));
     mObjectBrowserWin = new CDebugObjectBrowserWin(browserDockWidget);
 
     // -- create the schedules window
     QDockWidget* schedulesDockWidget = new QDockWidget();
     schedulesDockWidget->setObjectName("Scheduler");
+    schedulesDockWidget->setWindowTitle("Scheduler");
     schedulesDockWidget->setTitleBarWidget(CreateTitleLabel("Scheduler", schedulesDockWidget));
     mSchedulesWin = new CDebugSchedulesWin(schedulesDockWidget);
 
     // -- create the schedules window
     QDockWidget* functionAssistDockWidget = new QDockWidget();
     functionAssistDockWidget->setObjectName("Function Assist");
+    functionAssistDockWidget->setWindowTitle("Function Assist");
     functionAssistDockWidget->setTitleBarWidget(CreateTitleLabel("Function Assist", functionAssistDockWidget));
     mFunctionAssistWin = new CDebugFunctionAssistWin(functionAssistDockWidget);
 
