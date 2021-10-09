@@ -69,6 +69,7 @@
 #include "TinQTBreakpointsWin.h"
 #include "TinQTObjectBrowserWin.h"
 #include "TinQTObjectInspectWin.h"
+#include "TinQTFunctionAssistWin.h"
 
 // ====================================================================================================================
 // -- class implementation for add variable watch dialog
@@ -120,7 +121,7 @@ CreateVarWatchDialog::CreateVarWatchDialog(QWidget *parent)
 {
     mRequestID = -1;
 
-	setWindowTitle("Add/Edit Variable Watch");
+	setWindowTitle("Watch Expression");
 	setMinimumWidth(280);
     QGridLayout *layout = new QGridLayout(this);
 
@@ -369,21 +370,6 @@ CreateObjectInspectDialog::CreateObjectInspectDialog(QWidget *parent)
 
 // ====================================================================================================================
 static CreateVarWatchDialog* gVarWatchDialog = NULL;
-void MainWindow::menuAddVariableWatch()
-{
-    CreateVarWatchDialog dialog(this);
-
-    // -- while the dialog is active, we have a global pointer to access it
-    gVarWatchDialog = &dialog;
-    int ret = dialog.exec();
-    gVarWatchDialog = NULL;
-
-    if (ret == QDialog::Rejected)
-        return;
-
-	CConsoleWindow::GetInstance()->GetDebugWatchesWin()->AddVariableWatch(dialog.GetVariableName(),
-                                                                          dialog.IsBreakOnWrite());
-}
 
 CommandHistoryDialog::CommandHistoryDialog(QWidget *parent)
     : QDialog(parent)
@@ -397,7 +383,7 @@ CommandHistoryDialog::CommandHistoryDialog(QWidget *parent)
     CommandHistoryList* command_list = new CommandHistoryList(this, parent);
     layout->addWidget(command_list, 0, 0, 1, 1);
 
-    // -- retrieve the stringlist of commands (note, the strings are allocated)
+    // -- retrieve the string list of commands (note, the strings are allocated)
     QStringList history;
     CConsoleWindow::GetInstance()->GetInput()->GetHistory(history);
 
@@ -437,10 +423,35 @@ void CommandHistoryList::OnDoubleClicked(QListWidgetItem* item)
 // ====================================================================================================================
 void MainWindow::menuCreateVariableWatch()
 {
+    int32 use_watch_id = 0;
+    char watch_expr[TinScript::kMaxNameLength];
+    char watch_value[TinScript::kMaxNameLength];
+    watch_expr[0] = '\0';
+    watch_value[0] = '\0';
     if (CConsoleWindow::GetInstance()->GetDebugWatchesWin()->hasFocus())
-	    CConsoleWindow::GetInstance()->GetDebugWatchesWin()->CreateSelectedWatch();
+    {
+        // -- attempt to get the selected watch expression and value
+        CConsoleWindow::GetInstance()->GetDebugWatchesWin()->
+            GetSelectedWatchExpression(use_watch_id, watch_expr, TinScript::kMaxNameLength,
+                                       watch_value, TinScript::kMaxNameLength);
+    }
     else if (CConsoleWindow::GetInstance()->GetDebugAutosWin()->hasFocus())
-	    CConsoleWindow::GetInstance()->GetDebugAutosWin()->CreateSelectedWatch();
+    {
+        // -- attempt to get the selected watch expression and value
+        CConsoleWindow::GetInstance()->GetDebugAutosWin()->
+            GetSelectedWatchExpression(use_watch_id, watch_expr, TinScript::kMaxNameLength,
+                                       watch_value,TinScript::kMaxNameLength);
+    }
+
+    // -- if we didn't find anything, use the function assist selected object as the initial value
+    if (watch_expr[0] == '\0')
+    {
+        CConsoleWindow::GetInstance()->GetDebugFunctionAssistWin()->
+            GetSelectedWatchExpression(use_watch_id, watch_expr, TinScript::kMaxNameLength,
+                                       watch_value, TinScript::kMaxNameLength);
+    }
+
+    CConsoleWindow::GetInstance()->GetMainWindow()->CreateVariableWatch(use_watch_id, watch_expr, watch_value);
 }
 
 void MainWindow::menuUpdateVarWatchValue()
@@ -631,6 +642,8 @@ void MainWindow::AddScriptOpenAction(const char* fullPath)
 void MainWindow::CreateVariableWatch(int32 request_id, const char* watch_string, const char* cur_value)
 {
     CreateVarWatchDialog dialog(this);
+    if (request_id == 0)
+        request_id = CDebugWatchWin::gVariableWatchRequestID++;
     dialog.SetRequestID(request_id);
     dialog.SetVariableName(watch_string);
     dialog.SetUpdateValue(cur_value);
@@ -743,10 +756,7 @@ void MainWindow::setupMenuBar()
     action = debug_menu->addAction(tr("Command History  [Ctrl + H]"));
     connect(action, SIGNAL(triggered()), this, SLOT(menuCommandHistory()));
 
-    action = debug_menu->addAction(tr("Add Watch  [Ctrl + W]"));
-    connect(action, SIGNAL(triggered()), this, SLOT(menuAddVariableWatch()));
-
-    action = debug_menu->addAction(tr("Watch Var  [Ctrl + Shift + W]"));
+    action = debug_menu->addAction(tr("Watch Var  [Ctrl + W]"));
     connect(action, SIGNAL(triggered()), this, SLOT(menuCreateVariableWatch()));
 
     action = debug_menu->addAction(tr("Inspect Object  [Ctrl + I]"));

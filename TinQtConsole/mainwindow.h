@@ -165,7 +165,6 @@ public slots:
     void menuOpenScript();
     void menuOpenScriptAction(QAction*);
 
-	void menuAddVariableWatch();
 	void menuCreateVariableWatch();
 	void menuUpdateVarWatchValue();
     void menuCreateObjectInspector();

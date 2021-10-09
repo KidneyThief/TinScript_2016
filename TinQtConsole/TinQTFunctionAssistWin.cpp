@@ -749,6 +749,22 @@ bool CDebugFunctionAssistWin::StringContainsFilterImpl(const char* string, const
     return (false);
 }
 
+bool CDebugFunctionAssistWin::GetSelectedWatchExpression(int32& out_use_watch_id,
+                                                         char* out_watch_string, int32 max_expr_length,
+                                                         char* out_value_string, int32 max_value_length)
+{
+    out_use_watch_id = 0;
+    *out_watch_string = '\0';
+    *out_value_string = '\0';
+
+    if (mSearchObjectID > 0)
+        sprintf_s(out_watch_string, max_expr_length,"%d", mSearchObjectID);
+    else if (mSelectedObjectID > 0)
+        sprintf_s(out_watch_string, max_expr_length,"%d", mSelectedObjectID);
+
+    return true;
+}
+
 // == class CFunctionAssistInput ======================================================================================
 
 // ====================================================================================================================
@@ -873,10 +889,11 @@ CFunctionListEntry::CFunctionListEntry(TinScript::CDebuggerFunctionAssistEntry* 
         }
         else
         {
-            const char* filename = TinScript::UnHash(_entry->mCodeBlockHash);
-            if (filename != nullptr)
+            const char* full_path = TinScript::UnHash(_entry->mCodeBlockHash);
+            const char* file_name = CConsoleWindow::GetInstance()->GetDebugSourceWin()->GetFileName(full_path);
+            if (file_name != nullptr)
             {
-                setText(2, QString(filename).append(" @ ").append(QString::number(_entry->mLineNumber)));
+                setText(2, QString(file_name).append(" @ ").append(QString::number(_entry->mLineNumber)));
             }
         }
     }

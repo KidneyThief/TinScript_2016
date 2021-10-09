@@ -307,12 +307,8 @@ CConsoleWindow::CConsoleWindow()
     QShortcut* shortcut_cmdHistory = new QShortcut(QKeySequence("Ctrl+H"), mMainWindow);
     QObject::connect(shortcut_cmdHistory, SIGNAL(activated()), mMainWindow, SLOT(menuCommandHistory()));
 
-    // Ctrl + w - Add variable watch
-    QShortcut* shortcut_AddVar = new QShortcut(QKeySequence("Ctrl+W"), mMainWindow);
-    QObject::connect(shortcut_AddVar, SIGNAL(activated()), mMainWindow, SLOT(menuAddVariableWatch()));
-
     // Ctrl + Shift + w - Watch Variable
-    QShortcut* shortcut_WatchVar = new QShortcut(QKeySequence("Ctrl+Shift+W"), mMainWindow);
+    QShortcut* shortcut_WatchVar = new QShortcut(QKeySequence("Ctrl+W"), mMainWindow);
     QObject::connect(shortcut_WatchVar, SIGNAL(activated()), mMainWindow, SLOT(menuCreateVariableWatch()));
 
     // Ctrl + i - Object Inspect

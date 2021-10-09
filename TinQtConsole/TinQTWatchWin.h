@@ -82,9 +82,11 @@ class CDebugWatchWin : public QTreeWidget {
         void AddObjectMemberEntry(const TinScript::CDebuggerWatchVarEntry& watch_var_entry, bool update_only);
 
 		void AddVariableWatch(const char* variableWatch, bool breakOnWrite = false);
-        void CreateSelectedWatch();
+        bool GetSelectedWatchExpression(int32& out_use_watch_id, char* out_watch_string, int32 max_expr_length, char* out_value,
+                                        int32 max_value_length);
+        //void CreateSelectedWatch();
 
-        // -- this is used for creating an ObjectInspector, if the currently selected enty is a variable of type object
+        // -- this is used for creating an ObjectInspector, if the currently selected entry is a variable of type object
         uint32 GetSelectedObjectID();
 
         void ClearWatchWin();

@@ -410,7 +410,7 @@ void CDebugWatchWin::AddVariableWatch(const char* variableWatch, bool breakOnWri
 	if (!variableWatch || !variableWatch[0])
 		return;
 
-    // -- ensure this window is the top level (visable in front of the other docked widgets)
+    // -- ensure this window is the top level (visible in front of the other docked widgets)
     parentWidget()->show();
     parentWidget()->raise();
 
@@ -432,7 +432,7 @@ void CDebugWatchWin::AddVariableWatch(const char* variableWatch, bool breakOnWri
 	// -- we *hope* the target can identify the expression and fill in the type
     new_watch.mType = TinScript::TYPE_void;
 
-	// -- var name holds the expresion
+	// -- var name holds the expression
 	TinScript::SafeStrcpy(new_watch.mVarName, sizeof(new_watch.mVarName), variableWatch, TinScript::kMaxNameLength);
 
 	// -- we also *hope* the target can fill in a value for us as well
@@ -448,7 +448,7 @@ void CDebugWatchWin::AddVariableWatch(const char* variableWatch, bool breakOnWri
     mWatchList.append(new_entry);
 
 	// -- send the request to the target, if we're currently in a break point
-    if (CConsoleWindow::GetInstance()->mBreakpointHit)
+    //if (CConsoleWindow::GetInstance()->mBreakpointHit)
     {
         SocketManager::SendCommandf("DebuggerAddVariableWatch(%d, `%s`, %s);",
                                     new_watch.mWatchRequestID, variableWatch,
@@ -457,9 +457,34 @@ void CDebugWatchWin::AddVariableWatch(const char* variableWatch, bool breakOnWri
     }
 }
 
+bool CDebugWatchWin::GetSelectedWatchExpression(int32& out_use_watch_id, char* out_watch_string, int32 max_expr_length,
+                                                char* out_value_string, int32 max_value_length)
+{
+    CWatchEntry* cur_item = static_cast<CWatchEntry*>(currentItem());
+    if (cur_item && cur_item->mDebuggerEntry.mType != TinScript::TYPE_void)
+    {
+        out_use_watch_id = cur_item->mDebuggerEntry.mWatchRequestID;
+
+        // -- see if we have a variable or a member
+        if (cur_item->mDebuggerEntry.mObjectID > 0)
+            sprintf_s(out_watch_string, max_expr_length, "%d.%s", cur_item->mDebuggerEntry.mObjectID,cur_item->mDebuggerEntry.mVarName);
+        else
+            strcpy_s(out_watch_string, max_expr_length, cur_item->mDebuggerEntry.mVarName);
+
+        // -- set the current value
+        strcpy_s(out_value_string, max_value_length, cur_item->mDebuggerEntry.mValue);
+
+        return true;
+    }
+
+    // -- failed
+    return false;
+}
+
 // ====================================================================================================================
 // CreateSelectedWatch():  Dynamically add a watch to be updated by the debugger
 // ====================================================================================================================
+/*
 void CDebugWatchWin::CreateSelectedWatch()
 {
     CWatchEntry* cur_item = static_cast<CWatchEntry*>(currentItem());
@@ -482,7 +507,7 @@ void CDebugWatchWin::CreateSelectedWatch()
                                                                             watch_string, cur_value);
     }
 }
-
+*/
 // ====================================================================================================================
 // GetSelectedObjectID(): Used for creating an ObjectInspector, if the selected enty is a variable of type object.
 // ====================================================================================================================
@@ -560,10 +585,11 @@ void CDebugWatchWin::NotifyWatchVarEntry(TinScript::CDebuggerWatchVarEntry* watc
     int32 current_stack_index = CConsoleWindow::GetInstance()->GetDebugCallstackWin()->
                                                                GetSelectedStackEntry(cur_func_ns_hash, cur_func_hash,
                                                                                      cur_func_object_id);
-    if (current_stack_index < 0)
-    {
-        return;
-    }
+    // $$$TZA Do we need this?  if the entry is for an object, then it shouldn't matter if we're currently at a breakpoint
+    //if (current_stack_index < 0)
+    //{
+    //    return;
+    //}
 
     // -- if we're adding a namespace label
     if (watch_var_entry->mObjectID > 0)
@@ -592,11 +618,18 @@ void CDebugWatchWin::NotifyVarWatchResponse(TinScript::CDebuggerWatchVarEntry* w
     while (entry_index < mWatchList.size())
     {
 		CWatchEntry* entry = mWatchList.at(entry_index);
-        if (entry->mDebuggerEntry.mWatchRequestID == watch_var_entry->mWatchRequestID &&
-            entry->mDebuggerEntry.mObjectID == 0)
+        if (entry->mDebuggerEntry.mWatchRequestID == watch_var_entry->mWatchRequestID) // && entry->mDebuggerEntry.mObjectID == 0)
 		{
-            // -- if this response is for the main (top level) request, update the value
-            if (watch_var_entry->mObjectID == 0)
+
+            // -- if this entry is a matching object, then this is a member of that object
+            if (entry->mDebuggerEntry.mType == TinScript::TYPE_object &&
+                 entry->mDebuggerEntry.mVarObjectID == watch_var_entry->mObjectID)
+            {
+                NotifyVarWatchMember(entry_index,watch_var_entry);
+            }
+
+            // -- else this response is the value of a top level watch request
+            else
             {
                 // -- if the type used to be an object, and the new type is something else, we
                 // -- need to remove the children
@@ -606,8 +639,11 @@ void CDebugWatchWin::NotifyVarWatchResponse(TinScript::CDebuggerWatchVarEntry* w
                     RemoveWatchVarChildren(entry_index);
                 }
 
-                // -- update the type (it may have been undetermined)
-                entry->UpdateType(watch_var_entry->mType);
+                // -- update the type if undetermined
+                if (entry->mDebuggerEntry.mType == TinScript::eVarType::TYPE_void)
+                {
+                    entry->UpdateType(watch_var_entry->mType);
+                }
 
                 // -- watch entries are contextual - copy the source of the variable
                 entry->mDebuggerEntry.mFuncNamespaceHash = watch_var_entry->mFuncNamespaceHash;
@@ -628,13 +664,6 @@ void CDebugWatchWin::NotifyVarWatchResponse(TinScript::CDebuggerWatchVarEntry* w
 
 			    // -- update the value
 			    entry->UpdateValue(watch_var_entry->mValue);
-            }
-
-            // -- otherwise, if this entry is a matching object, then this is a member of that object
-            else if (entry->mDebuggerEntry.mType == TinScript::TYPE_object &&
-                     entry->mDebuggerEntry.mVarObjectID == watch_var_entry->mObjectID)
-            {
-                NotifyVarWatchMember(entry_index, watch_var_entry);
             }
 
 			// -- we're done
