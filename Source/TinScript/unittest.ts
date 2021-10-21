@@ -260,6 +260,25 @@ string TestCodeNSObject::ModifyTestMemberInt(int append_value)
     return (self.testmember);
 }
 
+// -- create a namespaced method, taking an object argument by ID
+string TestCodeNSObject::VerifySelfByID(int object_id)
+{
+    // -- set our test member
+    object found = FindObject(object_id);
+    string verified = (found == self ? "self found" : "invalid");
+    self.testmember = StringCat(self.GetObjectName(), " ", verified);
+    return (self.testmember);
+}
+
+// -- create a namespaced method, taking an object argument, when the addr is passed
+string TestCodeNSObject::VerifySelfByAddr(object test_object)
+{
+    // -- set our test member
+    string verified = (test_object == self ? "self found" : "invalid");
+    self.testmember = StringCat(self.GetObjectName(), " ", verified);
+    return (self.testmember);
+}
+
 // -- Array tests -----------------------------------------------------------------------------
 
 hashtable gHashTable;

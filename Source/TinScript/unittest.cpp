@@ -442,6 +442,64 @@ void UnitTest_CallScriptedMethodHashed()
     TinFree(test_obj);
 }
 
+// --------------------------------------------------------------------------------------------------------------------
+void UnitTest_CallScriptedMethodObjectArg()
+{
+    // -- create our test object from code this time
+    CChild* test_obj = TinAlloc(ALLOC_Debugger, CChild);
+
+    // -- manually register our test object
+    uint32 obj_id = TinScript::GetContext()->RegisterObject(test_obj,"CChild","TestCodeNSObject");
+
+    // -- now call a scripted method in the object's namespace, and retrieve a result
+    const char* result = NULL;
+    uint32 hash_VerifySelfByID = TinScript::Hash("VerifySelfByID");
+    if (!TinScript::ObjExecMethod(test_obj,result,hash_VerifySelfByID, obj_id))
+    {
+        ScriptAssert_(TinScript::GetContext(),false,"<internal>",-1,
+                      "Error - failed to execute method VerifySelfByID()\n");
+        return;
+    }
+
+    // -- print the result to a testable string
+    strcpy_s(CUnitTest::gCodeResult,result);
+
+    // -- unregister the object
+    TinScript::GetContext()->UnregisterObject(test_obj);
+
+    // -- delete the object
+    TinFree(test_obj);
+}
+
+// --------------------------------------------------------------------------------------------------------------------
+void UnitTest_CallScriptedMethodObjectAddrArg()
+{
+    // -- create our test object from code this time
+    CChild* test_obj = TinAlloc(ALLOC_Debugger, CChild);
+
+    // -- manually register our test object
+    uint32 obj_id = TinScript::GetContext()->RegisterObject(test_obj,"CChild","TestCodeNSObject");
+
+    // -- now call a scripted method in the object's namespace, and retrieve a result
+    const char* result = NULL;
+    uint32 hash_VerifySelfByAddr = TinScript::Hash("VerifySelfByAddr");
+    if (!TinScript::ObjExecMethod(test_obj,result,hash_VerifySelfByAddr, test_obj))
+    {
+        ScriptAssert_(TinScript::GetContext(),false,"<internal>",-1,
+                      "Error - failed to execute method VerifySelfByAddr()\n");
+        return;
+    }
+
+    // -- print the result to a testable string
+    strcpy_s(CUnitTest::gCodeResult,result);
+
+    // -- unregister the object
+    TinScript::GetContext()->UnregisterObject(test_obj);
+
+    // -- delete the object
+    TinFree(test_obj);
+}
+
 // ------------------------------------------------------------------------------------------------
 // -- Test weapon class
 class CWeapon {
@@ -859,6 +917,8 @@ bool8 CreateUnitTests()
         success = success && AddUnitTest("object_testns", "Create a Namespaced object", "UnitTest_CreateTestNSObject();", "TestNSObject 55.3000 198 foobar");
         success = success && AddUnitTest("objexecf", "Call a scripted object method", "", "", UnitTest_CallScriptedMethodExecf, "TestCodeNSObject foobar Moooo");
         success = success && AddUnitTest("objexecmethod","Call a scripted object method optimized","","",UnitTest_CallScriptedMethodHashed,"TestCodeNSObject foobar 67");
+        success = success && AddUnitTest("objexecobjarg","Call a scripted object method with an object arg","","",UnitTest_CallScriptedMethodObjectArg,"TestCodeNSObject self found");
+        success = success && AddUnitTest("objexecobjaddrarg","Call a scripted object method with an object arg by address","","",UnitTest_CallScriptedMethodObjectAddrArg,"TestCodeNSObject self found");
 
         // -- array tests
         success = success && AddUnitTest("global_hashtable", "Global hashtable", "UnitTest_GlobalHashtable();", "goodbye hello goodbye 3.1416");

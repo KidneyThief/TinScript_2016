@@ -155,13 +155,19 @@ bool8 ContextIsObject(uint32 objectid)
 }
 
 // ====================================================================================================================
-// ContextFindObjectByName(): Returns the object ID, for an object of the given name is found within
-// the curren thread's CScriptContext.
+// ContextFindObject(): Returns the object ID, for an object of the given name is found within
+// the current thread's CScriptContext.
 // ====================================================================================================================
-uint32 ContextFindObjectByName(const char* objname)
+uint32 ContextFindObject(const char* obj_name_or_id)
 {
     CScriptContext* script_context = TinScript::GetContext();
-    TinScript::CObjectEntry* oe = script_context->FindObjectByName(objname);
+    TinScript::CObjectEntry* oe = script_context->FindObjectByName(obj_name_or_id);
+    if (oe == nullptr)
+    {
+        uint32 obj_id = TinScript::Atoi(obj_name_or_id);
+        if (obj_id > 0)
+            oe = script_context->FindObjectEntry(obj_id);
+    }
     return oe ? oe->GetID() : 0;
 }
 
@@ -364,7 +370,7 @@ REGISTER_FUNCTION(PrintObject, ContextPrintObject);
 REGISTER_FUNCTION(DebugBreak, ContextDebugBreak);
 REGISTER_FUNCTION(ListObjects, ContextListObjects);
 REGISTER_FUNCTION(IsObject, ContextIsObject);
-REGISTER_FUNCTION(FindObject, ContextFindObjectByName);
+REGISTER_FUNCTION(FindObject, ContextFindObject);
 REGISTER_FUNCTION(ObjectHasNamespace, ContextObjectIsDerivedFrom);
 REGISTER_FUNCTION(ObjectHasMethod, ContextObjectHasMethod);
 REGISTER_FUNCTION(LinkNamespaces, ContextLinkNamespaces);

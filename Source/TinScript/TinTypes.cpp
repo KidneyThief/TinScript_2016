@@ -36,6 +36,8 @@
 #include "TinScript.h"
 #include "TinStringTable.h"
 
+#pragma optimize("", off)
+
 // == namespace TinScript =============================================================================================
 
 namespace TinScript
@@ -395,11 +397,32 @@ void* TypeConvert(CScriptContext* script_context, eVarType fromtype, void* froma
     // -- this allows us to have a place to do conversions, without memory management
     char* bufferptr = script_context->GetScratchBuffer();
     
-    // -- if the type remains the same, no conversion is necessary
+    // -- if the type remains the same, no conversion is necessary, except in the case of objects
+    // from code, an object could be the physical address - we want to ensure what we pass to script
+    // is the object *ID*!
     if (fromtype == totype || !fromaddr)
-        return fromaddr;
+    {
+        // -- note:  if we're passing a type object, and the address is an actual
+        // object address - we need to convert it to the ID
+        if (fromaddr && fromtype == TYPE_object)
+        {
+            void** obj_addr_ptr = (void**)fromaddr;
+            void* actual_obj_addr = *obj_addr_ptr;
+            CObjectEntry* found = script_context->FindObjectByAddress(actual_obj_addr);
+            if (found != nullptr)
+            {
+                uint32* stringbuf = (uint32*)script_context->GetScratchBuffer();
+                *stringbuf = found->GetID();
+                return (stringbuf);
+            }
+        }
 
-    // -- if the types we're converting between are variable or hashtable, they're interchangable by definition
+        // -- otherwise, return with no conversion - fromaddr is the addr of
+        // an uint32, already containing the ID
+        return fromaddr;
+    }
+
+    // -- if the types we're converting between are variable or hashtable, they're interchangeable by definition
     //if ((totype == TYPE__var || totype == TYPE_hashtable) && (fromtype == TYPE__var || fromtype == TYPE_hashtable))
     //    return fromaddr;
 
@@ -706,10 +729,24 @@ void* IntegerConvert(CScriptContext* script_context, eVarType from_type, void* f
             *(int32*)(to_buffer) = (int32)*(float32*)(from_val);
             return (void*)(to_buffer);
 
-        // -- since objects are actually uint32 IDs, we can store an object ID in an int.
-        // -- if the object is valid, simply return the value - otherwise return 0
+        // -- since objects are referred to by their IDs, we need to determine if the
+        // from_val is the physical address of an object, or the ID
         case TYPE_object:
         {
+            CObjectEntry* found = nullptr;
+            if (from_val != nullptr)
+            {
+                void** object_addr_ptr = (void**)from_val;
+                void* obj_addr = *object_addr_ptr;
+                found = script_context->FindObjectByAddress(obj_addr);
+                if (found != nullptr)
+                {
+                    *(int32*)(to_buffer) = (int32)found->GetID();
+                    return (void*)(to_buffer);
+                }
+            }
+
+            // -- otherwise, the value is already the ID - simply verify it exists, and return
             if (script_context->FindObjectEntry(*(uint32*)from_val))
                 return (from_val);
             else
