@@ -1421,7 +1421,7 @@ def GenerateExecs(maxparamcount, outputfilename):
             outputfile.write('        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %%s() unable to convert parameter %d\\n", UnHash(func_hash));\n' % i);
             outputfile.write("        return false;\n");
             outputfile.write("    }\n\n");
-            outputfile.write("    ve_p%d->SetValueAddr(oe ? oe->GetAddr() : NULL, p%d_convert_addr);\n\n" % (i, i));
+            outputfile.write("    ve_p%d->SetValueAddr(NULL, p%d_convert_addr);\n\n" % (i, i));
             i = i + 1;
 
         outputfile.write("    // -- execute the function\n");

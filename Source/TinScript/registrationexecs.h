@@ -277,7 +277,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    ve_p1->SetValueAddr(oe ? oe->GetAddr() : NULL, p1_convert_addr);
+    ve_p1->SetValueAddr(NULL, p1_convert_addr);
 
     // -- execute the function
     if (!ExecuteScheduledFunction(GetContext(), object_id, ns_hash, func_hash, fe->GetContext()))
@@ -413,7 +413,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    ve_p1->SetValueAddr(oe ? oe->GetAddr() : NULL, p1_convert_addr);
+    ve_p1->SetValueAddr(NULL, p1_convert_addr);
 
     CVariableEntry* ve_p2 = fe->GetContext()->GetParameter(2);
     void* p2_convert_addr = NULL;
@@ -427,7 +427,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    ve_p2->SetValueAddr(oe ? oe->GetAddr() : NULL, p2_convert_addr);
+    ve_p2->SetValueAddr(NULL, p2_convert_addr);
 
     // -- execute the function
     if (!ExecuteScheduledFunction(GetContext(), object_id, ns_hash, func_hash, fe->GetContext()))
@@ -563,7 +563,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    ve_p1->SetValueAddr(oe ? oe->GetAddr() : NULL, p1_convert_addr);
+    ve_p1->SetValueAddr(NULL, p1_convert_addr);
 
     CVariableEntry* ve_p2 = fe->GetContext()->GetParameter(2);
     void* p2_convert_addr = NULL;
@@ -577,7 +577,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    ve_p2->SetValueAddr(oe ? oe->GetAddr() : NULL, p2_convert_addr);
+    ve_p2->SetValueAddr(NULL, p2_convert_addr);
 
     CVariableEntry* ve_p3 = fe->GetContext()->GetParameter(3);
     void* p3_convert_addr = NULL;
@@ -591,7 +591,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    ve_p3->SetValueAddr(oe ? oe->GetAddr() : NULL, p3_convert_addr);
+    ve_p3->SetValueAddr(NULL, p3_convert_addr);
 
     // -- execute the function
     if (!ExecuteScheduledFunction(GetContext(), object_id, ns_hash, func_hash, fe->GetContext()))
@@ -727,7 +727,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    ve_p1->SetValueAddr(oe ? oe->GetAddr() : NULL, p1_convert_addr);
+    ve_p1->SetValueAddr(NULL, p1_convert_addr);
 
     CVariableEntry* ve_p2 = fe->GetContext()->GetParameter(2);
     void* p2_convert_addr = NULL;
@@ -741,7 +741,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    ve_p2->SetValueAddr(oe ? oe->GetAddr() : NULL, p2_convert_addr);
+    ve_p2->SetValueAddr(NULL, p2_convert_addr);
 
     CVariableEntry* ve_p3 = fe->GetContext()->GetParameter(3);
     void* p3_convert_addr = NULL;
@@ -755,7 +755,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    ve_p3->SetValueAddr(oe ? oe->GetAddr() : NULL, p3_convert_addr);
+    ve_p3->SetValueAddr(NULL, p3_convert_addr);
 
     CVariableEntry* ve_p4 = fe->GetContext()->GetParameter(4);
     void* p4_convert_addr = NULL;
@@ -769,7 +769,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    ve_p4->SetValueAddr(oe ? oe->GetAddr() : NULL, p4_convert_addr);
+    ve_p4->SetValueAddr(NULL, p4_convert_addr);
 
     // -- execute the function
     if (!ExecuteScheduledFunction(GetContext(), object_id, ns_hash, func_hash, fe->GetContext()))
@@ -905,7 +905,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    ve_p1->SetValueAddr(oe ? oe->GetAddr() : NULL, p1_convert_addr);
+    ve_p1->SetValueAddr(NULL, p1_convert_addr);
 
     CVariableEntry* ve_p2 = fe->GetContext()->GetParameter(2);
     void* p2_convert_addr = NULL;
@@ -919,7 +919,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    ve_p2->SetValueAddr(oe ? oe->GetAddr() : NULL, p2_convert_addr);
+    ve_p2->SetValueAddr(NULL, p2_convert_addr);
 
     CVariableEntry* ve_p3 = fe->GetContext()->GetParameter(3);
     void* p3_convert_addr = NULL;
@@ -933,7 +933,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    ve_p3->SetValueAddr(oe ? oe->GetAddr() : NULL, p3_convert_addr);
+    ve_p3->SetValueAddr(NULL, p3_convert_addr);
 
     CVariableEntry* ve_p4 = fe->GetContext()->GetParameter(4);
     void* p4_convert_addr = NULL;
@@ -947,7 +947,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    ve_p4->SetValueAddr(oe ? oe->GetAddr() : NULL, p4_convert_addr);
+    ve_p4->SetValueAddr(NULL, p4_convert_addr);
 
     CVariableEntry* ve_p5 = fe->GetContext()->GetParameter(5);
     void* p5_convert_addr = NULL;
@@ -961,7 +961,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    ve_p5->SetValueAddr(oe ? oe->GetAddr() : NULL, p5_convert_addr);
+    ve_p5->SetValueAddr(NULL, p5_convert_addr);
 
     // -- execute the function
     if (!ExecuteScheduledFunction(GetContext(), object_id, ns_hash, func_hash, fe->GetContext()))
@@ -1097,7 +1097,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    ve_p1->SetValueAddr(oe ? oe->GetAddr() : NULL, p1_convert_addr);
+    ve_p1->SetValueAddr(NULL, p1_convert_addr);
 
     CVariableEntry* ve_p2 = fe->GetContext()->GetParameter(2);
     void* p2_convert_addr = NULL;
@@ -1111,7 +1111,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    ve_p2->SetValueAddr(oe ? oe->GetAddr() : NULL, p2_convert_addr);
+    ve_p2->SetValueAddr(NULL, p2_convert_addr);
 
     CVariableEntry* ve_p3 = fe->GetContext()->GetParameter(3);
     void* p3_convert_addr = NULL;
@@ -1125,7 +1125,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    ve_p3->SetValueAddr(oe ? oe->GetAddr() : NULL, p3_convert_addr);
+    ve_p3->SetValueAddr(NULL, p3_convert_addr);
 
     CVariableEntry* ve_p4 = fe->GetContext()->GetParameter(4);
     void* p4_convert_addr = NULL;
@@ -1139,7 +1139,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    ve_p4->SetValueAddr(oe ? oe->GetAddr() : NULL, p4_convert_addr);
+    ve_p4->SetValueAddr(NULL, p4_convert_addr);
 
     CVariableEntry* ve_p5 = fe->GetContext()->GetParameter(5);
     void* p5_convert_addr = NULL;
@@ -1153,7 +1153,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    ve_p5->SetValueAddr(oe ? oe->GetAddr() : NULL, p5_convert_addr);
+    ve_p5->SetValueAddr(NULL, p5_convert_addr);
 
     CVariableEntry* ve_p6 = fe->GetContext()->GetParameter(6);
     void* p6_convert_addr = NULL;
@@ -1167,7 +1167,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    ve_p6->SetValueAddr(oe ? oe->GetAddr() : NULL, p6_convert_addr);
+    ve_p6->SetValueAddr(NULL, p6_convert_addr);
 
     // -- execute the function
     if (!ExecuteScheduledFunction(GetContext(), object_id, ns_hash, func_hash, fe->GetContext()))
@@ -1303,7 +1303,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    ve_p1->SetValueAddr(oe ? oe->GetAddr() : NULL, p1_convert_addr);
+    ve_p1->SetValueAddr(NULL, p1_convert_addr);
 
     CVariableEntry* ve_p2 = fe->GetContext()->GetParameter(2);
     void* p2_convert_addr = NULL;
@@ -1317,7 +1317,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    ve_p2->SetValueAddr(oe ? oe->GetAddr() : NULL, p2_convert_addr);
+    ve_p2->SetValueAddr(NULL, p2_convert_addr);
 
     CVariableEntry* ve_p3 = fe->GetContext()->GetParameter(3);
     void* p3_convert_addr = NULL;
@@ -1331,7 +1331,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    ve_p3->SetValueAddr(oe ? oe->GetAddr() : NULL, p3_convert_addr);
+    ve_p3->SetValueAddr(NULL, p3_convert_addr);
 
     CVariableEntry* ve_p4 = fe->GetContext()->GetParameter(4);
     void* p4_convert_addr = NULL;
@@ -1345,7 +1345,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    ve_p4->SetValueAddr(oe ? oe->GetAddr() : NULL, p4_convert_addr);
+    ve_p4->SetValueAddr(NULL, p4_convert_addr);
 
     CVariableEntry* ve_p5 = fe->GetContext()->GetParameter(5);
     void* p5_convert_addr = NULL;
@@ -1359,7 +1359,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    ve_p5->SetValueAddr(oe ? oe->GetAddr() : NULL, p5_convert_addr);
+    ve_p5->SetValueAddr(NULL, p5_convert_addr);
 
     CVariableEntry* ve_p6 = fe->GetContext()->GetParameter(6);
     void* p6_convert_addr = NULL;
@@ -1373,7 +1373,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    ve_p6->SetValueAddr(oe ? oe->GetAddr() : NULL, p6_convert_addr);
+    ve_p6->SetValueAddr(NULL, p6_convert_addr);
 
     CVariableEntry* ve_p7 = fe->GetContext()->GetParameter(7);
     void* p7_convert_addr = NULL;
@@ -1387,7 +1387,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    ve_p7->SetValueAddr(oe ? oe->GetAddr() : NULL, p7_convert_addr);
+    ve_p7->SetValueAddr(NULL, p7_convert_addr);
 
     // -- execute the function
     if (!ExecuteScheduledFunction(GetContext(), object_id, ns_hash, func_hash, fe->GetContext()))
@@ -1523,7 +1523,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    ve_p1->SetValueAddr(oe ? oe->GetAddr() : NULL, p1_convert_addr);
+    ve_p1->SetValueAddr(NULL, p1_convert_addr);
 
     CVariableEntry* ve_p2 = fe->GetContext()->GetParameter(2);
     void* p2_convert_addr = NULL;
@@ -1537,7 +1537,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    ve_p2->SetValueAddr(oe ? oe->GetAddr() : NULL, p2_convert_addr);
+    ve_p2->SetValueAddr(NULL, p2_convert_addr);
 
     CVariableEntry* ve_p3 = fe->GetContext()->GetParameter(3);
     void* p3_convert_addr = NULL;
@@ -1551,7 +1551,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    ve_p3->SetValueAddr(oe ? oe->GetAddr() : NULL, p3_convert_addr);
+    ve_p3->SetValueAddr(NULL, p3_convert_addr);
 
     CVariableEntry* ve_p4 = fe->GetContext()->GetParameter(4);
     void* p4_convert_addr = NULL;
@@ -1565,7 +1565,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    ve_p4->SetValueAddr(oe ? oe->GetAddr() : NULL, p4_convert_addr);
+    ve_p4->SetValueAddr(NULL, p4_convert_addr);
 
     CVariableEntry* ve_p5 = fe->GetContext()->GetParameter(5);
     void* p5_convert_addr = NULL;
@@ -1579,7 +1579,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    ve_p5->SetValueAddr(oe ? oe->GetAddr() : NULL, p5_convert_addr);
+    ve_p5->SetValueAddr(NULL, p5_convert_addr);
 
     CVariableEntry* ve_p6 = fe->GetContext()->GetParameter(6);
     void* p6_convert_addr = NULL;
@@ -1593,7 +1593,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    ve_p6->SetValueAddr(oe ? oe->GetAddr() : NULL, p6_convert_addr);
+    ve_p6->SetValueAddr(NULL, p6_convert_addr);
 
     CVariableEntry* ve_p7 = fe->GetContext()->GetParameter(7);
     void* p7_convert_addr = NULL;
@@ -1607,7 +1607,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    ve_p7->SetValueAddr(oe ? oe->GetAddr() : NULL, p7_convert_addr);
+    ve_p7->SetValueAddr(NULL, p7_convert_addr);
 
     CVariableEntry* ve_p8 = fe->GetContext()->GetParameter(8);
     void* p8_convert_addr = NULL;
@@ -1621,7 +1621,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    ve_p8->SetValueAddr(oe ? oe->GetAddr() : NULL, p8_convert_addr);
+    ve_p8->SetValueAddr(NULL, p8_convert_addr);
 
     // -- execute the function
     if (!ExecuteScheduledFunction(GetContext(), object_id, ns_hash, func_hash, fe->GetContext()))
@@ -1757,7 +1757,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    ve_p1->SetValueAddr(oe ? oe->GetAddr() : NULL, p1_convert_addr);
+    ve_p1->SetValueAddr(NULL, p1_convert_addr);
 
     CVariableEntry* ve_p2 = fe->GetContext()->GetParameter(2);
     void* p2_convert_addr = NULL;
@@ -1771,7 +1771,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    ve_p2->SetValueAddr(oe ? oe->GetAddr() : NULL, p2_convert_addr);
+    ve_p2->SetValueAddr(NULL, p2_convert_addr);
 
     CVariableEntry* ve_p3 = fe->GetContext()->GetParameter(3);
     void* p3_convert_addr = NULL;
@@ -1785,7 +1785,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    ve_p3->SetValueAddr(oe ? oe->GetAddr() : NULL, p3_convert_addr);
+    ve_p3->SetValueAddr(NULL, p3_convert_addr);
 
     CVariableEntry* ve_p4 = fe->GetContext()->GetParameter(4);
     void* p4_convert_addr = NULL;
@@ -1799,7 +1799,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    ve_p4->SetValueAddr(oe ? oe->GetAddr() : NULL, p4_convert_addr);
+    ve_p4->SetValueAddr(NULL, p4_convert_addr);
 
     CVariableEntry* ve_p5 = fe->GetContext()->GetParameter(5);
     void* p5_convert_addr = NULL;
@@ -1813,7 +1813,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    ve_p5->SetValueAddr(oe ? oe->GetAddr() : NULL, p5_convert_addr);
+    ve_p5->SetValueAddr(NULL, p5_convert_addr);
 
     CVariableEntry* ve_p6 = fe->GetContext()->GetParameter(6);
     void* p6_convert_addr = NULL;
@@ -1827,7 +1827,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    ve_p6->SetValueAddr(oe ? oe->GetAddr() : NULL, p6_convert_addr);
+    ve_p6->SetValueAddr(NULL, p6_convert_addr);
 
     CVariableEntry* ve_p7 = fe->GetContext()->GetParameter(7);
     void* p7_convert_addr = NULL;
@@ -1841,7 +1841,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    ve_p7->SetValueAddr(oe ? oe->GetAddr() : NULL, p7_convert_addr);
+    ve_p7->SetValueAddr(NULL, p7_convert_addr);
 
     CVariableEntry* ve_p8 = fe->GetContext()->GetParameter(8);
     void* p8_convert_addr = NULL;
@@ -1855,7 +1855,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    ve_p8->SetValueAddr(oe ? oe->GetAddr() : NULL, p8_convert_addr);
+    ve_p8->SetValueAddr(NULL, p8_convert_addr);
 
     CVariableEntry* ve_p9 = fe->GetContext()->GetParameter(9);
     void* p9_convert_addr = NULL;
@@ -1869,7 +1869,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    ve_p9->SetValueAddr(oe ? oe->GetAddr() : NULL, p9_convert_addr);
+    ve_p9->SetValueAddr(NULL, p9_convert_addr);
 
     // -- execute the function
     if (!ExecuteScheduledFunction(GetContext(), object_id, ns_hash, func_hash, fe->GetContext()))
@@ -2005,7 +2005,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    ve_p1->SetValueAddr(oe ? oe->GetAddr() : NULL, p1_convert_addr);
+    ve_p1->SetValueAddr(NULL, p1_convert_addr);
 
     CVariableEntry* ve_p2 = fe->GetContext()->GetParameter(2);
     void* p2_convert_addr = NULL;
@@ -2019,7 +2019,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    ve_p2->SetValueAddr(oe ? oe->GetAddr() : NULL, p2_convert_addr);
+    ve_p2->SetValueAddr(NULL, p2_convert_addr);
 
     CVariableEntry* ve_p3 = fe->GetContext()->GetParameter(3);
     void* p3_convert_addr = NULL;
@@ -2033,7 +2033,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    ve_p3->SetValueAddr(oe ? oe->GetAddr() : NULL, p3_convert_addr);
+    ve_p3->SetValueAddr(NULL, p3_convert_addr);
 
     CVariableEntry* ve_p4 = fe->GetContext()->GetParameter(4);
     void* p4_convert_addr = NULL;
@@ -2047,7 +2047,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    ve_p4->SetValueAddr(oe ? oe->GetAddr() : NULL, p4_convert_addr);
+    ve_p4->SetValueAddr(NULL, p4_convert_addr);
 
     CVariableEntry* ve_p5 = fe->GetContext()->GetParameter(5);
     void* p5_convert_addr = NULL;
@@ -2061,7 +2061,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    ve_p5->SetValueAddr(oe ? oe->GetAddr() : NULL, p5_convert_addr);
+    ve_p5->SetValueAddr(NULL, p5_convert_addr);
 
     CVariableEntry* ve_p6 = fe->GetContext()->GetParameter(6);
     void* p6_convert_addr = NULL;
@@ -2075,7 +2075,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    ve_p6->SetValueAddr(oe ? oe->GetAddr() : NULL, p6_convert_addr);
+    ve_p6->SetValueAddr(NULL, p6_convert_addr);
 
     CVariableEntry* ve_p7 = fe->GetContext()->GetParameter(7);
     void* p7_convert_addr = NULL;
@@ -2089,7 +2089,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    ve_p7->SetValueAddr(oe ? oe->GetAddr() : NULL, p7_convert_addr);
+    ve_p7->SetValueAddr(NULL, p7_convert_addr);
 
     CVariableEntry* ve_p8 = fe->GetContext()->GetParameter(8);
     void* p8_convert_addr = NULL;
@@ -2103,7 +2103,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    ve_p8->SetValueAddr(oe ? oe->GetAddr() : NULL, p8_convert_addr);
+    ve_p8->SetValueAddr(NULL, p8_convert_addr);
 
     CVariableEntry* ve_p9 = fe->GetContext()->GetParameter(9);
     void* p9_convert_addr = NULL;
@@ -2117,7 +2117,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    ve_p9->SetValueAddr(oe ? oe->GetAddr() : NULL, p9_convert_addr);
+    ve_p9->SetValueAddr(NULL, p9_convert_addr);
 
     CVariableEntry* ve_p10 = fe->GetContext()->GetParameter(10);
     void* p10_convert_addr = NULL;
@@ -2131,7 +2131,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    ve_p10->SetValueAddr(oe ? oe->GetAddr() : NULL, p10_convert_addr);
+    ve_p10->SetValueAddr(NULL, p10_convert_addr);
 
     // -- execute the function
     if (!ExecuteScheduledFunction(GetContext(), object_id, ns_hash, func_hash, fe->GetContext()))
@@ -2267,7 +2267,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    ve_p1->SetValueAddr(oe ? oe->GetAddr() : NULL, p1_convert_addr);
+    ve_p1->SetValueAddr(NULL, p1_convert_addr);
 
     CVariableEntry* ve_p2 = fe->GetContext()->GetParameter(2);
     void* p2_convert_addr = NULL;
@@ -2281,7 +2281,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    ve_p2->SetValueAddr(oe ? oe->GetAddr() : NULL, p2_convert_addr);
+    ve_p2->SetValueAddr(NULL, p2_convert_addr);
 
     CVariableEntry* ve_p3 = fe->GetContext()->GetParameter(3);
     void* p3_convert_addr = NULL;
@@ -2295,7 +2295,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    ve_p3->SetValueAddr(oe ? oe->GetAddr() : NULL, p3_convert_addr);
+    ve_p3->SetValueAddr(NULL, p3_convert_addr);
 
     CVariableEntry* ve_p4 = fe->GetContext()->GetParameter(4);
     void* p4_convert_addr = NULL;
@@ -2309,7 +2309,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    ve_p4->SetValueAddr(oe ? oe->GetAddr() : NULL, p4_convert_addr);
+    ve_p4->SetValueAddr(NULL, p4_convert_addr);
 
     CVariableEntry* ve_p5 = fe->GetContext()->GetParameter(5);
     void* p5_convert_addr = NULL;
@@ -2323,7 +2323,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    ve_p5->SetValueAddr(oe ? oe->GetAddr() : NULL, p5_convert_addr);
+    ve_p5->SetValueAddr(NULL, p5_convert_addr);
 
     CVariableEntry* ve_p6 = fe->GetContext()->GetParameter(6);
     void* p6_convert_addr = NULL;
@@ -2337,7 +2337,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    ve_p6->SetValueAddr(oe ? oe->GetAddr() : NULL, p6_convert_addr);
+    ve_p6->SetValueAddr(NULL, p6_convert_addr);
 
     CVariableEntry* ve_p7 = fe->GetContext()->GetParameter(7);
     void* p7_convert_addr = NULL;
@@ -2351,7 +2351,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    ve_p7->SetValueAddr(oe ? oe->GetAddr() : NULL, p7_convert_addr);
+    ve_p7->SetValueAddr(NULL, p7_convert_addr);
 
     CVariableEntry* ve_p8 = fe->GetContext()->GetParameter(8);
     void* p8_convert_addr = NULL;
@@ -2365,7 +2365,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    ve_p8->SetValueAddr(oe ? oe->GetAddr() : NULL, p8_convert_addr);
+    ve_p8->SetValueAddr(NULL, p8_convert_addr);
 
     CVariableEntry* ve_p9 = fe->GetContext()->GetParameter(9);
     void* p9_convert_addr = NULL;
@@ -2379,7 +2379,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    ve_p9->SetValueAddr(oe ? oe->GetAddr() : NULL, p9_convert_addr);
+    ve_p9->SetValueAddr(NULL, p9_convert_addr);
 
     CVariableEntry* ve_p10 = fe->GetContext()->GetParameter(10);
     void* p10_convert_addr = NULL;
@@ -2393,7 +2393,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    ve_p10->SetValueAddr(oe ? oe->GetAddr() : NULL, p10_convert_addr);
+    ve_p10->SetValueAddr(NULL, p10_convert_addr);
 
     CVariableEntry* ve_p11 = fe->GetContext()->GetParameter(11);
     void* p11_convert_addr = NULL;
@@ -2407,7 +2407,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    ve_p11->SetValueAddr(oe ? oe->GetAddr() : NULL, p11_convert_addr);
+    ve_p11->SetValueAddr(NULL, p11_convert_addr);
 
     // -- execute the function
     if (!ExecuteScheduledFunction(GetContext(), object_id, ns_hash, func_hash, fe->GetContext()))
@@ -2543,7 +2543,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    ve_p1->SetValueAddr(oe ? oe->GetAddr() : NULL, p1_convert_addr);
+    ve_p1->SetValueAddr(NULL, p1_convert_addr);
 
     CVariableEntry* ve_p2 = fe->GetContext()->GetParameter(2);
     void* p2_convert_addr = NULL;
@@ -2557,7 +2557,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    ve_p2->SetValueAddr(oe ? oe->GetAddr() : NULL, p2_convert_addr);
+    ve_p2->SetValueAddr(NULL, p2_convert_addr);
 
     CVariableEntry* ve_p3 = fe->GetContext()->GetParameter(3);
     void* p3_convert_addr = NULL;
@@ -2571,7 +2571,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    ve_p3->SetValueAddr(oe ? oe->GetAddr() : NULL, p3_convert_addr);
+    ve_p3->SetValueAddr(NULL, p3_convert_addr);
 
     CVariableEntry* ve_p4 = fe->GetContext()->GetParameter(4);
     void* p4_convert_addr = NULL;
@@ -2585,7 +2585,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    ve_p4->SetValueAddr(oe ? oe->GetAddr() : NULL, p4_convert_addr);
+    ve_p4->SetValueAddr(NULL, p4_convert_addr);
 
     CVariableEntry* ve_p5 = fe->GetContext()->GetParameter(5);
     void* p5_convert_addr = NULL;
@@ -2599,7 +2599,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    ve_p5->SetValueAddr(oe ? oe->GetAddr() : NULL, p5_convert_addr);
+    ve_p5->SetValueAddr(NULL, p5_convert_addr);
 
     CVariableEntry* ve_p6 = fe->GetContext()->GetParameter(6);
     void* p6_convert_addr = NULL;
@@ -2613,7 +2613,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    ve_p6->SetValueAddr(oe ? oe->GetAddr() : NULL, p6_convert_addr);
+    ve_p6->SetValueAddr(NULL, p6_convert_addr);
 
     CVariableEntry* ve_p7 = fe->GetContext()->GetParameter(7);
     void* p7_convert_addr = NULL;
@@ -2627,7 +2627,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    ve_p7->SetValueAddr(oe ? oe->GetAddr() : NULL, p7_convert_addr);
+    ve_p7->SetValueAddr(NULL, p7_convert_addr);
 
     CVariableEntry* ve_p8 = fe->GetContext()->GetParameter(8);
     void* p8_convert_addr = NULL;
@@ -2641,7 +2641,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    ve_p8->SetValueAddr(oe ? oe->GetAddr() : NULL, p8_convert_addr);
+    ve_p8->SetValueAddr(NULL, p8_convert_addr);
 
     CVariableEntry* ve_p9 = fe->GetContext()->GetParameter(9);
     void* p9_convert_addr = NULL;
@@ -2655,7 +2655,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    ve_p9->SetValueAddr(oe ? oe->GetAddr() : NULL, p9_convert_addr);
+    ve_p9->SetValueAddr(NULL, p9_convert_addr);
 
     CVariableEntry* ve_p10 = fe->GetContext()->GetParameter(10);
     void* p10_convert_addr = NULL;
@@ -2669,7 +2669,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    ve_p10->SetValueAddr(oe ? oe->GetAddr() : NULL, p10_convert_addr);
+    ve_p10->SetValueAddr(NULL, p10_convert_addr);
 
     CVariableEntry* ve_p11 = fe->GetContext()->GetParameter(11);
     void* p11_convert_addr = NULL;
@@ -2683,7 +2683,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    ve_p11->SetValueAddr(oe ? oe->GetAddr() : NULL, p11_convert_addr);
+    ve_p11->SetValueAddr(NULL, p11_convert_addr);
 
     CVariableEntry* ve_p12 = fe->GetContext()->GetParameter(12);
     void* p12_convert_addr = NULL;
@@ -2697,7 +2697,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    ve_p12->SetValueAddr(oe ? oe->GetAddr() : NULL, p12_convert_addr);
+    ve_p12->SetValueAddr(NULL, p12_convert_addr);
 
     // -- execute the function
     if (!ExecuteScheduledFunction(GetContext(), object_id, ns_hash, func_hash, fe->GetContext()))

@@ -386,7 +386,7 @@ void UnitTest_GetScriptReturnVector3f()
 }
 
 // --------------------------------------------------------------------------------------------------------------------
-void UnitTest_CallScriptedMethod()
+void UnitTest_CallScriptedMethodExecf()
 {
     // -- create our test object from code this time
     CChild* test_obj = TinAlloc(ALLOC_Debugger, CChild);
@@ -396,7 +396,7 @@ void UnitTest_CallScriptedMethod()
 
     // -- now call a scripted method in the object's namespace, and retrieve a result
     const char* result = NULL;
-    if (!TinScript::ObjExecF(test_obj, result, "ModifyTestMember('Moooo');"))
+    if (!TinScript::ObjExecF(test_obj, result, "ModifyTestMemberString('Moooo');"))
     {
         ScriptAssert_(TinScript::GetContext(), false, "<internal>", -1,
                       "Error - failed to execute method ModifyTestMember()\n");
@@ -405,6 +405,35 @@ void UnitTest_CallScriptedMethod()
 
     // -- print the result to a testable string
     strcpy_s(CUnitTest::gCodeResult, result);
+
+    // -- unregister the object
+    TinScript::GetContext()->UnregisterObject(test_obj);
+
+    // -- delete the object
+    TinFree(test_obj);
+}
+
+// --------------------------------------------------------------------------------------------------------------------
+void UnitTest_CallScriptedMethodHashed()
+{
+    // -- create our test object from code this time
+    CChild* test_obj = TinAlloc(ALLOC_Debugger,CChild);
+
+    // -- manually register our test object
+    TinScript::GetContext()->RegisterObject(test_obj,"CChild","TestCodeNSObject");
+
+    // -- now call a scripted method in the object's namespace, and retrieve a result
+    const char* result = NULL;
+    uint32 hash_ModifyTestMember = TinScript::Hash("ModifyTestMemberInt");
+    if(!TinScript::ObjExecMethod(test_obj,result,hash_ModifyTestMember, 67))
+    {
+        ScriptAssert_(TinScript::GetContext(),false,"<internal>",-1,
+                      "Error - failed to execute method ModifyTestMember()\n");
+        return;
+    }
+
+    // -- print the result to a testable string
+    strcpy_s(CUnitTest::gCodeResult,result);
 
     // -- unregister the object
     TinScript::GetContext()->UnregisterObject(test_obj);
@@ -828,7 +857,8 @@ bool8 CreateUnitTests()
         success = success && AddUnitTest("object_base", "Create a CBase object", "UnitTest_CreateBaseObject();", "BaseObject 27.0000");
         success = success && AddUnitTest("object_child", "Create a CChild object", "UnitTest_CreateChildObject();", "ChildObject 19.0000");
         success = success && AddUnitTest("object_testns", "Create a Namespaced object", "UnitTest_CreateTestNSObject();", "TestNSObject 55.3000 198 foobar");
-        success = success && AddUnitTest("objexecf", "Call a scripted object method", "", "", UnitTest_CallScriptedMethod, "TestCodeNSObject foobar Moooo");
+        success = success && AddUnitTest("objexecf", "Call a scripted object method", "", "", UnitTest_CallScriptedMethodExecf, "TestCodeNSObject foobar Moooo");
+        success = success && AddUnitTest("objexecmethod","Call a scripted object method optimized","","",UnitTest_CallScriptedMethodHashed,"TestCodeNSObject foobar 67");
 
         // -- array tests
         success = success && AddUnitTest("global_hashtable", "Global hashtable", "UnitTest_GlobalHashtable();", "goodbye hello goodbye 3.1416");

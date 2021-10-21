@@ -245,7 +245,15 @@ void TestCodeNSObject::OnCreate() : TestNSObject
 }
 
 // -- now create a namespaced method to be executed from code
-string TestCodeNSObject::ModifyTestMember(string append_value)
+string TestCodeNSObject::ModifyTestMemberString(string append_value)
+{
+    // -- append to our test member
+    self.testmember = StringCat(self.GetObjectName(), " ", self.testmember, " ", append_value);
+    return (self.testmember);
+}
+
+// -- now create a namespaced method to be executed from code
+string TestCodeNSObject::ModifyTestMemberInt(int append_value)
 {
     // -- append to our test member
     self.testmember = StringCat(self.GetObjectName(), " ", self.testmember, " ", append_value);
