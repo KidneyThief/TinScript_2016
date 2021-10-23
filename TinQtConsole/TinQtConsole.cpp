@@ -2130,7 +2130,7 @@ void CConsoleOutput::HandlePacketPrintMsg(int32* dataPtr)
     const char* msg = (char*)dataPtr;
     dataPtr += (msg_length / 4);
 
-    // -- add the message, preceeded with some indication that it's a remote message
+    // -- add the message, preceded with some indication that it's a remote message
     ConsolePrint("%s%s", kConsoleRecvPrefix, msg);
 }
 
@@ -2142,14 +2142,14 @@ void CConsoleOutput::HandlePacketFunctionAssist(int32* dataPtr)
     // -- skip past the packet ID
     ++dataPtr;
 
-    // -- reconstitute the stuct
+    // -- reconstitute the struct
     TinScript::CDebuggerFunctionAssistEntry function_assist_entry;
 
-    // -- the only packets we receive from the target are actual functions, not object entries
-    function_assist_entry.mIsObjectEntry = false;
+    // -- entry type
+    function_assist_entry.mEntryType = (TinScript::eFunctionEntryType)(*dataPtr++);
 
 	// -- object ID
-	function_assist_entry.mObjectID = *dataPtr++;;
+	function_assist_entry.mObjectID = *dataPtr++;
 
 	// -- namespace hash
 	function_assist_entry.mNamespaceHash = *dataPtr++;
@@ -2160,8 +2160,9 @@ void CConsoleOutput::HandlePacketFunctionAssist(int32* dataPtr)
     // -- value string length
     int32 name_length = *dataPtr++;
 
-    // -- copy the function name string
-    strcpy_s(function_assist_entry.mFunctionName, (const char*)dataPtr);
+    // -- copy the search name string
+    TinScript::SafeStrcpy(function_assist_entry.mSearchName, sizeof(function_assist_entry.mSearchName),
+                          (const char*)dataPtr);
     dataPtr += (name_length / 4);
 
 	// -- copy the codeblock name hash, and line number
@@ -2477,6 +2478,14 @@ void DebuggerListObjectsComplete()
 }
 
 // ====================================================================================================================
+// DebuggerFunctionAssistComplete():  When a function assist request is made, this completion is sent back.
+// ====================================================================================================================
+void DebuggerFunctionAssistComplete()
+{
+    CConsoleWindow::GetInstance()->GetDebugFunctionAssistWin()->NotifyFunctionAssistComplete();
+}
+
+// ====================================================================================================================
 // DebuggerNotifyTimeScale():  Receive notification of a canceled or completed schedule.
 // ====================================================================================================================
 void DebuggerNotifyTimeScale(float time_scale)
@@ -2527,6 +2536,7 @@ REGISTER_FUNCTION(DebuggerNotifySetAddObject, DebuggerNotifySetAddObject);
 REGISTER_FUNCTION(DebuggerNotifySetRemoveObject, DebuggerNotifySetRemoveObject);
 
 REGISTER_FUNCTION(DebuggerListObjectsComplete, DebuggerListObjectsComplete);
+REGISTER_FUNCTION(DebuggerFunctionAssistComplete, DebuggerFunctionAssistComplete);
 
 // == Scheduler Registration ==========================================================================================
 

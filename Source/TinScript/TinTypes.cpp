@@ -353,7 +353,7 @@ void ShutdownTypes()
             gRegisteredTypeConfig[i](i, false);
     }
 
-    // -- clear the manaully populated tables
+    // -- clear the manually populated tables
 	for(eVarType i = TYPE_void; i < TYPE_COUNT; i = eVarType(i + 1))
     {
         gRegisteredPODTypeTable[i] = NULL;

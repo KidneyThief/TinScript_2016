@@ -3052,6 +3052,34 @@ void CScriptContext::DebuggerRequestFunctionAssist(uint32 object_id)
     // -- if we're sending global functions, we need the global namespace only
     if (object_id == 0)
     {
+        // -- we're sending the list of namespaces
+        CHashTable<CNamespace>* namespaces = GetNamespaceDictionary();
+        if (namespaces != nullptr)
+        {
+            CNamespace* current_namespace = namespaces->First();
+            while (current_namespace != nullptr)
+            {
+                const char* current_name = current_namespace->GetName();
+                if (current_name && current_name[0])
+                {
+                    CDebuggerFunctionAssistEntry entry;
+                    entry.mEntryType = eFunctionEntryType::Namespace;
+                    entry.mObjectID = 0;
+                    entry.mNamespaceHash = current_namespace->GetHash();
+                    entry.mFunctionHash = 0;
+                    entry.mCodeBlockHash = 0;
+                    entry.mLineNumber = 0;
+                    entry.mParameterCount = 0;
+                    SafeStrcpy(entry.mSearchName, sizeof(entry.mSearchName), current_name);
+
+                    // -- send the entry
+                    DebuggerSendFunctionAssistEntry(entry);
+                }
+                current_namespace = namespaces->Next();
+            }
+        }
+
+        // -- we also send the global functions
         function_table = GetGlobalNamespace()->GetFuncTable();
     }
     else
@@ -3063,52 +3091,8 @@ void CScriptContext::DebuggerRequestFunctionAssist(uint32 object_id)
     // -- send the hierarchy
     while (function_table)
     {
-        // -- populate and send a function assist entry
-        CFunctionEntry* function_entry = function_table->First();
-        while (function_entry)
-        {
-            CDebuggerFunctionAssistEntry entry;
-            entry.mIsObjectEntry = false;
-            entry.mObjectID = object_id;
-            entry.mNamespaceHash = current_namespace ? current_namespace->GetHash() : 0;
-            entry.mFunctionHash = function_entry->GetHash();
-            SafeStrcpy(entry.mFunctionName, sizeof(entry.mFunctionName), function_entry->GetName(), kMaxNameLength);
-
-			// -- get the codeblock, and fill in the line number
-			entry.mCodeBlockHash = function_entry->GetCodeBlock()
-								   ? function_entry->GetCodeBlock()->GetFilenameHash()
-								   : 0;
-
-			// -- calculate the line number
-			entry.mLineNumber = 0;
-			if (entry.mCodeBlockHash != 0)
-			{
-				CCodeBlock* codeblock = function_entry->GetCodeBlock();
-				uint32 offset = function_entry->GetCodeBlockOffset(codeblock);
-				const uint32* instrptr = codeblock->GetInstructionPtr();
-				instrptr += offset;
-				entry.mLineNumber = codeblock->CalcLineNumber(instrptr);
-			}
-
-            // -- fill in the parameters
-            CFunctionContext* function_context = function_entry->GetContext();
-            entry.mParameterCount = function_context->GetParameterCount();
-            if (entry.mParameterCount > kMaxRegisteredParameterCount + 1)
-                entry.mParameterCount = kMaxRegisteredParameterCount + 1;
-            for (int i = 0; i < entry.mParameterCount; ++i)
-            {
-                CVariableEntry* parameter = function_context->GetParameter(i);
-                entry.mType[i] = parameter->GetType();
-                entry.mIsArray[i] = parameter->IsArray();
-                entry.mNameHash[i] = parameter->GetHash();
-            }
-
-            // -- send the entry
-            DebuggerSendFunctionAssistEntry(entry);
-
-            // -- get the next
-            function_entry = function_table->Next();
-        }
+        // -- send the function table for the given namespace
+        DebuggerSendFunctionTable(object_id, current_namespace ? current_namespace->GetHash() : 0, function_table);
 
         // -- get the next function table
         if (object_id != 0)
@@ -3125,6 +3109,82 @@ void CScriptContext::DebuggerRequestFunctionAssist(uint32 object_id)
 }
 
 // ====================================================================================================================
+// DebuggerRequestNamespaceAssist():  Sends the debugger a list of functions registered for a given namespace.
+// ====================================================================================================================
+void CScriptContext::DebuggerRequestNamespaceAssist(uint32 ns_hash)
+{
+    CNamespace* current_namespace = ns_hash == 0 || (GetGlobalNamespace() != nullptr &&
+                                                     ns_hash == GetGlobalNamespace()->GetHash())
+                                    ? GetGlobalNamespace()
+                                    : GetNamespaceDictionary()->FindItem(ns_hash);
+
+    // -- send the entire hierarchy
+    while (current_namespace != nullptr)
+    {
+        tFuncTable* function_table = current_namespace->GetFuncTable();
+        if (function_table != nullptr)
+        {
+            DebuggerSendFunctionTable(0, current_namespace->GetHash(), function_table);
+        }
+
+        current_namespace = current_namespace->GetNext();
+    }
+}
+
+// ====================================================================================================================
+// DebuggerSendFunctionTable():  sends the debugger the list of functions for the function table
+// ====================================================================================================================
+void CScriptContext::DebuggerSendFunctionTable(int32 object_id, uint32 ns_hash, tFuncTable* function_table)
+{
+    // -- populate and send a function assist entry
+    CFunctionEntry* function_entry = function_table->First();
+    while (function_entry)
+    {
+        CDebuggerFunctionAssistEntry entry;
+        entry.mEntryType = eFunctionEntryType::Function;
+        entry.mObjectID = object_id;
+        entry.mNamespaceHash = ns_hash;
+        entry.mFunctionHash = function_entry->GetHash();
+        SafeStrcpy(entry.mSearchName, sizeof(entry.mSearchName), function_entry->GetName(), kMaxNameLength);
+
+		// -- get the codeblock, and fill in the line number
+		entry.mCodeBlockHash = function_entry->GetCodeBlock()
+								? function_entry->GetCodeBlock()->GetFilenameHash()
+								: 0;
+
+		// -- calculate the line number
+		entry.mLineNumber = 0;
+		if (entry.mCodeBlockHash != 0)
+		{
+			CCodeBlock* codeblock = function_entry->GetCodeBlock();
+			uint32 offset = function_entry->GetCodeBlockOffset(codeblock);
+			const uint32* instrptr = codeblock->GetInstructionPtr();
+			instrptr += offset;
+			entry.mLineNumber = codeblock->CalcLineNumber(instrptr);
+		}
+
+        // -- fill in the parameters
+        CFunctionContext* function_context = function_entry->GetContext();
+        entry.mParameterCount = function_context->GetParameterCount();
+        if (entry.mParameterCount > kMaxRegisteredParameterCount + 1)
+            entry.mParameterCount = kMaxRegisteredParameterCount + 1;
+        for (int i = 0; i < entry.mParameterCount; ++i)
+        {
+            CVariableEntry* parameter = function_context->GetParameter(i);
+            entry.mType[i] = parameter->GetType();
+            entry.mIsArray[i] = parameter->IsArray();
+            entry.mNameHash[i] = parameter->GetHash();
+        }
+
+        // -- send the entry
+        DebuggerSendFunctionAssistEntry(entry);
+
+        // -- get the next
+        function_entry = function_table->Next();
+    }
+}
+
+// ====================================================================================================================
 // DebuggerSendFunctionAssistEntry():  Send a a function and it's parameter list to the debugger
 // ====================================================================================================================
 void CScriptContext::DebuggerSendFunctionAssistEntry(const CDebuggerFunctionAssistEntry& function_assist_entry)
@@ -3133,6 +3193,9 @@ void CScriptContext::DebuggerSendFunctionAssistEntry(const CDebuggerFunctionAssi
     int32 total_size = 0;
 
     // -- first int32 will be identifying this data packet
+    total_size += sizeof(int32);
+
+    // -- entry type
     total_size += sizeof(int32);
 
 	// -- object ID
@@ -3145,7 +3208,7 @@ void CScriptContext::DebuggerSendFunctionAssistEntry(const CDebuggerFunctionAssi
 	total_size += sizeof(int32);
 
     // -- calculate the length of the function name, including EOL, and 4-byte aligned
-    int32 nameLength = (int32)strlen(function_assist_entry.mFunctionName) + 1;
+    int32 nameLength = (int32)strlen(function_assist_entry.mSearchName) + 1;
     nameLength += 4 - (nameLength % 4);
 
     // -- add the function name length, followed by the actual string
@@ -3185,6 +3248,9 @@ void CScriptContext::DebuggerSendFunctionAssistEntry(const CDebuggerFunctionAssi
 
     // -- write the identifier - defined in the debugger constants near the top of TinScript.h
     *dataPtr++ = k_DebuggerFunctionAssistPacketID;
+    
+    // -- entry type
+    *dataPtr++ = (int32)function_assist_entry.mEntryType;
 
 	// -- object ID
 	*dataPtr++ = function_assist_entry.mObjectID;
@@ -3199,7 +3265,7 @@ void CScriptContext::DebuggerSendFunctionAssistEntry(const CDebuggerFunctionAssi
     *dataPtr++ = nameLength;
 
     // -- write the message string
-    SafeStrcpy((char*)dataPtr, nameLength, function_assist_entry.mFunctionName, nameLength);
+    SafeStrcpy((char*)dataPtr, nameLength, function_assist_entry.mSearchName, nameLength);
     dataPtr += (nameLength / 4);
 
 	// -- codeblock filename hash and linenumber
@@ -4414,6 +4480,31 @@ void DebuggerRequestFunctionAssist(int32 object_id)
 
     // -- send the list of objects
     script_context->DebuggerRequestFunctionAssist(object_id);
+
+    // -- notify the debugger we've completed the function assist request
+    SocketManager::SendExec(Hash("DebuggerFunctionAssistComplete"));
+}
+
+// --------------------------------------------------------------------------------------------------------------------
+// DebuggerRequestNamespaceAssist():  Send the connected debugger, a list of all functions for the namespace
+// --------------------------------------------------------------------------------------------------------------------
+void DebuggerRequestNamespaceAssist(int32 ns_hash)
+{
+    // -- ensure we have a script context
+    CScriptContext* script_context = GetContext();
+    if (!script_context)
+        return;
+
+    // -- ensure we're connected
+    int32 debugger_session = 0;
+    if (!script_context->IsDebuggerConnected(debugger_session))
+        return;
+
+    // -- send the list of objects
+    script_context->DebuggerRequestNamespaceAssist(ns_hash);
+
+    // -- notify the debugger we've completed the function assist request
+    SocketManager::SendExec(Hash("DebuggerFunctionAssistComplete"));
 }
 
 // --------------------------------------------------------------------------------------------------------------------
@@ -4507,6 +4598,7 @@ REGISTER_FUNCTION(DebuggerInspectObject, DebuggerInspectObject);
 
 REGISTER_FUNCTION(DebuggerListSchedules, DebuggerListSchedules);
 REGISTER_FUNCTION(DebuggerRequestFunctionAssist, DebuggerRequestFunctionAssist);
+REGISTER_FUNCTION(DebuggerRequestNamespaceAssist, DebuggerRequestNamespaceAssist);
 
 REGISTER_FUNCTION(DebuggerRequestTabComplete, DebuggerRequestTabComplete);
 

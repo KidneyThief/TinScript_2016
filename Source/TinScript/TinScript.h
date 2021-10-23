@@ -292,21 +292,22 @@ class CDebuggerWatchExpression
 // ====================================================================================================================
 // class CDebuggerFunctionAssistEntry:  Class used to send a function assist entry response.
 // ====================================================================================================================
+enum class eFunctionEntryType: uint8 { None = 0,Object,Namespace,Function,Count };
 class CDebuggerFunctionAssistEntry
 {
     public:
         // -- the assist requests are for a specific object (or the global namespace)
-        bool8 mIsObjectEntry;
-		uint32 mObjectID;
-        uint32 mNamespaceHash;
-        uint32 mFunctionHash;
-        char mFunctionName[kMaxNameLength];  // we're searching, so we need the actual string
-		uint32 mCodeBlockHash;  // the location the function is implemented
-		int32 mLineNumber;
+        eFunctionEntryType mEntryType = eFunctionEntryType::None;
+		uint32 mObjectID = 0;
+        uint32 mNamespaceHash = 0;
+        uint32 mFunctionHash = 0;
+        char mSearchName[kMaxNameLength];  // we're searching, so we need the actual string
+		uint32 mCodeBlockHash = 0;  // the location the function is implemented
+		int32 mLineNumber = -1;
 
         // -- next is the parameter list, we'll need a type, if it's an array, and the name
         // -- the max number of parameters to send includes the return (+1)
-        int32 mParameterCount;
+        int32 mParameterCount = 0;
         eVarType mType[kMaxRegisteredParameterCount + 1];
         bool8 mIsArray[kMaxRegisteredParameterCount + 1];
         uint32 mNameHash[kMaxRegisteredParameterCount + 1];
@@ -493,6 +494,8 @@ class CScriptContext
 
         // -- methods to send a function assist entry
         void DebuggerRequestFunctionAssist(uint32 object_id);
+        void DebuggerRequestNamespaceAssist(uint32 ns_hash);
+        void DebuggerSendFunctionTable(int32 object_id, uint32 ns_hash, tFuncTable* function_table);
         void DebuggerSendFunctionAssistEntry(const CDebuggerFunctionAssistEntry& function_assist_entry);
 
         // -- methods for tab completion

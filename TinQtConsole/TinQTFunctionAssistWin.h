@@ -60,18 +60,25 @@ class CDebugFunctionAssistWin : public QWidget
         void NotifyCodeblockLoaded(uint32 codeblock_hash);
 
         void ClearSearch();
+        TinScript::CDebuggerFunctionAssistEntry*
+            FindFunctionEntry(const TinScript::CDebuggerFunctionAssistEntry& assist_entry);
+        TinScript::CDebuggerFunctionAssistEntry*
+            FindFunctionEntry(TinScript::eFunctionEntryType entry_type, uint32 obj_id, uint32 ns_hash,
+                              uint32 func_hash);
+
         void NotifyFunctionAssistEntry(const TinScript::CDebuggerFunctionAssistEntry& assist_entry);
         void NotifyListObjectsComplete();
+        void NotifyFunctionAssistComplete();
 
         // -- there are three reasons to update the search results - if we haven't changed the
         // -- search string, but we've received potentially acceptable new entries
         // -- or if we extend our search string, so the existing list needs to remove more
         // -- or if we've changed, or backtracked our search string, so we search from scratch
-        void UpdateSearchNewEntry(uint32 function_hash);
+        void UpdateSearchNewEntry(TinScript::CDebuggerFunctionAssistEntry* assist_entry);
 
         // -- string comparison functions for filtering
         bool StringContainsFilter(const char* string, bool& exact_match, bool& new_object_id);
-        bool FunctionContainsFilter(const char* string);
+        bool FilterStringCompare(const char* string);
         void UpdateFilter(const char* filter, bool8 force_refresh = false);
 
         // -- the Signature panel also doubles as the origin callstack
@@ -80,8 +87,8 @@ class CDebugFunctionAssistWin : public QWidget
 
         // -- methods to handle selecting and issuing a function
         void SetAssistObjectID(uint32 object_id);
-        void NotifyFunctionClicked(TinScript::CDebuggerFunctionAssistEntry* list_entry);
-        void NotifyFunctionDoubleClicked(TinScript::CDebuggerFunctionAssistEntry* list_entry);
+        void NotifyAssistEntryClicked(TinScript::CDebuggerFunctionAssistEntry* list_entry);
+        void NotifyAssistEntryDoubleClicked(TinScript::CDebuggerFunctionAssistEntry* list_entry);
 
         // -- if this window is selected when we try to create a new watch expression, use
         // the assist object (from the browser), or the selected object from the search
@@ -102,6 +109,7 @@ class CDebugFunctionAssistWin : public QWidget
         CFunctionAssistList* mFunctionList;
 
 		// -- for the selected function
+        uint32 mSelectedNamespaceHash;
 		uint32 mSelectedFunctionHash;
         uint32 mSelectedObjectID;
         CFunctionParameterList* mParameterList;
@@ -113,8 +121,7 @@ class CDebugFunctionAssistWin : public QWidget
         // -- for filtering, we need to keep track of several items, that will change the context of the search
         uint32 mSearchObjectID;
         char mFilterString[TinScript::kMaxNameLength];
-        QMap<uint32, TinScript::CDebuggerFunctionAssistEntry*> mFunctionEntryMap;
-        QMap<uint32, TinScript::CDebuggerFunctionAssistEntry*> mObjectEntryMap;
+        QList<TinScript::CDebuggerFunctionAssistEntry*> mFunctionEntryList; // includes objects and namespaces
 };
 
 // ====================================================================================================================
@@ -153,7 +160,13 @@ class CFunctionListEntry : public QTreeWidgetItem
         CFunctionListEntry(TinScript::CDebuggerFunctionAssistEntry* _entry, QTreeWidget* _owner);
         ~CFunctionListEntry();
 
+        // -- note:  the "owner" of the CDebuggerFunctionAssistEntry is
+        // CDebugFunctionAssistWin::mFunctionEntryList
+        // -- this entry is always pointing at the instance within that list
         TinScript::CDebuggerFunctionAssistEntry* mFunctionAssistEntry;
+
+        // -- sorting the display is *complicated*...!
+        virtual bool operator < (const QTreeWidgetItem& other) const override;
 };
 
 // ====================================================================================================================
@@ -167,9 +180,9 @@ class CFunctionAssistList : public QTreeWidget
         CFunctionAssistList(CDebugFunctionAssistWin* owner, QWidget* parent);
         virtual ~CFunctionAssistList();
 
-        CFunctionListEntry* FindEntry(TinScript::CDebuggerFunctionAssistEntry* assist_entry);
-        void DisplayEntry(TinScript::CDebuggerFunctionAssistEntry* assist_entry);
-        void FilterEntry(TinScript::CDebuggerFunctionAssistEntry* assist_entry);
+        CFunctionListEntry* FindEntry(TinScript::CDebuggerFunctionAssistEntry* in_entry);
+        bool DisplayEntry(TinScript::CDebuggerFunctionAssistEntry* in_entry);
+        bool FilterEntry(TinScript::CDebuggerFunctionAssistEntry* in_entry);
         void Clear();
 
     public slots:

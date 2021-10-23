@@ -100,6 +100,7 @@ CDebugFunctionAssistWin::CDebugFunctionAssistWin(QWidget* parent)
     main_layout->addWidget(mParameterList, 4, 0);
 
     // -- ensure we start with a clean search
+    mSelectedNamespaceHash = 0;
 	mSelectedFunctionHash = 0;
     mSelectedObjectID = 0;
 	mSearchObjectID = 0;
@@ -138,30 +139,73 @@ void CDebugFunctionAssistWin::NotifyCodeblockLoaded(uint32 codeblock_hash)
 void CDebugFunctionAssistWin::ClearSearch()
 {
     // -- clear the parameter and function list
+    mSelectedNamespaceHash = 0;
 	mSelectedFunctionHash = 0;
     mSelectedObjectID = 0;
 	mParameterList->Clear();
     mFunctionList->Clear();
 
     // -- clear the function entry map
-    QList<uint32>& key_list = mFunctionEntryMap.keys();
-    for (int i = 0; i < key_list.size(); ++i)
+    for (auto iter : mFunctionEntryList)
     {
-        TinScript::CDebuggerFunctionAssistEntry* entry = mFunctionEntryMap[key_list[i]];
-        if (entry)
-            delete entry;
+        delete iter;
     }
-    mFunctionEntryMap.clear();
+    mFunctionEntryList.clear();
+}
 
-    // -- clear the object entry map
-    QList<uint32>& object_id_list = mObjectEntryMap.keys();
-    for (int i = 0; i < object_id_list.size(); ++i)
+// ====================================================================================================================
+// FindFunctionEntry():  find given an existing (incomping packet) entry
+// ====================================================================================================================
+TinScript::CDebuggerFunctionAssistEntry*
+    CDebugFunctionAssistWin::FindFunctionEntry(const TinScript::CDebuggerFunctionAssistEntry& in_entry)
+{
+    return (FindFunctionEntry(in_entry.mEntryType, in_entry.mObjectID, in_entry.mNamespaceHash,
+                              in_entry.mFunctionHash));
+}
+
+
+// ====================================================================================================================
+// FunctionEntryExists(): find given the type and relevent hash values of an entry
+// ====================================================================================================================
+TinScript::CDebuggerFunctionAssistEntry*
+    CDebugFunctionAssistWin::FindFunctionEntry(TinScript::eFunctionEntryType entry_type, uint32 obj_id, uint32 ns_hash,
+                                               uint32 func_hash)
+{
+    for (auto iter : mFunctionEntryList)
     {
-        TinScript::CDebuggerFunctionAssistEntry* entry = mFunctionEntryMap[object_id_list[i]];
-        if (entry)
-            delete entry;
+        // -- types must match
+        if (iter->mEntryType != entry_type)
+            continue;
+
+        switch (entry_type)
+        {
+            case TinScript::eFunctionEntryType::Namespace:
+            {
+                if (iter->mNamespaceHash == ns_hash)
+                    return iter;
+            }
+            break;
+
+            case TinScript::eFunctionEntryType::Object:
+            {
+                if (iter->mObjectID == obj_id)
+                    return iter;
+            }
+            break;
+
+            case TinScript::eFunctionEntryType::Function:
+            {
+                if (iter->mNamespaceHash == ns_hash && iter->mFunctionHash == func_hash)
+                {
+                    return iter;
+                }
+            }
+            break;
+        }
     }
-    mObjectEntryMap.clear();
+
+    // -- not found
+    return (nullptr);
 }
 
 // ====================================================================================================================
@@ -169,21 +213,18 @@ void CDebugFunctionAssistWin::ClearSearch()
 // ====================================================================================================================
 void CDebugFunctionAssistWin::NotifyFunctionAssistEntry(const TinScript::CDebuggerFunctionAssistEntry& assist_entry)
 {
-    // -- ensure this is for our current search object
-    if (assist_entry.mObjectID != mSearchObjectID)
+    // -- make sure we have no duplicated
+    if (FindFunctionEntry(assist_entry) != nullptr)
         return;
 
-    // -- if this entry is already in the map, we're done
-    if (mFunctionEntryMap.contains(assist_entry.mFunctionHash))
-        return;
-
-    // -- make a copy of the received entry, and add it to the map
+    // -- make a copy of the received entry, and add it to our list
     TinScript::CDebuggerFunctionAssistEntry* new_entry = new TinScript::CDebuggerFunctionAssistEntry();
     memcpy(new_entry, &assist_entry, sizeof(TinScript::CDebuggerFunctionAssistEntry));
-    mFunctionEntryMap.insert(assist_entry.mFunctionHash, new_entry);
 
-    // -- update the filtered display (given the new entry - we'll see if it needs to be added to the results)
-    UpdateSearchNewEntry(assist_entry.mFunctionHash);
+    mFunctionEntryList.append(new_entry);
+
+    // -- update the filtered display (given the new entry - we'll see if it needs to be added to the display list)
+    UpdateSearchNewEntry(new_entry);
 }
 
 // ====================================================================================================================
@@ -195,18 +236,27 @@ void CDebugFunctionAssistWin::NotifyListObjectsComplete()
 }
 
 // ====================================================================================================================
+// NotifyFunctionAssistComplete():  Called when any function assist request has received all response packets
+// ====================================================================================================================
+void CDebugFunctionAssistWin::NotifyFunctionAssistComplete()
+{
+    mFunctionList->sortItems(1, Qt::AscendingOrder);
+}
+
+// ====================================================================================================================
 // UpdateSearchNewEntry():  Called when the filter hasn't changed, but we've received new entries
 // ====================================================================================================================
-void CDebugFunctionAssistWin::UpdateSearchNewEntry(uint32 function_hash)
+void CDebugFunctionAssistWin::UpdateSearchNewEntry(TinScript::CDebuggerFunctionAssistEntry* in_entry)
 {
-    // -- get the entry from the map
-    TinScript::CDebuggerFunctionAssistEntry* entry = mFunctionEntryMap[function_hash];
-    if (entry)
+    // -- sanity check
+    if (in_entry == nullptr)
+        return;
+
+    // -- when filtering, we don't really care what the entry type is, just
+    // that the search string passes the filter
+    if (FilterStringCompare(in_entry->mSearchName))
     {
-        if (FunctionContainsFilter(entry->mFunctionName))
-        {
-            mFunctionList->DisplayEntry(entry);
-        }
+        mFunctionList->DisplayEntry(in_entry);
     }
 }
 
@@ -250,9 +300,9 @@ bool CDebugFunctionAssistWin::StringContainsFilter(const char* string, bool& exa
 }
 
 // ====================================================================================================================
-// FunctionContainsFilter():  See if the filter is contained within the given string, not including the object id.
+// FilterStringCompare():  See if the filter is contained within the given string, not including the object id.
 // ====================================================================================================================
-bool CDebugFunctionAssistWin::FunctionContainsFilter(const char* string)
+bool CDebugFunctionAssistWin::FilterStringCompare(const char* string)
 {
     // -- if the filter contains a period, we want to filter based on the method string
     const char* use_filter_ptr = strchr(mFilterString, '.');
@@ -293,7 +343,7 @@ void CDebugFunctionAssistWin::UpdateFilter(const char* filter, bool8 force_refre
     while (filter_ptr && *filter_ptr > 0x00 && *filter_ptr <= 0x20)
         ++filter_ptr;
 
-    // -- an empty filter means we want to refresh
+    // -- if we've cleared the search, we're forcing a refresh, and resetting the search
     if (filter_ptr == nullptr || filter_ptr[0] == '\0')
     {
         filter_ptr = "";
@@ -400,20 +450,26 @@ void CDebugFunctionAssistWin::UpdateFilter(const char* filter, bool8 force_refre
                                               GetObjectName(display_object_id);
                     if (object_name && object_name[0])
                     {
+                        // -- from the ObjectBrowser, add an entry to the FunctionAssistWin, for that object
                         TinScript::CDebuggerFunctionAssistEntry* new_entry =
-                            new TinScript::CDebuggerFunctionAssistEntry();
-                        new_entry->mIsObjectEntry = true;
-                        new_entry->mObjectID = display_object_id;
-                        new_entry->mNamespaceHash = 0;
-                        new_entry->mFunctionHash = 0;
-                        TinScript::SafeStrcpy(new_entry->mFunctionName, sizeof(new_entry->mFunctionName), object_name, TinScript::kMaxNameLength);
-                        new_entry->mParameterCount = 0;
+                            FindFunctionEntry(TinScript::eFunctionEntryType::Object, display_object_id, 0, 0);
+                        if (new_entry == nullptr)
+                        {
+                            new_entry = new TinScript::CDebuggerFunctionAssistEntry();
+                            new_entry->mEntryType = TinScript::eFunctionEntryType::Object;
+                            new_entry->mObjectID = display_object_id;
+                            new_entry->mNamespaceHash = 0;
+                            new_entry->mFunctionHash = 0;
+                            TinScript::SafeStrcpy(new_entry->mSearchName, sizeof(new_entry->mSearchName), object_name,
+                                                  TinScript::kMaxNameLength);
+                            new_entry->mParameterCount = 0;
 
-                        // -- add the object to the object map
-                        mObjectEntryMap.insert(new_entry->mObjectID, new_entry);
+                            // -- add the object to the object map
+                            mFunctionEntryList.append(new_entry);
+                        }
 
                         // -- see if we need to display it
-                        if (FunctionContainsFilter(new_entry->mFunctionName))
+                        if (FilterStringCompare(new_entry->mSearchName))
                         {
                             mFunctionList->DisplayEntry(new_entry);
                         }
@@ -427,38 +483,15 @@ void CDebugFunctionAssistWin::UpdateFilter(const char* filter, bool8 force_refre
     // -- alternatively, we're continuing an existing with an updated filter
     if (mSearchObjectID == 0 || !new_object_search)
     {
-        // -- list objects first
-        QList<uint32>& object_id_list = mObjectEntryMap.keys();
-        for (int i = 0; i < object_id_list.size(); ++i)
+        for (auto iter : mFunctionEntryList)
         {
-            TinScript::CDebuggerFunctionAssistEntry* entry = mObjectEntryMap[object_id_list[i]];
-            if (entry)
+            if (FilterStringCompare(iter->mSearchName))
             {
-                if (FunctionContainsFilter(entry->mFunctionName))
-                {
-                    mFunctionList->DisplayEntry(entry);
-                }
-                else
-                {
-                    mFunctionList->FilterEntry(entry);
-                }
+                mFunctionList->DisplayEntry(iter);
             }
-        }
-
-        QList<uint32>& key_list = mFunctionEntryMap.keys();
-        for (int i = 0; i < key_list.size(); ++i)
-        {
-            TinScript::CDebuggerFunctionAssistEntry* entry = mFunctionEntryMap[key_list[i]];
-            if (entry)
+            else
             {
-                if (FunctionContainsFilter(entry->mFunctionName))
-                {
-                    mFunctionList->DisplayEntry(entry);
-                }
-                else
-                {
-                    mFunctionList->FilterEntry(entry);
-                }
+                mFunctionList->FilterEntry(iter);
             }
         }
     }
@@ -492,7 +525,8 @@ void CDebugFunctionAssistWin::DisplayFunctionSignature()
     TinScript::CDebuggerFunctionAssistEntry* assist_entry = nullptr;
     if (mSelectedFunctionHash > 0)
     {
-        assist_entry = mFunctionEntryMap[mSelectedFunctionHash];
+        assist_entry = FindFunctionEntry(TinScript::eFunctionEntryType::Function, mSelectedObjectID,
+                                         mSelectedNamespaceHash, mSelectedFunctionHash);
     }
     mParameterList->PopulateWithSignature(assist_entry);
 }
@@ -511,6 +545,7 @@ void CDebugFunctionAssistWin::SetAssistObjectID(uint32 object_id)
     if (object_id != mSearchObjectID)
     {
 		// -- clear the selected function hash
+        mSelectedNamespaceHash = 0;
 		mSelectedFunctionHash = 0;
         mSelectedObjectID = 0;
 
@@ -541,28 +576,41 @@ uint32 CDebugFunctionAssistWin::GetAssistObjectID() const
 }
 
 // ====================================================================================================================
-// NotifyFunctionClicked():  Selecting a function entry populates the parameter list.
+// NotifyAssistEntryClicked():  Selecting an assist entry populates the parameter list, if the entry was for a function
 // ====================================================================================================================
-void CDebugFunctionAssistWin::NotifyFunctionClicked(TinScript::CDebuggerFunctionAssistEntry* list_entry)
+void CDebugFunctionAssistWin::NotifyAssistEntryClicked(TinScript::CDebuggerFunctionAssistEntry* list_entry)
 {
 	// -- clear the selected function
+    mSelectedNamespaceHash = 0;
 	mSelectedFunctionHash = 0;
     mSelectedObjectID = 0;
 
-    // -- clicking on an object does nothing
-    if (!list_entry)
+    // -- if we don't have a matching entry in the list, we're done
+    // note:  this is confusing, so to explain:
+    // we have two lists - the mFunctionDisplayList (displayed by the QWidget), and
+    // the mFunctionEntryList - the "master" list of all entries received...  the
+    // mFunctionDisplayList contains a subset of duplicates from the mFunctionEntryList
+    if (!list_entry || FindFunctionEntry(*list_entry) == nullptr)
         return;
-
-    if (!list_entry->mIsObjectEntry && mFunctionEntryMap.contains(list_entry->mFunctionHash))
+    
+    if (list_entry->mEntryType == TinScript::eFunctionEntryType::Function)
     {
 	    // -- cache the selected function hash, and populate the parameter list
+        mSelectedNamespaceHash = list_entry->mNamespaceHash;
 	    mSelectedFunctionHash = list_entry->mFunctionHash;
-        mSelectedObjectID = 0;
+        mSelectedObjectID = list_entry->mObjectID;
     }
-    else if (list_entry->mIsObjectEntry && mObjectEntryMap.contains(list_entry->mObjectID))
+    else if (list_entry->mEntryType == TinScript::eFunctionEntryType::Object)
     {
+        mSelectedNamespaceHash = 0;
         mSelectedFunctionHash = 0;
         mSelectedObjectID = list_entry->mObjectID;
+    }
+    else if(list_entry->mEntryType == TinScript::eFunctionEntryType::Namespace)
+    {
+        mSelectedNamespaceHash = list_entry->mNamespaceHash;
+        mSelectedFunctionHash = 0;
+        mSelectedObjectID = 0;
     }
 
     // -- will clear the panel and update the header,
@@ -571,15 +619,20 @@ void CDebugFunctionAssistWin::NotifyFunctionClicked(TinScript::CDebuggerFunction
 }
 
 // ====================================================================================================================
-// NotifyFunctionDoubleClicked():  Activating a function entry issues a command string to the Console Input.
+// NotifyAssistEntryDoubleClicked():  Activating an assist entry issues a command string to the Console Input.
 // ====================================================================================================================
-void CDebugFunctionAssistWin::NotifyFunctionDoubleClicked(TinScript::CDebuggerFunctionAssistEntry* list_entry)
+void CDebugFunctionAssistWin::NotifyAssistEntryDoubleClicked(TinScript::CDebuggerFunctionAssistEntry* list_entry)
 {
 	// -- clear the selected function
+    mSelectedNamespaceHash = 0;
 	mSelectedFunctionHash = 0;
     mSelectedObjectID = 0;
 
-    if (list_entry->mIsObjectEntry)
+    // -- just in case...
+    if (FindFunctionEntry(*list_entry) == nullptr)
+        return;
+
+    if (list_entry->mEntryType == TinScript::eFunctionEntryType::Object)
     {
         // -- on double-click, set the filter to be the "<object_name>."
         char new_filter[TinScript::kMaxNameLength];
@@ -592,18 +645,40 @@ void CDebugFunctionAssistWin::NotifyFunctionDoubleClicked(TinScript::CDebuggerFu
             CConsoleWindow::GetInstance()->GetDebugObjectBrowserWin()->SetSelectedObject(mSearchObjectID);
         }
     }
-    else
+    else if (list_entry->mEntryType == TinScript::eFunctionEntryType::Function)
     {
-        if (!mFunctionEntryMap.contains(list_entry->mFunctionHash))
-            return;
-
 		// -- cache the selected function hash, and populate the parameter list
+        mSelectedNamespaceHash = list_entry->mNamespaceHash;
 		mSelectedFunctionHash = list_entry->mFunctionHash;
-		TinScript::CDebuggerFunctionAssistEntry* assist_entry = mFunctionEntryMap[list_entry->mFunctionHash];
+		TinScript::CDebuggerFunctionAssistEntry* assist_entry =
+            FindFunctionEntry(TinScript::eFunctionEntryType::Function, list_entry->mObjectID,
+                              mSelectedNamespaceHash, mSelectedFunctionHash);
 
         // -- open the function implementation in the source view
-        CConsoleWindow::GetInstance()->GetDebugSourceWin()->SetSourceView(assist_entry->mCodeBlockHash,
-                                                                          assist_entry->mLineNumber - 1);
+        if (assist_entry != nullptr)
+        {
+            CConsoleWindow::GetInstance()->GetDebugSourceWin()->SetSourceView(assist_entry->mCodeBlockHash,
+                                                                              assist_entry->mLineNumber - 1);
+        }
+    }
+    else if (list_entry->mEntryType == TinScript::eFunctionEntryType::Namespace)
+    {
+        // -- update the label
+        mObjectIndentifier->setText(QString("Namespace: ").append(TinScript::UnHash(list_entry->mNamespaceHash)));
+
+        // -- if the entry we clicked is a namespace, not a specific function or object
+        // we want to request the functions registered to that hierarchy
+        uint32 ns_hash = list_entry->mNamespaceHash;
+        mSearchObjectID = 0;
+        mFunctionInput->setText("");
+        mFilterString[0] = '\0';
+        ClearSearch();
+
+        // -- send a message to retrieve all method implemented for the hierarchy starting at our namespace
+        if (SocketManager::IsConnected())
+        {
+            SocketManager::SendCommandf("DebuggerRequestNamespaceAssist(%d);", ns_hash);
+        }
     }
 
     // -- display the function signature - if an object was double-clicked, then this 
@@ -642,21 +717,25 @@ void CDebugFunctionAssistWin::OnButtonShowOriginPressed()
 // ====================================================================================================================
 void CDebugFunctionAssistWin::OnButtonCopyToConsolePressed()
 {
-    if(mSearchObjectID == 0 || mSelectedFunctionHash == 0)
+    if (mSearchObjectID == 0 || mSelectedFunctionHash == 0)
     {
         return;
     }
 
     // -- get the function we want to execute from the console input
-    TinScript::CDebuggerFunctionAssistEntry* assist_entry = mFunctionEntryMap[mSelectedFunctionHash];
+    TinScript::CDebuggerFunctionAssistEntry* assist_entry =
+        FindFunctionEntry(TinScript::eFunctionEntryType::Function, mSelectedObjectID, mSelectedNamespaceHash,
+                          mSelectedFunctionHash);
+    if (assist_entry == nullptr)
+        return;
 
     // -- create the command string, and send it to the console input
     char buf[TinScript::kMaxTokenLength];
     int length_remaining = TinScript::kMaxTokenLength;
     if(mSearchObjectID > 0)
-        sprintf_s(buf,"%d.%s(",mSearchObjectID,assist_entry->mFunctionName);
+        sprintf_s(buf, "%d.%s(", mSearchObjectID, assist_entry->mSearchName);
     else
-        sprintf_s(buf,"%s(",assist_entry->mFunctionName);
+        sprintf_s(buf, "%s(", assist_entry->mSearchName);
 
     int length = strlen(buf);
     length_remaining -= length;
@@ -759,6 +838,9 @@ bool CDebugFunctionAssistWin::StringContainsFilterImpl(const char* string, const
     return (false);
 }
 
+// ====================================================================================================================
+// GetSelectedWatchExpression():  the "watch expression dialog" needs to be initialized from whatever is selected
+// ====================================================================================================================
 bool CDebugFunctionAssistWin::GetSelectedWatchExpression(int32& out_use_watch_id,
                                                          char* out_watch_string, int32 max_expr_length,
                                                          char* out_value_string, int32 max_value_length)
@@ -868,19 +950,26 @@ CFunctionListEntry::CFunctionListEntry(TinScript::CDebuggerFunctionAssistEntry* 
     : QTreeWidgetItem(_owner)
     , mFunctionAssistEntry(_entry)
 {
-    if (_entry->mIsObjectEntry)
+    // -- sanity check
+    if (_entry == nullptr)
+    {
+        setHidden(true);
+        return;
+    }
+
+    if (_entry->mEntryType == TinScript::eFunctionEntryType::Object)
     {
         const char* object_identifier =
             CConsoleWindow::GetInstance()->GetDebugObjectBrowserWin()->GetObjectIdentifier(_entry->mObjectID);
         setText(0, object_identifier);
 
-        // -- set the function name
-        char sort_buf[TinScript::kMaxNameLength];
-        sort_buf[0] = ' ';
-        TinScript::SafeStrcpy(&sort_buf[1], sizeof(sort_buf) - 1, _entry->mFunctionName, TinScript::kMaxNameLength - 1);
-        setText(1, sort_buf);
+        // -- set string for the "function" column
+        setText(1, _entry->mSearchName);
+
+        // -- set the source to denote an object
+        setText(2, QString("<object>"));
     }
-    else
+    else if (_entry->mEntryType == TinScript::eFunctionEntryType::Function)
     {
         // -- set the namespace
         if (_entry->mNamespaceHash != 0)
@@ -889,7 +978,7 @@ CFunctionListEntry::CFunctionListEntry(TinScript::CDebuggerFunctionAssistEntry* 
             setText(0, "");
 
         // -- set the function name, appended with parenthesis for readability
-        setText(1, QString(_entry->mFunctionName).append("()"));
+        setText(1, QString(_entry->mSearchName).append("()"));
 
         // -- set the source, C++, or try to find the actual script
         if (_entry->mCodeBlockHash == 0)
@@ -906,6 +995,18 @@ CFunctionListEntry::CFunctionListEntry(TinScript::CDebuggerFunctionAssistEntry* 
             }
         }
     }
+    else if (_entry->mEntryType == TinScript::eFunctionEntryType::Namespace)
+    {
+        // -- set the namespace
+        if (_entry->mNamespaceHash != 0)
+            setText(0,TinScript::UnHash(_entry->mNamespaceHash));
+        else
+            setText(0,"");
+
+        // -- for namespaces, we want to clear the function 
+        setText(1, "");
+        setText(2, QString("<namespace>"));
+    }
 
     // -- all new entries begin hidden
     setHidden(true);
@@ -916,6 +1017,8 @@ CFunctionListEntry::CFunctionListEntry(TinScript::CDebuggerFunctionAssistEntry* 
 // ====================================================================================================================
 CFunctionListEntry::~CFunctionListEntry()
 {
+    // note:  emphasizing that this pointer is owned by CDebugFunctionAssistWin::mFunctionEntryList
+    mFunctionAssistEntry = nullptr;
 }
 
 // == class CFunctionAssistList =======================================================================================
@@ -957,60 +1060,103 @@ CFunctionAssistList::~CFunctionAssistList()
 // ====================================================================================================================
 CFunctionListEntry* CFunctionAssistList::FindEntry(TinScript::CDebuggerFunctionAssistEntry* assist_entry)
 {
-    
+    // -- sanity check
+    if (assist_entry == nullptr)
+        return nullptr;
+
     for (int i = 0; i < mFunctionList.size(); ++i)
     {
         CFunctionListEntry* entry = mFunctionList[i];
-        if (assist_entry->mIsObjectEntry && entry->mFunctionAssistEntry->mObjectID == assist_entry->mObjectID)
-            return (entry);
-        else if (!assist_entry->mIsObjectEntry &&
-                 entry->mFunctionAssistEntry->mFunctionHash == assist_entry->mFunctionHash)
-            return (entry);
+
+        switch (assist_entry->mEntryType)
+        {
+            case TinScript::eFunctionEntryType::Object:
+            {
+                if (entry->mFunctionAssistEntry->mEntryType == TinScript::eFunctionEntryType::Object &&
+                    entry->mFunctionAssistEntry->mObjectID == assist_entry->mObjectID)
+                {
+                    return (entry);
+                }
+            }
+            break;
+
+            case TinScript::eFunctionEntryType::Function:
+            {
+                if (entry->mFunctionAssistEntry->mEntryType == TinScript::eFunctionEntryType::Function &&
+                    entry->mFunctionAssistEntry->mFunctionHash == assist_entry->mFunctionHash)
+                {
+                    return (entry);
+                }
+            }
+            break;
+
+            case TinScript::eFunctionEntryType::Namespace:
+            {
+                if(entry->mFunctionAssistEntry->mEntryType == TinScript::eFunctionEntryType::Namespace &&
+                    entry->mFunctionAssistEntry->mNamespaceHash == assist_entry->mNamespaceHash)
+                {
+                    return (entry);
+                }
+            }
+            break;
+        }
     }
 
     // -- not found
-    return (NULL);
+    return (nullptr);
 }
 
 // ====================================================================================================================
 // DisplayEntry():  Unhide or create an list entry for the given function.
 // ====================================================================================================================
-void CFunctionAssistList::DisplayEntry(TinScript::CDebuggerFunctionAssistEntry* assist_entry)
+bool CFunctionAssistList::DisplayEntry(TinScript::CDebuggerFunctionAssistEntry* in_entry)
 {
     // -- sanity check
-    if (!assist_entry)
-        return;
+    if (in_entry == nullptr)
+        return false;
 
     // -- find the entry (or create it, if needed)
-    CFunctionListEntry* entry = FindEntry(assist_entry);
+    bool visibility_changed = false;
+    CFunctionListEntry* entry = FindEntry(in_entry);
     if (!entry)
     {
-        entry = new CFunctionListEntry(assist_entry, this);
-        sortItems(1, Qt::AscendingOrder);
+        entry = new CFunctionListEntry(in_entry, this);
         mFunctionList.append(entry);
+        visibility_changed = true;
     }
 
     // -- make the entry visible
+    visibility_changed = visibility_changed || entry->isHidden();
     entry->setHidden(false);
+
+    // -- if the visibility of any element changes, we'll need to resort
+    return visibility_changed;
 }
 
 // ====================================================================================================================
 // FilterEntry():  Ensure the given function is hidden.
 // ====================================================================================================================
-void CFunctionAssistList::FilterEntry(TinScript::CDebuggerFunctionAssistEntry* assist_entry)
+bool CFunctionAssistList::FilterEntry(TinScript::CDebuggerFunctionAssistEntry* assist_entry)
 {
     // -- sanity check
-    if (!assist_entry)
-        return;
+    if (assist_entry == nullptr)
+        return false;
 
     // -- find the entry - set it hidden if it exists
+    bool visibility_changed = false;
     CFunctionListEntry* entry = FindEntry(assist_entry);
     if (entry)
+    {
+        visibility_changed = !entry->isHidden();
         entry->setHidden(true);
+    }
+
+    // -- if the visibility of any element changes, we'll need to resort
+    return visibility_changed;
 }
 
 // ====================================================================================================================
-// FilterEntry():  Ensure the given function is hidden.
+// Clear():  empties the FunctionEntryList that is used for display
 // ====================================================================================================================
 void CFunctionAssistList::Clear()
 {
@@ -1022,16 +1168,86 @@ void CFunctionAssistList::Clear()
     }
 }
 
+// ====================================================================================================================
+// operator<():  used for sorting the actual visible entries
+// ====================================================================================================================
+bool CFunctionListEntry::operator<(const QTreeWidgetItem& other) const
+{
+    const CFunctionListEntry& other_entry = static_cast<const CFunctionListEntry&>(other);
+
+    CDebugFunctionAssistWin* assist_win = CConsoleWindow::GetInstance()->GetDebugFunctionAssistWin();
+    uint32 selected_obj_id = assist_win ? assist_win->GetAssistObjectID() : 0;
+
+    // sort by object, then functions, then namespaces
+    if (mFunctionAssistEntry->mEntryType == other_entry.mFunctionAssistEntry->mEntryType)
+    {
+        switch (mFunctionAssistEntry->mEntryType)
+        {
+            // objects are sorted by name
+            case TinScript::eFunctionEntryType::Object:
+                return (QString(mFunctionAssistEntry->mSearchName) < QString(other_entry.mFunctionAssistEntry->mSearchName));
+
+            // -- functions are sorted within the same namespace only
+            case TinScript::eFunctionEntryType::Function:
+                if (mFunctionAssistEntry->mNamespaceHash == other_entry.mFunctionAssistEntry->mNamespaceHash)
+                {
+                    return (QString(mFunctionAssistEntry->mSearchName) < QString(other_entry.mFunctionAssistEntry->mSearchName));
+                }
+                else
+                {
+                    return false;
+                }
+
+            // -- namespaces are sorted, if we're searching the global context only!
+            // otherwise, namespace entries are in order or the selected object's hierarchy, as the packets are received
+            case TinScript::eFunctionEntryType::Namespace:
+                if (selected_obj_id == 0)
+                {
+                    return (QString(mFunctionAssistEntry->mSearchName) < QString(other_entry.mFunctionAssistEntry->mSearchName));
+                }
+                else
+                {
+                    return false;
+                }
+				
+			default:
+				return false;
+        }
+    }
+
+    // -- objects first
+    if (mFunctionAssistEntry->mEntryType == TinScript::eFunctionEntryType::Object)
+        return true;
+
+    else if (other_entry.mFunctionAssistEntry->mEntryType == TinScript::eFunctionEntryType::Object)
+        return false;
+
+    // -- then functions
+    else if (mFunctionAssistEntry->mEntryType == TinScript::eFunctionEntryType::Function)
+        return true;
+
+    else if (other_entry.mFunctionAssistEntry->mEntryType == TinScript::eFunctionEntryType::Function)
+        return false;
+
+    return false;
+}
+
+// ====================================================================================================================
+// OnClicked():  slot executed when an entry in the assist window is clicked
+// ====================================================================================================================
 void CFunctionAssistList::OnClicked(QTreeWidgetItem* item)
 {
     CFunctionListEntry* entry = static_cast<CFunctionListEntry*>(item);
-    mOwner->NotifyFunctionClicked(entry->mFunctionAssistEntry);
+    mOwner->NotifyAssistEntryClicked(entry->mFunctionAssistEntry);
 }
 
+// ====================================================================================================================
+// OnDoubleClicked():  slot executed when an entry in the assist window is double-clicked
+// ====================================================================================================================
 void CFunctionAssistList::OnDoubleClicked(QTreeWidgetItem* item)
 {
     CFunctionListEntry* entry = static_cast<CFunctionListEntry*>(item);
-    mOwner->NotifyFunctionDoubleClicked(entry->mFunctionAssistEntry);
+    mOwner->NotifyAssistEntryDoubleClicked(entry->mFunctionAssistEntry);
 }
 
 // == class CFunctionParameterEntry ========================================================================================
