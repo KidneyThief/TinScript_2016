@@ -104,6 +104,7 @@ CDebugFunctionAssistWin::CDebugFunctionAssistWin(QWidget* parent)
 	mSelectedFunctionHash = 0;
     mSelectedObjectID = 0;
 	mSearchObjectID = 0;
+    mSearchNamespaceHash = 0;
     mFilterString[0] = '\0';
 
     // -- hook up the button signals
@@ -357,7 +358,7 @@ void CDebugFunctionAssistWin::UpdateFilter(const char* filter, bool8 force_refre
     StringContainsFilter(filter_ptr, exact_match, new_object_search);
 
     // -- if our search object is invalid, then it's by definition, a new search every time the filter changes
-    if (mSearchObjectID == 0 || force_refresh)
+    if ((mSearchObjectID == 0 && mSearchNamespaceHash == 0) || force_refresh)
     {
         new_object_search = true;
         exact_match = false;
@@ -429,6 +430,7 @@ void CDebugFunctionAssistWin::UpdateFilter(const char* filter, bool8 force_refre
             // -- clear the search, and set the new (possibly invalid) object ID
             ClearSearch();
             mSearchObjectID = object_id;
+            mSearchNamespaceHash = 0;
 
             // -- only request from the target for a valid ID
             if (mSearchObjectID >= 0 && SocketManager::IsConnected())
@@ -668,7 +670,7 @@ void CDebugFunctionAssistWin::NotifyAssistEntryDoubleClicked(TinScript::CDebugge
 
         // -- if the entry we clicked is a namespace, not a specific function or object
         // we want to request the functions registered to that hierarchy
-        uint32 ns_hash = list_entry->mNamespaceHash;
+        mSearchNamespaceHash = list_entry->mNamespaceHash;
         mSearchObjectID = 0;
         mFunctionInput->setText("");
         mFilterString[0] = '\0';
@@ -677,7 +679,7 @@ void CDebugFunctionAssistWin::NotifyAssistEntryDoubleClicked(TinScript::CDebugge
         // -- send a message to retrieve all method implemented for the hierarchy starting at our namespace
         if (SocketManager::IsConnected())
         {
-            SocketManager::SendCommandf("DebuggerRequestNamespaceAssist(%d);", ns_hash);
+            SocketManager::SendCommandf("DebuggerRequestNamespaceAssist(%d);", mSearchNamespaceHash);
         }
     }
 

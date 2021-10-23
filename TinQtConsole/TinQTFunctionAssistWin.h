@@ -120,6 +120,7 @@ class CDebugFunctionAssistWin : public QWidget
 
         // -- for filtering, we need to keep track of several items, that will change the context of the search
         uint32 mSearchObjectID;
+        uint32 mSearchNamespaceHash;
         char mFilterString[TinScript::kMaxNameLength];
         QList<TinScript::CDebuggerFunctionAssistEntry*> mFunctionEntryList; // includes objects and namespaces
 };
