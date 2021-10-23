@@ -3056,7 +3056,7 @@ void CScriptContext::DebuggerRequestFunctionAssist(uint32 object_id)
         CHashTable<CNamespace>* namespaces = GetNamespaceDictionary();
         if (namespaces != nullptr)
         {
-            CNamespace* current_namespace = namespaces->First();
+            current_namespace = namespaces->First();
             while (current_namespace != nullptr)
             {
                 const char* current_name = current_namespace->GetName();
