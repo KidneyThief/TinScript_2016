@@ -137,6 +137,27 @@ void ContextDebugBreak(const char* msg)
 }
 
 // ====================================================================================================================
+// ContextListKeywords():  List the keywords defined in TinScript
+// ====================================================================================================================
+void ContextListKeywords(const char* partial_name)
+{
+    CScriptContext* script_context = TinScript::GetContext();
+    if (script_context == nullptr)
+        return;
+
+    TinPrint(script_context,"TinScript Keywords:\n");
+    int32 keyword_count = 0;
+    const char** keyword_list = GetReservedKeywords(keyword_count);
+    for (int32 i = 0; i < keyword_count; ++i)
+    {
+        if(!partial_name || !partial_name[0] || SafeStrStr(keyword_list[i], partial_name) != 0)
+        {
+            TinPrint(script_context,"    %s\n", keyword_list[i]);
+        }
+    }
+}
+
+// ====================================================================================================================
 // ContextListObjects():  List the objects registered to the current thread's CScriptContext.
 // ====================================================================================================================
 void ContextListObjects()
@@ -368,6 +389,7 @@ void ContextScheduleCancelObject(uint32 objectid)
 // -- we want to execute the context created by the thread, in which this function is being called
 REGISTER_FUNCTION(PrintObject, ContextPrintObject);
 REGISTER_FUNCTION(DebugBreak, ContextDebugBreak);
+REGISTER_FUNCTION(ListKeywords, ContextListKeywords);
 REGISTER_FUNCTION(ListObjects, ContextListObjects);
 REGISTER_FUNCTION(IsObject, ContextIsObject);
 REGISTER_FUNCTION(FindObject, ContextFindObject);
@@ -376,6 +398,8 @@ REGISTER_FUNCTION(ObjectHasMethod, ContextObjectHasMethod);
 REGISTER_FUNCTION(LinkNamespaces, ContextLinkNamespaces);
 REGISTER_FUNCTION(ListVariables, ContextListVariables);
 REGISTER_FUNCTION(IsVariable, ContextIsVariable);
+REGISTER_FUNCTION(ListGlobals, ContextListVariables);  // duplicate of ListVariables
+REGISTER_FUNCTION(IsGlobal, ContextIsVariable);     // duplicate of IsVariable
 REGISTER_FUNCTION(ListFunctions, ContextListFunctions);
 REGISTER_FUNCTION(IsFunction, ContextIsFunction);
 REGISTER_FUNCTION(ListNamespaces, ContextListNamespaces);
