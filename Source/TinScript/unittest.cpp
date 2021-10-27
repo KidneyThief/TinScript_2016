@@ -156,23 +156,13 @@ IMPLEMENT_SCRIPT_CLASS_BEGIN(CBase, VOID)
     REGISTER_MEMBER(CBase, stringArray, stringArray);
 IMPLEMENT_SCRIPT_CLASS_END()
 
-#if PLATFORM_UE4
-    REGISTER_METHOD_P0(CBase, GetFloatValue, GetFloatValue, float32);
-    REGISTER_METHOD_P0(CBase, GetIntValue, GetIntValue, int32);
-    REGISTER_METHOD_P0(CBase, GetBoolValue, GetBoolValue, bool8);
+REGISTER_METHOD(CBase, GetFloatValue, GetFloatValue);
+REGISTER_METHOD(CBase, GetIntValue, GetIntValue);
+REGISTER_METHOD(CBase, GetBoolValue, GetBoolValue);
 
-    REGISTER_METHOD_P1(CBase, SetFloatValue, SetFloatValue, void, float32);
-    REGISTER_METHOD_P1(CBase, SetIntValue, SetIntValue, void, int32);
-    REGISTER_METHOD_P1(CBase, SetBoolValue, SetBoolValue, void, bool8);
-#else
-    REGISTER_METHOD(CBase, GetFloatValue, GetFloatValue);
-    REGISTER_METHOD(CBase, GetIntValue, GetIntValue);
-    REGISTER_METHOD(CBase, GetBoolValue, GetBoolValue);
-
-    REGISTER_METHOD(CBase, SetFloatValue, SetFloatValue);
-    REGISTER_METHOD(CBase, SetIntValue, SetIntValue);
-    REGISTER_METHOD(CBase, SetBoolValue, SetBoolValue);
-#endif	
+REGISTER_METHOD(CBase, SetFloatValue, SetFloatValue);
+REGISTER_METHOD(CBase, SetIntValue, SetIntValue);
+REGISTER_METHOD(CBase, SetBoolValue, SetBoolValue);
 
 class CChild : public CBase {
     public:
@@ -1291,13 +1281,8 @@ REGISTER_FUNCTION(TestArg3, TestArg3)
 REGISTER_FUNCTION(VoidArg1, VoidArg1)
 REGISTER_FUNCTION(VoidStr1, VoidStr1)
 
-#if PLATFORM_UE4
-	REGISTER_METHOD_P1(CBase, TestP1, TestP1, int32, int32)
-	REGISTER_METHOD_P1(CBase, VoidP1, VoidP1, void, int32)
-#else
-    REGISTER_METHOD(CBase, TestP1, TestP1)
-    REGISTER_METHOD(CBase, VoidP1, VoidP1)
-#endif	
+REGISTER_METHOD(CBase, TestP1, TestP1)
+REGISTER_METHOD(CBase, VoidP1, VoidP1)
 
 // ------------------------------------------------------------------------------------------------
 // eof

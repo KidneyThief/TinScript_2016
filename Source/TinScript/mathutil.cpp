@@ -171,23 +171,13 @@ IMPLEMENT_SCRIPT_CLASS_BEGIN(CVector3f, VOID)
     REGISTER_MEMBER(CVector3f, z, z);
 IMPLEMENT_SCRIPT_CLASS_END()
 
-#if PLATFORM_UE4
-    REGISTER_METHOD_P3(CVector3f, Set, Set, void, float32, float32, float32);
-    REGISTER_METHOD_P0(CVector3f, Length, Length, float32);
-    REGISTER_METHOD_P0(CVector3f, Normalize, Normalize, float32);
+REGISTER_METHOD(CVector3f, Set, Set);
+REGISTER_METHOD(CVector3f, Length, Length);
+REGISTER_METHOD(CVector3f, Normalize, Normalize);
 
-    REGISTER_FUNCTION_P3(ObjCross, TS_Cross, bool8, CVector3f*, CVector3f*, CVector3f*);
-    REGISTER_FUNCTION_P2(ObjDot, TS_Dot, float32, CVector3f*, CVector3f*);
-    REGISTER_FUNCTION_P2(ObjNormalized, TS_Normalized, float32, CVector3f*, CVector3f*);
-#else
-    REGISTER_METHOD(CVector3f, Set, Set);
-    REGISTER_METHOD(CVector3f, Length, Length);
-    REGISTER_METHOD(CVector3f, Normalize, Normalize);
-
-    REGISTER_FUNCTION(ObjCross, TS_Cross);
-    REGISTER_FUNCTION(ObjDot, TS_Dot);
-    REGISTER_FUNCTION(ObjNormalized, TS_Normalized);
-#endif
+REGISTER_FUNCTION(ObjCross, TS_Cross);
+REGISTER_FUNCTION(ObjDot, TS_Dot);
+REGISTER_FUNCTION(ObjNormalized, TS_Normalized);
 
 // --------------------------------------------------------------------------------------------------------------------
 // -- Re-registered using the registered type, instead of having to find an object

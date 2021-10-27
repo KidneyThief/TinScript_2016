@@ -27,10 +27,15 @@
     static const int gArgCount_##name = ::TinScript::SignatureArgCount<decltype(funcptr)>::arg_count; \
     static ::TinScript::CRegisterFunction<gArgCount_##name, decltype(funcptr)> gReg_##name(#name, funcptr);
 
-#define REGISTER_METHOD(classname, name, methodptr) \
-    static const int gArgCount_##classname##_##name = ::TinScript::SignatureArgCount<decltype(std::declval<classname>().methodptr)>::arg_count; \
-    static ::TinScript::CRegisterMethod<gArgCount_##classname##_##name, classname, decltype(std::declval<classname>().methodptr)> gReg_##classname##_##name(#name, &classname::methodptr);
-
+#if !PLATFORM_VS_2019
+    #define REGISTER_METHOD(classname, name, methodptr) \
+        static const int gArgCount_##classname##_##name = ::TinScript::SignatureArgCount<decltype(std::declval<classname>().methodptr)>::arg_count; \
+        static ::TinScript::CRegisterMethod<gArgCount_##classname##_##name, classname, decltype(std::declval<classname>().methodptr)> gReg_##classname##_##name(#name, &classname::methodptr);
+#else
+    #define REGISTER_METHOD(classname, name, methodptr) \
+        static const int gArgCount_##classname##_##name = ::TinScript::MethodArgCount<decltype(&classname::methodptr)>::arg_count; \
+        static ::TinScript::CRegisterMethod<gArgCount_##classname##_##name, classname, decltype(&classname::methodptr)> gReg_##classname##_##name(#name, &classname::methodptr);
+#endif
 #define REGISTER_CLASS_FUNCTION(classname, name, methodptr) \
     static const int gArgCount_##classname##_##name = ::TinScript::SignatureArgCount<decltype(std::declval<classname>().methodptr)>::arg_count; \
     static ::TinScript::CRegisterFunction<gArgCount_##classname##_##name, decltype(std::declval<classname>().methodptr)> gReg_##classname##_##name(#name, &classname::methodptr); \
@@ -45,27 +50,22 @@ class SignatureArgCount<R(Args...)>
         static const int arg_count = sizeof...(Args);
 };
 
+template<typename S>
+class MethodArgCount;
+
+template<typename C, typename R, typename... Args>
+class MethodArgCount<R(C::*)(Args...)>
+{
+    public:
+        static const int arg_count = sizeof...(Args);
+};
+
 template<int N, typename S>
 class CRegisterFunction;
 
-template<int N, typename R, typename... Args>
-class CRegisterFunction<N, R(Args...)>
-{
-    public:
-        using argument_types = std::tuple<Args...>;
-
-        CRegisterFunction() { }
-        void PrintArgs() { }
-};
 template<int N, typename C, typename S>
 class CRegisterMethod;
 
-template<int N, typename C, typename R, typename... Args>
-class CRegisterMethod<N, C, R(Args...)>
-{
-    public:
-        CRegisterMethod() { }
-};
 
 // -------------------
 // Parameter count: 0
@@ -159,8 +159,13 @@ private:
 // -- class CRegisterMethod<0, R(Args...)> ----------------------------------------
 
 template<typename C, typename R, typename... Args>
+#if !PLATFORM_VS_2019
 class CRegisterMethod<0, C, R(Args...)> : public CRegFunctionBase
 {
+#else
+class CRegisterMethod<0, C, R(C::*)(Args...)> : public CRegFunctionBase
+{
+#endif
 public:
 
     using argument_types = std::tuple<Args...>;
@@ -204,8 +209,13 @@ private:
 // -- class CRegisterMethod<0, void(Args...)> ----------------------------------------
 
 template<typename C, typename... Args>
+#if !PLATFORM_VS_2019
 class CRegisterMethod<0, C, void(Args...)> : public CRegFunctionBase
 {
+#else
+class CRegisterMethod<0, C, void(C::*)(Args...)> : public CRegFunctionBase
+{
+#endif
 public:
 
     using argument_types = std::tuple<Args...>;
@@ -365,8 +375,13 @@ private:
 // -- class CRegisterMethod<1, R(Args...)> ----------------------------------------
 
 template<typename C, typename R, typename... Args>
+#if !PLATFORM_VS_2019
 class CRegisterMethod<1, C, R(Args...)> : public CRegFunctionBase
 {
+#else
+class CRegisterMethod<1, C, R(C::*)(Args...)> : public CRegFunctionBase
+{
+#endif
 public:
 
     using argument_types = std::tuple<Args...>;
@@ -423,8 +438,13 @@ private:
 // -- class CRegisterMethod<1, void(Args...)> ----------------------------------------
 
 template<typename C, typename... Args>
+#if !PLATFORM_VS_2019
 class CRegisterMethod<1, C, void(Args...)> : public CRegFunctionBase
 {
+#else
+class CRegisterMethod<1, C, void(C::*)(Args...)> : public CRegFunctionBase
+{
+#endif
 public:
 
     using argument_types = std::tuple<Args...>;
@@ -611,8 +631,13 @@ private:
 // -- class CRegisterMethod<2, R(Args...)> ----------------------------------------
 
 template<typename C, typename R, typename... Args>
+#if !PLATFORM_VS_2019
 class CRegisterMethod<2, C, R(Args...)> : public CRegFunctionBase
 {
+#else
+class CRegisterMethod<2, C, R(C::*)(Args...)> : public CRegFunctionBase
+{
+#endif
 public:
 
     using argument_types = std::tuple<Args...>;
@@ -676,8 +701,13 @@ private:
 // -- class CRegisterMethod<2, void(Args...)> ----------------------------------------
 
 template<typename C, typename... Args>
+#if !PLATFORM_VS_2019
 class CRegisterMethod<2, C, void(Args...)> : public CRegFunctionBase
 {
+#else
+class CRegisterMethod<2, C, void(C::*)(Args...)> : public CRegFunctionBase
+{
+#endif
 public:
 
     using argument_types = std::tuple<Args...>;
@@ -885,8 +915,13 @@ private:
 // -- class CRegisterMethod<3, R(Args...)> ----------------------------------------
 
 template<typename C, typename R, typename... Args>
+#if !PLATFORM_VS_2019
 class CRegisterMethod<3, C, R(Args...)> : public CRegFunctionBase
 {
+#else
+class CRegisterMethod<3, C, R(C::*)(Args...)> : public CRegFunctionBase
+{
+#endif
 public:
 
     using argument_types = std::tuple<Args...>;
@@ -957,8 +992,13 @@ private:
 // -- class CRegisterMethod<3, void(Args...)> ----------------------------------------
 
 template<typename C, typename... Args>
+#if !PLATFORM_VS_2019
 class CRegisterMethod<3, C, void(Args...)> : public CRegFunctionBase
 {
+#else
+class CRegisterMethod<3, C, void(C::*)(Args...)> : public CRegFunctionBase
+{
+#endif
 public:
 
     using argument_types = std::tuple<Args...>;
@@ -1187,8 +1227,13 @@ private:
 // -- class CRegisterMethod<4, R(Args...)> ----------------------------------------
 
 template<typename C, typename R, typename... Args>
+#if !PLATFORM_VS_2019
 class CRegisterMethod<4, C, R(Args...)> : public CRegFunctionBase
 {
+#else
+class CRegisterMethod<4, C, R(C::*)(Args...)> : public CRegFunctionBase
+{
+#endif
 public:
 
     using argument_types = std::tuple<Args...>;
@@ -1266,8 +1311,13 @@ private:
 // -- class CRegisterMethod<4, void(Args...)> ----------------------------------------
 
 template<typename C, typename... Args>
+#if !PLATFORM_VS_2019
 class CRegisterMethod<4, C, void(Args...)> : public CRegFunctionBase
 {
+#else
+class CRegisterMethod<4, C, void(C::*)(Args...)> : public CRegFunctionBase
+{
+#endif
 public:
 
     using argument_types = std::tuple<Args...>;
@@ -1517,8 +1567,13 @@ private:
 // -- class CRegisterMethod<5, R(Args...)> ----------------------------------------
 
 template<typename C, typename R, typename... Args>
+#if !PLATFORM_VS_2019
 class CRegisterMethod<5, C, R(Args...)> : public CRegFunctionBase
 {
+#else
+class CRegisterMethod<5, C, R(C::*)(Args...)> : public CRegFunctionBase
+{
+#endif
 public:
 
     using argument_types = std::tuple<Args...>;
@@ -1603,8 +1658,13 @@ private:
 // -- class CRegisterMethod<5, void(Args...)> ----------------------------------------
 
 template<typename C, typename... Args>
+#if !PLATFORM_VS_2019
 class CRegisterMethod<5, C, void(Args...)> : public CRegFunctionBase
 {
+#else
+class CRegisterMethod<5, C, void(C::*)(Args...)> : public CRegFunctionBase
+{
+#endif
 public:
 
     using argument_types = std::tuple<Args...>;
@@ -1875,8 +1935,13 @@ private:
 // -- class CRegisterMethod<6, R(Args...)> ----------------------------------------
 
 template<typename C, typename R, typename... Args>
+#if !PLATFORM_VS_2019
 class CRegisterMethod<6, C, R(Args...)> : public CRegFunctionBase
 {
+#else
+class CRegisterMethod<6, C, R(C::*)(Args...)> : public CRegFunctionBase
+{
+#endif
 public:
 
     using argument_types = std::tuple<Args...>;
@@ -1968,8 +2033,13 @@ private:
 // -- class CRegisterMethod<6, void(Args...)> ----------------------------------------
 
 template<typename C, typename... Args>
+#if !PLATFORM_VS_2019
 class CRegisterMethod<6, C, void(Args...)> : public CRegFunctionBase
 {
+#else
+class CRegisterMethod<6, C, void(C::*)(Args...)> : public CRegFunctionBase
+{
+#endif
 public:
 
     using argument_types = std::tuple<Args...>;
@@ -2261,8 +2331,13 @@ private:
 // -- class CRegisterMethod<7, R(Args...)> ----------------------------------------
 
 template<typename C, typename R, typename... Args>
+#if !PLATFORM_VS_2019
 class CRegisterMethod<7, C, R(Args...)> : public CRegFunctionBase
 {
+#else
+class CRegisterMethod<7, C, R(C::*)(Args...)> : public CRegFunctionBase
+{
+#endif
 public:
 
     using argument_types = std::tuple<Args...>;
@@ -2361,8 +2436,13 @@ private:
 // -- class CRegisterMethod<7, void(Args...)> ----------------------------------------
 
 template<typename C, typename... Args>
+#if !PLATFORM_VS_2019
 class CRegisterMethod<7, C, void(Args...)> : public CRegFunctionBase
 {
+#else
+class CRegisterMethod<7, C, void(C::*)(Args...)> : public CRegFunctionBase
+{
+#endif
 public:
 
     using argument_types = std::tuple<Args...>;
@@ -2675,8 +2755,13 @@ private:
 // -- class CRegisterMethod<8, R(Args...)> ----------------------------------------
 
 template<typename C, typename R, typename... Args>
+#if !PLATFORM_VS_2019
 class CRegisterMethod<8, C, R(Args...)> : public CRegFunctionBase
 {
+#else
+class CRegisterMethod<8, C, R(C::*)(Args...)> : public CRegFunctionBase
+{
+#endif
 public:
 
     using argument_types = std::tuple<Args...>;
@@ -2782,8 +2867,13 @@ private:
 // -- class CRegisterMethod<8, void(Args...)> ----------------------------------------
 
 template<typename C, typename... Args>
+#if !PLATFORM_VS_2019
 class CRegisterMethod<8, C, void(Args...)> : public CRegFunctionBase
 {
+#else
+class CRegisterMethod<8, C, void(C::*)(Args...)> : public CRegFunctionBase
+{
+#endif
 public:
 
     using argument_types = std::tuple<Args...>;
@@ -3117,8 +3207,13 @@ private:
 // -- class CRegisterMethod<9, R(Args...)> ----------------------------------------
 
 template<typename C, typename R, typename... Args>
+#if !PLATFORM_VS_2019
 class CRegisterMethod<9, C, R(Args...)> : public CRegFunctionBase
 {
+#else
+class CRegisterMethod<9, C, R(C::*)(Args...)> : public CRegFunctionBase
+{
+#endif
 public:
 
     using argument_types = std::tuple<Args...>;
@@ -3231,8 +3326,13 @@ private:
 // -- class CRegisterMethod<9, void(Args...)> ----------------------------------------
 
 template<typename C, typename... Args>
+#if !PLATFORM_VS_2019
 class CRegisterMethod<9, C, void(Args...)> : public CRegFunctionBase
 {
+#else
+class CRegisterMethod<9, C, void(C::*)(Args...)> : public CRegFunctionBase
+{
+#endif
 public:
 
     using argument_types = std::tuple<Args...>;
@@ -3587,8 +3687,13 @@ private:
 // -- class CRegisterMethod<10, R(Args...)> ----------------------------------------
 
 template<typename C, typename R, typename... Args>
+#if !PLATFORM_VS_2019
 class CRegisterMethod<10, C, R(Args...)> : public CRegFunctionBase
 {
+#else
+class CRegisterMethod<10, C, R(C::*)(Args...)> : public CRegFunctionBase
+{
+#endif
 public:
 
     using argument_types = std::tuple<Args...>;
@@ -3708,8 +3813,13 @@ private:
 // -- class CRegisterMethod<10, void(Args...)> ----------------------------------------
 
 template<typename C, typename... Args>
+#if !PLATFORM_VS_2019
 class CRegisterMethod<10, C, void(Args...)> : public CRegFunctionBase
 {
+#else
+class CRegisterMethod<10, C, void(C::*)(Args...)> : public CRegFunctionBase
+{
+#endif
 public:
 
     using argument_types = std::tuple<Args...>;
@@ -4085,8 +4195,13 @@ private:
 // -- class CRegisterMethod<11, R(Args...)> ----------------------------------------
 
 template<typename C, typename R, typename... Args>
+#if !PLATFORM_VS_2019
 class CRegisterMethod<11, C, R(Args...)> : public CRegFunctionBase
 {
+#else
+class CRegisterMethod<11, C, R(C::*)(Args...)> : public CRegFunctionBase
+{
+#endif
 public:
 
     using argument_types = std::tuple<Args...>;
@@ -4213,8 +4328,13 @@ private:
 // -- class CRegisterMethod<11, void(Args...)> ----------------------------------------
 
 template<typename C, typename... Args>
+#if !PLATFORM_VS_2019
 class CRegisterMethod<11, C, void(Args...)> : public CRegFunctionBase
 {
+#else
+class CRegisterMethod<11, C, void(C::*)(Args...)> : public CRegFunctionBase
+{
+#endif
 public:
 
     using argument_types = std::tuple<Args...>;
@@ -4611,8 +4731,13 @@ private:
 // -- class CRegisterMethod<12, R(Args...)> ----------------------------------------
 
 template<typename C, typename R, typename... Args>
+#if !PLATFORM_VS_2019
 class CRegisterMethod<12, C, R(Args...)> : public CRegFunctionBase
 {
+#else
+class CRegisterMethod<12, C, R(C::*)(Args...)> : public CRegFunctionBase
+{
+#endif
 public:
 
     using argument_types = std::tuple<Args...>;
@@ -4746,8 +4871,13 @@ private:
 // -- class CRegisterMethod<12, void(Args...)> ----------------------------------------
 
 template<typename C, typename... Args>
+#if !PLATFORM_VS_2019
 class CRegisterMethod<12, C, void(Args...)> : public CRegFunctionBase
 {
+#else
+class CRegisterMethod<12, C, void(C::*)(Args...)> : public CRegFunctionBase
+{
+#endif
 public:
 
     using argument_types = std::tuple<Args...>;

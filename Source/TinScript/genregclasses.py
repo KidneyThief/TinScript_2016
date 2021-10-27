@@ -594,10 +594,15 @@ def GenerateVariadicClasses(maxparamcount, outputfilename):
     outputfile.write('    static ::TinScript::CRegisterFunction<gArgCount_##name, decltype(funcptr)> gReg_##name(#name, funcptr);\n');
     outputfile.write("\n");
 
-    outputfile.write('#define REGISTER_METHOD(classname, name, methodptr) \\\n');
-    outputfile.write('    static const int gArgCount_##classname##_##name = ::TinScript::SignatureArgCount<decltype(std::declval<classname>().methodptr)>::arg_count; \\\n');
-    outputfile.write('    static ::TinScript::CRegisterMethod<gArgCount_##classname##_##name, classname, decltype(std::declval<classname>().methodptr)> gReg_##classname##_##name(#name, &classname::methodptr);\n');
-    outputfile.write("\n");
+    outputfile.write("#if !PLATFORM_VS_2019\n");
+    outputfile.write('    #define REGISTER_METHOD(classname, name, methodptr) \\\n');
+    outputfile.write('        static const int gArgCount_##classname##_##name = ::TinScript::SignatureArgCount<decltype(std::declval<classname>().methodptr)>::arg_count; \\\n');
+    outputfile.write('        static ::TinScript::CRegisterMethod<gArgCount_##classname##_##name, classname, decltype(std::declval<classname>().methodptr)> gReg_##classname##_##name(#name, &classname::methodptr);\n');
+    outputfile.write("#else\n");
+    outputfile.write('    #define REGISTER_METHOD(classname, name, methodptr) \\\n');
+    outputfile.write('        static const int gArgCount_##classname##_##name = ::TinScript::MethodArgCount<decltype(&classname::methodptr)>::arg_count; \\\n');
+    outputfile.write('        static ::TinScript::CRegisterMethod<gArgCount_##classname##_##name, classname, decltype(&classname::methodptr)> gReg_##classname##_##name(#name, &classname::methodptr);\n');
+    outputfile.write("#endif\n");
 
     outputfile.write('#define REGISTER_CLASS_FUNCTION(classname, name, methodptr) \\\n');
     outputfile.write('    static const int gArgCount_##classname##_##name = ::TinScript::SignatureArgCount<decltype(std::declval<classname>().methodptr)>::arg_count; \\\n');
@@ -614,28 +619,21 @@ def GenerateVariadicClasses(maxparamcount, outputfilename):
     outputfile.write('        static const int arg_count = sizeof...(Args);\n');
     outputfile.write('};\n\n');
 
+    outputfile.write('template<typename S>\n');
+    outputfile.write('class MethodArgCount;\n\n');
+
+    outputfile.write('template<typename C, typename R, typename... Args>\n');
+    outputfile.write('class MethodArgCount<R(C::*)(Args...)>\n');
+    outputfile.write('{\n');
+    outputfile.write('    public:\n');
+    outputfile.write('        static const int arg_count = sizeof...(Args);\n');
+    outputfile.write('};\n\n');
+
     outputfile.write('template<int N, typename S>\n');
     outputfile.write('class CRegisterFunction;\n\n');
 
-    outputfile.write('template<int N, typename R, typename... Args>\n');
-    outputfile.write('class CRegisterFunction<N, R(Args...)>\n');
-    outputfile.write('{\n');
-    outputfile.write('    public:\n');
-    outputfile.write('        using argument_types = std::tuple<Args...>;\n');
-    outputfile.write('\n');
-    outputfile.write('        CRegisterFunction() { }\n');
-    outputfile.write('        void PrintArgs() { }\n');
-    outputfile.write('};\n');
-
     outputfile.write('template<int N, typename C, typename S>\n');
-    outputfile.write('class CRegisterMethod;\n');
-    outputfile.write('\n');
-    outputfile.write('template<int N, typename C, typename R, typename... Args>\n');
-    outputfile.write('class CRegisterMethod<N, C, R(Args...)>\n');
-    outputfile.write('{\n');
-    outputfile.write('    public:\n');
-    outputfile.write('        CRegisterMethod() { }\n');
-    outputfile.write('};\n');
+    outputfile.write('class CRegisterMethod;\n\n');
 
     paramcount = 0;
     while (paramcount <= maxparamcount):
@@ -898,7 +896,11 @@ def GenerateVariadicClasses(maxparamcount, outputfilename):
 
         outputfile.write("// -- class CRegisterMethod<%d, R(Args...)> ----------------------------------------\n\n" % paramcount);
         outputfile.write('template<typename C, typename R, typename... Args>\n');
+        outputfile.write('#if !PLATFORM_VS_2019\n');
         outputfile.write('class CRegisterMethod<%d, C, R(Args...)> : public CRegFunctionBase\n{\n' % paramcount);
+        outputfile.write('#else\n');
+        outputfile.write('class CRegisterMethod<%d, C, R(C::*)(Args...)> : public CRegFunctionBase\n{\n' % paramcount);
+        outputfile.write('#endif\n');
         outputfile.write('public:\n');
         outputfile.write('\n');
         outputfile.write('    using argument_types = std::tuple<Args...>;\n');
@@ -1020,7 +1022,11 @@ def GenerateVariadicClasses(maxparamcount, outputfilename):
 
         outputfile.write("// -- class CRegisterMethod<%d, void(Args...)> ----------------------------------------\n\n" % paramcount);
         outputfile.write('template<typename C, typename... Args>\n');
+        outputfile.write('#if !PLATFORM_VS_2019\n');
         outputfile.write('class CRegisterMethod<%d, C, void(Args...)> : public CRegFunctionBase\n{\n' % paramcount);
+        outputfile.write('#else\n');
+        outputfile.write('class CRegisterMethod<%d, C, void(C::*)(Args...)> : public CRegFunctionBase\n{\n' % paramcount);
+        outputfile.write('#endif\n');
         outputfile.write('public:\n');
         outputfile.write('\n');
         outputfile.write('    using argument_types = std::tuple<Args...>;\n');

@@ -58,6 +58,7 @@
 // -- some platforms (e.g. UE4) need special treatment
 // -- modify the target copy of this file with the appropriate define(s)
 #define PLATFORM_UE4 0
+#define PLATFORM_VS_2019 0
 
 // ------------------------------------------------------------------------------------------------
 // -- TYPES
