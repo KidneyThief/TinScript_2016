@@ -404,7 +404,7 @@ class CScriptContext
         bool8 SetMemberVar(uint32 objectid, const char* varname, void* value);
 
         void PrintObject(CObjectEntry* oe, int32 indent = 0);
-        void ListObjects();
+        void ListObjects(const char* partial = "");
 
         // -- writes out the entire object group hierarchy (or all objects)
         const char* ExportFormattedValue(eVarType type, void* addr);

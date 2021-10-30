@@ -160,9 +160,9 @@ void ContextListKeywords(const char* partial_name)
 // ====================================================================================================================
 // ContextListObjects():  List the objects registered to the current thread's CScriptContext.
 // ====================================================================================================================
-void ContextListObjects()
+void ContextListObjects(const char* partial)
 {
-    TinScript::GetContext()->ListObjects();
+    TinScript::GetContext()->ListObjects(partial);
 }
 
 // ====================================================================================================================

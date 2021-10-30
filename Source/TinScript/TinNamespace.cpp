@@ -938,19 +938,28 @@ void CScriptContext::PrintObject(CObjectEntry* oe, int32 indent)
 // ====================================================================================================================
 // ListObjects():  Debug method to list all registered objects.
 // ====================================================================================================================
-void CScriptContext::ListObjects()
+void CScriptContext::ListObjects(const char* partial)
 {
+    // -- sanity check
+    if (partial == nullptr)
+        partial = "";
+    bool use_partial = partial[0] != '\0';
+
     TinPrint(this, "\n");
     CObjectEntry* oe = GetObjectDictionary()->First();
     while (oe)
     {
         // -- if the object has a parent group, don't bother printing it - it'll have already
         // -- been printed by its parent group
-        if (oe->GetObjectGroup() == NULL)
-            PrintObject(oe);
+        // note:  if we're searching by partial name, we don't print hierarchies at all 
+        if (use_partial || oe->GetObjectGroup() == NULL)
+        {
+            if (!use_partial || SafeStrStr(oe->GetName(), partial) != 0)
+                PrintObject(oe);
+        }
 
         // -- if the object itself is a group, list it's children
-        if (HasMethod(oe->GetID(), "ListObjects"))
+        if (!use_partial && HasMethod(oe->GetID(), "ListObjects"))
         {
             int32 dummy = 0;
             ObjExecF(oe->GetID(), dummy, "ListObjects(1);");
