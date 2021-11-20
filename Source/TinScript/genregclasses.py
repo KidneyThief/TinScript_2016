@@ -1419,7 +1419,12 @@ def GenerateExecs(maxparamcount, outputfilename):
             outputfile.write("    CVariableEntry* ve_p%d = fe->GetContext()->GetParameter(%d);\n" % (i, i));
             outputfile.write("    void* p%d_convert_addr = NULL;\n" % i);
             outputfile.write("    if (GetRegisteredType(GetTypeID<T%d>()) == TYPE_string)\n" % i);
-            outputfile.write("        p%d_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p%d, ve_p%d->GetType());\n" % (i, i, i));
+            outputfile.write("    {\n");
+            outputfile.write("        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32\n");
+            outputfile.write("        void** p%d_ptr_ptr = (void**)(&p%d);\n" % (i, i));
+            outputfile.write("        void* p%d_ptr = (void*)(*p%d_ptr_ptr);\n" % (i, i));
+            outputfile.write("        p%d_convert_addr = TypeConvert(script_context, TYPE_string, p%d_ptr, ve_p%d->GetType());\n" % (i, i, i));
+            outputfile.write("    }\n");
             outputfile.write("    else\n");
             outputfile.write("        p%d_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T%d>()), (void*)&p%d, ve_p%d->GetType());\n" % (i, i, i, i));
             outputfile.write("    if (!p%d_convert_addr)\n" % i);

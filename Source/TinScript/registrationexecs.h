@@ -268,7 +268,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     CVariableEntry* ve_p1 = fe->GetContext()->GetParameter(1);
     void* p1_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T1>()) == TYPE_string)
-        p1_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p1, ve_p1->GetType());
+    {
+        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32
+        void** p1_ptr_ptr = (void**)(&p1);
+        void* p1_ptr = (void*)(*p1_ptr_ptr);
+        p1_convert_addr = TypeConvert(script_context, TYPE_string, p1_ptr, ve_p1->GetType());
+    }
     else
         p1_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T1>()), (void*)&p1, ve_p1->GetType());
     if (!p1_convert_addr)
@@ -404,7 +409,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     CVariableEntry* ve_p1 = fe->GetContext()->GetParameter(1);
     void* p1_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T1>()) == TYPE_string)
-        p1_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p1, ve_p1->GetType());
+    {
+        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32
+        void** p1_ptr_ptr = (void**)(&p1);
+        void* p1_ptr = (void*)(*p1_ptr_ptr);
+        p1_convert_addr = TypeConvert(script_context, TYPE_string, p1_ptr, ve_p1->GetType());
+    }
     else
         p1_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T1>()), (void*)&p1, ve_p1->GetType());
     if (!p1_convert_addr)
@@ -418,7 +428,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     CVariableEntry* ve_p2 = fe->GetContext()->GetParameter(2);
     void* p2_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T2>()) == TYPE_string)
-        p2_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p2, ve_p2->GetType());
+    {
+        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32
+        void** p2_ptr_ptr = (void**)(&p2);
+        void* p2_ptr = (void*)(*p2_ptr_ptr);
+        p2_convert_addr = TypeConvert(script_context, TYPE_string, p2_ptr, ve_p2->GetType());
+    }
     else
         p2_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T2>()), (void*)&p2, ve_p2->GetType());
     if (!p2_convert_addr)
@@ -554,7 +569,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     CVariableEntry* ve_p1 = fe->GetContext()->GetParameter(1);
     void* p1_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T1>()) == TYPE_string)
-        p1_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p1, ve_p1->GetType());
+    {
+        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32
+        void** p1_ptr_ptr = (void**)(&p1);
+        void* p1_ptr = (void*)(*p1_ptr_ptr);
+        p1_convert_addr = TypeConvert(script_context, TYPE_string, p1_ptr, ve_p1->GetType());
+    }
     else
         p1_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T1>()), (void*)&p1, ve_p1->GetType());
     if (!p1_convert_addr)
@@ -568,7 +588,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     CVariableEntry* ve_p2 = fe->GetContext()->GetParameter(2);
     void* p2_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T2>()) == TYPE_string)
-        p2_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p2, ve_p2->GetType());
+    {
+        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32
+        void** p2_ptr_ptr = (void**)(&p2);
+        void* p2_ptr = (void*)(*p2_ptr_ptr);
+        p2_convert_addr = TypeConvert(script_context, TYPE_string, p2_ptr, ve_p2->GetType());
+    }
     else
         p2_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T2>()), (void*)&p2, ve_p2->GetType());
     if (!p2_convert_addr)
@@ -582,7 +607,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     CVariableEntry* ve_p3 = fe->GetContext()->GetParameter(3);
     void* p3_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T3>()) == TYPE_string)
-        p3_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p3, ve_p3->GetType());
+    {
+        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32
+        void** p3_ptr_ptr = (void**)(&p3);
+        void* p3_ptr = (void*)(*p3_ptr_ptr);
+        p3_convert_addr = TypeConvert(script_context, TYPE_string, p3_ptr, ve_p3->GetType());
+    }
     else
         p3_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T3>()), (void*)&p3, ve_p3->GetType());
     if (!p3_convert_addr)
@@ -718,7 +748,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     CVariableEntry* ve_p1 = fe->GetContext()->GetParameter(1);
     void* p1_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T1>()) == TYPE_string)
-        p1_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p1, ve_p1->GetType());
+    {
+        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32
+        void** p1_ptr_ptr = (void**)(&p1);
+        void* p1_ptr = (void*)(*p1_ptr_ptr);
+        p1_convert_addr = TypeConvert(script_context, TYPE_string, p1_ptr, ve_p1->GetType());
+    }
     else
         p1_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T1>()), (void*)&p1, ve_p1->GetType());
     if (!p1_convert_addr)
@@ -732,7 +767,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     CVariableEntry* ve_p2 = fe->GetContext()->GetParameter(2);
     void* p2_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T2>()) == TYPE_string)
-        p2_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p2, ve_p2->GetType());
+    {
+        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32
+        void** p2_ptr_ptr = (void**)(&p2);
+        void* p2_ptr = (void*)(*p2_ptr_ptr);
+        p2_convert_addr = TypeConvert(script_context, TYPE_string, p2_ptr, ve_p2->GetType());
+    }
     else
         p2_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T2>()), (void*)&p2, ve_p2->GetType());
     if (!p2_convert_addr)
@@ -746,7 +786,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     CVariableEntry* ve_p3 = fe->GetContext()->GetParameter(3);
     void* p3_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T3>()) == TYPE_string)
-        p3_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p3, ve_p3->GetType());
+    {
+        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32
+        void** p3_ptr_ptr = (void**)(&p3);
+        void* p3_ptr = (void*)(*p3_ptr_ptr);
+        p3_convert_addr = TypeConvert(script_context, TYPE_string, p3_ptr, ve_p3->GetType());
+    }
     else
         p3_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T3>()), (void*)&p3, ve_p3->GetType());
     if (!p3_convert_addr)
@@ -760,7 +805,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     CVariableEntry* ve_p4 = fe->GetContext()->GetParameter(4);
     void* p4_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T4>()) == TYPE_string)
-        p4_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p4, ve_p4->GetType());
+    {
+        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32
+        void** p4_ptr_ptr = (void**)(&p4);
+        void* p4_ptr = (void*)(*p4_ptr_ptr);
+        p4_convert_addr = TypeConvert(script_context, TYPE_string, p4_ptr, ve_p4->GetType());
+    }
     else
         p4_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T4>()), (void*)&p4, ve_p4->GetType());
     if (!p4_convert_addr)
@@ -896,7 +946,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     CVariableEntry* ve_p1 = fe->GetContext()->GetParameter(1);
     void* p1_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T1>()) == TYPE_string)
-        p1_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p1, ve_p1->GetType());
+    {
+        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32
+        void** p1_ptr_ptr = (void**)(&p1);
+        void* p1_ptr = (void*)(*p1_ptr_ptr);
+        p1_convert_addr = TypeConvert(script_context, TYPE_string, p1_ptr, ve_p1->GetType());
+    }
     else
         p1_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T1>()), (void*)&p1, ve_p1->GetType());
     if (!p1_convert_addr)
@@ -910,7 +965,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     CVariableEntry* ve_p2 = fe->GetContext()->GetParameter(2);
     void* p2_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T2>()) == TYPE_string)
-        p2_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p2, ve_p2->GetType());
+    {
+        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32
+        void** p2_ptr_ptr = (void**)(&p2);
+        void* p2_ptr = (void*)(*p2_ptr_ptr);
+        p2_convert_addr = TypeConvert(script_context, TYPE_string, p2_ptr, ve_p2->GetType());
+    }
     else
         p2_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T2>()), (void*)&p2, ve_p2->GetType());
     if (!p2_convert_addr)
@@ -924,7 +984,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     CVariableEntry* ve_p3 = fe->GetContext()->GetParameter(3);
     void* p3_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T3>()) == TYPE_string)
-        p3_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p3, ve_p3->GetType());
+    {
+        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32
+        void** p3_ptr_ptr = (void**)(&p3);
+        void* p3_ptr = (void*)(*p3_ptr_ptr);
+        p3_convert_addr = TypeConvert(script_context, TYPE_string, p3_ptr, ve_p3->GetType());
+    }
     else
         p3_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T3>()), (void*)&p3, ve_p3->GetType());
     if (!p3_convert_addr)
@@ -938,7 +1003,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     CVariableEntry* ve_p4 = fe->GetContext()->GetParameter(4);
     void* p4_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T4>()) == TYPE_string)
-        p4_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p4, ve_p4->GetType());
+    {
+        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32
+        void** p4_ptr_ptr = (void**)(&p4);
+        void* p4_ptr = (void*)(*p4_ptr_ptr);
+        p4_convert_addr = TypeConvert(script_context, TYPE_string, p4_ptr, ve_p4->GetType());
+    }
     else
         p4_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T4>()), (void*)&p4, ve_p4->GetType());
     if (!p4_convert_addr)
@@ -952,7 +1022,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     CVariableEntry* ve_p5 = fe->GetContext()->GetParameter(5);
     void* p5_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T5>()) == TYPE_string)
-        p5_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p5, ve_p5->GetType());
+    {
+        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32
+        void** p5_ptr_ptr = (void**)(&p5);
+        void* p5_ptr = (void*)(*p5_ptr_ptr);
+        p5_convert_addr = TypeConvert(script_context, TYPE_string, p5_ptr, ve_p5->GetType());
+    }
     else
         p5_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T5>()), (void*)&p5, ve_p5->GetType());
     if (!p5_convert_addr)
@@ -1088,7 +1163,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     CVariableEntry* ve_p1 = fe->GetContext()->GetParameter(1);
     void* p1_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T1>()) == TYPE_string)
-        p1_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p1, ve_p1->GetType());
+    {
+        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32
+        void** p1_ptr_ptr = (void**)(&p1);
+        void* p1_ptr = (void*)(*p1_ptr_ptr);
+        p1_convert_addr = TypeConvert(script_context, TYPE_string, p1_ptr, ve_p1->GetType());
+    }
     else
         p1_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T1>()), (void*)&p1, ve_p1->GetType());
     if (!p1_convert_addr)
@@ -1102,7 +1182,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     CVariableEntry* ve_p2 = fe->GetContext()->GetParameter(2);
     void* p2_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T2>()) == TYPE_string)
-        p2_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p2, ve_p2->GetType());
+    {
+        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32
+        void** p2_ptr_ptr = (void**)(&p2);
+        void* p2_ptr = (void*)(*p2_ptr_ptr);
+        p2_convert_addr = TypeConvert(script_context, TYPE_string, p2_ptr, ve_p2->GetType());
+    }
     else
         p2_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T2>()), (void*)&p2, ve_p2->GetType());
     if (!p2_convert_addr)
@@ -1116,7 +1201,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     CVariableEntry* ve_p3 = fe->GetContext()->GetParameter(3);
     void* p3_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T3>()) == TYPE_string)
-        p3_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p3, ve_p3->GetType());
+    {
+        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32
+        void** p3_ptr_ptr = (void**)(&p3);
+        void* p3_ptr = (void*)(*p3_ptr_ptr);
+        p3_convert_addr = TypeConvert(script_context, TYPE_string, p3_ptr, ve_p3->GetType());
+    }
     else
         p3_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T3>()), (void*)&p3, ve_p3->GetType());
     if (!p3_convert_addr)
@@ -1130,7 +1220,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     CVariableEntry* ve_p4 = fe->GetContext()->GetParameter(4);
     void* p4_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T4>()) == TYPE_string)
-        p4_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p4, ve_p4->GetType());
+    {
+        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32
+        void** p4_ptr_ptr = (void**)(&p4);
+        void* p4_ptr = (void*)(*p4_ptr_ptr);
+        p4_convert_addr = TypeConvert(script_context, TYPE_string, p4_ptr, ve_p4->GetType());
+    }
     else
         p4_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T4>()), (void*)&p4, ve_p4->GetType());
     if (!p4_convert_addr)
@@ -1144,7 +1239,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     CVariableEntry* ve_p5 = fe->GetContext()->GetParameter(5);
     void* p5_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T5>()) == TYPE_string)
-        p5_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p5, ve_p5->GetType());
+    {
+        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32
+        void** p5_ptr_ptr = (void**)(&p5);
+        void* p5_ptr = (void*)(*p5_ptr_ptr);
+        p5_convert_addr = TypeConvert(script_context, TYPE_string, p5_ptr, ve_p5->GetType());
+    }
     else
         p5_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T5>()), (void*)&p5, ve_p5->GetType());
     if (!p5_convert_addr)
@@ -1158,7 +1258,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     CVariableEntry* ve_p6 = fe->GetContext()->GetParameter(6);
     void* p6_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T6>()) == TYPE_string)
-        p6_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p6, ve_p6->GetType());
+    {
+        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32
+        void** p6_ptr_ptr = (void**)(&p6);
+        void* p6_ptr = (void*)(*p6_ptr_ptr);
+        p6_convert_addr = TypeConvert(script_context, TYPE_string, p6_ptr, ve_p6->GetType());
+    }
     else
         p6_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T6>()), (void*)&p6, ve_p6->GetType());
     if (!p6_convert_addr)
@@ -1294,7 +1399,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     CVariableEntry* ve_p1 = fe->GetContext()->GetParameter(1);
     void* p1_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T1>()) == TYPE_string)
-        p1_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p1, ve_p1->GetType());
+    {
+        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32
+        void** p1_ptr_ptr = (void**)(&p1);
+        void* p1_ptr = (void*)(*p1_ptr_ptr);
+        p1_convert_addr = TypeConvert(script_context, TYPE_string, p1_ptr, ve_p1->GetType());
+    }
     else
         p1_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T1>()), (void*)&p1, ve_p1->GetType());
     if (!p1_convert_addr)
@@ -1308,7 +1418,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     CVariableEntry* ve_p2 = fe->GetContext()->GetParameter(2);
     void* p2_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T2>()) == TYPE_string)
-        p2_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p2, ve_p2->GetType());
+    {
+        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32
+        void** p2_ptr_ptr = (void**)(&p2);
+        void* p2_ptr = (void*)(*p2_ptr_ptr);
+        p2_convert_addr = TypeConvert(script_context, TYPE_string, p2_ptr, ve_p2->GetType());
+    }
     else
         p2_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T2>()), (void*)&p2, ve_p2->GetType());
     if (!p2_convert_addr)
@@ -1322,7 +1437,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     CVariableEntry* ve_p3 = fe->GetContext()->GetParameter(3);
     void* p3_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T3>()) == TYPE_string)
-        p3_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p3, ve_p3->GetType());
+    {
+        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32
+        void** p3_ptr_ptr = (void**)(&p3);
+        void* p3_ptr = (void*)(*p3_ptr_ptr);
+        p3_convert_addr = TypeConvert(script_context, TYPE_string, p3_ptr, ve_p3->GetType());
+    }
     else
         p3_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T3>()), (void*)&p3, ve_p3->GetType());
     if (!p3_convert_addr)
@@ -1336,7 +1456,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     CVariableEntry* ve_p4 = fe->GetContext()->GetParameter(4);
     void* p4_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T4>()) == TYPE_string)
-        p4_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p4, ve_p4->GetType());
+    {
+        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32
+        void** p4_ptr_ptr = (void**)(&p4);
+        void* p4_ptr = (void*)(*p4_ptr_ptr);
+        p4_convert_addr = TypeConvert(script_context, TYPE_string, p4_ptr, ve_p4->GetType());
+    }
     else
         p4_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T4>()), (void*)&p4, ve_p4->GetType());
     if (!p4_convert_addr)
@@ -1350,7 +1475,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     CVariableEntry* ve_p5 = fe->GetContext()->GetParameter(5);
     void* p5_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T5>()) == TYPE_string)
-        p5_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p5, ve_p5->GetType());
+    {
+        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32
+        void** p5_ptr_ptr = (void**)(&p5);
+        void* p5_ptr = (void*)(*p5_ptr_ptr);
+        p5_convert_addr = TypeConvert(script_context, TYPE_string, p5_ptr, ve_p5->GetType());
+    }
     else
         p5_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T5>()), (void*)&p5, ve_p5->GetType());
     if (!p5_convert_addr)
@@ -1364,7 +1494,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     CVariableEntry* ve_p6 = fe->GetContext()->GetParameter(6);
     void* p6_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T6>()) == TYPE_string)
-        p6_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p6, ve_p6->GetType());
+    {
+        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32
+        void** p6_ptr_ptr = (void**)(&p6);
+        void* p6_ptr = (void*)(*p6_ptr_ptr);
+        p6_convert_addr = TypeConvert(script_context, TYPE_string, p6_ptr, ve_p6->GetType());
+    }
     else
         p6_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T6>()), (void*)&p6, ve_p6->GetType());
     if (!p6_convert_addr)
@@ -1378,7 +1513,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     CVariableEntry* ve_p7 = fe->GetContext()->GetParameter(7);
     void* p7_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T7>()) == TYPE_string)
-        p7_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p7, ve_p7->GetType());
+    {
+        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32
+        void** p7_ptr_ptr = (void**)(&p7);
+        void* p7_ptr = (void*)(*p7_ptr_ptr);
+        p7_convert_addr = TypeConvert(script_context, TYPE_string, p7_ptr, ve_p7->GetType());
+    }
     else
         p7_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T7>()), (void*)&p7, ve_p7->GetType());
     if (!p7_convert_addr)
@@ -1514,7 +1654,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     CVariableEntry* ve_p1 = fe->GetContext()->GetParameter(1);
     void* p1_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T1>()) == TYPE_string)
-        p1_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p1, ve_p1->GetType());
+    {
+        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32
+        void** p1_ptr_ptr = (void**)(&p1);
+        void* p1_ptr = (void*)(*p1_ptr_ptr);
+        p1_convert_addr = TypeConvert(script_context, TYPE_string, p1_ptr, ve_p1->GetType());
+    }
     else
         p1_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T1>()), (void*)&p1, ve_p1->GetType());
     if (!p1_convert_addr)
@@ -1528,7 +1673,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     CVariableEntry* ve_p2 = fe->GetContext()->GetParameter(2);
     void* p2_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T2>()) == TYPE_string)
-        p2_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p2, ve_p2->GetType());
+    {
+        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32
+        void** p2_ptr_ptr = (void**)(&p2);
+        void* p2_ptr = (void*)(*p2_ptr_ptr);
+        p2_convert_addr = TypeConvert(script_context, TYPE_string, p2_ptr, ve_p2->GetType());
+    }
     else
         p2_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T2>()), (void*)&p2, ve_p2->GetType());
     if (!p2_convert_addr)
@@ -1542,7 +1692,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     CVariableEntry* ve_p3 = fe->GetContext()->GetParameter(3);
     void* p3_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T3>()) == TYPE_string)
-        p3_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p3, ve_p3->GetType());
+    {
+        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32
+        void** p3_ptr_ptr = (void**)(&p3);
+        void* p3_ptr = (void*)(*p3_ptr_ptr);
+        p3_convert_addr = TypeConvert(script_context, TYPE_string, p3_ptr, ve_p3->GetType());
+    }
     else
         p3_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T3>()), (void*)&p3, ve_p3->GetType());
     if (!p3_convert_addr)
@@ -1556,7 +1711,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     CVariableEntry* ve_p4 = fe->GetContext()->GetParameter(4);
     void* p4_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T4>()) == TYPE_string)
-        p4_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p4, ve_p4->GetType());
+    {
+        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32
+        void** p4_ptr_ptr = (void**)(&p4);
+        void* p4_ptr = (void*)(*p4_ptr_ptr);
+        p4_convert_addr = TypeConvert(script_context, TYPE_string, p4_ptr, ve_p4->GetType());
+    }
     else
         p4_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T4>()), (void*)&p4, ve_p4->GetType());
     if (!p4_convert_addr)
@@ -1570,7 +1730,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     CVariableEntry* ve_p5 = fe->GetContext()->GetParameter(5);
     void* p5_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T5>()) == TYPE_string)
-        p5_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p5, ve_p5->GetType());
+    {
+        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32
+        void** p5_ptr_ptr = (void**)(&p5);
+        void* p5_ptr = (void*)(*p5_ptr_ptr);
+        p5_convert_addr = TypeConvert(script_context, TYPE_string, p5_ptr, ve_p5->GetType());
+    }
     else
         p5_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T5>()), (void*)&p5, ve_p5->GetType());
     if (!p5_convert_addr)
@@ -1584,7 +1749,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     CVariableEntry* ve_p6 = fe->GetContext()->GetParameter(6);
     void* p6_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T6>()) == TYPE_string)
-        p6_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p6, ve_p6->GetType());
+    {
+        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32
+        void** p6_ptr_ptr = (void**)(&p6);
+        void* p6_ptr = (void*)(*p6_ptr_ptr);
+        p6_convert_addr = TypeConvert(script_context, TYPE_string, p6_ptr, ve_p6->GetType());
+    }
     else
         p6_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T6>()), (void*)&p6, ve_p6->GetType());
     if (!p6_convert_addr)
@@ -1598,7 +1768,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     CVariableEntry* ve_p7 = fe->GetContext()->GetParameter(7);
     void* p7_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T7>()) == TYPE_string)
-        p7_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p7, ve_p7->GetType());
+    {
+        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32
+        void** p7_ptr_ptr = (void**)(&p7);
+        void* p7_ptr = (void*)(*p7_ptr_ptr);
+        p7_convert_addr = TypeConvert(script_context, TYPE_string, p7_ptr, ve_p7->GetType());
+    }
     else
         p7_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T7>()), (void*)&p7, ve_p7->GetType());
     if (!p7_convert_addr)
@@ -1612,7 +1787,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     CVariableEntry* ve_p8 = fe->GetContext()->GetParameter(8);
     void* p8_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T8>()) == TYPE_string)
-        p8_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p8, ve_p8->GetType());
+    {
+        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32
+        void** p8_ptr_ptr = (void**)(&p8);
+        void* p8_ptr = (void*)(*p8_ptr_ptr);
+        p8_convert_addr = TypeConvert(script_context, TYPE_string, p8_ptr, ve_p8->GetType());
+    }
     else
         p8_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T8>()), (void*)&p8, ve_p8->GetType());
     if (!p8_convert_addr)
@@ -1748,7 +1928,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     CVariableEntry* ve_p1 = fe->GetContext()->GetParameter(1);
     void* p1_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T1>()) == TYPE_string)
-        p1_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p1, ve_p1->GetType());
+    {
+        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32
+        void** p1_ptr_ptr = (void**)(&p1);
+        void* p1_ptr = (void*)(*p1_ptr_ptr);
+        p1_convert_addr = TypeConvert(script_context, TYPE_string, p1_ptr, ve_p1->GetType());
+    }
     else
         p1_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T1>()), (void*)&p1, ve_p1->GetType());
     if (!p1_convert_addr)
@@ -1762,7 +1947,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     CVariableEntry* ve_p2 = fe->GetContext()->GetParameter(2);
     void* p2_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T2>()) == TYPE_string)
-        p2_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p2, ve_p2->GetType());
+    {
+        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32
+        void** p2_ptr_ptr = (void**)(&p2);
+        void* p2_ptr = (void*)(*p2_ptr_ptr);
+        p2_convert_addr = TypeConvert(script_context, TYPE_string, p2_ptr, ve_p2->GetType());
+    }
     else
         p2_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T2>()), (void*)&p2, ve_p2->GetType());
     if (!p2_convert_addr)
@@ -1776,7 +1966,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     CVariableEntry* ve_p3 = fe->GetContext()->GetParameter(3);
     void* p3_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T3>()) == TYPE_string)
-        p3_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p3, ve_p3->GetType());
+    {
+        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32
+        void** p3_ptr_ptr = (void**)(&p3);
+        void* p3_ptr = (void*)(*p3_ptr_ptr);
+        p3_convert_addr = TypeConvert(script_context, TYPE_string, p3_ptr, ve_p3->GetType());
+    }
     else
         p3_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T3>()), (void*)&p3, ve_p3->GetType());
     if (!p3_convert_addr)
@@ -1790,7 +1985,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     CVariableEntry* ve_p4 = fe->GetContext()->GetParameter(4);
     void* p4_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T4>()) == TYPE_string)
-        p4_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p4, ve_p4->GetType());
+    {
+        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32
+        void** p4_ptr_ptr = (void**)(&p4);
+        void* p4_ptr = (void*)(*p4_ptr_ptr);
+        p4_convert_addr = TypeConvert(script_context, TYPE_string, p4_ptr, ve_p4->GetType());
+    }
     else
         p4_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T4>()), (void*)&p4, ve_p4->GetType());
     if (!p4_convert_addr)
@@ -1804,7 +2004,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     CVariableEntry* ve_p5 = fe->GetContext()->GetParameter(5);
     void* p5_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T5>()) == TYPE_string)
-        p5_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p5, ve_p5->GetType());
+    {
+        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32
+        void** p5_ptr_ptr = (void**)(&p5);
+        void* p5_ptr = (void*)(*p5_ptr_ptr);
+        p5_convert_addr = TypeConvert(script_context, TYPE_string, p5_ptr, ve_p5->GetType());
+    }
     else
         p5_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T5>()), (void*)&p5, ve_p5->GetType());
     if (!p5_convert_addr)
@@ -1818,7 +2023,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     CVariableEntry* ve_p6 = fe->GetContext()->GetParameter(6);
     void* p6_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T6>()) == TYPE_string)
-        p6_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p6, ve_p6->GetType());
+    {
+        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32
+        void** p6_ptr_ptr = (void**)(&p6);
+        void* p6_ptr = (void*)(*p6_ptr_ptr);
+        p6_convert_addr = TypeConvert(script_context, TYPE_string, p6_ptr, ve_p6->GetType());
+    }
     else
         p6_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T6>()), (void*)&p6, ve_p6->GetType());
     if (!p6_convert_addr)
@@ -1832,7 +2042,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     CVariableEntry* ve_p7 = fe->GetContext()->GetParameter(7);
     void* p7_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T7>()) == TYPE_string)
-        p7_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p7, ve_p7->GetType());
+    {
+        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32
+        void** p7_ptr_ptr = (void**)(&p7);
+        void* p7_ptr = (void*)(*p7_ptr_ptr);
+        p7_convert_addr = TypeConvert(script_context, TYPE_string, p7_ptr, ve_p7->GetType());
+    }
     else
         p7_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T7>()), (void*)&p7, ve_p7->GetType());
     if (!p7_convert_addr)
@@ -1846,7 +2061,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     CVariableEntry* ve_p8 = fe->GetContext()->GetParameter(8);
     void* p8_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T8>()) == TYPE_string)
-        p8_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p8, ve_p8->GetType());
+    {
+        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32
+        void** p8_ptr_ptr = (void**)(&p8);
+        void* p8_ptr = (void*)(*p8_ptr_ptr);
+        p8_convert_addr = TypeConvert(script_context, TYPE_string, p8_ptr, ve_p8->GetType());
+    }
     else
         p8_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T8>()), (void*)&p8, ve_p8->GetType());
     if (!p8_convert_addr)
@@ -1860,7 +2080,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     CVariableEntry* ve_p9 = fe->GetContext()->GetParameter(9);
     void* p9_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T9>()) == TYPE_string)
-        p9_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p9, ve_p9->GetType());
+    {
+        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32
+        void** p9_ptr_ptr = (void**)(&p9);
+        void* p9_ptr = (void*)(*p9_ptr_ptr);
+        p9_convert_addr = TypeConvert(script_context, TYPE_string, p9_ptr, ve_p9->GetType());
+    }
     else
         p9_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T9>()), (void*)&p9, ve_p9->GetType());
     if (!p9_convert_addr)
@@ -1996,7 +2221,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     CVariableEntry* ve_p1 = fe->GetContext()->GetParameter(1);
     void* p1_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T1>()) == TYPE_string)
-        p1_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p1, ve_p1->GetType());
+    {
+        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32
+        void** p1_ptr_ptr = (void**)(&p1);
+        void* p1_ptr = (void*)(*p1_ptr_ptr);
+        p1_convert_addr = TypeConvert(script_context, TYPE_string, p1_ptr, ve_p1->GetType());
+    }
     else
         p1_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T1>()), (void*)&p1, ve_p1->GetType());
     if (!p1_convert_addr)
@@ -2010,7 +2240,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     CVariableEntry* ve_p2 = fe->GetContext()->GetParameter(2);
     void* p2_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T2>()) == TYPE_string)
-        p2_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p2, ve_p2->GetType());
+    {
+        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32
+        void** p2_ptr_ptr = (void**)(&p2);
+        void* p2_ptr = (void*)(*p2_ptr_ptr);
+        p2_convert_addr = TypeConvert(script_context, TYPE_string, p2_ptr, ve_p2->GetType());
+    }
     else
         p2_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T2>()), (void*)&p2, ve_p2->GetType());
     if (!p2_convert_addr)
@@ -2024,7 +2259,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     CVariableEntry* ve_p3 = fe->GetContext()->GetParameter(3);
     void* p3_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T3>()) == TYPE_string)
-        p3_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p3, ve_p3->GetType());
+    {
+        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32
+        void** p3_ptr_ptr = (void**)(&p3);
+        void* p3_ptr = (void*)(*p3_ptr_ptr);
+        p3_convert_addr = TypeConvert(script_context, TYPE_string, p3_ptr, ve_p3->GetType());
+    }
     else
         p3_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T3>()), (void*)&p3, ve_p3->GetType());
     if (!p3_convert_addr)
@@ -2038,7 +2278,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     CVariableEntry* ve_p4 = fe->GetContext()->GetParameter(4);
     void* p4_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T4>()) == TYPE_string)
-        p4_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p4, ve_p4->GetType());
+    {
+        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32
+        void** p4_ptr_ptr = (void**)(&p4);
+        void* p4_ptr = (void*)(*p4_ptr_ptr);
+        p4_convert_addr = TypeConvert(script_context, TYPE_string, p4_ptr, ve_p4->GetType());
+    }
     else
         p4_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T4>()), (void*)&p4, ve_p4->GetType());
     if (!p4_convert_addr)
@@ -2052,7 +2297,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     CVariableEntry* ve_p5 = fe->GetContext()->GetParameter(5);
     void* p5_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T5>()) == TYPE_string)
-        p5_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p5, ve_p5->GetType());
+    {
+        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32
+        void** p5_ptr_ptr = (void**)(&p5);
+        void* p5_ptr = (void*)(*p5_ptr_ptr);
+        p5_convert_addr = TypeConvert(script_context, TYPE_string, p5_ptr, ve_p5->GetType());
+    }
     else
         p5_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T5>()), (void*)&p5, ve_p5->GetType());
     if (!p5_convert_addr)
@@ -2066,7 +2316,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     CVariableEntry* ve_p6 = fe->GetContext()->GetParameter(6);
     void* p6_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T6>()) == TYPE_string)
-        p6_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p6, ve_p6->GetType());
+    {
+        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32
+        void** p6_ptr_ptr = (void**)(&p6);
+        void* p6_ptr = (void*)(*p6_ptr_ptr);
+        p6_convert_addr = TypeConvert(script_context, TYPE_string, p6_ptr, ve_p6->GetType());
+    }
     else
         p6_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T6>()), (void*)&p6, ve_p6->GetType());
     if (!p6_convert_addr)
@@ -2080,7 +2335,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     CVariableEntry* ve_p7 = fe->GetContext()->GetParameter(7);
     void* p7_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T7>()) == TYPE_string)
-        p7_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p7, ve_p7->GetType());
+    {
+        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32
+        void** p7_ptr_ptr = (void**)(&p7);
+        void* p7_ptr = (void*)(*p7_ptr_ptr);
+        p7_convert_addr = TypeConvert(script_context, TYPE_string, p7_ptr, ve_p7->GetType());
+    }
     else
         p7_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T7>()), (void*)&p7, ve_p7->GetType());
     if (!p7_convert_addr)
@@ -2094,7 +2354,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     CVariableEntry* ve_p8 = fe->GetContext()->GetParameter(8);
     void* p8_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T8>()) == TYPE_string)
-        p8_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p8, ve_p8->GetType());
+    {
+        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32
+        void** p8_ptr_ptr = (void**)(&p8);
+        void* p8_ptr = (void*)(*p8_ptr_ptr);
+        p8_convert_addr = TypeConvert(script_context, TYPE_string, p8_ptr, ve_p8->GetType());
+    }
     else
         p8_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T8>()), (void*)&p8, ve_p8->GetType());
     if (!p8_convert_addr)
@@ -2108,7 +2373,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     CVariableEntry* ve_p9 = fe->GetContext()->GetParameter(9);
     void* p9_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T9>()) == TYPE_string)
-        p9_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p9, ve_p9->GetType());
+    {
+        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32
+        void** p9_ptr_ptr = (void**)(&p9);
+        void* p9_ptr = (void*)(*p9_ptr_ptr);
+        p9_convert_addr = TypeConvert(script_context, TYPE_string, p9_ptr, ve_p9->GetType());
+    }
     else
         p9_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T9>()), (void*)&p9, ve_p9->GetType());
     if (!p9_convert_addr)
@@ -2122,7 +2392,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     CVariableEntry* ve_p10 = fe->GetContext()->GetParameter(10);
     void* p10_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T10>()) == TYPE_string)
-        p10_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p10, ve_p10->GetType());
+    {
+        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32
+        void** p10_ptr_ptr = (void**)(&p10);
+        void* p10_ptr = (void*)(*p10_ptr_ptr);
+        p10_convert_addr = TypeConvert(script_context, TYPE_string, p10_ptr, ve_p10->GetType());
+    }
     else
         p10_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T10>()), (void*)&p10, ve_p10->GetType());
     if (!p10_convert_addr)
@@ -2258,7 +2533,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     CVariableEntry* ve_p1 = fe->GetContext()->GetParameter(1);
     void* p1_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T1>()) == TYPE_string)
-        p1_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p1, ve_p1->GetType());
+    {
+        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32
+        void** p1_ptr_ptr = (void**)(&p1);
+        void* p1_ptr = (void*)(*p1_ptr_ptr);
+        p1_convert_addr = TypeConvert(script_context, TYPE_string, p1_ptr, ve_p1->GetType());
+    }
     else
         p1_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T1>()), (void*)&p1, ve_p1->GetType());
     if (!p1_convert_addr)
@@ -2272,7 +2552,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     CVariableEntry* ve_p2 = fe->GetContext()->GetParameter(2);
     void* p2_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T2>()) == TYPE_string)
-        p2_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p2, ve_p2->GetType());
+    {
+        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32
+        void** p2_ptr_ptr = (void**)(&p2);
+        void* p2_ptr = (void*)(*p2_ptr_ptr);
+        p2_convert_addr = TypeConvert(script_context, TYPE_string, p2_ptr, ve_p2->GetType());
+    }
     else
         p2_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T2>()), (void*)&p2, ve_p2->GetType());
     if (!p2_convert_addr)
@@ -2286,7 +2571,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     CVariableEntry* ve_p3 = fe->GetContext()->GetParameter(3);
     void* p3_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T3>()) == TYPE_string)
-        p3_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p3, ve_p3->GetType());
+    {
+        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32
+        void** p3_ptr_ptr = (void**)(&p3);
+        void* p3_ptr = (void*)(*p3_ptr_ptr);
+        p3_convert_addr = TypeConvert(script_context, TYPE_string, p3_ptr, ve_p3->GetType());
+    }
     else
         p3_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T3>()), (void*)&p3, ve_p3->GetType());
     if (!p3_convert_addr)
@@ -2300,7 +2590,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     CVariableEntry* ve_p4 = fe->GetContext()->GetParameter(4);
     void* p4_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T4>()) == TYPE_string)
-        p4_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p4, ve_p4->GetType());
+    {
+        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32
+        void** p4_ptr_ptr = (void**)(&p4);
+        void* p4_ptr = (void*)(*p4_ptr_ptr);
+        p4_convert_addr = TypeConvert(script_context, TYPE_string, p4_ptr, ve_p4->GetType());
+    }
     else
         p4_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T4>()), (void*)&p4, ve_p4->GetType());
     if (!p4_convert_addr)
@@ -2314,7 +2609,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     CVariableEntry* ve_p5 = fe->GetContext()->GetParameter(5);
     void* p5_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T5>()) == TYPE_string)
-        p5_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p5, ve_p5->GetType());
+    {
+        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32
+        void** p5_ptr_ptr = (void**)(&p5);
+        void* p5_ptr = (void*)(*p5_ptr_ptr);
+        p5_convert_addr = TypeConvert(script_context, TYPE_string, p5_ptr, ve_p5->GetType());
+    }
     else
         p5_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T5>()), (void*)&p5, ve_p5->GetType());
     if (!p5_convert_addr)
@@ -2328,7 +2628,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     CVariableEntry* ve_p6 = fe->GetContext()->GetParameter(6);
     void* p6_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T6>()) == TYPE_string)
-        p6_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p6, ve_p6->GetType());
+    {
+        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32
+        void** p6_ptr_ptr = (void**)(&p6);
+        void* p6_ptr = (void*)(*p6_ptr_ptr);
+        p6_convert_addr = TypeConvert(script_context, TYPE_string, p6_ptr, ve_p6->GetType());
+    }
     else
         p6_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T6>()), (void*)&p6, ve_p6->GetType());
     if (!p6_convert_addr)
@@ -2342,7 +2647,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     CVariableEntry* ve_p7 = fe->GetContext()->GetParameter(7);
     void* p7_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T7>()) == TYPE_string)
-        p7_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p7, ve_p7->GetType());
+    {
+        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32
+        void** p7_ptr_ptr = (void**)(&p7);
+        void* p7_ptr = (void*)(*p7_ptr_ptr);
+        p7_convert_addr = TypeConvert(script_context, TYPE_string, p7_ptr, ve_p7->GetType());
+    }
     else
         p7_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T7>()), (void*)&p7, ve_p7->GetType());
     if (!p7_convert_addr)
@@ -2356,7 +2666,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     CVariableEntry* ve_p8 = fe->GetContext()->GetParameter(8);
     void* p8_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T8>()) == TYPE_string)
-        p8_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p8, ve_p8->GetType());
+    {
+        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32
+        void** p8_ptr_ptr = (void**)(&p8);
+        void* p8_ptr = (void*)(*p8_ptr_ptr);
+        p8_convert_addr = TypeConvert(script_context, TYPE_string, p8_ptr, ve_p8->GetType());
+    }
     else
         p8_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T8>()), (void*)&p8, ve_p8->GetType());
     if (!p8_convert_addr)
@@ -2370,7 +2685,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     CVariableEntry* ve_p9 = fe->GetContext()->GetParameter(9);
     void* p9_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T9>()) == TYPE_string)
-        p9_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p9, ve_p9->GetType());
+    {
+        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32
+        void** p9_ptr_ptr = (void**)(&p9);
+        void* p9_ptr = (void*)(*p9_ptr_ptr);
+        p9_convert_addr = TypeConvert(script_context, TYPE_string, p9_ptr, ve_p9->GetType());
+    }
     else
         p9_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T9>()), (void*)&p9, ve_p9->GetType());
     if (!p9_convert_addr)
@@ -2384,7 +2704,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     CVariableEntry* ve_p10 = fe->GetContext()->GetParameter(10);
     void* p10_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T10>()) == TYPE_string)
-        p10_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p10, ve_p10->GetType());
+    {
+        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32
+        void** p10_ptr_ptr = (void**)(&p10);
+        void* p10_ptr = (void*)(*p10_ptr_ptr);
+        p10_convert_addr = TypeConvert(script_context, TYPE_string, p10_ptr, ve_p10->GetType());
+    }
     else
         p10_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T10>()), (void*)&p10, ve_p10->GetType());
     if (!p10_convert_addr)
@@ -2398,7 +2723,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     CVariableEntry* ve_p11 = fe->GetContext()->GetParameter(11);
     void* p11_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T11>()) == TYPE_string)
-        p11_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p11, ve_p11->GetType());
+    {
+        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32
+        void** p11_ptr_ptr = (void**)(&p11);
+        void* p11_ptr = (void*)(*p11_ptr_ptr);
+        p11_convert_addr = TypeConvert(script_context, TYPE_string, p11_ptr, ve_p11->GetType());
+    }
     else
         p11_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T11>()), (void*)&p11, ve_p11->GetType());
     if (!p11_convert_addr)
@@ -2534,7 +2864,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     CVariableEntry* ve_p1 = fe->GetContext()->GetParameter(1);
     void* p1_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T1>()) == TYPE_string)
-        p1_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p1, ve_p1->GetType());
+    {
+        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32
+        void** p1_ptr_ptr = (void**)(&p1);
+        void* p1_ptr = (void*)(*p1_ptr_ptr);
+        p1_convert_addr = TypeConvert(script_context, TYPE_string, p1_ptr, ve_p1->GetType());
+    }
     else
         p1_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T1>()), (void*)&p1, ve_p1->GetType());
     if (!p1_convert_addr)
@@ -2548,7 +2883,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     CVariableEntry* ve_p2 = fe->GetContext()->GetParameter(2);
     void* p2_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T2>()) == TYPE_string)
-        p2_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p2, ve_p2->GetType());
+    {
+        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32
+        void** p2_ptr_ptr = (void**)(&p2);
+        void* p2_ptr = (void*)(*p2_ptr_ptr);
+        p2_convert_addr = TypeConvert(script_context, TYPE_string, p2_ptr, ve_p2->GetType());
+    }
     else
         p2_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T2>()), (void*)&p2, ve_p2->GetType());
     if (!p2_convert_addr)
@@ -2562,7 +2902,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     CVariableEntry* ve_p3 = fe->GetContext()->GetParameter(3);
     void* p3_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T3>()) == TYPE_string)
-        p3_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p3, ve_p3->GetType());
+    {
+        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32
+        void** p3_ptr_ptr = (void**)(&p3);
+        void* p3_ptr = (void*)(*p3_ptr_ptr);
+        p3_convert_addr = TypeConvert(script_context, TYPE_string, p3_ptr, ve_p3->GetType());
+    }
     else
         p3_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T3>()), (void*)&p3, ve_p3->GetType());
     if (!p3_convert_addr)
@@ -2576,7 +2921,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     CVariableEntry* ve_p4 = fe->GetContext()->GetParameter(4);
     void* p4_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T4>()) == TYPE_string)
-        p4_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p4, ve_p4->GetType());
+    {
+        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32
+        void** p4_ptr_ptr = (void**)(&p4);
+        void* p4_ptr = (void*)(*p4_ptr_ptr);
+        p4_convert_addr = TypeConvert(script_context, TYPE_string, p4_ptr, ve_p4->GetType());
+    }
     else
         p4_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T4>()), (void*)&p4, ve_p4->GetType());
     if (!p4_convert_addr)
@@ -2590,7 +2940,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     CVariableEntry* ve_p5 = fe->GetContext()->GetParameter(5);
     void* p5_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T5>()) == TYPE_string)
-        p5_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p5, ve_p5->GetType());
+    {
+        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32
+        void** p5_ptr_ptr = (void**)(&p5);
+        void* p5_ptr = (void*)(*p5_ptr_ptr);
+        p5_convert_addr = TypeConvert(script_context, TYPE_string, p5_ptr, ve_p5->GetType());
+    }
     else
         p5_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T5>()), (void*)&p5, ve_p5->GetType());
     if (!p5_convert_addr)
@@ -2604,7 +2959,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     CVariableEntry* ve_p6 = fe->GetContext()->GetParameter(6);
     void* p6_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T6>()) == TYPE_string)
-        p6_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p6, ve_p6->GetType());
+    {
+        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32
+        void** p6_ptr_ptr = (void**)(&p6);
+        void* p6_ptr = (void*)(*p6_ptr_ptr);
+        p6_convert_addr = TypeConvert(script_context, TYPE_string, p6_ptr, ve_p6->GetType());
+    }
     else
         p6_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T6>()), (void*)&p6, ve_p6->GetType());
     if (!p6_convert_addr)
@@ -2618,7 +2978,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     CVariableEntry* ve_p7 = fe->GetContext()->GetParameter(7);
     void* p7_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T7>()) == TYPE_string)
-        p7_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p7, ve_p7->GetType());
+    {
+        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32
+        void** p7_ptr_ptr = (void**)(&p7);
+        void* p7_ptr = (void*)(*p7_ptr_ptr);
+        p7_convert_addr = TypeConvert(script_context, TYPE_string, p7_ptr, ve_p7->GetType());
+    }
     else
         p7_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T7>()), (void*)&p7, ve_p7->GetType());
     if (!p7_convert_addr)
@@ -2632,7 +2997,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     CVariableEntry* ve_p8 = fe->GetContext()->GetParameter(8);
     void* p8_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T8>()) == TYPE_string)
-        p8_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p8, ve_p8->GetType());
+    {
+        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32
+        void** p8_ptr_ptr = (void**)(&p8);
+        void* p8_ptr = (void*)(*p8_ptr_ptr);
+        p8_convert_addr = TypeConvert(script_context, TYPE_string, p8_ptr, ve_p8->GetType());
+    }
     else
         p8_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T8>()), (void*)&p8, ve_p8->GetType());
     if (!p8_convert_addr)
@@ -2646,7 +3016,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     CVariableEntry* ve_p9 = fe->GetContext()->GetParameter(9);
     void* p9_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T9>()) == TYPE_string)
-        p9_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p9, ve_p9->GetType());
+    {
+        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32
+        void** p9_ptr_ptr = (void**)(&p9);
+        void* p9_ptr = (void*)(*p9_ptr_ptr);
+        p9_convert_addr = TypeConvert(script_context, TYPE_string, p9_ptr, ve_p9->GetType());
+    }
     else
         p9_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T9>()), (void*)&p9, ve_p9->GetType());
     if (!p9_convert_addr)
@@ -2660,7 +3035,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     CVariableEntry* ve_p10 = fe->GetContext()->GetParameter(10);
     void* p10_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T10>()) == TYPE_string)
-        p10_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p10, ve_p10->GetType());
+    {
+        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32
+        void** p10_ptr_ptr = (void**)(&p10);
+        void* p10_ptr = (void*)(*p10_ptr_ptr);
+        p10_convert_addr = TypeConvert(script_context, TYPE_string, p10_ptr, ve_p10->GetType());
+    }
     else
         p10_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T10>()), (void*)&p10, ve_p10->GetType());
     if (!p10_convert_addr)
@@ -2674,7 +3054,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     CVariableEntry* ve_p11 = fe->GetContext()->GetParameter(11);
     void* p11_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T11>()) == TYPE_string)
-        p11_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p11, ve_p11->GetType());
+    {
+        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32
+        void** p11_ptr_ptr = (void**)(&p11);
+        void* p11_ptr = (void*)(*p11_ptr_ptr);
+        p11_convert_addr = TypeConvert(script_context, TYPE_string, p11_ptr, ve_p11->GetType());
+    }
     else
         p11_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T11>()), (void*)&p11, ve_p11->GetType());
     if (!p11_convert_addr)
@@ -2688,7 +3073,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     CVariableEntry* ve_p12 = fe->GetContext()->GetParameter(12);
     void* p12_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T12>()) == TYPE_string)
-        p12_convert_addr = TypeConvert(script_context, TYPE_string, (void*)p12, ve_p12->GetType());
+    {
+        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32
+        void** p12_ptr_ptr = (void**)(&p12);
+        void* p12_ptr = (void*)(*p12_ptr_ptr);
+        p12_convert_addr = TypeConvert(script_context, TYPE_string, p12_ptr, ve_p12->GetType());
+    }
     else
         p12_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T12>()), (void*)&p12, ve_p12->GetType());
     if (!p12_convert_addr)

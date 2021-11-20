@@ -346,6 +346,8 @@ void UnitTest_GetScriptReturnBool()
 
 void UnitTest_GetScriptReturnString()
 {
+	// -- there are two ways to execute a script function from code - this is the slow way:
+    // construct the entire command as a single string, to be parsed and executed
     const char* result;
     if (!TinScript::ExecF(result, "UnitTest_ScriptReturnString('goldfish');"))
     {
@@ -357,6 +359,23 @@ void UnitTest_GetScriptReturnString()
         // -- print the result to a testable string
         sprintf_s(CUnitTest::gCodeResult, "%s", result);
     }
+}
+
+void UnitTest_GetScriptReturnStringExec()
+{
+    // -- there are two ways to execute a script function from code - this is the much faster way
+    // schedule an immediate call to the function, with args... no parsing!
+	const char* result;
+	if (!TinScript::ExecFunction(result, TinScript::Hash("UnitTest_ScriptReturnString"), "goldfish"))
+	{
+		ScriptAssert_(TinScript::GetContext(), false, "<internal>", -1,
+			"Error - failed to execute UnitTest_ScriptReturnString()\n");
+	}
+	else
+	{
+		// -- print the result to a testable string
+		sprintf_s(CUnitTest::gCodeResult, "%s", result);
+	}
 }
 
 void UnitTest_GetScriptReturnVector3f()
@@ -895,6 +914,7 @@ bool8 CreateUnitTests()
         success = success && AddUnitTest("script_return_float", "Script divide by 3.0f", "", "", UnitTest_GetScriptReturnFloat, "5.0000");
         success = success && AddUnitTest("script_return_bool", "Script 5.1f > 5.0f", "", "", UnitTest_GetScriptReturnBool, "true");
         success = success && AddUnitTest("script_return_string", "Script name of goldfish", "", "", UnitTest_GetScriptReturnString, "fluffy");
+		success = success && AddUnitTest("script_return_string_exec", "Script name of goldfish", "", "", UnitTest_GetScriptReturnStringExec, "fluffy");
         success = success && AddUnitTest("script_return_v3f", "Script 2D normalized", "", "", UnitTest_GetScriptReturnVector3f, "0.3162 0.0000 0.9487");
 
         // -- recursive scripted function -----------------------------------------------------------------------------
