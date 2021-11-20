@@ -27,6 +27,7 @@ void DefaultGame::OnCreate() : CScriptObject
 
     // -- we track the sim time, so OnUpdate() can calculate the deltaTime
     int self.SimTime;
+    float self.DeltaTime;
 
     // -- schedule the OnInit(), so it can happen after a saved game is restored
     schedule(self, 1, hash("OnInit"));
@@ -42,6 +43,7 @@ void DefaultGame::OnInit()
         
     // -- initialize the sim time
     self.SimTime = GetSimTime();
+    self.DeltaTime = 0.0f;
 }
 
 void DefaultGame::OnDestroy()
@@ -54,14 +56,14 @@ void DefaultGame::OnUpdate()
 {
     // -- find out how much sim time has elapsed
     int curTime = GetSimTime();
-    float deltaTime = (curTime - self.SimTime);
-    deltaTime /= 1000.0f;
+    float elapsed_time = (curTime - self.SimTime);
+    self.DeltaTime = elapsed_time / 1000.0f;
     self.SimTime = curTime;
 
     object cur_object = self.game_objects.First();
     while (IsObject(cur_object))
     {
-        cur_object.OnUpdate(deltaTime);
+        cur_object.OnUpdate(self.DeltaTime);
         cur_object = self.game_objects.Next();
     }
 }

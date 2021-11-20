@@ -6,7 +6,7 @@
 Include("TinScriptDemo.ts");
 
 // -- global tunables -------------------------------------------------------------------------------------------------
-float gThrust = 3.0f;
+float gThrust = 5.0f;
 float gAsteroidSpeed = 52.0f;
 float gBulletSpeed = 150.0f;
 float g_rotateSpeed = 2.0f;
@@ -526,25 +526,26 @@ void AsteroidsGame::UpdateKeys(int update_time)
     if (!IsObject(self.ship))
         return;
 
+    // -- normalize to 1/60th...
+    float framerate_scale = self.DeltaTime / 0.016f;
+    float scaled_rotate = g_rotateSpeed * framerate_scale;
+    float scaled_thrust = gThrust * framerate_scale;
+
     // -- rotate left
     if (IsKeyPressed(KeyCode_J))
-        self.ship.rotation -= g_rotateSpeed;
-    
+        self.ship.rotation -= scaled_rotate;
+   
     // -- rotate right
     if (IsKeyPressed(KeyCode_L))
-        self.ship.rotation += g_rotateSpeed;
-    
+        self.ship.rotation += scaled_rotate;
+   
     // -- thrust
     if (IsKeyPressed(KeyCode_I))
-        self.ship.ApplyThrust(gThrust);
-    
+        self.ship.ApplyThrust(scaled_thrust);
+   
     // -- fire
     if (KeyPressedSinceTime(KeyCode_space, update_time))
         self.ship.OnFire();
-
-    // -- SuperFire: a
-    //if (KeyPressedSinceTime(KeyCode_Q, update_time))
-    //    self.ship.OnSuperFire();
 }
 
 void StartAsteroids()
