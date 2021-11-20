@@ -1105,7 +1105,7 @@ void BeginProfilingTests()
 
     uint32 func_hash = TinScript::Hash("CallFromCode");
 
-    printf("TinScript Start CallMe()\n");
+    TinPrint(TinScript::GetContext(), "TinScript Start CallMe()\n");
     int count = 10000;
     int32 cur_time = GetTickCount();
     for (int i = 0; i < count; ++i)
@@ -1115,7 +1115,7 @@ void BeginProfilingTests()
         TinScript::ExecFunction(result, func_hash, 56, 24, "cat ");
     }
     int32 elapsed = GetTickCount() - cur_time;
-    printf("TinScript time: %d\n", elapsed);
+    TinPrint(TinScript::GetContext(), "TinScript time: %d\n", elapsed);
 }
 
 REGISTER_FUNCTION(BeginProfilingTests, BeginProfilingTests);
@@ -1136,7 +1136,7 @@ REGISTER_FUNCTION(BeginProfilingTests, BeginProfilingTests);
 template <typename T>
 void PrintType(int index)
 {
-    printf("t%d: %s\n", index, TinScript::GetRegisteredTypeName(TinScript::GetRegisteredType(TinScript::GetTypeID<T>())));
+    TinPrint(TinScript::GetContext(), "t%d: %s\n", index, TinScript::GetRegisteredTypeName(TinScript::GetRegisteredType(TinScript::GetTypeID<T>())));
 }
 
 // -- macro is simply a wrapper to the templated implementations - it'll find the one with the matching number of args...
@@ -1157,7 +1157,7 @@ int32 TestArg0()
 
 int32 TestArg1(int32 arg1)
 {
-    printf("%d\n", arg1 * 2);
+    TinPrint(TinScript::GetContext(), "%d\n", arg1 * 2);
     return (arg1 * 2);
 }
 
@@ -1168,18 +1168,18 @@ float TestArg2(float arg1, bool arg2)
 
 int TestArg3(float arg1, bool arg2, int arg3)
 {
-    printf("%2f\n", arg2 ? arg1 : (float)arg3);
+    TinPrint(TinScript::GetContext(), "%2f\n", arg2 ? arg1 : (float)arg3);
     return (69);
 }
 
 void VoidArg1(float arg1)
 {
-    printf("%2f\n", arg1);
+    TinPrint(TinScript::GetContext(), "%2f\n", arg1);
 }
 
 void VoidStr1(const char* in_str)
 {
-    printf("In String: %s\n", in_str);
+    TinPrint(TinScript::GetContext(), "In String: %s\n", in_str);
 }
 
 template<int N, typename S>

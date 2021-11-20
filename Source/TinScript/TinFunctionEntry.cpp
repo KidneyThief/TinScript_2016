@@ -65,14 +65,14 @@ bool8 CFunctionContext::AddParameter(const char* varname, uint32 varhash, eVarTy
     assert(paramindex >= 0 && paramindex < eMaxParameterCount);
     if (paramindex >= eMaxParameterCount)
     {
-        printf("Error - Max parameter count %d exceeded, parameter: %s\n",
+        TinPrint(TinScript::GetContext(), "Error - Max parameter count %d exceeded, parameter: %s\n",
                 eMaxParameterCount, varname);
         return (false);
     }
 
     if (parameterlist[paramindex] != NULL)
     {
-        printf("Error - parameter %d has already been added\n",paramindex);
+        TinPrint(TinScript::GetContext(), "Error - parameter %d has already been added\n",paramindex);
         return (false);
     }
 
@@ -119,7 +119,7 @@ CVariableEntry* CFunctionContext::AddLocalVar(const char* varname, uint32 varhas
     CVariableEntry* exists = localvartable->FindItem(varhash);
     if (exists != NULL)
     {
-        printf("Error - variable already exists: %s\n", varname);
+        TinPrint(TinScript::GetContext(), "Error - variable already exists: %s\n", varname);
         return (NULL);
     }
 

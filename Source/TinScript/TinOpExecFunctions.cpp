@@ -57,7 +57,7 @@ void DebugTrace(eOpCode opcode, const char* fmt, ...)
     vsprintf_s(tracebuf, kMaxTokenLength, fmt, args);
     va_end(args);
 
-    printf("OP [%s]: %s\n", GetOperationString(opcode), tracebuf);
+    TinPrint(TinScript::GetContext(), "OP [%s]: %s\n", GetOperationString(opcode), tracebuf);
 }
 
 #else
@@ -125,7 +125,10 @@ bool8 AddPostUnaryOpEntry(eVarType value_type, void* value_addr, int32 adjust)
     g_postOpEntryList[g_postOpEntryCount++].Set(value_type, value_addr, adjust, false);
 
     if (CScriptContext::gDebugTrace)
-        printf("***  Add POST OP: 0x%x, count: %d\n", kPointerToUInt32(value_addr), g_postOpEntryCount);
+    {
+        TinPrint(TinScript::GetContext(), "***  Add POST OP: 0x%x, count: %d\n",
+                                          kPointerToUInt32(value_addr), g_postOpEntryCount);
+    }
 
     // -- success
     return (true);
@@ -170,7 +173,11 @@ bool8 ApplyPostUnaryOpEntry(eVarType value_type, void* value_addr)
         }
 
         if (CScriptContext::gDebugTrace)
-            printf("***  found POST OP: 0x%x, count: %d\n", kPointerToUInt32(g_postOpEntryList[found].m_valAddr), g_postOpEntryCount - 1);
+        {
+            TinPrint(TinScript::GetContext(), "***  found POST OP: 0x%x, count: %d\n",
+                                              kPointerToUInt32(g_postOpEntryList[found].m_valAddr),
+                                              g_postOpEntryCount - 1);
+        }
 
         // -- remove the entry (replace with the last)
         if (found < g_postOpEntryCount - 1)
@@ -583,7 +590,7 @@ bool8 PerformBinaryOpPush(CScriptContext* script_context, CExecStack& execstack,
 	void* val1 = NULL;
 	if (!GetBinOpValues(script_context, execstack, funccallstack, val0, val0type, val1, val1type))
     {
-		printf("Error - failed GetBinopValues() for operation: %s\n",
+        TinPrint(TinScript::GetContext(), "Error - failed GetBinopValues() for operation: %s\n",
 				GetOperationString(op));
 		return false;
 	}

@@ -976,7 +976,7 @@ bool8 CCodeBlock::Execute(uint32 offset, CExecStack& execstack, CFunctionCallSta
 #if DEBUG_CODEBLOCK
     if (GetDebugCodeBlock())
     {
-        printf("\n*** EXECUTING: %s\n\n", mFileName && mFileName[0] ? mFileName : "<stdin>");
+        TinPrint(TinScript::GetContext(), "\n*** EXECUTING: %s\n\n", mFileName && mFileName[0] ? mFileName : "<stdin>");
     }
 #endif
 

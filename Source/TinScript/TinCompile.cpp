@@ -185,13 +185,15 @@ int32 PushInstructionRaw(bool8 countonly, uint32*& instrptr, void* content, int3
 					    debugtypeinfo = "";
 					    break;
 			    }
-			    printf("0x%08x\t\t:\t// [%s: %s]: %s\n", ((uint32*)content)[i],
-													     gDebugByteTypeName[debugtype],
-													     debugtypeinfo,
-													     debugmsg ? debugmsg : "");
+			    TinPrint(TinScript::GetContext(), "0x%08x\t\t:\t// [%s: %s]: %s\n", ((uint32*)content)[i],
+												   gDebugByteTypeName[debugtype],
+												   debugtypeinfo,
+												   debugmsg ? debugmsg : "");
 		    }
-		    else
-			    printf("0x%x\n", ((uint32*)content)[i]);
+            else
+            {
+                TinPrint(TinScript::GetContext(), "0x%x\n", ((uint32*)content)[i]);
+            }
 	    }
     }
 #endif
@@ -214,7 +216,9 @@ void DebugEvaluateNode(const CCompileTreeNode& node, bool8 countonly, uint32* in
 {
 #if DEBUG_CODEBLOCK
     if (CScriptContext::gDebugCodeBlock && !countonly)
-	    printf("\n--- Eval: %s\n", GetNodeTypeString(node.GetType()));
+    {
+        TinPrint(TinScript::GetContext(), "\n--- Eval: %s\n", GetNodeTypeString(node.GetType()));
+    }
 
     // -- if we're debugging, add the line number for the current operation
     if (node.GetCodeBlock())
@@ -230,8 +234,8 @@ void DebugEvaluateBinOpNode(const CBinaryOpNode& binopnode, bool8 countonly)
 #if DEBUG_CODEBLOCK
     if (CScriptContext::gDebugCodeBlock && !countonly)
     {
-	    printf("\n--- Eval: %s [%s]\n", GetNodeTypeString(binopnode.GetType()),
-                                        GetOperationString(binopnode.GetOpCode()));
+        TinPrint(TinScript::GetContext(), "\n--- Eval: %s [%s]\n", GetNodeTypeString(binopnode.GetType()),
+                                          GetOperationString(binopnode.GetOpCode()));
     }
 #endif
 }
@@ -626,14 +630,14 @@ int32 CBinaryTreeNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 counto
     // -- ensure we have a left child
     if (!leftchild)
     {
-        printf("Error - CBinaryTreeNode with no left child\n");
+        TinPrint(TinScript::GetContext(), "Error - CBinaryTreeNode with no left child\n");
         return (-1);
     }
 
     // -- ensure we have a left child
     if (!rightchild)
     {
-        printf("Error - CBinaryTreeNode with no right child\n");
+        TinPrint(TinScript::GetContext(), "Error - CBinaryTreeNode with no right child\n");
         return (-1);
     }
 
@@ -1033,7 +1037,7 @@ int32 CPODMemberNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 counton
 	// -- ensure we have a left child
 	if (!leftchild)
     {
-		printf("Error - CPODMemberNode with no left child\n");
+        TinPrint(TinScript::GetContext(), "Error - CPODMemberNode with no left child\n");
 		return (-1);
 	}
 
@@ -1258,14 +1262,14 @@ bool8 CBinaryOpNode::CompileToC(int32 indent, char*& out_buffer, int32& max_size
 	// -- ensure we have a left child
 	if (!leftchild)
     {
-		printf("Error - CBinaryOpNode with no left child\n");
+        TinPrint(TinScript::GetContext(), "Error - CBinaryOpNode with no left child\n");
 		return (false);
 	}
 
 	// -- ensure we have a left child
 	if (!rightchild)
     {
-		printf("Error - CBinaryOpNode with no right child\n");
+        TinPrint(TinScript::GetContext(), "Error - CBinaryOpNode with no right child\n");
 		return (false);
 	}
 
@@ -1331,7 +1335,7 @@ int32 CUnaryOpNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 countonly
 	// -- ensure we have a left child
 	if (!leftchild)
     {
-		printf("Error - CUnaryOpNode with no left child\n");
+        TinPrint(TinScript::GetContext(), "Error - CUnaryOpNode with no left child\n");
 		return (-1);
 	}
 
@@ -1502,7 +1506,7 @@ int32 CCaseStatementNode::EvalCondition(uint32*& instrptr, bool countonly)
     // -- ensure we have a left child
     if (!leftchild && !m_isDefaultCase)
     {
-        printf("Error - CSwitchStatementNode with no left child\n");
+        TinPrint(TinScript::GetContext(), "Error - CSwitchStatementNode with no left child\n");
         return (-1);
     }
 
@@ -1602,14 +1606,14 @@ int32 CSwitchStatementNode::Eval(uint32*& instrptr, eVarType pushresult, bool co
     // -- ensure we have a left child
     if (!leftchild)
     {
-        printf("Error - CSwitchStatementNode with no left child\n");
+        TinPrint(TinScript::GetContext(), "Error - CSwitchStatementNode with no left child\n");
         return (-1);
     }
 
     // -- ensure we have a right child
     if (!rightchild)
     {
-        printf("Error - Switch Statement with no cases\n");
+        TinPrint(TinScript::GetContext(), "Error - Switch Statement with no cases\n");
         return (-1);
     }
 
@@ -1763,14 +1767,14 @@ int32 CIfStatementNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 count
 	// -- ensure we have a left child
 	if (!leftchild)
     {
-		printf("Error - CIfStatementNode with no left child\n");
+        TinPrint(TinScript::GetContext(), "Error - CIfStatementNode with no left child\n");
 		return (-1);
 	}
 
 	// -- ensure we have a right child
 	if (!rightchild)
     {
-		printf("Error - CIfStatementNode with no right child\n");
+        TinPrint(TinScript::GetContext(), "Error - CIfStatementNode with no right child\n");
 		return (-1);
 	}
 
@@ -1799,14 +1803,14 @@ bool8 CIfStatementNode::CompileToC(int32 indent, char*& out_buffer, int32& max_s
 	// -- ensure we have a left child
 	if (!leftchild)
     {
-		printf("Error - CIfStatementNode with no left child\n");
+        TinPrint(TinScript::GetContext(), "Error - CIfStatementNode with no left child\n");
 		return (false);
 	}
 
 	// -- ensure we have a right child
 	if (!rightchild || rightchild->GetType() != eCondBranch || rightchild->leftchild == nullptr)
     {
-		printf("Error - CIfStatementNode with invald right child\n");
+		TinPrint(TinScript::GetContext(), "Error - CIfStatementNode with invald right child\n");
 		return (false);
 	}
 
@@ -1976,14 +1980,14 @@ int32 CWhileLoopNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 counton
 	// -- ensure we have a left child
 	if (!leftchild)
     {
-		printf("Error - CWhileLoopNode with no left child\n");
+        TinPrint(TinScript::GetContext(), "Error - CWhileLoopNode with no left child\n");
 		return (-1);
 	}
 
 	// -- ensure we have a left child
 	if (!rightchild)
     {
-		printf("Error - CWhileLoopNode with no right child\n");
+        TinPrint(TinScript::GetContext(), "Error - CWhileLoopNode with no right child\n");
 		return (-1);
 	}
 
@@ -2608,7 +2612,7 @@ int32 CObjMethodNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 counton
 	// -- ensure we have a left child
 	if (!leftchild)
     {
-		printf("Error - CObjMemberNode with no left child\n");
+        TinPrint(TinScript::GetContext(), "Error - CObjMemberNode with no left child\n");
 		return (-1);
 	}
 
@@ -3284,14 +3288,14 @@ int32 CScheduleNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 countonl
 	// -- ensure we have a left child
 	if (!leftchild)
     {
-		printf("Error - CScheduleNode with no left child\n");
+        TinPrint(TinScript::GetContext(), "Error - CScheduleNode with no left child\n");
 		return (-1);
 	}
 
 	// -- ensure we have a right child
 	if (!rightchild)
     {
-		printf("Error - CScheduleNode with no right child\n");
+        TinPrint(TinScript::GetContext(), "Error - CScheduleNode with no right child\n");
 		return (-1);
 	}
 
@@ -3347,14 +3351,14 @@ int32 CSchedFuncNode::Eval(uint32*& instrptr, eVarType pushresult, bool countonl
     // -- ensure we have a left child
     if (!leftchild)
     {
-        printf("Error - CScheduleNode with no left child\n");
+        TinPrint(TinScript::GetContext(), "Error - CScheduleNode with no left child\n");
         return (-1);
     }
 
     // -- ensure we have a right child
     if (!rightchild)
     {
-        printf("Error - CScheduleNode with no right child\n");
+        TinPrint(TinScript::GetContext(), "Error - CScheduleNode with no right child\n");
         return (-1);
     }
 
@@ -3419,7 +3423,7 @@ int32 CSchedParamNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 counto
 	// -- ensure we have a left child
 	if (!leftchild)
     {
-		printf("Error - CScheduleNode with no left child\n");
+        TinPrint(TinScript::GetContext(), "Error - CScheduleNode with no left child\n");
 		return (-1);
 	}
 

@@ -820,7 +820,7 @@ bool8 DumpFile(const char* filename)
 		if (token.tokenptr != NULL)
         {
 			SafeStrcpy(tokenbuf, kMaxTokenLength, token.tokenptr, token.length + 1);
-			printf("Found token: [%s] %s\n", gTokenTypeStrings[token.type], tokenbuf);
+            TinPrint(TinScript::GetContext(), "Found token: [%s] %s\n", gTokenTypeStrings[token.type], tokenbuf);
 		}
 	} while (success);
 
@@ -834,7 +834,9 @@ void DumpTree(const CCompileTreeNode* root, int32 indent, bool8 isleft, bool8 is
 {
     // -- if this is the start of a tree (with an indent of 0), write out a label
     if (indent == 0)
-        printf("\n*** DUMP TREE:\n");
+    {
+        TinPrint(TinScript::GetContext(), "\n*** DUMP TREE:\n");
+    }
 
 	while (root)
     {
@@ -853,7 +855,7 @@ void DumpTree(const CCompileTreeNode* root, int32 indent, bool8 isleft, bool8 is
 		debugptr += 4;
 		debuglength -= 4;
 		root->Dump(debugptr, debuglength);
-		printf("%s\n", debugbuf);
+        TinPrint(TinScript::GetContext(), "%s\n", debugbuf);
 		if (root->leftchild)
 			DumpTree(root->leftchild, indent + 1, true, false);
 		if (root->rightchild)
@@ -4707,7 +4709,7 @@ CCodeBlock* ParseText(CScriptContext* script_context, const char* filename, cons
 #if DEBUG_CODEBLOCK
     if (GetDebugCodeBlock())
     {
-        printf("\n*** COMPILING: %s\n\n", filename && filename[0] ? filename : "<stdin>");
+        TinPrint(TinScript::GetContext(), "\n*** COMPILING: %s\n\n", filename && filename[0] ? filename : "<stdin>");
     }
 #endif
 

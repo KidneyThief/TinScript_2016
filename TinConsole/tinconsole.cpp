@@ -112,7 +112,7 @@ int32 _tmain(int32 argc, _TCHAR* argv[])
         {
 			if (argindex >= argc - 1)
             {
-				printf("Error - invalid arg '-f': no filename given\n");
+                TinPrint(TinScript::GetContext(), "Error - invalid arg '-f': no filename given\n");
 				return 1;
 			}
 			else
@@ -123,7 +123,7 @@ int32 _tmain(int32 argc, _TCHAR* argv[])
 		}
 		else
         {
-			printf("Error - unknown arg: %s\n", argstring[argindex]);
+            TinPrint(TinScript::GetContext(), "Error - unknown arg: %s\n", argstring[argindex]);
 			return 1;
 		}
 	}
@@ -131,7 +131,7 @@ int32 _tmain(int32 argc, _TCHAR* argv[])
 	// -- parse the file
 	if (infilename && infilename[0] && !TinScript::ExecScript(infilename))
     {
-		printf("Error - unable to parse file: %s\n", infilename);
+        TinPrint(TinScript::GetContext(), "Error - unable to parse file: %s\n", infilename);
 		return 1;
 	}
 
