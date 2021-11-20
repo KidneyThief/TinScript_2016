@@ -2347,7 +2347,15 @@ bool8 OpExecMethodCallArgs(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, 
     }
 
     // -- convert the value to an object id
-    void* val_obj_addr = TypeConvert(cb->GetScriptContext(), valtype_obj, val_obj, TYPE_object);
+    // $$$TZA need to think about this - do we want to allow coercion of type int to type object?
+    // for now, no - originally there was no assert when a var was declared (say, as an int),
+    // and later declared and assigned as an object...
+    // caused confusion when object foo = ..., foo.ListMethods(), without knowing foo was actually an int
+    
+    // conversion from int to object, if we allow, is here...
+    //void* val_obj_addr = TypeConvert(cb->GetScriptContext(), valtype_obj, val_obj, TYPE_object);
+    void* val_obj_addr = valtype_obj == TYPE_object ? val_obj : nullptr;
+
     if (val_obj_addr == nullptr)
     {
         DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
