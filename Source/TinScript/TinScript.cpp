@@ -169,11 +169,11 @@ bool8 SetDirectory(const char* path)
 // ====================================================================================================================
 // ExecScript():  Executes a text file containing script code
 // ====================================================================================================================
-bool8 ExecScript(const char* filename)
+bool8 ExecScript(const char* filename, bool allow_no_exist)
 {
     CScriptContext* script_context = GetContext();
     assert(script_context != NULL);
-    return (script_context->ExecScript(filename, true, true));
+    return (script_context->ExecScript(filename, !allow_no_exist, true));
 }
 
 // ====================================================================================================================

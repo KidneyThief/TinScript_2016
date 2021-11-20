@@ -85,7 +85,7 @@ bool8 SetDirectory(const char* path);
 // ====================================================================================================================
 // ExecScript():  Executes a text file containing script code
 // ====================================================================================================================
-bool8 ExecScript(const char* filename);
+bool8 ExecScript(const char* filename, bool allow_no_exist = false);
 
 // ====================================================================================================================
 // SetTimeScale():  Allows for accurate communication with the debugger, if the application adjusts timescale
