@@ -75,7 +75,7 @@ private:
     bool8 mHistoryFull;
     int32 mHistoryIndex;
     int32 mHistoryLastIndex;
-    char mHistory[TinScript::kMaxTokenLength][kMaxHistory];
+    char mHistory[kMaxHistory][TinScript::kMaxTokenLength];
 
     bool8 mCurrentLineIsPrompt;
     bool8 mRefreshPrompt;
