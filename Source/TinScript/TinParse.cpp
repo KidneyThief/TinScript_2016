@@ -5216,7 +5216,20 @@ CVariableEntry* AddVariable(CScriptContext* script_context, tVarTable* curglobal
         // -- search the local var table for the executing function
         ve = curfuncdefinition->GetContext()->GetLocalVar(varhash);
         if (!ve)
+        {
             ve = curfuncdefinition->GetContext()->AddLocalVar(varname, varhash, vartype, array_size, false);
+        }
+        else
+        {
+            if (ve->GetType() != vartype)
+            {
+                ScriptAssert_(script_context, 0, "<internal>", -1,
+                    "Error - Function: %s(), local variable %s: already exists, of type: %s\n",
+                    UnHash(curfuncdefinition->GetHash()),
+                    UnHash(ve->GetHash()), gRegisteredTypeNames[ve->GetType()]);
+                return (NULL);
+            }
+        }
     }
 
     // -- not defining a function - see if we're compiling
@@ -5231,6 +5244,17 @@ CVariableEntry* AddVariable(CScriptContext* script_context, tVarTable* curglobal
 	        uint32 hash = ve->GetHash();
 	        curglobalvartable->AddItem(*ve, hash);
         }
+        // -- variable already exists - ensure the type hasn't changed
+        else
+        {
+            if (ve->GetType() != vartype)
+            {
+                ScriptAssert_(script_context, 0, "<internal>", -1,
+                              "Error - Global variable %s: already exists, of type: %s\n",
+                              UnHash(ve->GetHash()), gRegisteredTypeNames[ve->GetType()]);
+                return (NULL);
+            }
+        }
     }
     else
     {
@@ -5243,6 +5267,16 @@ CVariableEntry* AddVariable(CScriptContext* script_context, tVarTable* curglobal
                           false, 0, false);
 	        uint32 hash = ve->GetHash();
 	        globalvartable->AddItem(*ve, hash);
+        }
+        else
+        {
+            if (ve->GetType() != vartype)
+            {
+                ScriptAssert_(script_context, 0, "<internal>", -1,
+                    "Error - Global variable %s: already exists, of type: %s\n",
+                    UnHash(ve->GetHash()), gRegisteredTypeNames[ve->GetType()]);
+                return (NULL);
+            }
         }
     }
     return ve;

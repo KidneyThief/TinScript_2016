@@ -970,6 +970,7 @@ void BeginUnitTests(bool8 results_only = false, const char* specific_test = NULL
     {
         const CUnitTest* current_test = CUnitTest::gUnitTests->FindItem(fail_test_hash);
 		MTPrint("Unit test failed: %s\n", current_test && current_test->mName ? current_test->mName : "<unnamed>");
+        MTPrint("Delete unittest.tso and run from a fresh environment, to ensure no stale compiles\nor pre-defined globals interfere with the tests.\n");
     }
 }
 

@@ -2334,10 +2334,21 @@ bool8 OpExecMethodCallArgs(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, 
     // -- get the hash of the method name
     uint32 methodhash = *instrptr++;
 
-    // -- what will previously have been pushed on the stack, is the object ID
-    eVarType contenttype;
-    void* contentptr = execstack.Pop(contenttype);
-    if (contenttype != TYPE_object)
+    // -- pull the object variable off the stack
+    CVariableEntry* ve_obj = NULL;
+    CObjectEntry* oe_obj = NULL;
+    eVarType valtype_obj;
+    void* val_obj = execstack.Pop(valtype_obj);
+    if (!GetStackValue(cb->GetScriptContext(), execstack, funccallstack, val_obj, valtype_obj, ve_obj, oe_obj))
+    {
+        DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
+                        "Error - ExecStack should contain an object id/variable\n");
+        return false;
+    }
+
+    // -- convert the value to an object id
+    void* val_obj_addr = TypeConvert(cb->GetScriptContext(), valtype_obj, val_obj, TYPE_object);
+    if (val_obj_addr == nullptr)
     {
         DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
                         "Error - ExecStack should contain TYPE_object\n");
@@ -2345,7 +2356,7 @@ bool8 OpExecMethodCallArgs(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, 
     }
 
     // -- TYPE_object is actually just an uint32 ID
-    uint32 objectid = *(uint32*)contentptr;
+    uint32 objectid = *(uint32*)val_obj_addr;
 
     // -- find the object
     CObjectEntry* oe = cb->GetScriptContext()->FindObjectEntry(objectid);
@@ -2363,7 +2374,7 @@ bool8 OpExecMethodCallArgs(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, 
     {
         DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
                         "Error - Unable to find method %s for object %d\n",
-                        UnHash(methodhash), objectid);
+                        UnHash(methodhash), oe->GetID());
         return false;
     }
 
@@ -2383,7 +2394,7 @@ bool8 OpExecMethodCallArgs(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, 
         execstack.Reserve(localvarcount * MAX_TYPE_SIZE);
     }
 
-    DebugTrace(op, "obj: %d, ns: %s, func: %s", objectid, UnHash(nshash),
+    DebugTrace(op, "obj: %d, ns: %s, func: %s", oe->GetID(), UnHash(nshash),
                UnHash(fe->GetHash()));
     return (true);
 }
