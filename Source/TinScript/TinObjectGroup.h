@@ -69,8 +69,6 @@ class CMasterMembershipList
 class CObjectSet
 {
     public:
-        DECLARE_SCRIPT_CLASS(CObjectSet, VOID);
-
         CObjectSet();
         virtual ~CObjectSet();
 
@@ -111,8 +109,6 @@ class CObjectSet
 class CObjectGroup : public CObjectSet
 {
     public:
-        DECLARE_SCRIPT_CLASS(CObjectGroup, CObjectSet);
-
         CObjectGroup();
         virtual ~CObjectGroup();
 
@@ -127,8 +123,6 @@ class CObjectGroup : public CObjectSet
 class CGroupIterator
 {
 	public:
-		DECLARE_SCRIPT_CLASS(CGroupIterator, VOID);
-
         CGroupIterator();
         void Initialize(uint32 groupID, CHashTable<CObjectEntry>::CHashTableIterator* iterator, uint32 iter_object_id);
 		virtual ~CGroupIterator();

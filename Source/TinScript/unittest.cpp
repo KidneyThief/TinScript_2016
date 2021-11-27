@@ -96,8 +96,6 @@ class CBase {
             MTPrint("Enter destructor ~CBase()\n");
         }
 
-        DECLARE_SCRIPT_CLASS(CBase, VOID);
-
         float32 GetFloatValue() {
             return floatvalue;
         }
@@ -146,7 +144,7 @@ class CBase {
         const char* stringArray[20];
 };
 
-IMPLEMENT_SCRIPT_CLASS_BEGIN(CBase, VOID)
+REGISTER_SCRIPT_CLASS_BEGIN(CBase, VOID)
     REGISTER_MEMBER(CBase, floatvalue, floatvalue);
     REGISTER_MEMBER(CBase, intvalue, intvalue);
     REGISTER_MEMBER(CBase, boolvalue, boolvalue);
@@ -154,7 +152,7 @@ IMPLEMENT_SCRIPT_CLASS_BEGIN(CBase, VOID)
     REGISTER_MEMBER(CBase, objmember, objmember);
     REGISTER_MEMBER(CBase, intArray, intArray);
     REGISTER_MEMBER(CBase, stringArray, stringArray);
-IMPLEMENT_SCRIPT_CLASS_END()
+REGISTER_SCRIPT_CLASS_END()
 
 REGISTER_METHOD(CBase, GetFloatValue, GetFloatValue);
 REGISTER_METHOD(CBase, GetIntValue, GetIntValue);
@@ -176,16 +174,14 @@ class CChild : public CBase {
             MTPrint("Enter destructor ~CChild()\n");
         }
 
-        DECLARE_SCRIPT_CLASS(CChild, CBase);
-
         virtual void SetIntValue(int32 val) {
             MTPrint("Enter CChild::SetIntValue()\n");
             intvalue = 2 * val;
         }
 };
 
-IMPLEMENT_SCRIPT_CLASS_BEGIN(CChild, CBase)
-IMPLEMENT_SCRIPT_CLASS_END()
+REGISTER_SCRIPT_CLASS_BEGIN(CChild, CBase)
+REGISTER_SCRIPT_CLASS_END()
 
 // -- SetIntValue already registered in the base class
 //REGISTER_METHOD(CChild, SetIntValue, SetIntValue);
@@ -509,63 +505,6 @@ void UnitTest_CallScriptedMethodObjectAddrArg()
     TinFree(test_obj);
 }
 
-// ------------------------------------------------------------------------------------------------
-// -- Test weapon class
-class CWeapon {
-public:
-    CWeapon() {
-        MTPrint("CWeapon constructor\n");
-        readytofire = true;
-
-        // -- add to the linked list
-        next = weaponlist;
-        weaponlist = this;
-    }
-
-    virtual ~CWeapon() {
-        if (weaponlist == this) {
-            weaponlist = next;
-        }
-        else {
-            CWeapon* curweapon = weaponlist;
-            while(curweapon) {
-                if(curweapon->next == this) {
-                    curweapon->next = next;
-                    break;
-                }
-            }
-        }
-    }
-
-    DECLARE_SCRIPT_CLASS(CWeapon, VOID);
-
-    static void UpdateWeaponList() {
-        CWeapon* weapon = weaponlist;
-        while(weapon) {
-            weapon->Update();
-            weapon = weapon->next;
-        }
-    }
-
-    void Update() {
-        int32 dummy = 0;
-        TinScript::ObjExecF(this, dummy, "OnUpdate();");
-    }
-
-    static CWeapon* weaponlist;
-    CWeapon* next;
-
-private:
-    bool8 readytofire;
-};
-
-CWeapon* CWeapon::weaponlist = NULL;
-
-IMPLEMENT_SCRIPT_CLASS_BEGIN(CWeapon, VOID)
-    REGISTER_MEMBER(CWeapon, readytofire, readytofire);
-IMPLEMENT_SCRIPT_CLASS_END()
-
-REGISTER_CLASS_FUNCTION(CWeapon, UpdateWeaponList, UpdateWeaponList);
 
 bool8 AddUnitTest(const char* name, const char* description, const char* script_command, const char* script_result,
                   CUnitTest::UnitTestFunc code_test = NULL, const char* code_result = NULL, bool execute_code_last = false)

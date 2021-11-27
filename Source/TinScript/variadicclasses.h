@@ -23,6 +23,7 @@
 // Generated classes using variadic templates, for function registration
 // ------------------------------------------------------------------------------------------------
 
+
 #define REGISTER_FUNCTION(name, funcptr) \
     static const int gArgCount_##name = ::TinScript::SignatureArgCount<decltype(funcptr)>::arg_count; \
     static ::TinScript::CRegisterFunction<gArgCount_##name, decltype(funcptr)> gReg_##name(#name, funcptr);
@@ -172,8 +173,9 @@ public:
     typedef R (C::*methodsignature)(Args...);
 
     // -- CRegisterMethod
-    CRegisterMethod(const char* _methodname, methodsignature _methodptr) :
-                  CRegFunctionBase(C::_GetClassName(), _methodname) {
+    CRegisterMethod(const char* _methodname, methodsignature _methodptr)
+        : CRegFunctionBase(__GetClassName<C>(), _methodname)
+    {
         methodptr = _methodptr;
     }
 
@@ -222,8 +224,9 @@ public:
     typedef void (C::*methodsignature)(Args...);
 
     // -- CRegisterMethod
-    CRegisterMethod(const char* _methodname, methodsignature _methodptr) :
-                  CRegFunctionBase(C::_GetClassName(), _methodname) {
+    CRegisterMethod(const char* _methodname, methodsignature _methodptr)
+        : CRegFunctionBase(__GetClassName<C>(), _methodname)
+    {
         methodptr = _methodptr;
     }
 
@@ -388,8 +391,9 @@ public:
     typedef R (C::*methodsignature)(Args...);
 
     // -- CRegisterMethod
-    CRegisterMethod(const char* _methodname, methodsignature _methodptr) :
-                  CRegFunctionBase(C::_GetClassName(), _methodname) {
+    CRegisterMethod(const char* _methodname, methodsignature _methodptr)
+        : CRegFunctionBase(__GetClassName<C>(), _methodname)
+    {
         methodptr = _methodptr;
     }
 
@@ -451,8 +455,9 @@ public:
     typedef void (C::*methodsignature)(Args...);
 
     // -- CRegisterMethod
-    CRegisterMethod(const char* _methodname, methodsignature _methodptr) :
-                  CRegFunctionBase(C::_GetClassName(), _methodname) {
+    CRegisterMethod(const char* _methodname, methodsignature _methodptr)
+        : CRegFunctionBase(__GetClassName<C>(), _methodname)
+    {
         methodptr = _methodptr;
     }
 
@@ -644,8 +649,9 @@ public:
     typedef R (C::*methodsignature)(Args...);
 
     // -- CRegisterMethod
-    CRegisterMethod(const char* _methodname, methodsignature _methodptr) :
-                  CRegFunctionBase(C::_GetClassName(), _methodname) {
+    CRegisterMethod(const char* _methodname, methodsignature _methodptr)
+        : CRegFunctionBase(__GetClassName<C>(), _methodname)
+    {
         methodptr = _methodptr;
     }
 
@@ -714,8 +720,9 @@ public:
     typedef void (C::*methodsignature)(Args...);
 
     // -- CRegisterMethod
-    CRegisterMethod(const char* _methodname, methodsignature _methodptr) :
-                  CRegFunctionBase(C::_GetClassName(), _methodname) {
+    CRegisterMethod(const char* _methodname, methodsignature _methodptr)
+        : CRegFunctionBase(__GetClassName<C>(), _methodname)
+    {
         methodptr = _methodptr;
     }
 
@@ -928,8 +935,9 @@ public:
     typedef R (C::*methodsignature)(Args...);
 
     // -- CRegisterMethod
-    CRegisterMethod(const char* _methodname, methodsignature _methodptr) :
-                  CRegFunctionBase(C::_GetClassName(), _methodname) {
+    CRegisterMethod(const char* _methodname, methodsignature _methodptr)
+        : CRegFunctionBase(__GetClassName<C>(), _methodname)
+    {
         methodptr = _methodptr;
     }
 
@@ -1005,8 +1013,9 @@ public:
     typedef void (C::*methodsignature)(Args...);
 
     // -- CRegisterMethod
-    CRegisterMethod(const char* _methodname, methodsignature _methodptr) :
-                  CRegFunctionBase(C::_GetClassName(), _methodname) {
+    CRegisterMethod(const char* _methodname, methodsignature _methodptr)
+        : CRegFunctionBase(__GetClassName<C>(), _methodname)
+    {
         methodptr = _methodptr;
     }
 
@@ -1240,8 +1249,9 @@ public:
     typedef R (C::*methodsignature)(Args...);
 
     // -- CRegisterMethod
-    CRegisterMethod(const char* _methodname, methodsignature _methodptr) :
-                  CRegFunctionBase(C::_GetClassName(), _methodname) {
+    CRegisterMethod(const char* _methodname, methodsignature _methodptr)
+        : CRegFunctionBase(__GetClassName<C>(), _methodname)
+    {
         methodptr = _methodptr;
     }
 
@@ -1324,8 +1334,9 @@ public:
     typedef void (C::*methodsignature)(Args...);
 
     // -- CRegisterMethod
-    CRegisterMethod(const char* _methodname, methodsignature _methodptr) :
-                  CRegFunctionBase(C::_GetClassName(), _methodname) {
+    CRegisterMethod(const char* _methodname, methodsignature _methodptr)
+        : CRegFunctionBase(__GetClassName<C>(), _methodname)
+    {
         methodptr = _methodptr;
     }
 
@@ -1580,8 +1591,9 @@ public:
     typedef R (C::*methodsignature)(Args...);
 
     // -- CRegisterMethod
-    CRegisterMethod(const char* _methodname, methodsignature _methodptr) :
-                  CRegFunctionBase(C::_GetClassName(), _methodname) {
+    CRegisterMethod(const char* _methodname, methodsignature _methodptr)
+        : CRegFunctionBase(__GetClassName<C>(), _methodname)
+    {
         methodptr = _methodptr;
     }
 
@@ -1671,8 +1683,9 @@ public:
     typedef void (C::*methodsignature)(Args...);
 
     // -- CRegisterMethod
-    CRegisterMethod(const char* _methodname, methodsignature _methodptr) :
-                  CRegFunctionBase(C::_GetClassName(), _methodname) {
+    CRegisterMethod(const char* _methodname, methodsignature _methodptr)
+        : CRegFunctionBase(__GetClassName<C>(), _methodname)
+    {
         methodptr = _methodptr;
     }
 
@@ -1948,8 +1961,9 @@ public:
     typedef R (C::*methodsignature)(Args...);
 
     // -- CRegisterMethod
-    CRegisterMethod(const char* _methodname, methodsignature _methodptr) :
-                  CRegFunctionBase(C::_GetClassName(), _methodname) {
+    CRegisterMethod(const char* _methodname, methodsignature _methodptr)
+        : CRegFunctionBase(__GetClassName<C>(), _methodname)
+    {
         methodptr = _methodptr;
     }
 
@@ -2046,8 +2060,9 @@ public:
     typedef void (C::*methodsignature)(Args...);
 
     // -- CRegisterMethod
-    CRegisterMethod(const char* _methodname, methodsignature _methodptr) :
-                  CRegFunctionBase(C::_GetClassName(), _methodname) {
+    CRegisterMethod(const char* _methodname, methodsignature _methodptr)
+        : CRegFunctionBase(__GetClassName<C>(), _methodname)
+    {
         methodptr = _methodptr;
     }
 
@@ -2344,8 +2359,9 @@ public:
     typedef R (C::*methodsignature)(Args...);
 
     // -- CRegisterMethod
-    CRegisterMethod(const char* _methodname, methodsignature _methodptr) :
-                  CRegFunctionBase(C::_GetClassName(), _methodname) {
+    CRegisterMethod(const char* _methodname, methodsignature _methodptr)
+        : CRegFunctionBase(__GetClassName<C>(), _methodname)
+    {
         methodptr = _methodptr;
     }
 
@@ -2449,8 +2465,9 @@ public:
     typedef void (C::*methodsignature)(Args...);
 
     // -- CRegisterMethod
-    CRegisterMethod(const char* _methodname, methodsignature _methodptr) :
-                  CRegFunctionBase(C::_GetClassName(), _methodname) {
+    CRegisterMethod(const char* _methodname, methodsignature _methodptr)
+        : CRegFunctionBase(__GetClassName<C>(), _methodname)
+    {
         methodptr = _methodptr;
     }
 
@@ -2768,8 +2785,9 @@ public:
     typedef R (C::*methodsignature)(Args...);
 
     // -- CRegisterMethod
-    CRegisterMethod(const char* _methodname, methodsignature _methodptr) :
-                  CRegFunctionBase(C::_GetClassName(), _methodname) {
+    CRegisterMethod(const char* _methodname, methodsignature _methodptr)
+        : CRegFunctionBase(__GetClassName<C>(), _methodname)
+    {
         methodptr = _methodptr;
     }
 
@@ -2880,8 +2898,9 @@ public:
     typedef void (C::*methodsignature)(Args...);
 
     // -- CRegisterMethod
-    CRegisterMethod(const char* _methodname, methodsignature _methodptr) :
-                  CRegFunctionBase(C::_GetClassName(), _methodname) {
+    CRegisterMethod(const char* _methodname, methodsignature _methodptr)
+        : CRegFunctionBase(__GetClassName<C>(), _methodname)
+    {
         methodptr = _methodptr;
     }
 
@@ -3220,8 +3239,9 @@ public:
     typedef R (C::*methodsignature)(Args...);
 
     // -- CRegisterMethod
-    CRegisterMethod(const char* _methodname, methodsignature _methodptr) :
-                  CRegFunctionBase(C::_GetClassName(), _methodname) {
+    CRegisterMethod(const char* _methodname, methodsignature _methodptr)
+        : CRegFunctionBase(__GetClassName<C>(), _methodname)
+    {
         methodptr = _methodptr;
     }
 
@@ -3339,8 +3359,9 @@ public:
     typedef void (C::*methodsignature)(Args...);
 
     // -- CRegisterMethod
-    CRegisterMethod(const char* _methodname, methodsignature _methodptr) :
-                  CRegFunctionBase(C::_GetClassName(), _methodname) {
+    CRegisterMethod(const char* _methodname, methodsignature _methodptr)
+        : CRegFunctionBase(__GetClassName<C>(), _methodname)
+    {
         methodptr = _methodptr;
     }
 
@@ -3700,8 +3721,9 @@ public:
     typedef R (C::*methodsignature)(Args...);
 
     // -- CRegisterMethod
-    CRegisterMethod(const char* _methodname, methodsignature _methodptr) :
-                  CRegFunctionBase(C::_GetClassName(), _methodname) {
+    CRegisterMethod(const char* _methodname, methodsignature _methodptr)
+        : CRegFunctionBase(__GetClassName<C>(), _methodname)
+    {
         methodptr = _methodptr;
     }
 
@@ -3826,8 +3848,9 @@ public:
     typedef void (C::*methodsignature)(Args...);
 
     // -- CRegisterMethod
-    CRegisterMethod(const char* _methodname, methodsignature _methodptr) :
-                  CRegFunctionBase(C::_GetClassName(), _methodname) {
+    CRegisterMethod(const char* _methodname, methodsignature _methodptr)
+        : CRegFunctionBase(__GetClassName<C>(), _methodname)
+    {
         methodptr = _methodptr;
     }
 
@@ -4208,8 +4231,9 @@ public:
     typedef R (C::*methodsignature)(Args...);
 
     // -- CRegisterMethod
-    CRegisterMethod(const char* _methodname, methodsignature _methodptr) :
-                  CRegFunctionBase(C::_GetClassName(), _methodname) {
+    CRegisterMethod(const char* _methodname, methodsignature _methodptr)
+        : CRegFunctionBase(__GetClassName<C>(), _methodname)
+    {
         methodptr = _methodptr;
     }
 
@@ -4341,8 +4365,9 @@ public:
     typedef void (C::*methodsignature)(Args...);
 
     // -- CRegisterMethod
-    CRegisterMethod(const char* _methodname, methodsignature _methodptr) :
-                  CRegFunctionBase(C::_GetClassName(), _methodname) {
+    CRegisterMethod(const char* _methodname, methodsignature _methodptr)
+        : CRegFunctionBase(__GetClassName<C>(), _methodname)
+    {
         methodptr = _methodptr;
     }
 
@@ -4744,8 +4769,9 @@ public:
     typedef R (C::*methodsignature)(Args...);
 
     // -- CRegisterMethod
-    CRegisterMethod(const char* _methodname, methodsignature _methodptr) :
-                  CRegFunctionBase(C::_GetClassName(), _methodname) {
+    CRegisterMethod(const char* _methodname, methodsignature _methodptr)
+        : CRegFunctionBase(__GetClassName<C>(), _methodname)
+    {
         methodptr = _methodptr;
     }
 
@@ -4884,8 +4910,9 @@ public:
     typedef void (C::*methodsignature)(Args...);
 
     // -- CRegisterMethod
-    CRegisterMethod(const char* _methodname, methodsignature _methodptr) :
-                  CRegFunctionBase(C::_GetClassName(), _methodname) {
+    CRegisterMethod(const char* _methodname, methodsignature _methodptr)
+        : CRegFunctionBase(__GetClassName<C>(), _methodname)
+    {
         methodptr = _methodptr;
     }
 

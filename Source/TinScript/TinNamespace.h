@@ -30,7 +30,7 @@
 #include "TinScript.h"
 
 // ====================================================================================================================
-// -- These macros are included by DECLARE_SCRIPT_CLASS and IMPLEMENT_SCRIPT_CLASS...
+// -- These macros are included by REGISTER_SCRIPT_CLASS...
 // -- not to be used independently (or publicly unless you know what you're doing!)
 #define SCRIPT_DEFAULT_METHODS(classname)                                                           \
     static uint32 classname##GetObjectID(classname* obj);                                           \
@@ -42,7 +42,7 @@
     static bool classname##HasMember(classname* obj, const char* name);                             \
     static bool classname##HasNamespace(classname* obj, const char* name);                          \
 
-#define IMPLEMENT_DEFAULT_METHODS(classname)                                                        \
+#define REGISTER_DEFAULT_METHODS(classname)                                                         \
     static uint32 classname##GetObjectID(classname* obj) {                                          \
         return ::TinScript::GetContext()->FindIDByAddress((void*)obj);                              \
     }                                                                                               \

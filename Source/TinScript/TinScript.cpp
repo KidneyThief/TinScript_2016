@@ -4733,14 +4733,12 @@ class CScriptObject
         CScriptObject() { dummy = 0; }
         virtual ~CScriptObject() {}
 
-        DECLARE_SCRIPT_CLASS(CScriptObject, VOID);
-
     private:
         int64 dummy;
 };
 
-IMPLEMENT_SCRIPT_CLASS_BEGIN(CScriptObject, VOID)
-IMPLEMENT_SCRIPT_CLASS_END()
+REGISTER_SCRIPT_CLASS_BEGIN(CScriptObject, VOID)
+REGISTER_SCRIPT_CLASS_END()
 
 // ====================================================================================================================
 // EOF

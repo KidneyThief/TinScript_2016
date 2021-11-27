@@ -23,6 +23,7 @@
 // Generated classes for function registration
 // ------------------------------------------------------------------------------------------------
 
+
 #include "TinRegistration.h"
 #include "TinVariableEntry.h"
 #include "TinFunctionEntry.h"
@@ -116,7 +117,7 @@ public:
 
     // -- CRegisterMethodP0
     CRegMethodP0(const char* _funcname, methodsignature _funcptr) :
-                  CRegFunctionBase(C::_GetClassName(), _funcname) {
+                  CRegFunctionBase(__GetClassName<C>(), _funcname) {
         funcptr = _funcptr;
     }
 
@@ -158,7 +159,7 @@ public:
 
     // -- CRegisterMethodP0
     CRegMethodP0(const char* _funcname, methodsignature _funcptr) :
-                  CRegFunctionBase(C::_GetClassName(), _funcname) {
+                  CRegFunctionBase(__GetClassName<C>(), _funcname) {
         funcptr = _funcptr;
     }
 
@@ -282,7 +283,7 @@ public:
 
     // -- CRegisterMethodP1
     CRegMethodP1(const char* _funcname, methodsignature _funcptr) :
-                  CRegFunctionBase(C::_GetClassName(), _funcname) {
+                  CRegFunctionBase(__GetClassName<C>(), _funcname) {
         funcptr = _funcptr;
     }
 
@@ -327,7 +328,7 @@ public:
 
     // -- CRegisterMethodP1
     CRegMethodP1(const char* _funcname, methodsignature _funcptr) :
-                  CRegFunctionBase(C::_GetClassName(), _funcname) {
+                  CRegFunctionBase(__GetClassName<C>(), _funcname) {
         funcptr = _funcptr;
     }
 
@@ -460,7 +461,7 @@ public:
 
     // -- CRegisterMethodP2
     CRegMethodP2(const char* _funcname, methodsignature _funcptr) :
-                  CRegFunctionBase(C::_GetClassName(), _funcname) {
+                  CRegFunctionBase(__GetClassName<C>(), _funcname) {
         funcptr = _funcptr;
     }
 
@@ -508,7 +509,7 @@ public:
 
     // -- CRegisterMethodP2
     CRegMethodP2(const char* _funcname, methodsignature _funcptr) :
-                  CRegFunctionBase(C::_GetClassName(), _funcname) {
+                  CRegFunctionBase(__GetClassName<C>(), _funcname) {
         funcptr = _funcptr;
     }
 
@@ -650,7 +651,7 @@ public:
 
     // -- CRegisterMethodP3
     CRegMethodP3(const char* _funcname, methodsignature _funcptr) :
-                  CRegFunctionBase(C::_GetClassName(), _funcname) {
+                  CRegFunctionBase(__GetClassName<C>(), _funcname) {
         funcptr = _funcptr;
     }
 
@@ -701,7 +702,7 @@ public:
 
     // -- CRegisterMethodP3
     CRegMethodP3(const char* _funcname, methodsignature _funcptr) :
-                  CRegFunctionBase(C::_GetClassName(), _funcname) {
+                  CRegFunctionBase(__GetClassName<C>(), _funcname) {
         funcptr = _funcptr;
     }
 
@@ -852,7 +853,7 @@ public:
 
     // -- CRegisterMethodP4
     CRegMethodP4(const char* _funcname, methodsignature _funcptr) :
-                  CRegFunctionBase(C::_GetClassName(), _funcname) {
+                  CRegFunctionBase(__GetClassName<C>(), _funcname) {
         funcptr = _funcptr;
     }
 
@@ -906,7 +907,7 @@ public:
 
     // -- CRegisterMethodP4
     CRegMethodP4(const char* _funcname, methodsignature _funcptr) :
-                  CRegFunctionBase(C::_GetClassName(), _funcname) {
+                  CRegFunctionBase(__GetClassName<C>(), _funcname) {
         funcptr = _funcptr;
     }
 
@@ -1066,7 +1067,7 @@ public:
 
     // -- CRegisterMethodP5
     CRegMethodP5(const char* _funcname, methodsignature _funcptr) :
-                  CRegFunctionBase(C::_GetClassName(), _funcname) {
+                  CRegFunctionBase(__GetClassName<C>(), _funcname) {
         funcptr = _funcptr;
     }
 
@@ -1123,7 +1124,7 @@ public:
 
     // -- CRegisterMethodP5
     CRegMethodP5(const char* _funcname, methodsignature _funcptr) :
-                  CRegFunctionBase(C::_GetClassName(), _funcname) {
+                  CRegFunctionBase(__GetClassName<C>(), _funcname) {
         funcptr = _funcptr;
     }
 
@@ -1292,7 +1293,7 @@ public:
 
     // -- CRegisterMethodP6
     CRegMethodP6(const char* _funcname, methodsignature _funcptr) :
-                  CRegFunctionBase(C::_GetClassName(), _funcname) {
+                  CRegFunctionBase(__GetClassName<C>(), _funcname) {
         funcptr = _funcptr;
     }
 
@@ -1352,7 +1353,7 @@ public:
 
     // -- CRegisterMethodP6
     CRegMethodP6(const char* _funcname, methodsignature _funcptr) :
-                  CRegFunctionBase(C::_GetClassName(), _funcname) {
+                  CRegFunctionBase(__GetClassName<C>(), _funcname) {
         funcptr = _funcptr;
     }
 
@@ -1530,7 +1531,7 @@ public:
 
     // -- CRegisterMethodP7
     CRegMethodP7(const char* _funcname, methodsignature _funcptr) :
-                  CRegFunctionBase(C::_GetClassName(), _funcname) {
+                  CRegFunctionBase(__GetClassName<C>(), _funcname) {
         funcptr = _funcptr;
     }
 
@@ -1593,7 +1594,7 @@ public:
 
     // -- CRegisterMethodP7
     CRegMethodP7(const char* _funcname, methodsignature _funcptr) :
-                  CRegFunctionBase(C::_GetClassName(), _funcname) {
+                  CRegFunctionBase(__GetClassName<C>(), _funcname) {
         funcptr = _funcptr;
     }
 
@@ -1780,7 +1781,7 @@ public:
 
     // -- CRegisterMethodP8
     CRegMethodP8(const char* _funcname, methodsignature _funcptr) :
-                  CRegFunctionBase(C::_GetClassName(), _funcname) {
+                  CRegFunctionBase(__GetClassName<C>(), _funcname) {
         funcptr = _funcptr;
     }
 
@@ -1846,7 +1847,7 @@ public:
 
     // -- CRegisterMethodP8
     CRegMethodP8(const char* _funcname, methodsignature _funcptr) :
-                  CRegFunctionBase(C::_GetClassName(), _funcname) {
+                  CRegFunctionBase(__GetClassName<C>(), _funcname) {
         funcptr = _funcptr;
     }
 
@@ -2042,7 +2043,7 @@ public:
 
     // -- CRegisterMethodP9
     CRegMethodP9(const char* _funcname, methodsignature _funcptr) :
-                  CRegFunctionBase(C::_GetClassName(), _funcname) {
+                  CRegFunctionBase(__GetClassName<C>(), _funcname) {
         funcptr = _funcptr;
     }
 
@@ -2111,7 +2112,7 @@ public:
 
     // -- CRegisterMethodP9
     CRegMethodP9(const char* _funcname, methodsignature _funcptr) :
-                  CRegFunctionBase(C::_GetClassName(), _funcname) {
+                  CRegFunctionBase(__GetClassName<C>(), _funcname) {
         funcptr = _funcptr;
     }
 
@@ -2316,7 +2317,7 @@ public:
 
     // -- CRegisterMethodP10
     CRegMethodP10(const char* _funcname, methodsignature _funcptr) :
-                  CRegFunctionBase(C::_GetClassName(), _funcname) {
+                  CRegFunctionBase(__GetClassName<C>(), _funcname) {
         funcptr = _funcptr;
     }
 
@@ -2388,7 +2389,7 @@ public:
 
     // -- CRegisterMethodP10
     CRegMethodP10(const char* _funcname, methodsignature _funcptr) :
-                  CRegFunctionBase(C::_GetClassName(), _funcname) {
+                  CRegFunctionBase(__GetClassName<C>(), _funcname) {
         funcptr = _funcptr;
     }
 
@@ -2602,7 +2603,7 @@ public:
 
     // -- CRegisterMethodP11
     CRegMethodP11(const char* _funcname, methodsignature _funcptr) :
-                  CRegFunctionBase(C::_GetClassName(), _funcname) {
+                  CRegFunctionBase(__GetClassName<C>(), _funcname) {
         funcptr = _funcptr;
     }
 
@@ -2677,7 +2678,7 @@ public:
 
     // -- CRegisterMethodP11
     CRegMethodP11(const char* _funcname, methodsignature _funcptr) :
-                  CRegFunctionBase(C::_GetClassName(), _funcname) {
+                  CRegFunctionBase(__GetClassName<C>(), _funcname) {
         funcptr = _funcptr;
     }
 
@@ -2900,7 +2901,7 @@ public:
 
     // -- CRegisterMethodP12
     CRegMethodP12(const char* _funcname, methodsignature _funcptr) :
-                  CRegFunctionBase(C::_GetClassName(), _funcname) {
+                  CRegFunctionBase(__GetClassName<C>(), _funcname) {
         funcptr = _funcptr;
     }
 
@@ -2978,7 +2979,7 @@ public:
 
     // -- CRegisterMethodP12
     CRegMethodP12(const char* _funcname, methodsignature _funcptr) :
-                  CRegFunctionBase(C::_GetClassName(), _funcname) {
+                  CRegFunctionBase(__GetClassName<C>(), _funcname) {
         funcptr = _funcptr;
     }
 

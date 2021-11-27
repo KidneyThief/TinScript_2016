@@ -762,8 +762,8 @@ uint32 CGroupIterator::GetGroup()
 
 // =====================================================================================================================
 // -- CObjectSet member/method registration
-IMPLEMENT_SCRIPT_CLASS_BEGIN(CObjectSet, VOID)
-IMPLEMENT_SCRIPT_CLASS_END()
+REGISTER_SCRIPT_CLASS_BEGIN(CObjectSet, VOID)
+REGISTER_SCRIPT_CLASS_END()
 
 REGISTER_METHOD(CObjectSet, Contains, Contains);
 REGISTER_METHOD(CObjectSet, AddObject, AddObject);
@@ -789,16 +789,16 @@ REGISTER_METHOD(CObjectSet, CreateIterator, CreateIterator);
 
 // =====================================================================================================================
 // -- CObjectGroup member/method registration
-IMPLEMENT_SCRIPT_CLASS_BEGIN(CObjectGroup, CObjectSet)
-IMPLEMENT_SCRIPT_CLASS_END()
+REGISTER_SCRIPT_CLASS_BEGIN(CObjectGroup, CObjectSet)
+REGISTER_SCRIPT_CLASS_END()
 
 REGISTER_METHOD(CObjectGroup, AddObject, AddObject);
 REGISTER_METHOD(CObjectGroup, RemoveObject, RemoveObject);
 
 // =====================================================================================================================
 // -- CGroupIterator member/method registration
-IMPLEMENT_SCRIPT_CLASS_BEGIN(CGroupIterator, VOID)
-IMPLEMENT_SCRIPT_CLASS_END()
+REGISTER_SCRIPT_CLASS_BEGIN(CGroupIterator, VOID)
+REGISTER_SCRIPT_CLASS_END()
 
 REGISTER_METHOD(CGroupIterator, First, First);
 REGISTER_METHOD(CGroupIterator, Next, Next);

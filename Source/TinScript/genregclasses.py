@@ -151,8 +151,8 @@ def GenerateClasses(maxparamcount, outputfilename):
     outputfile.write("// ------------------------------------------------------------------------------------------------\n");
     outputfile.write("// Generated classes for function registration\n");
     outputfile.write("// ------------------------------------------------------------------------------------------------\n");
-    outputfile.write("\n");
-    
+    outputfile.write("\n\n");
+
     outputfile.write('#include "TinRegistration.h"\n');
     outputfile.write('#include "TinVariableEntry.h"\n');
     outputfile.write('#include "TinFunctionEntry.h"\n');
@@ -397,7 +397,7 @@ def GenerateClasses(maxparamcount, outputfilename):
 
         outputfile.write("    // -- CRegisterMethodP%d\n" % paramcount);
         outputfile.write("    CRegMethodP%d(const char* _funcname, methodsignature _funcptr) :\n" % paramcount);
-        outputfile.write("                  CRegFunctionBase(C::_GetClassName(), _funcname) {\n");
+        outputfile.write("                  CRegFunctionBase(__GetClassName<C>(), _funcname) {\n");
         outputfile.write("        funcptr = _funcptr;\n");
         outputfile.write("    }\n");
         outputfile.write("\n");
@@ -501,7 +501,7 @@ def GenerateClasses(maxparamcount, outputfilename):
 
         outputfile.write("    // -- CRegisterMethodP%d\n" % paramcount);
         outputfile.write("    CRegMethodP%d(const char* _funcname, methodsignature _funcptr) :\n" % paramcount);
-        outputfile.write("                  CRegFunctionBase(C::_GetClassName(), _funcname) {\n");
+        outputfile.write("                  CRegFunctionBase(__GetClassName<C>(), _funcname) {\n");
         outputfile.write("        funcptr = _funcptr;\n");
         outputfile.write("    }\n");
         outputfile.write("\n");
@@ -587,7 +587,7 @@ def GenerateVariadicClasses(maxparamcount, outputfilename):
     outputfile.write("// ------------------------------------------------------------------------------------------------\n");
     outputfile.write("// Generated classes using variadic templates, for function registration\n");
     outputfile.write("// ------------------------------------------------------------------------------------------------\n");
-    outputfile.write("\n");
+    outputfile.write("\n\n");
 
     outputfile.write('#define REGISTER_FUNCTION(name, funcptr) \\\n');
     outputfile.write('    static const int gArgCount_##name = ::TinScript::SignatureArgCount<decltype(funcptr)>::arg_count; \\\n');
@@ -907,8 +907,9 @@ def GenerateVariadicClasses(maxparamcount, outputfilename):
         outputfile.write('    typedef R (C::*methodsignature)(Args...);\n');
         outputfile.write('\n');
         outputfile.write('    // -- CRegisterMethod\n');
-        outputfile.write('    CRegisterMethod(const char* _methodname, methodsignature _methodptr) :\n');
-        outputfile.write('                  CRegFunctionBase(C::_GetClassName(), _methodname) {\n');
+        outputfile.write('    CRegisterMethod(const char* _methodname, methodsignature _methodptr)\n');
+        outputfile.write('        : CRegFunctionBase(__GetClassName<C>(), _methodname)\n');
+        outputfile.write('    {\n');
         outputfile.write('        methodptr = _methodptr;\n');
         outputfile.write('    }\n');
         outputfile.write('\n');
@@ -1033,8 +1034,9 @@ def GenerateVariadicClasses(maxparamcount, outputfilename):
         outputfile.write('    typedef void (C::*methodsignature)(Args...);\n');
         outputfile.write('\n');
         outputfile.write('    // -- CRegisterMethod\n');
-        outputfile.write('    CRegisterMethod(const char* _methodname, methodsignature _methodptr) :\n');
-        outputfile.write('                  CRegFunctionBase(C::_GetClassName(), _methodname) {\n');
+        outputfile.write('    CRegisterMethod(const char* _methodname, methodsignature _methodptr)\n');
+        outputfile.write('        : CRegFunctionBase(__GetClassName<C>(), _methodname)\n');
+        outputfile.write('    {\n');
         outputfile.write('        methodptr = _methodptr;\n');
         outputfile.write('    }\n');
         outputfile.write('\n');

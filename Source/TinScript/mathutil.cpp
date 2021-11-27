@@ -165,11 +165,11 @@ float32 TS_Normalized(CVector3f* result, CVector3f* v0)
 
 // --------------------------------------------------------------------------------------------------------------------
 // -- registration - CVector3f as a object, using create, destroy, etc..
-IMPLEMENT_SCRIPT_CLASS_BEGIN(CVector3f, VOID)
+REGISTER_SCRIPT_CLASS_BEGIN(CVector3f, VOID)
     REGISTER_MEMBER(CVector3f, x, x);
     REGISTER_MEMBER(CVector3f, y, y);
     REGISTER_MEMBER(CVector3f, z, z);
-IMPLEMENT_SCRIPT_CLASS_END()
+REGISTER_SCRIPT_CLASS_END()
 
 REGISTER_METHOD(CVector3f, Set, Set);
 REGISTER_METHOD(CVector3f, Length, Length);

@@ -29,6 +29,7 @@
 // -- includes
 #include "stddef.h"
 #include "stdarg.h"
+#include <typeinfo>
 
 #include "integration.h"
 #include "TinMemory.h"
@@ -66,34 +67,47 @@ const int32 kCompilerVersion = 12;
 #define Strncmp_ _strnicmp
 #endif
 
+// -- templatized method to get *just* the class name, with no type word, or namespace
+template<typename C>
+inline const char* __GetClassName()
+{
+    const char* class_name = typeid(C).name();
+    const char* colon_ptr = strrchr(class_name, ':');
+    const char* space_ptr = strrchr(class_name, ' ');
+    if (colon_ptr != nullptr)
+        class_name = &colon_ptr[1];
+    else if (space_ptr != nullptr)
+        class_name = &space_ptr[1];
+    return class_name;
+}
+
 // ====================================================================================================================
 // -- Registration macros
-#define DECLARE_SCRIPT_CLASS(classname, parentclass)                                              \
-    static const char* _GetParentName() { return #parentclass; }                                  \
-    static const char* _GetClassName() { return #classname; }                                     \
-    static classname* Create() {                                                                  \
-        classname* newobj = TinAlloc(ALLOC_CreateObj, classname);                                 \
-        return newobj;                                                                            \
-    }                                                                                             \
-    static void Destroy(void* addr) {                                                             \
-        if (addr) {                                                                               \
-            classname* obj = static_cast<classname*>(addr);                                       \
-            TinFree(obj);                                                                         \
-	    }                                                                                         \
-    }                                                                                             \
-    SCRIPT_DEFAULT_METHODS(classname);                                                            \
-    static void Register(::TinScript::CScriptContext* script_context, ::TinScript::CNamespace* _classnamespace);    \
 
-#define IMPLEMENT_SCRIPT_CLASS_BEGIN(classname, parentname)                                             \
-    ::TinScript::CNamespaceReg reg_##classname(#classname, #parentname, ::TinScript::GetTypeID<classname*>(), (void*)classname::Create,       \
-                                             (void*)classname::Destroy, (void*)classname::Register);    \
-    IMPLEMENT_DEFAULT_METHODS(classname);                                                               \
-    void classname::Register(::TinScript::CScriptContext* script_context, ::TinScript::CNamespace* classnamespace)  \
-    {                                                                                                   \
-        Unused_(script_context);                                                                        \
+#define REGISTER_SCRIPT_CLASS_BEGIN(classname, parentname)                                                          \
+    static classname* __##classname##_Create() {                                                                    \
+        classname* newobj = TinAlloc(ALLOC_CreateObj, classname);                                                   \
+        return newobj;                                                                                              \
+    }                                                                                                               \
+    static void __##classname##_Destroy(void* addr) {                                                               \
+        if (addr) {                                                                                                 \
+            classname* obj = static_cast<classname*>(addr);                                                         \
+            TinFree(obj);                                                                                           \
+	    }                                                                                                           \
+    }                                                                                                               \
+    void __##classname##_Register(::TinScript::CScriptContext* script_context,                                      \
+                                  ::TinScript::CNamespace* classnamespace);                                         \
+    ::TinScript::CNamespaceReg reg_##classname(#classname, #parentname, ::TinScript::GetTypeID<classname*>(),       \
+                                               (void*)__##classname##_Create, (void*)__##classname##_Destroy,       \
+                                               (void*)__##classname##_Register);                                    \
+    REGISTER_DEFAULT_METHODS(classname);                                                                            \
+    void __##classname##_Register(::TinScript::CScriptContext* script_context,                                      \
+                                  ::TinScript::CNamespace* classnamespace)                                          \
+    {                                                                                                               \
+        Unused_(script_context);                                                                                    \
         Unused_(classnamespace);
 
-#define IMPLEMENT_SCRIPT_CLASS_END()    \
+#define REGISTER_SCRIPT_CLASS_END() \
     }
 
 #define REGISTER_MEMBER(classname, scriptname, membername)                                              \

@@ -39,11 +39,9 @@
 // -- Setting a stack size of 4Mb, Fibonacci(30) was successful, but prohibitively slow.
 #pragma comment(linker, "/STACK:4000000")
 
-#ifdef _DEBUG
-    #define MEMORY_TRACKER_ENABLE 1
-#else
-    #define MEMORY_TRACKER_ENABLE 0
-#endif
+// -- takes more storage obviously, but will enable "Show Object Origin" for the callstack
+// of where an object was constructed, as well, as memory telemetry methods (MemoryDumpTotals(), etc..)
+#define MEMORY_TRACKER_ENABLE 1
 
 // -- define whether we're 64-bit
 // note:  not overly robust, as otherwise, we force 32-bit
@@ -58,7 +56,7 @@
 // -- some platforms (e.g. UE4) need special treatment
 // -- modify the target copy of this file with the appropriate define(s)
 #define PLATFORM_UE4 0
-#define PLATFORM_VS_2019 0
+#define PLATFORM_VS_2019 1
 
 // ------------------------------------------------------------------------------------------------
 // -- TYPES

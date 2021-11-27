@@ -37,8 +37,6 @@ class CVector3f {
 
 public:
 
-    DECLARE_SCRIPT_CLASS(CVector3f, VOID);
-
     CVector3f(float32 _x = 0.0f, float32 _y = 0.0f, float32 _z = 0.0f)
     {
         x = _x; y = _y; z = _z;
