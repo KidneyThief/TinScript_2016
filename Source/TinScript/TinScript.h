@@ -84,6 +84,28 @@ inline const char* __GetClassName()
 // ====================================================================================================================
 // -- Registration macros
 
+#define REGISTER_SCRIPT_CLASS_NO_CONSTRUCT_BEGIN(classname, parentname)                                             \
+    static classname* __##classname##_Create() {                                                                    \
+        assert(0 && #classname " cannot be constructed from script");                                               \
+        return nullptr;                                                                                              \
+    }                                                                                                               \
+    static void __##classname##_Destroy(void* addr) {                                                               \
+        if (addr) {                                                                                                 \
+            assert(0 && #classname " cannot be destructed from script");                                            \
+	    }                                                                                                           \
+    }                                                                                                               \
+    void __##classname##_Register(::TinScript::CScriptContext* script_context,                                      \
+                                  ::TinScript::CNamespace* classnamespace);                                         \
+    ::TinScript::CNamespaceReg reg_##classname(#classname, #parentname, ::TinScript::GetTypeID<classname*>(),       \
+                                               (void*)__##classname##_Create, (void*)__##classname##_Destroy,       \
+                                               (void*)__##classname##_Register);                                    \
+    REGISTER_DEFAULT_METHODS(classname);                                                                            \
+    void __##classname##_Register(::TinScript::CScriptContext* script_context,                                      \
+                                  ::TinScript::CNamespace* classnamespace)                                          \
+    {                                                                                                               \
+        Unused_(script_context);                                                                                    \
+        Unused_(classnamespace);
+
 #define REGISTER_SCRIPT_CLASS_BEGIN(classname, parentname)                                                          \
     static classname* __##classname##_Create() {                                                                    \
         classname* newobj = TinAlloc(ALLOC_CreateObj, classname);                                                   \
