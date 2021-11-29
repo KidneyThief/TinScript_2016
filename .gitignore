@@ -1,6 +1,9 @@
 Source/TinScript/Debug/
 TinQtDemo/Debug/
 TinConsole/Debug/
+TinConsole/.vs/
+TinQtDemo/.vs/
+TinQtConsole/.vs/
 TinQtDemo/stringtable.txt
 TinQtConsole/TinQTSourceWinMoc.cpp
 TinQtConsole/TinQTToolsWinMoc.cpp
