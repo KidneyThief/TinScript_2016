@@ -48,8 +48,8 @@ bool8 Vector3fToString(TinScript::CScriptContext* script_context, void* value, c
 {
 	if(value && buf && bufsize > 0)
     {
-        CVector3f* c3vector = (CVector3f*)value;
-		sprintf_s(buf, bufsize, "%.4f %.4f %.4f", c3vector->x, c3vector->y, c3vector->z);
+        Vector3fClass* c3vector = (Vector3fClass*)value;
+		sprintf_s(buf, bufsize, "%.4f %.4f %.4f", c3vector->v3f_X, c3vector->v3f_Y, c3vector->v3f_Z);
 		return (true);
 	}
 	return (false);
@@ -59,21 +59,21 @@ bool8 StringToVector3f(TinScript::CScriptContext* script_context, void* addr, ch
 {
 	if (addr && value)
     {
-		CVector3f* varaddr = (CVector3f*)addr;
+        Vector3fClass* varaddr = (Vector3fClass*)addr;
 
         // -- handle an empty string
         if (!value || !value[0])
         {
-            *varaddr = CVector3f(0.0f, 0.0f, 0.0f);
+            *varaddr = Vector3fClass(0.0f, 0.0f, 0.0f);
             return (true);
         }
 
-        else if(sscanf_s(value, "%f %f %f", &varaddr->x, &varaddr->y, &varaddr->z) == 3)
+        else if(sscanf_s(value, "%f %f %f", &varaddr->v3f_X, &varaddr->v3f_Y, &varaddr->v3f_Z) == 3)
         {
 		    return (true);
         }
 
-        else if(sscanf_s(value, "%f, %f, %f", &varaddr->x, &varaddr->y, &varaddr->z) == 3)
+        else if(sscanf_s(value, "%f, %f, %f", &varaddr->v3f_X, &varaddr->v3f_Y, &varaddr->v3f_Z) == 3)
         {
 		    return (true);
         }
@@ -96,9 +96,9 @@ bool8 Vector3fOpOverrides(CScriptContext* script_context, eOpCode op, eVarType& 
     if (!val0addr || !val1addr)
         return (false);
 
-    CVector3f* v0 = (CVector3f*)val0addr;
-    CVector3f* v1 = (CVector3f*)val1addr;
-    CVector3f* result = (CVector3f*)result_addr;
+    Vector3fClass* v0 = (Vector3fClass*)val0addr;
+    Vector3fClass* v1 = (Vector3fClass*)val1addr;
+    Vector3fClass* result = (Vector3fClass*)result_addr;
     result_type = TYPE_vector3f;
     int32* int_result = (int32*)result_addr;
 
@@ -138,11 +138,11 @@ bool8 Vector3fScale(CScriptContext* script_context, eOpCode op, eVarType& result
         return (false);
 
     // -- division is a scalar, but the order is relevent
-    CVector3f* v = (CVector3f*)TypeConvert(script_context, val0_type, val0, TYPE_vector3f);
+    Vector3fClass* v = (Vector3fClass*)TypeConvert(script_context, val0_type, val0, TYPE_vector3f);
     float32* scalar = (float32*)TypeConvert(script_context, val1_type, val1, TYPE_float);
     if (!v && op != OP_Div)
     {
-        v = (CVector3f*)TypeConvert(script_context, val1_type, val1, TYPE_vector3f);
+        v = (Vector3fClass*)TypeConvert(script_context, val1_type, val1, TYPE_vector3f);
         scalar = (float32*)TypeConvert(script_context, val0_type, val0, TYPE_float);
     }
 
@@ -151,7 +151,7 @@ bool8 Vector3fScale(CScriptContext* script_context, eOpCode op, eVarType& result
         return (false);
 
     // -- set up the result
-    CVector3f* result = (CVector3f*)result_addr;
+    Vector3fClass* result = (Vector3fClass*)result_addr;
     result_type = TYPE_vector3f;
     
     // -- perform the operation
@@ -181,8 +181,8 @@ void* Vector3fToBoolConvert(CScriptContext* script_context, eVarType from_type, 
     // -- only one conversion viable here - a non-zero vector3f is true, false otherwise
     if (from_type == TYPE_vector3f)
     {
-        CVector3f* v3 = (CVector3f*)from_val;
-        *(bool*)to_buffer = (*v3 == CVector3f::zero) ? 0 : 1;
+        Vector3fClass* v3 = (Vector3fClass*)from_val;
+        *(bool*)to_buffer = (*v3 == Vector3fClass(0.0f, 0.0f, 0.0f)) ? 0 : 1;
         return (void*)(to_buffer);
     }
 

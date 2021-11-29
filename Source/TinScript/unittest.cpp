@@ -48,8 +48,13 @@
 DECLARE_FILE(unittest_cpp);
 
 // -- constants -----------------------------------------------------------------------------------
-static const char* kUnitTestScriptName = "../Source/TinScript/unittest.ts";
-static const char* kProfilingTestScriptName = "../Source/TinScript/profilingtest.ts";
+#if PLATFORM_UE4
+    static const char* kUnitTestScriptName = "unittest.ts";
+    static const char* kProfilingTestScriptName = "profilingtest.ts";
+#else
+    static const char* kUnitTestScriptName = "../Source/TinScript/unittest.ts";
+    static const char* kProfilingTestScriptName = "../Source/TinScript/profilingtest.ts";
+#endif
 
 // --------------------------------------------------------------------------------------------------------------------
 // -- Print function, for use by the unit tests
@@ -282,9 +287,9 @@ const char* UnitTest_AnimalType(const char* animal_name)
         return ("unknown");
 }
 
-CVector3f UnitTest_V3fNormalize(CVector3f v0)
+Vector3fClass UnitTest_V3fNormalize(Vector3fClass v0)
 {
-    CVector3f result = CVector3f::Normalized(v0);
+    Vector3fClass result = TS_V3fNormalized(v0);
     return (result);
 }
 
@@ -377,7 +382,7 @@ void UnitTest_GetScriptReturnStringExec()
 void UnitTest_GetScriptReturnVector3f()
 {
     // -- note, the vector3f pass by value to script, is a string which will automatically be converted
-    CVector3f result;
+    Vector3fClass result;
     if (!TinScript::ExecF(result, "UnitTest_ScriptReturnVector3f('1 2 3');"))
     {
         ScriptAssert_(TinScript::GetContext(), false, "<internal>", -1,
@@ -385,8 +390,8 @@ void UnitTest_GetScriptReturnVector3f()
     }
     else
     {
-        // -- print the result to a testable string
-        sprintf_s(CUnitTest::gCodeResult, "%.4f %.4f %.4f", result.x, result.y, result.z);
+        Vector3fToString(TinScript::GetContext(), (void*)&result, CUnitTest::gCodeResult,
+                         sizeof(CUnitTest::gCodeResult));
     }
 }
 

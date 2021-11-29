@@ -107,6 +107,52 @@ float32 Random();
 float32 RandomRange(float32 low, float32 high);
 int32 RandomInt(int32 exclusiveMax);
 
+// -- platform specific Vector3f wrappers -----------------------------------------------------------------------------
+// 
+// -- used by unit tests, we need platform specific wrappers
+// obviously for *real* code, nothing should ever call this wrappers
+#if PLATFORM_UE4
+    inline float TS_V3fLength(FVector v0)
+    {
+        return v0.Size();
+    }
+
+    inline FVector TS_V3fCrossProduct(FVector v0, FVector v1)
+    {
+        return FVector::CrossProduct(v0, v1);
+    }
+
+    inline float TS_V3fDotProduct(FVector v0, FVector v1)
+    {
+        return FVector::DotProduct(v0, v1);
+    }
+
+    inline FVector TS_V3fNormalized(FVector v0)
+    {
+        return v0.GetSafeNormal();
+    }
+#else
+    inline float TS_V3fLength(CVector3f v0)
+    {
+        return CVector3f::V3fLength(v0);
+    }
+
+    inline CVector3f TS_V3fCrossProduct(CVector3f v0, CVector3f v1)
+    {
+        return CVector3f::Cross(v0, v1);
+    }
+
+    inline float TS_V3fDotProduct(CVector3f v0, CVector3f v1)
+    {
+        return CVector3f::Dot(v0, v1);
+    }
+
+    inline CVector3f TS_V3fNormalized(CVector3f v0)
+    {
+        return CVector3f::Normalized(v0);
+    }
+#endif
+
 #endif // __MATHUTIL_H
 
 // ====================================================================================================================

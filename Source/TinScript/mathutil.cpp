@@ -180,11 +180,12 @@ REGISTER_FUNCTION(ObjDot, TS_Dot);
 REGISTER_FUNCTION(ObjNormalized, TS_Normalized);
 
 // --------------------------------------------------------------------------------------------------------------------
-// -- Re-registered using the registered type, instead of having to find an object
-REGISTER_CLASS_FUNCTION(CVector3f, V3fLength, V3fLength);
-REGISTER_CLASS_FUNCTION(CVector3f, V3fCross, Cross);
-REGISTER_CLASS_FUNCTION(CVector3f, V3fDot, Dot);
-REGISTER_CLASS_FUNCTION(CVector3f, V3fNormalized, Normalized);
+// -- platform specific registration - if we're using Unreal Engine, we want to use FVector instead of this
+// placeholder implementation of CVector3f
+REGISTER_FUNCTION(V3fLength, TS_V3fLength);
+REGISTER_FUNCTION(V3fCross, TS_V3fCrossProduct);
+REGISTER_FUNCTION(V3fDot, TS_V3fDotProduct);
+REGISTER_FUNCTION(V3fNormalized, TS_V3fNormalized);
 
 // ====================================================================================================================
 // Random Numbers

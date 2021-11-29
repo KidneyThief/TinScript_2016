@@ -373,6 +373,21 @@ typedef void* (*TypeConvertFunction)(CScriptContext* script_context, eVarType fr
 	#define HT_SIZE 4
 #endif		
 
+// -- we need to define exactly what class/struct is used to represent an x,y,z float vector
+// note:  atm, FVector (unreal engine) and our pseudo placeholder CVector3f have exactly the same storage
+// -- if a different class is used, the implementation of Vector3fConfig() would need to reflect the x,y,z mapping
+#if PLATFORM_UE4
+    #define Vector3fClass FVector
+    #define v3f_X X
+    #define v3f_Y Y
+    #define v3f_Z Z
+#else
+    #define Vector3fClass CVector3f
+    #define v3f_X x
+    #define v3f_Y y
+    #define v3f_Z z
+#endif
+
 #define FIRST_VALID_TYPE TYPE_hashtable
 #define LAST_VALID_TYPE TYPE_vector3f
 #define VarTypeTuple \
@@ -390,7 +405,7 @@ typedef void* (*TypeConvertFunction)(CScriptContext* script_context, eVarType fr
 	VarTypeEntry(float,		    4,		FloatToString,		StringToFloat,      float32,        FloatConfig)        \
 	VarTypeEntry(int,		    4,		IntToString,		StringToInt,        int32,          IntegerConfig)      \
 	VarTypeEntry(bool,		    1,		BoolToString,		StringToBool,       bool8,          BoolConfig)         \
-	VarTypeEntry(vector3f,	   12,		Vector3fToString,   StringToVector3f,   CVector3f,      Vector3fConfig)		\
+	VarTypeEntry(vector3f,	   12,		Vector3fToString,   StringToVector3f,   Vector3fClass,      Vector3fConfig)		\
 
 // -- 4x words actually, 16x bytes, the size of a HashVar
 #define MAX_TYPE_SIZE 4
