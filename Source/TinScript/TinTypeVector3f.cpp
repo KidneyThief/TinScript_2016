@@ -199,6 +199,53 @@ void* Vector3fToBoolConvert(CScriptContext* script_context, eVarType from_type, 
     return (NULL);
 }
 
+// -- PLATFORM UE4 FVector functions ----------------------------------------------------------------------------------
+
+bool8 FVectorToString(TinScript::CScriptContext* script_context, void* value, char* buf, int32 bufsize)
+{
+#if PLATFORM_UE4
+	if (value && buf && bufsize > 0)
+	{
+		FVector* ueVector = (FVector*)value;
+		double x = (float)ueVector->X;
+		double y = (float)ueVector->Y;
+		double z = (float)ueVector->Z;
+		sprintf_s(buf, bufsize, "%.4lf %.4lf %.4lf", x, y, z);
+		return (true);
+	}
+#endif
+	return (false);
+}
+
+bool8 StringToFVector(TinScript::CScriptContext* script_context, void* addr, char* value)
+{
+#if PLATFORM_UE4
+	if (addr && value)
+	{
+		FVector* varaddr = (FVector*)addr;
+
+		double x = 0.0f;
+		double y = 0.0f;
+		double z = 0.0f;
+
+		// -- if the string is non-empty, ensure we can read in either space or comma delineated format
+		bool success = true;
+		if (value && value[0])
+		{
+			success = sscanf_s(value, "%lf %lf %lf", &x, &y, &z) == 3;
+			success = success || (sscanf_s(value, "%lf, %lf, %lf", &x, &y, &z) == 3);
+		}
+
+		if (success)
+		{
+			*varaddr = FVector(x, y, z);
+			return (true);
+		}
+	}
+#endif
+	return (false);
+}
+
 void* Vector3fToFVectorConvert(CScriptContext* script_context, eVarType from_type, void* from_val, void* to_buffer)
 {
 
@@ -213,6 +260,28 @@ void* Vector3fToFVectorConvert(CScriptContext* script_context, eVarType from_typ
 		Vector3fClass* v3 = (Vector3fClass*)from_val;
 		FVector* out_FVector = (FVector*)to_buffer;
 		out_FVector->Set(v3->v3f_X, v3->v3f_Y, v3->v3f_Z);
+		return (to_buffer);
+	}
+#endif
+
+	// -- no registered conversion
+	return (NULL);
+}
+
+void* FVectorToVector3fConvert(CScriptContext* script_context, eVarType from_type, void* from_val, void* to_buffer)
+{
+
+#if PLATFORM_UE4
+	// -- sanity check
+	if (!from_val || !to_buffer)
+		return (NULL);
+
+	// -- only one conversion viable here - a non-zero vector3f is true, false otherwise
+	if (from_type == TYPE_ue_vector)
+	{
+		FVector* in_FVector = (FVector*)(from_val);
+		Vector3fClass* out_Vector3f = (Vector3fClass*)to_buffer;
+		*out_Vector3f = Vector3fClass(in_FVector->X, in_FVector->Y, in_FVector->Z);
 		return (to_buffer);
 	}
 #endif
@@ -266,6 +335,7 @@ bool8 Vector3fConfig(eVarType var_type, bool8 onInit)
 		// but we add a conversion method so C++ registered parameters of type FVector can be passed
 		// a CVector3f successfully
 		RegisterTypeConvert(TYPE_ue_vector, TYPE_vector3f, Vector3fToFVectorConvert);
+		RegisterTypeConvert(TYPE_vector3f, TYPE_ue_vector, FVectorToVector3fConvert);
     }
 
     // -- shutdown

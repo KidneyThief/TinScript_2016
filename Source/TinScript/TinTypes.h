@@ -343,6 +343,10 @@ bool8 Vector3fToString(TinScript::CScriptContext* script_context, void* value, c
 bool8 StringToVector3f(TinScript::CScriptContext* script_context, void* addr, char* value);
 bool8 Vector3fConfig(eVarType var_type, bool8 onInit);
 
+// -- UnrealEngine types (guarded by PLATFORM_UE4)
+bool8 FVectorToString(TinScript::CScriptContext* script_context, void* value, char* buf, int32 bufsize);
+bool8 StringToFVector(TinScript::CScriptContext* script_context, void* addr, char* value);
+
 // ====================================================================================================================
 // -- operation and conversion type functions
 enum eOpCode;
@@ -415,7 +419,7 @@ typedef void* (*TypeConvertFunction)(CScriptContext* script_context, eVarType fr
 	VarTypeEntry(int,		    4,			IntToString,		StringToInt,        int32,          IntegerConfig)      \
 	VarTypeEntry(bool,		    1,			BoolToString,		StringToBool,       bool8,          BoolConfig)         \
 	VarTypeEntry(vector3f,	   12,			Vector3fToString,   StringToVector3f,   Vector3fClass,  Vector3fConfig)		\
-	VarTypeEntry(ue_vector,	   24,			VoidToString,		StringToVoid,		Vector3dClass,	nullptr)			\
+	VarTypeEntry(ue_vector,	   24,			FVectorToString,	StringToFVector,	Vector3dClass,	nullptr)			\
 
 // -- 4x words actually, 16x bytes, the size of a HashVar
 #define MAX_TYPE_SIZE 4
