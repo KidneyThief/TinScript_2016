@@ -85,7 +85,7 @@ public:
             // -- the strategy here is, each paremeter causes the current hash to be multiplied
             // -- by 3x the number of valid types...  then we add the current type, multiplied by 2 if
             // -- it's an array...  there should be no numerical collisions based on this
-            const uint32 next_hash_multiplier = 3 * (uint32)LAST_VALID_TYPE;
+            const uint32 next_hash_multiplier = 3 * (uint32)TYPE_COUNT;
 
             // -- first bump the current hash to the next multiplied value
             cur_hash *= next_hash_multiplier;

@@ -1,4 +1,4 @@
-﻿// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
 //  The MIT License
 //  
 //  Copyright (c) 2014 Tim Andersen
@@ -146,6 +146,12 @@ DWORD WINAPI ThreadUpdate(void* script_context)
     // -- update the socket until the thread is terminated
     while (true)
     {
+		// if our thread socket is deleted (hard shutdown??), we're done
+		if (mThreadSocket == nullptr)
+		{
+			break;
+		}
+
         // -- listen for connections (internally, will actually listen, or simply ignore)
         if (!mThreadSocket->Listen())
         {

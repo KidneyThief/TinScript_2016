@@ -30,11 +30,16 @@
 
 #include "mathutil.h"
 
+#include "integration.h"
 #include "TinHash.h"
 #include "TinCompile.h"
 #include "TinTypes.h"
 #include "TinScript.h"
 #include "TinStringTable.h"
+
+#if PLATFORM_UE4
+	#include "math/Vector.h"
+#endif
 
 namespace TinScript {
 
@@ -49,7 +54,10 @@ bool8 Vector3fToString(TinScript::CScriptContext* script_context, void* value, c
 	if(value && buf && bufsize > 0)
     {
         Vector3fClass* c3vector = (Vector3fClass*)value;
-		sprintf_s(buf, bufsize, "%.4f %.4f %.4f", c3vector->v3f_X, c3vector->v3f_Y, c3vector->v3f_Z);
+		float x = (float)c3vector->v3f_X;
+		float y = (float)c3vector->v3f_Y;
+		float z = (float)c3vector->v3f_Z;
+		sprintf_s(buf, bufsize, "%.4f %.4f %.4f", x, y, z);
 		return (true);
 	}
 	return (false);
@@ -61,21 +69,22 @@ bool8 StringToVector3f(TinScript::CScriptContext* script_context, void* addr, ch
     {
         Vector3fClass* varaddr = (Vector3fClass*)addr;
 
-        // -- handle an empty string
-        if (!value || !value[0])
-        {
-            *varaddr = Vector3fClass(0.0f, 0.0f, 0.0f);
-            return (true);
-        }
+		float x = 0.0f;
+		float y = 0.0f;
+		float z = 0.0f;
 
-        else if(sscanf_s(value, "%f %f %f", &varaddr->v3f_X, &varaddr->v3f_Y, &varaddr->v3f_Z) == 3)
+		// -- if the string is non-empty, ensure we can read in either space or comman delineated format
+		bool success = true;
+        if (value && value[0])
         {
-		    return (true);
-        }
+			success = sscanf_s(value, "%f %f %f", &x, &y, &z) == 3;
+			success = success || (sscanf_s(value, "%f, %f, %f", &x, &y, &z) == 3);
+		}
 
-        else if(sscanf_s(value, "%f, %f, %f", &varaddr->v3f_X, &varaddr->v3f_Y, &varaddr->v3f_Z) == 3)
-        {
-		    return (true);
+		if (success)
+		{
+			*varaddr = Vector3fClass(x, y, z);
+			return (true);
         }
 	}
 	return (false);
@@ -181,13 +190,35 @@ void* Vector3fToBoolConvert(CScriptContext* script_context, eVarType from_type, 
     // -- only one conversion viable here - a non-zero vector3f is true, false otherwise
     if (from_type == TYPE_vector3f)
     {
-        Vector3fClass* v3 = (Vector3fClass*)from_val;
-        *(bool*)to_buffer = (*v3 == Vector3fClass(0.0f, 0.0f, 0.0f)) ? 0 : 1;
-        return (void*)(to_buffer);
-    }
+		Vector3fClass* v3 = (Vector3fClass*)from_val;
+		*(bool*)to_buffer = (*v3 == Vector3fClass(0.0f, 0.0f, 0.0f)) ? 0 : 1;
+		return (to_buffer);
+	}
 
     // -- no registered conversion
     return (NULL);
+}
+
+void* Vector3fToFVectorConvert(CScriptContext* script_context, eVarType from_type, void* from_val, void* to_buffer)
+{
+
+#if PLATFORM_UE4
+	// -- sanity check
+	if (!from_val || !to_buffer)
+		return (NULL);
+
+	// -- only one conversion viable here - a non-zero vector3f is true, false otherwise
+	if (from_type == TYPE_vector3f)
+	{
+		Vector3fClass* v3 = (Vector3fClass*)from_val;
+		FVector* out_FVector = (FVector*)to_buffer;
+		out_FVector->Set(v3->v3f_X, v3->v3f_Y, v3->v3f_Z);
+		return (to_buffer);
+	}
+#endif
+
+	// -- no registered conversion
+	return (NULL);
 }
 
 // --------------------------------------------------------------------------------------------------------------------
@@ -201,9 +232,10 @@ bool8 Vector3fConfig(eVarType var_type, bool8 onInit)
         if (gVector3fTable == NULL)
         {
             gVector3fTable = TinAlloc(ALLOC_HashTable, CHashTable<tPODTypeMember>, 3);
+			size_t unit_size = sizeof(Vector3fClass) / 3;
             tPODTypeMember* member_x = new tPODTypeMember(TYPE_float, 0);
-            tPODTypeMember* member_y = new tPODTypeMember(TYPE_float, 4);
-            tPODTypeMember* member_z = new tPODTypeMember(TYPE_float, 8);
+            tPODTypeMember* member_y = new tPODTypeMember(TYPE_float, unit_size);
+            tPODTypeMember* member_z = new tPODTypeMember(TYPE_float, unit_size * 2);
             gVector3fTable->AddItem(*member_x, Hash("x"));
             gVector3fTable->AddItem(*member_y, Hash("y"));
             gVector3fTable->AddItem(*member_z, Hash("z"));
@@ -229,6 +261,11 @@ bool8 Vector3fConfig(eVarType var_type, bool8 onInit)
 
         // -- register the conversion from Vector3f to bool - note the first arg is Type_bool
         RegisterTypeConvert(TYPE_bool, TYPE_vector3f, Vector3fToBoolConvert);
+
+		// -- special conversion for FVector - as a UE4 type, this type cannot be used by script,
+		// but we add a conversion method so C++ registered parameters of type FVector can be passed
+		// a CVector3f successfully
+		RegisterTypeConvert(TYPE_ue_vector, TYPE_vector3f, Vector3fToFVectorConvert);
     }
 
     // -- shutdown

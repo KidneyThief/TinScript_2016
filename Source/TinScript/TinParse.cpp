@@ -540,8 +540,12 @@ const char* GetToken(const char*& inbuf, int32& length, eTokenType& type, const 
 
 		if (!foundidtype)
         {
+			// -- for parsing, we only allow void, or any type between the first and last valid...
+			// -- there are types like TYPE__resolve, which will become legitimate after compilation, or
+			// types like TYPE_ue_vector, which is used for conversion and binding to FVector, but not scriptable
 			eVarType registeredtype = GetRegisteredType(tokenptr, length);
-			if (registeredtype != TYPE_NULL)
+			if (registeredtype == TYPE_void ||
+				registeredtype >= FIRST_VALID_TYPE && registeredtype <= LAST_VALID_TYPE)
             {
 				type = TOKEN_REGTYPE;
 				foundidtype = true;
@@ -820,7 +824,7 @@ bool8 DumpFile(const char* filename)
 		if (token.tokenptr != NULL)
         {
 			SafeStrcpy(tokenbuf, kMaxTokenLength, token.tokenptr, token.length + 1);
-            TinPrint(TinScript::GetContext(), "Found token: [%s] %s\n", gTokenTypeStrings[token.type], tokenbuf);
+			printf("Found token: [%s] %s\n", gTokenTypeStrings[token.type], tokenbuf);
 		}
 	} while (success);
 
@@ -834,9 +838,7 @@ void DumpTree(const CCompileTreeNode* root, int32 indent, bool8 isleft, bool8 is
 {
     // -- if this is the start of a tree (with an indent of 0), write out a label
     if (indent == 0)
-    {
-        TinPrint(TinScript::GetContext(), "\n*** DUMP TREE:\n");
-    }
+        printf("\n*** DUMP TREE:\n");
 
 	while (root)
     {
@@ -855,7 +857,7 @@ void DumpTree(const CCompileTreeNode* root, int32 indent, bool8 isleft, bool8 is
 		debugptr += 4;
 		debuglength -= 4;
 		root->Dump(debugptr, debuglength);
-        TinPrint(TinScript::GetContext(), "%s\n", debugbuf);
+		printf("%s\n", debugbuf);
 		if (root->leftchild)
 			DumpTree(root->leftchild, indent + 1, true, false);
 		if (root->rightchild)
@@ -4709,7 +4711,7 @@ CCodeBlock* ParseText(CScriptContext* script_context, const char* filename, cons
 #if DEBUG_CODEBLOCK
     if (GetDebugCodeBlock())
     {
-        TinPrint(TinScript::GetContext(), "\n*** COMPILING: %s\n\n", filename && filename[0] ? filename : "<stdin>");
+        printf("\n*** COMPILING: %s\n\n", filename && filename[0] ? filename : "<stdin>");
     }
 #endif
 
@@ -5216,20 +5218,7 @@ CVariableEntry* AddVariable(CScriptContext* script_context, tVarTable* curglobal
         // -- search the local var table for the executing function
         ve = curfuncdefinition->GetContext()->GetLocalVar(varhash);
         if (!ve)
-        {
             ve = curfuncdefinition->GetContext()->AddLocalVar(varname, varhash, vartype, array_size, false);
-        }
-        else
-        {
-            if (ve->GetType() != vartype)
-            {
-                ScriptAssert_(script_context, 0, "<internal>", -1,
-                    "Error - Function: %s(), local variable %s: already exists, of type: %s\n",
-                    UnHash(curfuncdefinition->GetHash()),
-                    UnHash(ve->GetHash()), gRegisteredTypeNames[ve->GetType()]);
-                return (NULL);
-            }
-        }
     }
 
     // -- not defining a function - see if we're compiling
@@ -5244,17 +5233,6 @@ CVariableEntry* AddVariable(CScriptContext* script_context, tVarTable* curglobal
 	        uint32 hash = ve->GetHash();
 	        curglobalvartable->AddItem(*ve, hash);
         }
-        // -- variable already exists - ensure the type hasn't changed
-        else
-        {
-            if (ve->GetType() != vartype)
-            {
-                ScriptAssert_(script_context, 0, "<internal>", -1,
-                              "Error - Global variable %s: already exists, of type: %s\n",
-                              UnHash(ve->GetHash()), gRegisteredTypeNames[ve->GetType()]);
-                return (NULL);
-            }
-        }
     }
     else
     {
@@ -5267,16 +5245,6 @@ CVariableEntry* AddVariable(CScriptContext* script_context, tVarTable* curglobal
                           false, 0, false);
 	        uint32 hash = ve->GetHash();
 	        globalvartable->AddItem(*ve, hash);
-        }
-        else
-        {
-            if (ve->GetType() != vartype)
-            {
-                ScriptAssert_(script_context, 0, "<internal>", -1,
-                    "Error - Global variable %s: already exists, of type: %s\n",
-                    UnHash(ve->GetHash()), gRegisteredTypeNames[ve->GetType()]);
-                return (NULL);
-            }
         }
     }
     return ve;

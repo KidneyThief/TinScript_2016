@@ -371,41 +371,51 @@ typedef void* (*TypeConvertFunction)(CScriptContext* script_context, eVarType fr
 #else
 	#define POD_SIZE 8
 	#define HT_SIZE 4
-#endif		
-
-// -- we need to define exactly what class/struct is used to represent an x,y,z float vector
-// note:  atm, FVector (unreal engine) and our pseudo placeholder CVector3f have exactly the same storage
-// -- if a different class is used, the implementation of Vector3fConfig() would need to reflect the x,y,z mapping
-#if PLATFORM_UE4
-    #define Vector3fClass FVector
-    #define v3f_X X
-    #define v3f_Y Y
-    #define v3f_Z Z
-#else
-    #define Vector3fClass CVector3f
-    #define v3f_X x
-    #define v3f_Y y
-    #define v3f_Z z
 #endif
 
+// -- Unreal Engine (and others) support for vector3f:
+// -- Our default 32-bit implementation uses a float x,y,z structure, but other engines have different formats/storage
+// (e.g.  Unreal Engine uses double X,Y,Z)
+// -- The TinScript scriptable implementation uses a CVector3f, and in order to register a function with, say, an
+// UnrealEngine FVector parameter, we implement the conversion from TYPE_vector3f to TYPE_ue_vector within TinTypeVector3f.cpp
+// Note:  a)  we cannot use TYPE_ue_vector on the script side (as doubles would be misaligned) and
+//        b)  the size of a double X,Y,Z is 24-bytes, larger than our largest 16x byte argument, affecting pushing on the stack
+// -- Unless we either modify the byte code to vary byte size of pushed stack values (instead of *always* 16-bytes, which is simple)
+// or we convert the TinScript implementation entirely to 64-bit (definitely a consideration), TYPE_ue_vector will remain C++ only
+// 
+#define Vector3fClass CVector3f
+#define v3f_X x
+#define v3f_Y y
+#define v3f_Z z
+
+// -- mapped to uint8 for engines in the absence of a double X,Y,Z vector class
+#if PLATFORM_UE4
+	#define Vector3dClass FVector
+#else
+	#define Vector3dClass uint8
+#endif
+
+// -- these are the script
 #define FIRST_VALID_TYPE TYPE_hashtable
 #define LAST_VALID_TYPE TYPE_vector3f
+
 #define VarTypeTuple \
-	VarTypeEntry(NULL,		    0,		VoidToString,		StringToVoid,       uint8,          NULL)               \
-	VarTypeEntry(void,		    0,		VoidToString,		StringToVoid,       uint8,          NULL)   	        \
-	VarTypeEntry(_resolve,	    16,		VoidToString,		StringToVoid,       uint8,          NULL)   	        \
-	VarTypeEntry(_stackvar,     12,		IntToString,		StringToInt,        uint8,          NULL)   	        \
-	VarTypeEntry(_var,          12,		IntToString,		StringToInt,        uint8,          NULL)   	        \
-	VarTypeEntry(_member,       8,		IntToString,		StringToInt,        sMember,        NULL)           	\
-	VarTypeEntry(_podmember,    POD_SIZE,		IntToString,		StringToInt,        sPODMember,     NULL)           	\
-	VarTypeEntry(_hashvarindex, 16,		IntToString,		StringToInt,        sHashVarIndex,  NULL)           	\
-    VarTypeEntry(hashtable,     HT_SIZE,      IntToString,        StringToInt,        sHashTable,     NULL)               \
-	VarTypeEntry(object,        4,		IntToString,		StringToInt,        uint32,         ObjectConfig)       \
-    VarTypeEntry(string,        4,      STEToString,        StringToSTE,        const char*,    StringConfig)       \
-	VarTypeEntry(float,		    4,		FloatToString,		StringToFloat,      float32,        FloatConfig)        \
-	VarTypeEntry(int,		    4,		IntToString,		StringToInt,        int32,          IntegerConfig)      \
-	VarTypeEntry(bool,		    1,		BoolToString,		StringToBool,       bool8,          BoolConfig)         \
-	VarTypeEntry(vector3f,	   12,		Vector3fToString,   StringToVector3f,   Vector3fClass,      Vector3fConfig)		\
+	VarTypeEntry(NULL,		    0,			VoidToString,		StringToVoid,       uint8,          nullptr)            \
+	VarTypeEntry(void,		    0,			VoidToString,		StringToVoid,       uint8,          nullptr)   	        \
+	VarTypeEntry(_resolve,	    16,			VoidToString,		StringToVoid,       uint8,          nullptr)   	        \
+	VarTypeEntry(_stackvar,     12,			IntToString,		StringToInt,        uint8,          nullptr)   	        \
+	VarTypeEntry(_var,          12,			IntToString,		StringToInt,        uint8,          nullptr)   	        \
+	VarTypeEntry(_member,       8,			IntToString,		StringToInt,        sMember,        nullptr)           	\
+	VarTypeEntry(_podmember,    POD_SIZE,	IntToString,		StringToInt,        sPODMember,     nullptr)           	\
+	VarTypeEntry(_hashvarindex, 16,			IntToString,		StringToInt,        sHashVarIndex,  nullptr)           	\
+    VarTypeEntry(hashtable,     HT_SIZE,    IntToString,        StringToInt,        sHashTable,     nullptr)            \
+	VarTypeEntry(object,        4,			IntToString,		StringToInt,        uint32,         ObjectConfig)       \
+    VarTypeEntry(string,        4,			STEToString,        StringToSTE,        const char*,    StringConfig)       \
+	VarTypeEntry(float,		    4,			FloatToString,		StringToFloat,      float32,        FloatConfig)        \
+	VarTypeEntry(int,		    4,			IntToString,		StringToInt,        int32,          IntegerConfig)      \
+	VarTypeEntry(bool,		    1,			BoolToString,		StringToBool,       bool8,          BoolConfig)         \
+	VarTypeEntry(vector3f,	   12,			Vector3fToString,   StringToVector3f,   Vector3fClass,  Vector3fConfig)		\
+	VarTypeEntry(ue_vector,	   24,			VoidToString,		StringToVoid,		Vector3dClass,	nullptr)			\
 
 // -- 4x words actually, 16x bytes, the size of a HashVar
 #define MAX_TYPE_SIZE 4

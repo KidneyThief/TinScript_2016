@@ -89,7 +89,7 @@ CVariableEntry::CVariableEntry(CScriptContext* script_context, const char* _name
 	SafeStrcpy(mName, sizeof(mName), _name, kMaxNameLength);
 	mType = _type;
     mArraySize = _array_size;
-    mAddr = (void*)0xdeadbeef;
+    mAddr = nullptr;
 	mHash = _hash;
     mOffset = 0;
     mIsDynamic = _isdynamic;
