@@ -83,6 +83,7 @@ class CWhileLoopNode;
 	CompileNodeTypeEntry(ArrayDecl)			    \
 	CompileNodeTypeEntry(ArrayCount)		    \
 	CompileNodeTypeEntry(ArrayCopy)		        \
+	CompileNodeTypeEntry(MathUnaryFunc)			\
 	CompileNodeTypeEntry(HashtableHasKey)		\
 	CompileNodeTypeEntry(HashtableCopy)	    	\
 	CompileNodeTypeEntry(HashtableIter)		    \
@@ -180,6 +181,7 @@ const char* GetNodeTypeString(ECompileNodeType nodetype);
 	OperationEntry(ArrayDecl)		    \
 	OperationEntry(ArrayCount)		    \
 	OperationEntry(ArrayCopy)		    \
+	OperationEntry(MathUnaryFunc)		\
 	OperationEntry(HashtableHasKey)		\
 	OperationEntry(HashtableCopy)		\
 	OperationEntry(HashtableIter)		\
@@ -767,6 +769,23 @@ class CArrayCountNode : public CCompileTreeNode
 
 	protected:
 		CArrayCountNode() { }
+};
+
+// ====================================================================================================================
+// class CMathUnaryFuncNode:  Parse tree node, executes a math function (e.g. abs()), taking a single float arg
+// ====================================================================================================================
+class CMathUnaryFuncNode : public CCompileTreeNode
+{
+public:
+	CMathUnaryFuncNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber,
+					   eMathUnaryFunctionType func_type);
+    virtual int32 Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
+
+    virtual bool8 CompileToC(int32 indent, char*& out_buffer, int32& max_size, bool root_node) const;
+
+protected:
+	CMathUnaryFuncNode() { }
+	eMathUnaryFunctionType mFuncType;
 };
 
 // ====================================================================================================================

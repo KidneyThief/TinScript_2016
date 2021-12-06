@@ -970,7 +970,7 @@ bool8 FloatBinaryOp(CScriptContext* script_context, eOpCode op, eVarType& result
         case OP_Div:
             if (*v1 == 0.0f)
             {
-                ScriptAssert_(script_context, false, "<internal>", -1, "Error - OP_Mod division by 0.0f\n");
+                ScriptAssert_(script_context, false, "<internal>", -1, "Error - OP_Div division by 0.0f\n");
                 *result = 0.0f;
                 return (false);
             }
@@ -1042,7 +1042,7 @@ bool8 IntegerBinaryOp(CScriptContext* script_context, eOpCode op, eVarType& resu
         case OP_Div:
             if (*v1 == 0)
             {
-                ScriptAssert_(script_context, false, "<internal>", -1, "Error - OP_Mod division by 0\n");
+                ScriptAssert_(script_context, false, "<internal>", -1, "Error - OP_Div division by 0\n");
                 *result = 0;
                 return (false);
             }

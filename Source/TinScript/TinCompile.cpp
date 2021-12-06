@@ -2984,6 +2984,57 @@ bool8 CArrayCountNode::CompileToC(int32 indent, char*& out_buffer, int32& max_si
     return (true);
 }
 
+// == class CMathUnaryFuncNode ========================================================================================
+
+// ====================================================================================================================
+// Constructor
+// ====================================================================================================================
+CMathUnaryFuncNode::CMathUnaryFuncNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber,
+                                       eMathUnaryFunctionType math_func_type)
+	: CCompileTreeNode(_codeblock, _link, eMathUnaryFunc, _linenumber)
+{
+    mFuncType = math_func_type;
+}
+
+// ====================================================================================================================
+// Eval():  Generates the byte code instruction compiled from this node.
+// ====================================================================================================================
+int32 CMathUnaryFuncNode::Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const
+{
+	DebugEvaluateNode(*this, countonly, instrptr);
+	int32 size = 0;
+
+	if (!leftchild)
+	{
+		ScriptAssert_(codeblock->GetScriptContext(), leftchild != NULL, codeblock->GetFileName(),
+			linenumber,
+			"Error - CMathUnaryFuncNode::Eval() - missing leftchild\n");
+		return (-1);
+	}
+
+	// -- left child will have pushed the array variable
+	int32 tree_size = leftchild->Eval(instrptr, TYPE_float, countonly);
+	if (tree_size < 0)
+		return (-1);
+	size += tree_size;
+
+	// -- push the instruction to read the and push the size of the array
+	size += PushInstruction(countonly, instrptr, OP_MathUnaryFunc, DBG_instr);
+    size += PushInstruction(countonly, instrptr, mFuncType, DBG_instr);
+
+	// -- success
+	return (size);
+}
+
+// ====================================================================================================================
+// CompileToC(): Convert the parse tree to valid C, to compile directly to the executable. 
+// ====================================================================================================================
+bool8 CMathUnaryFuncNode::CompileToC(int32 indent, char*& out_buffer, int32& max_size, bool root_node) const
+{
+    TinPrint(TinScript::GetContext(), "CMathUnaryFuncNode::CompileToC() not implemented.\n");
+    return (true);
+}
+
 // == class CHashtableHasKey ==========================================================================================
 
 // ====================================================================================================================

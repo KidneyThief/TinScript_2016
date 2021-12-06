@@ -167,6 +167,46 @@ enum eUnaryOpType
 	UNARY_COUNT
 };
 
+constexpr float _PI = 3.1415926525f;
+constexpr float _2_PI = _PI * 2.0f;
+
+#define MathKeywordConstantTuple				\
+	MathKeywordConstantEntry(pi, 3.1415926535f)	\
+
+/*
+#define MathKeywordBinaryTuple					\
+	MathKeywordBinaryEntry(min)                 \
+	MathKeywordBinaryEntry(max)                 \
+	MathKeywordBinaryEntry(pow)                 \
+	MathKeywordBinaryEntry(exp)                 \
+	MathKeywordBinaryEntry(log)                 \
+	MathKeywordBinaryEntry(atan2)               \
+*/
+
+#define MathKeywordUnaryTuple					\
+	MathKeywordUnaryEntry(abs,		[](float inValue) { return (inValue >= 0.0f ? inValue : -inValue); })		\
+	MathKeywordUnaryEntry(floor,	[](float inValue) { return (float)floor(inValue); } )						\
+	MathKeywordUnaryEntry(ceil,		[](float inValue) { return (float)ceil(inValue); } )						\
+	MathKeywordUnaryEntry(round,	[](float inValue) { return (float)round(inValue); } )						\
+	MathKeywordUnaryEntry(rad,		[](float inValue) { while (inValue < -180.0f) inValue += 360.0f;  while (inValue > 180.0f) inValue -= 360.0f; return (inValue * 3.1415926535f / 180.0f); } )	\
+	MathKeywordUnaryEntry(deg,		[](float inValue) { while (inValue < -_PI) inValue += _2_PI;  while (inValue > _PI) inValue -= _2_PI; return (inValue * 180.0f / _PI); } )						\
+	MathKeywordUnaryEntry(sin,		[](float inValue) { return (float)sin(inValue); } )							\
+	MathKeywordUnaryEntry(cos,		[](float inValue) { return (float)cos(inValue); } )							\
+	MathKeywordUnaryEntry(tan,		[](float inValue) { return (float)tan(inValue); } )							\
+	MathKeywordUnaryEntry(asin,		[](float inValue) { return (float)asin(inValue); } )						\
+	MathKeywordUnaryEntry(acos,		[](float inValue) { return (float)acos(inValue); } )						\
+	MathKeywordUnaryEntry(atan,		[](float inValue) { return(float)atan(inValue); } )							\
+	MathKeywordUnaryEntry(sqr,		[](float inValue) { return inValue * inValue; } )							\
+	MathKeywordUnaryEntry(sqrt,		[](float inValue) { return (float)sqrt(inValue); } )						\
+
+enum eMathUnaryFunctionType
+{
+	#define MathKeywordUnaryEntry(a, b) eMathUnary_##a,
+	MathKeywordUnaryTuple
+	#undef MathKeywordUnaryEntry
+    MATH_UNARY_FUNC_COUNT
+};
+
 // --------------------------------------------------------------------------------------------------------------------
 // -- tuple defining the reserved keywords
 
@@ -203,7 +243,12 @@ enum eUnaryOpType
 enum eReservedKeyword
 {
 	#define ReservedKeywordEntry(a) KEYWORD_##a,
+	#define MathKeywordUnaryEntry(a, b) KEYWORD_##a,
+
 	ReservedKeywordTuple
+	MathKeywordUnaryTuple
+
+	#undef MathKeywordUnaryEntry
 	#undef ReservedKeywordEntry
 
 	KEYWORD_COUNT
@@ -297,6 +342,7 @@ bool8 TryParseHash(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*
 bool8 TryParseArrayCount(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link);
 bool8 TryParseArrayCopy(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link);
 bool8 TryParseSchedule(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link);
+bool8 TryParseMathUnaryFunction(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link);
 bool8 TryParseCreateObject(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link);
 bool8 TryParseDestroyObject(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link);
 bool8 TryParseHashtableHasKey(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link);
@@ -326,6 +372,7 @@ CFunctionEntry* FuncDeclaration(CScriptContext* script_context, CNamespace* nsen
 const char* GetAssOperatorString(eAssignOpType assop);
 const char* GetBinOperatorString(eBinaryOpType bin_op);
 const char* GetUnaryOperatorString(eUnaryOpType unary_op);
+const char* GetMathUnaryFuncString(eMathUnaryFunctionType math_unary_func_type);
 
 bool8 DumpFile(const char* filename);
 

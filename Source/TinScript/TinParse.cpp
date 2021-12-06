@@ -167,12 +167,85 @@ eUnaryOpType GetUnaryOpType(const char* token, int32 length)
 	return UNARY_NULL;
 }
 
+// -- math parsing ----------------------------------------------------------------------------------------------------
+
+static const char* gMathConstantKeywords[] =
+{
+    #define MathKeywordConstantEntry(a, b) #a,
+    MathKeywordConstantTuple
+    #undef MathKeywordConstantEntry
+};
+
+static const char* gMathConstantStringValues[] =
+{
+    #define MathKeywordConstantEntry(a, b) #b,
+    MathKeywordConstantTuple
+    #undef MathKeywordConstantEntry
+};
+
+static int32 gMathConstantsCount = sizeof(gMathConstantKeywords) / sizeof(const char*);
+
+const char* GetMathConstant(const char* token, size_t token_length)
+{
+    // sanity check
+    if (token == nullptr)
+        return nullptr;
+
+    for (int32 i = 0; i < gMathConstantsCount; ++i)
+    {
+        if (strlen(gMathConstantKeywords[i]) != token_length)
+            continue;
+
+        if (!strncmp(token, gMathConstantKeywords[i], token_length))
+            return gMathConstantStringValues[i];
+    }
+
+    // -- not found
+    return nullptr;
+}
+
+static const char* gMathUnaryFunctionKeywords[] =
+{
+    #define MathKeywordUnaryEntry(a, b) #a,
+    MathKeywordUnaryTuple
+    #undef MathKeywordUnaryEntry
+};
+
+eMathUnaryFunctionType GetMathUnaryFunction(const char* token, size_t token_length)
+{
+    if (token == nullptr)
+        return MATH_UNARY_FUNC_COUNT;
+
+    for (int32 i = 0; i < (int32)MATH_UNARY_FUNC_COUNT; ++i)
+    {
+        if (!strncmp(token, gMathUnaryFunctionKeywords[i], token_length))
+        {
+            return (eMathUnaryFunctionType)i;
+        }
+    }
+
+    // -- not found
+    return MATH_UNARY_FUNC_COUNT;
+}
+
+static int32 gMathUnaryFunctionCount = sizeof(gMathUnaryFunctionKeywords) / sizeof(const char*);
+
+const char* GetMathUnaryFuncString(eMathUnaryFunctionType math_unary_func_type)
+{
+    return gMathUnaryFunctionKeywords[math_unary_func_type];
+}
+
 // ====================================================================================================================
 // -- reserved keywords
 const char* gReservedKeywords[KEYWORD_COUNT] =
 {
 	#define ReservedKeywordEntry(a) #a,
+    #define MathKeywordUnaryEntry(a, b) #a,
+
 	ReservedKeywordTuple
+    MathKeywordUnaryTuple
+
+    #undef MathKeywordUnaryEntry
 	#undef ReservedKeywordEntry
 };
 
@@ -227,6 +300,26 @@ bool8 IsFirstClassValue(eTokenType type, eVarType& vartype)
     }
 
     return (false);
+}
+
+// ====================================================================================================================
+bool8 IsMathConstant(tReadToken& ref_token, const char*& str_value)
+{
+    // -- math constants are parsed as strings
+    tReadToken math_token(ref_token);
+    if (ref_token.type != TOKEN_IDENTIFIER)
+        return false;
+
+    const char* math_str_value = GetMathConstant(math_token.tokenptr, math_token.length);
+    if (math_str_value != nullptr)
+    {
+        ref_token.tokenptr += ref_token.length;
+        str_value = math_str_value;
+        return true;
+    }
+
+    // -- not a math constant
+    return false;
 }
 
 bool8 IsAssignBinOp(eOpCode optype)
@@ -2098,6 +2191,20 @@ bool8 TryParseExpression(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTre
     if (TryParseCreateObject(codeblock, filebuf, exprlink))
         return (true);
 
+    // -- all math constants are float, and the method will use the const char* from the
+    // constants definition, not the actual token...
+    float math_constant = 0.0f;
+    const char* math_constant_str = nullptr;
+    if (IsMathConstant(firsttoken, math_constant_str))
+    {
+        // -- committed to value
+        filebuf = firsttoken;
+
+		CValueNode* valuenode = TinAlloc(ALLOC_TreeNode, CValueNode, codeblock, exprlink, filebuf.linenumber,
+                                         math_constant_str, strlen(math_constant_str), false, TYPE_float);
+        return (true);
+    }
+
     // -- a first class value that is *not* an integer completes an expression
     // -- (an integer can be followed by a dereference operator, and then it becomes an object ID)
     eVarType firstclassvartype;
@@ -2120,11 +2227,15 @@ bool8 TryParseExpression(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTre
     if (TryParseHash(codeblock, filebuf, exprlink))
         return (true);
 
-	// -- a count() completes an expression
+	// -- a array_count() completes an expression
 	if (TryParseArrayCount(codeblock, filebuf, exprlink))
 		return (true);
 
-	// -- a hashtable_haskey() completes an expression
+    // -- a abs() completes an expression
+    if (TryParseMathUnaryFunction(codeblock, filebuf, exprlink))
+        return (true);
+
+    // -- a hashtable_haskey() completes an expression
 	if (TryParseHashtableHasKey(codeblock, filebuf, exprlink))
 		return (true);
 
@@ -4033,7 +4144,7 @@ bool8 TryParseHash(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*
 }
 
 // ====================================================================================================================
-// TryParseArrayCount():  The keyword "count" has a well defined syntax.
+// TryParseArrayCount():  The keyword "array_count" has a well defined syntax.
 // ====================================================================================================================
 bool8 TryParseArrayCount(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link)
 {
@@ -4251,6 +4362,61 @@ bool8 TryParseType(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*
 
 	// -- update the file buf
 	filebuf = peektoken;
+
+	// -- success
+	return (true);
+}
+
+// ====================================================================================================================
+// TryParseMathUnaryFUnction():  The keyword "abs" is a unary function.
+// ====================================================================================================================
+bool8 TryParseMathUnaryFunction(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link)
+{
+	// -- ensure the next token is the 'hash' keyword
+	tReadToken peektoken(filebuf);
+	if (!GetToken(peektoken) || peektoken.type != TOKEN_KEYWORD)
+		return (false);
+
+    eMathUnaryFunctionType math_unary_type = GetMathUnaryFunction(peektoken.tokenptr, peektoken.length);
+    if (math_unary_type == MATH_UNARY_FUNC_COUNT)
+        return (false);
+
+    filebuf = peektoken;
+
+    // -- next token better be an open parenthesis
+    if (!GetToken(filebuf) || (filebuf.type != TOKEN_PAREN_OPEN))
+    {
+        ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
+            "Error - expecting '('\n");
+        return (false);
+    }
+
+    // -- increment the paren depth
+    ++gGlobalExprParenDepth;
+
+	// -- create the Math function node, leftchild is statement resolving to a float arg for the math function
+	CMathUnaryFuncNode* math_func_node = TinAlloc(ALLOC_TreeNode, CMathUnaryFuncNode, codeblock, link,
+											      filebuf.linenumber, math_unary_type);
+
+	// -- ensure we have a statement to fill the left child
+	bool8 result = TryParseStatement(codeblock, filebuf, math_func_node->leftchild);
+	if (!result || !math_func_node->leftchild)
+	{
+		ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
+			          "Error - %s() requires a numerical expression\n", GetMathUnaryFuncString(math_unary_type));
+		return (false);
+	}
+
+    // -- consume the closing parenthesis
+    if (!GetToken(filebuf) || filebuf.type != TOKEN_PAREN_CLOSE)
+    {
+        ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
+            filebuf.linenumber, "Error - expecting ')'\n");
+        return (false);
+    }
+
+    // -- decrement the paren depth
+    --gGlobalExprParenDepth;
 
 	// -- success
 	return (true);
@@ -4535,7 +4701,7 @@ bool8 TryParseDestroyObject(CCodeBlock* codeblock, tReadToken& filebuf, CCompile
     if (gGlobalDestroyStatement)
         return (false);
 
-    // -- disallow return statments while in the middle of parenthetical expressions
+    // -- disallow return statements while in the middle of parenthetical expressions
     // -- (at least until I can think of a valid example)
     if (gGlobalExprParenDepth > 0)
         return (false);

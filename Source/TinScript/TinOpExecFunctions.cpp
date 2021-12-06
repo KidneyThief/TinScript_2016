@@ -28,6 +28,8 @@
 #include <string.h>
 #include <stdio.h>
 
+#include <functional>
+
 // -- includes
 #include "TinScript.h"
 #include "TinCompile.h"
@@ -2806,6 +2808,58 @@ bool8 OpExecArrayCopy(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExec
 {
     // $$$TZA implement me!
 	return (false);
+}
+
+// ====================================================================================================================
+// OpExecMathUnaryFunc():  Pops the top float value, and performs the math function (e.g. abs()), pushes the result
+// ====================================================================================================================
+
+using MathUnaryFunc = std::function<float(float)>;
+MathUnaryFunc gMathUnaryFunctionTable[] =
+{
+    #define MathKeywordUnaryEntry(a, b) b,
+    MathKeywordUnaryTuple
+    #undef MathKeywordUnaryEntry
+};
+
+bool8 OpExecMathUnaryFunc(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExecStack& execstack,
+	                      CFunctionCallStack& funccallstack)
+{
+	// -- pull the array variable off the stack
+	CVariableEntry* ve = NULL;
+	CObjectEntry* oe = NULL;
+	eVarType valtype;
+	void* valaddr = execstack.Pop(valtype);
+	if (!GetStackValue(cb->GetScriptContext(), execstack, funccallstack, valaddr, valtype, ve, oe))
+	{
+		DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
+					    "Error - ExecStack should contain an array variable\n");
+		return false;
+	}
+
+    eMathUnaryFunctionType math_func_type = (eMathUnaryFunctionType )*instrptr++;
+
+    // -- convert the value to an int (the only valid type a bit-invert operator is implemented for)
+    void* convertaddr = TypeConvert(cb->GetScriptContext(), valtype, valaddr, TYPE_float);
+    if (!convertaddr)
+    {
+        DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
+            "Error - unable to convert from type %s to type TYPE_float, performing op: %s\n",
+            gRegisteredTypeNames[valtype], GetOperationString(op));
+        return false;
+    }
+
+    float float_val = *(float*)(convertaddr);
+
+    // -- perform the math unary op
+    float_val = gMathUnaryFunctionTable[math_func_type](float_val);
+
+    // -- push the result
+    execstack.Push(&float_val, TYPE_float);
+
+	DebugTrace(op, "%s() result: %.4f", GetMathUnaryFuncString(math_func_type), float_val);
+
+	return (true);
 }
 
 // ====================================================================================================================

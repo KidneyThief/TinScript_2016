@@ -35,6 +35,7 @@
 
 // -- platform includes
 #include <Windows.h>
+#include <chrono>
 
 #include "mathutil.h"
 
@@ -1064,23 +1065,25 @@ REGISTER_FUNCTION(BeginUnitTests, BeginUnitTests);
 REGISTER_FUNCTION(BeginMultiThreadTest, BeginMultiThreadTest);
 
 // -- useful for profiling
-void BeginProfilingTests()
+void BeginProfilingTests(int loop_count)
 {
     TinScript::ExecScript(kProfilingTestScriptName);
 
     uint32 func_hash = TinScript::Hash("CallFromCode");
 
     TinPrint(TinScript::GetContext(), "TinScript Start CallMe()\n");
-    int count = 10000;
-    int32 cur_time = GetTickCount();
-    for (int i = 0; i < count; ++i)
+
+    auto time_start = std::chrono::high_resolution_clock::now();
+    for (int i = 0; i < loop_count; ++i)
     {
         int32 result = 0;
         //TinScript::ExecF(result, "CallMe();", 56, 24);
         TinScript::ExecFunction(result, func_hash, 56, 24, "cat ");
     }
-    int32 elapsed = GetTickCount() - cur_time;
-    TinPrint(TinScript::GetContext(), "TinScript time: %d\n", elapsed);
+    auto time_stop = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double, std::micro> elapsed_mirco = time_stop - time_start;
+
+    TinPrint(TinScript::GetContext(), "TinScript time: %lf\n", elapsed_mirco.count());
 }
 
 REGISTER_FUNCTION(BeginProfilingTests, BeginProfilingTests);

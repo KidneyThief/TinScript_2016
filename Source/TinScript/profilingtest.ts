@@ -80,7 +80,15 @@ void vector_test(int count, vector3f pos)
 // --------------------------------------------------------------------------------------------------------------------
 int CallFromCode(int a, int b, string foo)
 {
-    return (a * b);
+    float neg_pi = -pi;
+    float sum = 0;
+    int i = 0;
+    for (i = 0; i < 10000; ++i)
+    {
+        sum += abs(-pi);
+    }
+
+    Print("### Call From Code() result: ", sum);
 }
 
 int CallMe()
