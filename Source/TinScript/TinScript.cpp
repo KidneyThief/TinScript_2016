@@ -344,7 +344,21 @@ CScriptContext::CScriptContext(TinPrintHandler printfunction, TinAssertHandler a
     CRegFunctionBase* regfunc = CRegFunctionBase::gRegistrationList;
     while (regfunc != NULL)
     {
-        regfunc->Register();
+        if (!regfunc->Register())
+        {
+            if (regfunc->GetClassNameHash() != 0)
+            {
+                TinPrint(this, "Failed to register method %s::%s()",
+                              TinScript::UnHash(regfunc->GetClassNameHash()), TinScript::UnHash(regfunc->GetFunctionNameHash()));
+                assert(0);
+            }
+            else
+            {
+                TinPrint(this, "Failed to register function %s()",
+                              TinScript::UnHash(regfunc->GetFunctionNameHash()));
+                assert(0);
+            }
+        }
         regfunc = regfunc->GetNext();
     }
 

@@ -25,6 +25,7 @@
 
 #include <tchar.h>
 #include <Windows.h>
+#include <iostream>
 
 #include <QApplication>
 #include <QPushButton>
@@ -402,6 +403,13 @@ int32 ConsolePrint(const char* fmt, ...)
     char buffer[2048];
     vsprintf_s(buffer, 2048, fmt, args);
     va_end(args);
+
+    // if we haven't created the console output yet... (e.g. message during registration...)
+    if (CConsoleWindow::GetInstance() == nullptr)
+    {
+        std::cout << "ConsolePrint: " << buffer << std::endl;
+        return 0;
+    }
 
     // -- if the last label exists, it means we want to append because it didn't end in a '\n'
     if (last_msg[0] != '\0')
@@ -1184,6 +1192,13 @@ void CConsoleWindow::AddText(char* msg)
     int length = strlen(msg);
     if(length > 0 && msg[length - 1] == '\n')
         msg[length - 1] = '\0';
+
+    // if we haven't created the console output yet... (e.g. message during registration...)
+    if (mConsoleOutput == nullptr)
+    {
+        std::cout << "ConsolePrint: " << msg << std::endl;
+        return;
+    }
 
     // -- add to the output window
     mConsoleOutput->addItem(msg);

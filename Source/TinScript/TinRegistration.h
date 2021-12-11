@@ -80,7 +80,7 @@ class CRegFunctionBase
 
         virtual void DispatchFunction(void*) = 0;
 
-        virtual void Register() = 0;
+        virtual bool Register() = 0;
         CRegFunctionBase* GetNext() { return (next); }
 
         static CRegFunctionBase* gRegistrationList;

@@ -71,11 +71,47 @@ struct sHashVarIndex
 // ====================================================================================================================
 // GetTypeID():  Returns a unique ID for a given type.
 // ====================================================================================================================
+
+// NOTE:  If the structure below doesn't compile without C++17, uncomment this version -
+// however, this version makes mixing T and const T signatures less convenient
+/*
 template <typename T>
 inline uint32 GetTypeID()
 {
     static T* t = NULL;
     void* ptr = (void*)&t;
+    return (kPointerToUInt32(ptr));
+}
+*/
+
+// -- note:  this will differentiate between types and pointers, but not of const-ness:
+//  e.g.  char, char* are different
+//  e.g.  char, const char, char const are the same
+//  e.g.  char*, const char*, char* const, and const char* const are all the same
+// it also only extends to pointers, but not pointers of pointers
+// e.g. char** and char** const, are the same
+// e.g. const char** adn const char** const are the same, but different from the above line
+
+template<typename C>
+struct tGetTypeStruct
+{
+    inline static const C* const t = nullptr;
+    inline static const C** const tt = nullptr;
+    static void* GetType() { return (void*)&t; }
+    static void* GetTypePointer() { return (void*)&tt; }
+};
+
+template <typename T, std::enable_if_t<!std::is_pointer<T>::value, bool> = true>
+uint32 GetTypeID()
+{
+    void* ptr = (void*)tGetTypeStruct<std::remove_const<T>::type>::GetType();
+    return (kPointerToUInt32(ptr));
+}
+
+template <typename T, std::enable_if_t<std::is_pointer<T>::value, bool> = true>
+uint32 GetTypeID()
+{
+    void* ptr = (void*)tGetTypeStruct<std::remove_const<std::remove_pointer<T>::type>::type>::GetTypePointer();
     return (kPointerToUInt32(ptr));
 }
 

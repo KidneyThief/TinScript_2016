@@ -747,12 +747,26 @@ void CDebugFunctionAssistWin::OnButtonCopyToConsolePressed()
     int cursor_pos = length;
 
     // -- fill in the parameters (starting with 1, as we don't include the return value)
-    for(int i = 1; i < assist_entry->mParameterCount; ++i)
+    for (int i = 1; i < assist_entry->mParameterCount; ++i)
     {
-        if(i != 1)
-            sprintf_s(buf_ptr,length_remaining,", %s",TinScript::GetRegisteredTypeName(assist_entry->mType[i]));
+        const char* type_name = TinScript::GetRegisteredTypeName(assist_entry->mType[i]);
+        if (type_name == nullptr)
+        {
+            if (mSearchObjectID > 0)
+                sprintf_s(buf, "%d.%s() has an invalid signature - REGISTER_METHOD() contains an unregistered param type",
+                    mSearchObjectID, assist_entry->mSearchName);
+            else
+                sprintf_s(buf, "%s() has an invalid signature - REGISTER_FUNCTION() contains an unregistered param type",
+                    assist_entry->mSearchName);
+
+            CConsoleWindow::GetInstance()->AddText(const_cast<char*>(buf));
+            return;
+        }
+
+        if (i != 1)
+            sprintf_s(buf_ptr, length_remaining, ", %s", type_name);
         else
-            strcpy_s(buf_ptr,length_remaining,TinScript::GetRegisteredTypeName(assist_entry->mType[i]));
+            strcpy_s(buf_ptr, length_remaining, type_name);
 
         // -- update the buf pointer,and the length remaining
         length = strlen(buf_ptr);

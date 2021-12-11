@@ -23,6 +23,7 @@
 // TinFunctionEntry.h:  Defines the classes for a registered function, type (script or code), context (parameters...)
 // ====================================================================================================================
 
+#include "integration.h"
 #include "TinFunctionEntry.h"
 #include "TinVariableEntry.h"
 #include "TinCompile.h"
@@ -76,6 +77,13 @@ bool8 CFunctionContext::AddParameter(const char* varname, uint32 varhash, eVarTy
         return (false);
     }
 
+    // -- if the parameter type is invalid,
+    if (paramindex >= 1 && type < FIRST_VALID_TYPE)
+    {
+        TinPrint(TinScript::GetContext(), "Error - invalid parameter %d", paramindex);
+        return false;
+    }
+
     // -- create the Variable entry
     CVariableEntry* ve = AddLocalVar(varname, varhash, type, array_size, true, is_thread_exec);
     if (!ve)
@@ -104,8 +112,7 @@ bool8 CFunctionContext::AddParameter(const char* varname, uint32 varhash, eVarTy
                                      uint32 actual_type_id, bool is_thread_exec)
 {
     // -- adding automatically increments the paramcount if needed
-    AddParameter(varname, varhash, type, array_size, paramcount, actual_type_id, is_thread_exec);
-    return (true);
+    return AddParameter(varname, varhash, type, array_size, paramcount, actual_type_id, is_thread_exec);
 }
 
 // ====================================================================================================================

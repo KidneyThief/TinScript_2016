@@ -250,13 +250,15 @@ def GenerateClasses(maxparamcount, outputfilename):
         outputfile.write("\n");
         
         outputfile.write("    // -- registration method\n");
-        outputfile.write("    virtual void Register() {\n");
+        outputfile.write("    virtual bool Register() {\n");
         outputfile.write("        CFunctionContext* fc = CreateContext();\n");
-        outputfile.write("        fc->AddParameter(\"__return\", Hash(\"__return\"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());\n");
+        outputfile.write("        bool success = true;\n");
+        outputfile.write("        success = fc->AddParameter(\"__return\", Hash(\"__return\"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>()) && success;\n");
         i = 1;
         while (i <= paramcount):
-            outputfile.write("        fc->AddParameter(\"_p%d\", Hash(\"_p%d\"), GetRegisteredType(GetTypeID<T%d>()), 1, GetTypeID<T%d>());\n" % (i, i, i, i));
+            outputfile.write("        success = fc->AddParameter(\"_p%d\", Hash(\"_p%d\"), GetRegisteredType(GetTypeID<T%d>()), 1, GetTypeID<T%d>()) && success;\n" % (i, i, i, i));
             i = i + 1;
+        outputfile.write("        return (success);\n");
         outputfile.write("    }\n");
         outputfile.write("\n");
         outputfile.write("private:\n");
@@ -356,14 +358,16 @@ def GenerateClasses(maxparamcount, outputfilename):
         outputfile.write("\n");
         
         outputfile.write("    // -- registration method\n");
-        outputfile.write("    virtual void Register() {\n");
+        outputfile.write("    virtual bool Register() {\n");
         outputfile.write("        CFunctionContext* fc = CreateContext();\n");
-        outputfile.write("        fc->AddParameter(\"__return\", Hash(\"__return\"), TYPE_void, 1, 0);\n");
+        outputfile.write("        bool success = true;\n");
+        outputfile.write("        success = fc->AddParameter(\"__return\", Hash(\"__return\"), TYPE_void, 1, 0) && success;\n");
         i = 1;
         while (i <= paramcount):
-            outputfile.write("        fc->AddParameter(\"_p%d\", Hash(\"_p%d\"), GetRegisteredType(GetTypeID<T%d>()), 1, GetTypeID<T%d>());\n" % (i, i, i, i));
+            outputfile.write("        success = fc->AddParameter(\"_p%d\", Hash(\"_p%d\"), GetRegisteredType(GetTypeID<T%d>()), 1, GetTypeID<T%d>()) && success;\n" % (i, i, i, i));
             i = i + 1;
         outputfile.write("\n");
+        outputfile.write("        return (success);\n");
         outputfile.write("    }\n");
         outputfile.write("\n");
         outputfile.write("private:\n");
@@ -453,14 +457,16 @@ def GenerateClasses(maxparamcount, outputfilename):
         outputfile.write("\n");
         
         outputfile.write("    // -- registration method\n");
-        outputfile.write("    virtual void Register() {\n");
+        outputfile.write("    virtual bool Register() {\n");
         outputfile.write("        CFunctionContext* fc = CreateContext();\n");
-        outputfile.write("        fc->AddParameter(\"__return\", Hash(\"__return\"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());\n");
+        outputfile.write("        bool success = true;\n");
+        outputfile.write("        success = fc->AddParameter(\"__return\", Hash(\"__return\"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>()) && success;\n");
         i = 1;
         while (i <= paramcount):
-            outputfile.write("        fc->AddParameter(\"_p%d\", Hash(\"_p%d\"), GetRegisteredType(GetTypeID<T%d>()), 1, GetTypeID<T%d>());\n" % (i, i, i, i));
+            outputfile.write("        success = fc->AddParameter(\"_p%d\", Hash(\"_p%d\"), GetRegisteredType(GetTypeID<T%d>()), 1, GetTypeID<T%d>()) && success;\n" % (i, i, i, i));
             i = i + 1;
         outputfile.write("\n");
+        outputfile.write("        return (success);\n");
         outputfile.write("    }\n");
         outputfile.write("\n");
         outputfile.write("private:\n");
@@ -553,14 +559,16 @@ def GenerateClasses(maxparamcount, outputfilename):
         outputfile.write("\n");
         
         outputfile.write("    // -- registration method\n");
-        outputfile.write("    virtual void Register() {\n");
+        outputfile.write("    virtual bool Register() {\n");
         outputfile.write("        CFunctionContext* fc = CreateContext();\n");
-        outputfile.write("        fc->AddParameter(\"__return\", Hash(\"__return\"), TYPE_void, 1, 0);\n");
+        outputfile.write("        bool success = true;\n");
+        outputfile.write("        success = fc->AddParameter(\"__return\", Hash(\"__return\"), TYPE_void, 1, 0) && success;\n");
         i = 1;
         while (i <= paramcount):
-            outputfile.write("        fc->AddParameter(\"_p%d\", Hash(\"_p%d\"), GetRegisteredType(GetTypeID<T%d>()), 1, GetTypeID<T%d>());\n" % (i, i, i, i));
+            outputfile.write("        success = fc->AddParameter(\"_p%d\", Hash(\"_p%d\"), GetRegisteredType(GetTypeID<T%d>()), 1, GetTypeID<T%d>()) && success;\n" % (i, i, i, i));
             i = i + 1;
         outputfile.write("\n");
+        outputfile.write("        return (success);\n");
         outputfile.write("    }\n");
         outputfile.write("\n");
         outputfile.write("private:\n");
@@ -745,7 +753,7 @@ def GenerateVariadicClasses(maxparamcount, outputfilename):
         outputfile.write("\n");
         
         outputfile.write("    // -- registration method\n");
-        outputfile.write("    virtual void Register()\n    {\n");
+        outputfile.write("    virtual bool Register()\n    {\n");
 
         i = 1;
         while (i <= paramcount):
@@ -755,12 +763,14 @@ def GenerateVariadicClasses(maxparamcount, outputfilename):
             outputfile.write("\n");
 
         outputfile.write("        CFunctionContext* fc = CreateContext();\n");
-        outputfile.write("        fc->AddParameter(\"__return\", Hash(\"__return\"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());\n");
+        outputfile.write("        bool success = true;\n");
+        outputfile.write("        success = fc->AddParameter(\"__return\", Hash(\"__return\"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>()) && success;\n");
         i = 1;
         while (i <= paramcount):
-            outputfile.write("        fc->AddParameter(\"_p%d\", Hash(\"_p%d\"), GetRegisteredType(GetTypeID<T%d>()), 1, GetTypeID<T%d>());\n" % (i, i, i, i));
+            outputfile.write("        success = fc->AddParameter(\"_p%d\", Hash(\"_p%d\"), GetRegisteredType(GetTypeID<T%d>()), 1, GetTypeID<T%d>()) && success;\n" % (i, i, i, i));
             i = i + 1;
         outputfile.write("\n");
+        outputfile.write("        return (success);\n");
         outputfile.write("    }\n");
         outputfile.write("\n");
         outputfile.write("private:\n");
@@ -865,7 +875,7 @@ def GenerateVariadicClasses(maxparamcount, outputfilename):
         outputfile.write("\n");
         
         outputfile.write("    // -- registration method\n");
-        outputfile.write("    virtual void Register()\n    {\n");
+        outputfile.write("    virtual bool Register()\n    {\n");
 
         i = 1;
         while (i <= paramcount):
@@ -875,14 +885,16 @@ def GenerateVariadicClasses(maxparamcount, outputfilename):
             outputfile.write("\n");
 
         outputfile.write("        CFunctionContext* fc = CreateContext();\n");
-        outputfile.write("        fc->AddParameter(\"__return\", Hash(\"__return\"), TYPE_void, 1, 0);\n");
+        outputfile.write("        bool success = true;\n");
+        outputfile.write("        success = fc->AddParameter(\"__return\", Hash(\"__return\"), TYPE_void, 1, 0) && success;\n");
         i = 1;
         while (i <= paramcount):
-            outputfile.write("        fc->AddParameter(\"_p%d\", Hash(\"_p%d\"), GetRegisteredType(GetTypeID<T%d>()), 1, GetTypeID<T%d>());\n" % (i, i, i, i));
+            outputfile.write("        success = fc->AddParameter(\"_p%d\", Hash(\"_p%d\"), GetRegisteredType(GetTypeID<T%d>()), 1, GetTypeID<T%d>()) && success;\n" % (i, i, i, i));
             i = i + 1;
         if (paramcount > 0):
             outputfile.write("\n");
 
+        outputfile.write("        return (success);\n");
         outputfile.write("    }\n");
         outputfile.write("\n");
         outputfile.write("private:\n");
@@ -992,7 +1004,7 @@ def GenerateVariadicClasses(maxparamcount, outputfilename):
         outputfile.write('\n');
 
         outputfile.write('    // -- registration method\n');
-        outputfile.write('    virtual void Register()\n');
+        outputfile.write('    virtual bool Register()\n');
         outputfile.write('    {\n');
 
         i = 1;
@@ -1003,15 +1015,17 @@ def GenerateVariadicClasses(maxparamcount, outputfilename):
             outputfile.write("\n");
 
         outputfile.write("        CFunctionContext* fc = CreateContext();\n");
-        outputfile.write('        fc->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>());\n');
+        outputfile.write("        bool success = true;\n");
+        outputfile.write('        success = fc->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>()) && success;\n');
 
         i = 1;
         while (i <= paramcount):
-            outputfile.write('        fc->AddParameter("_p%d", Hash("_p%d"), GetRegisteredType(GetTypeID<T%d>()), 1, GetTypeID<T%d>());\n' % (i, i, i, i));
+            outputfile.write('        success = fc->AddParameter("_p%d", Hash("_p%d"), GetRegisteredType(GetTypeID<T%d>()), 1, GetTypeID<T%d>()) && success;\n' % (i, i, i, i));
             i = i + 1;
         if (paramcount > 0):
             outputfile.write("\n");
 
+        outputfile.write("        return (success);\n");
         outputfile.write('    }\n');
         outputfile.write('\n');
         outputfile.write('private:\n');
@@ -1115,7 +1129,7 @@ def GenerateVariadicClasses(maxparamcount, outputfilename):
         outputfile.write('\n');
 
         outputfile.write('    // -- registration method\n');
-        outputfile.write('    virtual void Register()\n');
+        outputfile.write('    virtual bool Register()\n');
         outputfile.write('    {\n');
 
         i = 1;
@@ -1127,16 +1141,18 @@ def GenerateVariadicClasses(maxparamcount, outputfilename):
 
         outputfile.write('\n');
         outputfile.write("        CFunctionContext* fc = CreateContext();\n");
-        outputfile.write("        fc->AddParameter(\"__return\", Hash(\"__return\"), TYPE_void, 1, 0);\n");
+        outputfile.write("        bool success = true;\n");
+        outputfile.write("        success = fc->AddParameter(\"__return\", Hash(\"__return\"), TYPE_void, 1, 0) && success;\n");
 
         i = 1;
         while (i <= paramcount):
-            outputfile.write('        fc->AddParameter("_p%d", Hash("_p%d"), GetRegisteredType(GetTypeID<T%d>()), 1, GetTypeID<T%d>());\n' % (i, i, i, i));
+            outputfile.write('        success = fc->AddParameter("_p%d", Hash("_p%d"), GetRegisteredType(GetTypeID<T%d>()), 1, GetTypeID<T%d>()) && success;\n' % (i, i, i, i));
             i = i + 1;
         if (paramcount > 0):
             outputfile.write("\n");
 
         outputfile.write('\n');
+        outputfile.write("        return (success);\n");
         outputfile.write('    }\n');
         outputfile.write('\n');
         outputfile.write('private:\n');

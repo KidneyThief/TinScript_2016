@@ -1252,6 +1252,18 @@ REGISTER_FUNCTION(VoidStr1, VoidStr1)
 REGISTER_METHOD(CBase, TestP1, TestP1)
 REGISTER_METHOD(CBase, VoidP1, VoidP1)
 
+/*
+class Foo
+{
+};
+
+void TestBadParam(Foo* my_foo)
+{
+}
+
+REGISTER_FUNCTION(TestBadParam, TestBadParam);
+*/
+
 // ------------------------------------------------------------------------------------------------
 // eof
 // ------------------------------------------------------------------------------------------------
