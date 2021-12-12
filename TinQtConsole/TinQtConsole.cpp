@@ -148,13 +148,16 @@ CConsoleWindow::CConsoleWindow()
     spacer_0->setFixedWidth(16);
     mButtonRun = new QPushButton();
     mButtonRun->setText("Run");
-    mButtonRun->setGeometry(0, 0, 32, CConsoleWindow::FontHeight()); 
-    mButtonStep = new QPushButton();
-    mButtonStep->setText("Step");
-	mButtonStep->setGeometry(0, 0, 32, CConsoleWindow::FontHeight());
+    mButtonRun->setGeometry(0, 0, 24, CConsoleWindow::FontHeight()); 
     mButtonStepIn = new QPushButton();
     mButtonStepIn->setText("Step In");
-	mButtonStepIn->setGeometry(0, 0, 32, CConsoleWindow::FontHeight());
+    mButtonStepIn->setGeometry(0, 0, 24, CConsoleWindow::FontHeight());
+    mButtonStep = new QPushButton();
+    mButtonStep->setText("Step");
+	mButtonStep->setGeometry(0, 0, 24, CConsoleWindow::FontHeight());
+    mButtonStepOut = new QPushButton();
+    mButtonStepOut->setText("Step Out");
+    mButtonStepOut->setGeometry(0, 0, 24, CConsoleWindow::FontHeight());
     QWidget* spacer_1 = new QWidget();
     spacer_1->setFixedWidth(16);
     QLabel* find_label = new QLabel("Find:");
@@ -186,8 +189,9 @@ CConsoleWindow::CConsoleWindow()
     toolbar->addWidget(mButtonExec);
     toolbar->addWidget(spacer_0);
     toolbar->addWidget(mButtonRun);
-    toolbar->addWidget(mButtonStep);
     toolbar->addWidget(mButtonStepIn);
+    toolbar->addWidget(mButtonStep);
+    toolbar->addWidget(mButtonStepOut);
     toolbar->addWidget(spacer_1);
     toolbar->addWidget(find_label);
     toolbar->addWidget(spacer_1a);
@@ -272,8 +276,9 @@ CConsoleWindow::CConsoleWindow()
 
     QObject::connect(mButtonExec, SIGNAL(clicked()), mConsoleInput, SLOT(OnButtonExecPressed()));
     QObject::connect(mButtonRun, SIGNAL(clicked()), mConsoleInput, SLOT(OnButtonRunPressed()));
-    QObject::connect(mButtonStep, SIGNAL(clicked()), mConsoleInput, SLOT(OnButtonStepPressed()));
     QObject::connect(mButtonStepIn, SIGNAL(clicked()), mConsoleInput, SLOT(OnButtonStepInPressed()));
+    QObject::connect(mButtonStep, SIGNAL(clicked()), mConsoleInput, SLOT(OnButtonStepPressed()));
+    QObject::connect(mButtonStepOut, SIGNAL(clicked()), mConsoleInput, SLOT(OnButtonStepOutPressed()));
 
     QObject::connect(mFindLineEdit, SIGNAL(returnPressed()), mConsoleInput,
                                     SLOT(OnFindEditReturnPressed()));
@@ -299,16 +304,16 @@ CConsoleWindow::CConsoleWindow()
     QShortcut* shortcut_Run = new QShortcut(QKeySequence("F5"), mButtonRun);
     QObject::connect(shortcut_Run, SIGNAL(activated()), mConsoleInput, SLOT(OnButtonRunPressed()));
 
-    // F10 - Step
-    QShortcut* shortcut_Step = new QShortcut(QKeySequence("F10"), mButtonStep);
-    QObject::connect(shortcut_Step, SIGNAL(activated()), mConsoleInput, SLOT(OnButtonStepPressed()));
-
     // F11 - Step In
     QShortcut* shortcut_StepIn = new QShortcut(QKeySequence("F11"), mButtonStepIn);
     QObject::connect(shortcut_StepIn, SIGNAL(activated()), mConsoleInput, SLOT(OnButtonStepInPressed()));
 
+    // F10 - Step
+    QShortcut* shortcut_Step = new QShortcut(QKeySequence("F10"), mButtonStep);
+    QObject::connect(shortcut_Step, SIGNAL(activated()), mConsoleInput, SLOT(OnButtonStepPressed()));
+
     // Shift + F11 - Step Out
-    QShortcut* shortcut_StepOut = new QShortcut(QKeySequence("Shift+F11"), mButtonStepIn);
+    QShortcut* shortcut_StepOut = new QShortcut(QKeySequence("Shift+F11"), mButtonStepOut);
     QObject::connect(shortcut_StepOut, SIGNAL(activated()), mConsoleInput, SLOT(OnButtonStepOutPressed()));
 
     // Ctrl + h - Command input history
@@ -659,7 +664,7 @@ void CConsoleWindow::HandleBreakpointHit(const char* breakpoint_msg)
     {
         QCoreApplication::processEvents();
 
-        // -- update our own environment, especially receiving data packetes
+        // -- update our own environment, especially receiving data packets
         GetOutput()->DebuggerUpdate();
     }
 

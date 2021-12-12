@@ -145,8 +145,9 @@ class CConsoleWindow
         QLineEdit* mFileLineEdit;
         QPushButton* mButtonExec;
         QPushButton* mButtonRun;
-        QPushButton* mButtonStep;
         QPushButton* mButtonStepIn;
+        QPushButton* mButtonStep;
+        QPushButton* mButtonStepOut;
         QLineEdit* mFindLineEdit;
         QLabel* mFindResult;
         QLineEdit* mUnhashLineEdit;
