@@ -84,6 +84,7 @@ class CWhileLoopNode;
 	CompileNodeTypeEntry(ArrayCount)		    \
 	CompileNodeTypeEntry(ArrayCopy)		        \
 	CompileNodeTypeEntry(MathUnaryFunc)			\
+	CompileNodeTypeEntry(MathBinaryFunc)			\
 	CompileNodeTypeEntry(HashtableHasKey)		\
 	CompileNodeTypeEntry(HashtableCopy)	    	\
 	CompileNodeTypeEntry(HashtableIter)		    \
@@ -182,6 +183,7 @@ const char* GetNodeTypeString(ECompileNodeType nodetype);
 	OperationEntry(ArrayCount)		    \
 	OperationEntry(ArrayCopy)		    \
 	OperationEntry(MathUnaryFunc)		\
+	OperationEntry(MathBinaryFunc)		\
 	OperationEntry(HashtableHasKey)		\
 	OperationEntry(HashtableCopy)		\
 	OperationEntry(HashtableIter)		\
@@ -786,6 +788,23 @@ public:
 protected:
 	CMathUnaryFuncNode() { }
 	eMathUnaryFunctionType mFuncType;
+};
+
+// ====================================================================================================================
+// class CMathBinaryFuncNode:  Parse tree node, executes a math function (e.g. min()), taking a two float args
+// ====================================================================================================================
+class CMathBinaryFuncNode : public CCompileTreeNode
+{
+public:
+	CMathBinaryFuncNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber,
+						eMathBinaryFunctionType func_type);
+	virtual int32 Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
+
+	virtual bool8 CompileToC(int32 indent, char*& out_buffer, int32& max_size, bool root_node) const;
+
+protected:
+	CMathBinaryFuncNode() { }
+	eMathBinaryFunctionType mFuncType;
 };
 
 // ====================================================================================================================

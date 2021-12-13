@@ -173,17 +173,7 @@ constexpr float _2_PI = _PI * 2.0f;
 #define MathKeywordConstantTuple				\
 	MathKeywordConstantEntry(pi, 3.1415926535f)	\
 
-/*
-#define MathKeywordBinaryTuple					\
-	MathKeywordBinaryEntry(min)                 \
-	MathKeywordBinaryEntry(max)                 \
-	MathKeywordBinaryEntry(pow)                 \
-	MathKeywordBinaryEntry(exp)                 \
-	MathKeywordBinaryEntry(log)                 \
-	MathKeywordBinaryEntry(atan2)               \
-*/
-
-#define MathKeywordUnaryTuple					\
+#define MathKeywordUnaryTuple																					\
 	MathKeywordUnaryEntry(abs,		[](float inValue) { return (inValue >= 0.0f ? inValue : -inValue); })		\
 	MathKeywordUnaryEntry(floor,	[](float inValue) { return (float)floor(inValue); } )						\
 	MathKeywordUnaryEntry(ceil,		[](float inValue) { return (float)ceil(inValue); } )						\
@@ -198,6 +188,9 @@ constexpr float _2_PI = _PI * 2.0f;
 	MathKeywordUnaryEntry(atan,		[](float inValue) { return(float)atan(inValue); } )							\
 	MathKeywordUnaryEntry(sqr,		[](float inValue) { return inValue * inValue; } )							\
 	MathKeywordUnaryEntry(sqrt,		[](float inValue) { return (float)sqrt(inValue); } )						\
+	MathKeywordUnaryEntry(exp,		[](float inValue) { return (float)exp(inValue); } )							\
+	MathKeywordUnaryEntry(loge,		[](float inValue) { return (float)log(inValue); } )							\
+	MathKeywordUnaryEntry(log10,	[](float inValue) { return (float)log10(inValue); } )						\
 
 enum eMathUnaryFunctionType
 {
@@ -205,6 +198,20 @@ enum eMathUnaryFunctionType
 	MathKeywordUnaryTuple
 	#undef MathKeywordUnaryEntry
     MATH_UNARY_FUNC_COUNT
+};
+
+#define MathKeywordBinaryTuple																		\
+	MathKeywordBinaryEntry(min,		[](float a, float b) { return a < b ? a : b; } )				\
+	MathKeywordBinaryEntry(max,		[](float a, float b) { return a > b ? a : b; } )				\
+	MathKeywordBinaryEntry(pow,		[](float a, float b) { return (float)pow(a, b); } )				\
+	MathKeywordBinaryEntry(atan2,	[](float a, float b) { return (float)atan2(a, b); } )			\
+
+enum eMathBinaryFunctionType
+{
+	#define MathKeywordBinaryEntry(a, b) eMathBinary_##a,
+	MathKeywordBinaryTuple
+	#undef MathKeywordBinaryEntry
+    MATH_BINARY_FUNC_COUNT
 };
 
 // --------------------------------------------------------------------------------------------------------------------
@@ -244,10 +251,13 @@ enum eReservedKeyword
 {
 	#define ReservedKeywordEntry(a) KEYWORD_##a,
 	#define MathKeywordUnaryEntry(a, b) KEYWORD_##a,
+	#define MathKeywordBinaryEntry(a, b) KEYWORD_##a,
 
 	ReservedKeywordTuple
 	MathKeywordUnaryTuple
+    MathKeywordBinaryTuple
 
+	#undef MathKeywordBinaryEntry
 	#undef MathKeywordUnaryEntry
 	#undef ReservedKeywordEntry
 
@@ -343,6 +353,7 @@ bool8 TryParseArrayCount(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTre
 bool8 TryParseArrayCopy(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link);
 bool8 TryParseSchedule(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link);
 bool8 TryParseMathUnaryFunction(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link);
+bool8 TryParseMathBinaryFunction(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link);
 bool8 TryParseCreateObject(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link);
 bool8 TryParseDestroyObject(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link);
 bool8 TryParseHashtableHasKey(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link);
@@ -373,6 +384,7 @@ const char* GetAssOperatorString(eAssignOpType assop);
 const char* GetBinOperatorString(eBinaryOpType bin_op);
 const char* GetUnaryOperatorString(eUnaryOpType unary_op);
 const char* GetMathUnaryFuncString(eMathUnaryFunctionType math_unary_func_type);
+const char* GetMathBinaryFuncString(eMathBinaryFunctionType math_unary_func_type);
 
 bool8 DumpFile(const char* filename);
 

@@ -167,7 +167,7 @@ eUnaryOpType GetUnaryOpType(const char* token, int32 length)
 	return UNARY_NULL;
 }
 
-// -- math parsing ----------------------------------------------------------------------------------------------------
+// -- math parsing (constants) ----------------------------------------------------------------------------------------
 
 static const char* gMathConstantKeywords[] =
 {
@@ -204,6 +204,8 @@ const char* GetMathConstant(const char* token, size_t token_length)
     return nullptr;
 }
 
+// -- math parsing (unary) --------------------------------------------------------------------------------------------
+
 static const char* gMathUnaryFunctionKeywords[] =
 {
     #define MathKeywordUnaryEntry(a, b) #a,
@@ -235,16 +237,52 @@ const char* GetMathUnaryFuncString(eMathUnaryFunctionType math_unary_func_type)
     return gMathUnaryFunctionKeywords[math_unary_func_type];
 }
 
+// -- math parsing (binary) -------------------------------------------------------------------------------------------
+
+static const char* gMathBinaryFunctionKeywords[] =
+{
+    #define MathKeywordBinaryEntry(a, b) #a,
+    MathKeywordBinaryTuple
+    #undef MathKeywordBinaryEntry
+};
+
+eMathBinaryFunctionType GetMathBinaryFunction(const char* token, size_t token_length)
+{
+    if (token == nullptr)
+        return MATH_BINARY_FUNC_COUNT;
+
+    for (int32 i = 0; i < (int32)MATH_BINARY_FUNC_COUNT; ++i)
+    {
+        if (!strncmp(token, gMathBinaryFunctionKeywords[i], token_length))
+        {
+            return (eMathBinaryFunctionType)i;
+        }
+    }
+
+    // -- not found
+    return MATH_BINARY_FUNC_COUNT;
+}
+
+static int32 gMathBinaryFunctionCount = sizeof(gMathBinaryFunctionKeywords) / sizeof(const char*);
+
+const char* GetMathBinaryFuncString(eMathBinaryFunctionType math_binary_func_type)
+{
+    return gMathBinaryFunctionKeywords[math_binary_func_type];
+}
+
 // ====================================================================================================================
 // -- reserved keywords
 const char* gReservedKeywords[KEYWORD_COUNT] =
 {
 	#define ReservedKeywordEntry(a) #a,
     #define MathKeywordUnaryEntry(a, b) #a,
+    #define MathKeywordBinaryEntry(a, b) #a,
 
 	ReservedKeywordTuple
     MathKeywordUnaryTuple
+    MathKeywordBinaryTuple
 
+    #undef MathKeywordBinaryEntry
     #undef MathKeywordUnaryEntry
 	#undef ReservedKeywordEntry
 };
@@ -2233,6 +2271,10 @@ bool8 TryParseExpression(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTre
 
     // -- a abs() completes an expression
     if (TryParseMathUnaryFunction(codeblock, filebuf, exprlink))
+        return (true);
+
+    // -- a min() completes an expression
+    if (TryParseMathBinaryFunction(codeblock, filebuf, exprlink))
         return (true);
 
     // -- a hashtable_haskey() completes an expression
@@ -4412,6 +4454,78 @@ bool8 TryParseMathUnaryFunction(CCodeBlock* codeblock, tReadToken& filebuf, CCom
     {
         ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
             filebuf.linenumber, "Error - expecting ')'\n");
+        return (false);
+    }
+
+    // -- decrement the paren depth
+    --gGlobalExprParenDepth;
+
+	// -- success
+	return (true);
+}
+
+// ====================================================================================================================
+// TryParseMathBinaryFunction():  The keyword "min" is a binary function.
+// ====================================================================================================================
+bool8 TryParseMathBinaryFunction(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link)
+{
+	// -- ensure the next token is the 'hash' keyword
+	tReadToken peektoken(filebuf);
+	if (!GetToken(peektoken) || peektoken.type != TOKEN_KEYWORD)
+		return (false);
+
+    eMathBinaryFunctionType math_binary_type = GetMathBinaryFunction(peektoken.tokenptr, peektoken.length);
+    if (math_binary_type == MATH_BINARY_FUNC_COUNT)
+        return (false);
+
+    filebuf = peektoken;
+
+    // -- next token better be an open parenthesis
+    if (!GetToken(filebuf) || (filebuf.type != TOKEN_PAREN_OPEN))
+    {
+        ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
+            "Error - expecting '('\n");
+        return (false);
+    }
+
+    // -- increment the paren depth
+    ++gGlobalExprParenDepth;
+
+	// -- create the Math function node, leftchild is statement resolving to a float arg for the math function
+	CMathBinaryFuncNode* math_func_node = TinAlloc(ALLOC_TreeNode, CMathBinaryFuncNode, codeblock, link,
+											       filebuf.linenumber, math_binary_type);
+
+	// -- ensure we have a statement to fill the left child
+	bool8 result = TryParseStatement(codeblock, filebuf, math_func_node->leftchild);
+	if (!result || !math_func_node->leftchild)
+	{
+		ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
+			          "Error - %s() requires a numerical expression\n", GetMathBinaryFuncString(math_binary_type));
+		return (false);
+	}
+
+    // -- consume the comma
+    if (!GetToken(filebuf) || filebuf.type != TOKEN_COMMA)
+    {
+        ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
+                      filebuf.linenumber, "Error - expecting ','\n");
+        return (false);
+    }
+
+	// -- ensure we have a statement to fill the left child
+	result = TryParseStatement(codeblock, filebuf, math_func_node->rightchild);
+	if (!result || !math_func_node->rightchild)
+	{
+		ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
+			          "Error - %s() requires a numerical expression\n", GetMathBinaryFuncString(math_binary_type));
+		return (false);
+	}
+
+    // -- consume the closing parenthesis
+    if (!GetToken(filebuf) || filebuf.type != TOKEN_PAREN_CLOSE)
+    {
+        ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
+                      filebuf.linenumber, "Error - expecting ')'\n");
         return (false);
     }
 

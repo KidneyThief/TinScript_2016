@@ -3035,6 +3035,71 @@ bool8 CMathUnaryFuncNode::CompileToC(int32 indent, char*& out_buffer, int32& max
     return (true);
 }
 
+// == class CMathBinaryFuncNode =======================================================================================
+
+// ====================================================================================================================
+// Constructor
+// ====================================================================================================================
+CMathBinaryFuncNode::CMathBinaryFuncNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber,
+                                         eMathBinaryFunctionType math_func_type)
+	: CCompileTreeNode(_codeblock, _link, eMathBinaryFunc, _linenumber)
+{
+    mFuncType = math_func_type;
+}
+
+// ====================================================================================================================
+// Eval():  Generates the byte code instruction compiled from this node.
+// ====================================================================================================================
+int32 CMathBinaryFuncNode::Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const
+{
+	DebugEvaluateNode(*this, countonly, instrptr);
+	int32 size = 0;
+
+	if (!leftchild)
+	{
+		ScriptAssert_(codeblock->GetScriptContext(), leftchild != NULL, codeblock->GetFileName(),
+			          linenumber,
+			          "Error - CMathBinaryFuncNode::Eval() - missing leftchild\n");
+		return (-1);
+	}
+
+    if (!rightchild)
+	{
+		ScriptAssert_(codeblock->GetScriptContext(), rightchild != NULL, codeblock->GetFileName(),
+			          linenumber,
+			          "Error - CMathBinaryFuncNode::Eval() - missing leftchild\n");
+		return (-1);
+	}
+
+	// -- left child will have pushed the array variable
+	int32 tree_size = leftchild->Eval(instrptr, TYPE_float, countonly);
+	if (tree_size < 0)
+		return (-1);
+	size += tree_size;
+
+    // -- left child will have pushed the array variable
+	tree_size = rightchild->Eval(instrptr, TYPE_float, countonly);
+	if (tree_size < 0)
+		return (-1);
+	size += tree_size;
+
+	// -- push the instruction to read the and push the size of the array
+	size += PushInstruction(countonly, instrptr, OP_MathBinaryFunc, DBG_instr);
+    size += PushInstruction(countonly, instrptr, mFuncType, DBG_instr);
+
+	// -- success
+	return (size);
+}
+
+// ====================================================================================================================
+// CompileToC(): Convert the parse tree to valid C, to compile directly to the executable. 
+// ====================================================================================================================
+bool8 CMathBinaryFuncNode::CompileToC(int32 indent, char*& out_buffer, int32& max_size, bool root_node) const
+{
+    TinPrint(TinScript::GetContext(), "CMathBInaryFuncNode::CompileToC() not implemented.\n");
+    return (true);
+}
+
 // == class CHashtableHasKey ==========================================================================================
 
 // ====================================================================================================================

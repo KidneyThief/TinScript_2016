@@ -2825,7 +2825,7 @@ MathUnaryFunc gMathUnaryFunctionTable[] =
 bool8 OpExecMathUnaryFunc(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExecStack& execstack,
 	                      CFunctionCallStack& funccallstack)
 {
-	// -- pull the array variable off the stack
+	// -- pull the float value off the stack
 	CVariableEntry* ve = NULL;
 	CObjectEntry* oe = NULL;
 	eVarType valtype;
@@ -2833,11 +2833,9 @@ bool8 OpExecMathUnaryFunc(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, C
 	if (!GetStackValue(cb->GetScriptContext(), execstack, funccallstack, valaddr, valtype, ve, oe))
 	{
 		DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
-					    "Error - ExecStack should contain an array variable\n");
+					    "Error - ExecStack should contain a float value\n");
 		return false;
 	}
-
-    eMathUnaryFunctionType math_func_type = (eMathUnaryFunctionType )*instrptr++;
 
     // -- convert the value to an int (the only valid type a bit-invert operator is implemented for)
     void* convertaddr = TypeConvert(cb->GetScriptContext(), valtype, valaddr, TYPE_float);
@@ -2849,17 +2847,97 @@ bool8 OpExecMathUnaryFunc(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, C
         return false;
     }
 
+    // -- get the unary math function type we're expecting to perform
+    eMathUnaryFunctionType math_func_type = (eMathUnaryFunctionType)*instrptr++;
+
     float float_val = *(float*)(convertaddr);
 
     // -- perform the math unary op
-    float_val = gMathUnaryFunctionTable[math_func_type](float_val);
+    float float_result = gMathUnaryFunctionTable[math_func_type](float_val);
 
     // -- push the result
-    execstack.Push(&float_val, TYPE_float);
+    execstack.Push(&float_result, TYPE_float);
 
-	DebugTrace(op, "%s() result: %.4f", GetMathUnaryFuncString(math_func_type), float_val);
+	DebugTrace(op, "%s(%.4f) result: %.4f", GetMathUnaryFuncString(math_func_type), float_val, float_result);
 
 	return (true);
+}
+
+// ====================================================================================================================
+// OpExecMathBinaryFunc():  Pops 2x float values, and performs the math function (e.g. min()), pushes the result
+// ====================================================================================================================
+
+using MathBinaryFunc = std::function<float(float, float)>;
+MathBinaryFunc gMathBinaryFunctionTable[] =
+{
+    #define MathKeywordBinaryEntry(a, b) b,
+    MathKeywordBinaryTuple
+    #undef MathKeywordBinaryEntry
+};
+
+bool8 OpExecMathBinaryFunc(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExecStack& execstack,
+    CFunctionCallStack& funccallstack)
+{
+    // -- pull the float value off the stack
+    CVariableEntry* ve_1 = NULL;
+    CObjectEntry* oe_1 = NULL;
+    eVarType valtype_1;
+    void* valaddr_1 = execstack.Pop(valtype_1);
+    if (!GetStackValue(cb->GetScriptContext(), execstack, funccallstack, valaddr_1, valtype_1, ve_1, oe_1))
+    {
+        DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
+            "Error - ExecStack should contain two float values\n");
+        return false;
+    }
+
+    // -- convert the value to an int (the only valid type a bit-invert operator is implemented for)
+    void* convertaddr_1 = TypeConvert(cb->GetScriptContext(), valtype_1, valaddr_1, TYPE_float);
+    if (!convertaddr_1)
+    {
+        DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
+            "Error - unable to convert from type %s to type TYPE_float, performing op: %s\n",
+            gRegisteredTypeNames[valtype_1], GetOperationString(op));
+        return false;
+    }
+
+    float float_val_1 = *(float*)(convertaddr_1);
+
+        // -- pull the 2nd float value off the stack
+    CVariableEntry* ve_0 = NULL;
+    CObjectEntry* oe_0 = NULL;
+    eVarType valtype_0;
+    void* valaddr_0 = execstack.Pop(valtype_0);
+    if (!GetStackValue(cb->GetScriptContext(), execstack, funccallstack, valaddr_0, valtype_0, ve_0, oe_0))
+    {
+        DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
+            "Error - ExecStack should contain two float values\n");
+        return false;
+    }
+
+    // -- convert the value to an int (the only valid type a bit-invert operator is implemented for)
+    void* convertaddr_0 = TypeConvert(cb->GetScriptContext(), valtype_0, valaddr_0, TYPE_float);
+    if (!convertaddr_0)
+    {
+        DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
+            "Error - unable to convert from type %s to type TYPE_float, performing op: %s\n",
+            gRegisteredTypeNames[valtype_0], GetOperationString(op));
+        return false;
+    }
+
+    // -- get the binary math function type we're expecting to perform
+    eMathBinaryFunctionType math_func_type = (eMathBinaryFunctionType)*instrptr++;
+
+    float float_val_0 = *(float*)(convertaddr_0);
+
+    // -- perform the math binary op
+    float float_result = gMathBinaryFunctionTable[math_func_type](float_val_0, float_val_1);
+
+    // -- push the result
+    execstack.Push(&float_result, TYPE_float);
+
+    DebugTrace(op, "%s() result: %.4f", GetMathBinaryFuncString(math_func_type), float_result);
+
+    return (true);
 }
 
 // ====================================================================================================================
