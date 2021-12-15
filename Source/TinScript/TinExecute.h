@@ -270,23 +270,8 @@ class CFunctionCallStack
 {
 	public:
         struct tFunctionCallEntry;
-		CFunctionCallStack()
-        {
-            m_functionEntryStack = (tFunctionCallEntry*)m_functionStackStorage;
-            m_size = kExecFuncCallDepth;
-			m_stacktop = 0;
-
-            // -- debugger members
-            mDebuggerBreakStep = false;
-            mDebuggerLastBreak = -1;
-            mDebuggerObjectDeleted = 0;
-            mDebuggerFunctionReload = 0;
-            mDebuggerBreakOnStackDepth = -1;
-		}
-
-		virtual ~CFunctionCallStack()
-        {
-		}
+		CFunctionCallStack();
+		virtual ~CFunctionCallStack();
 
 		void Push(CFunctionEntry* functionentry, CObjectEntry* objentry, int32 varoffset)
 		{
@@ -383,39 +368,10 @@ class CFunctionCallStack
         void BeginExecution(const uint32* instrptr);
         void BeginExecution();
 
-        CFunctionEntry* GetExecuting(CObjectEntry*& objentry, int32& varoffset)
-        {
-            int32 temp = m_stacktop - 1;
-            while (temp >= 0)
-            {
-                if (m_functionEntryStack[temp].isexecuting)
-                {
-                    objentry = m_functionEntryStack[temp].objentry;
-                    varoffset = m_functionEntryStack[temp].stackvaroffset;
-                    return m_functionEntryStack[temp].funcentry;
-                }
-                --temp;
-            }
-            return (NULL);
-        }
-
-   		CFunctionEntry* GetTopMethod(CObjectEntry*& objentry)
-        {
-            int32 depth = 0;
-            while (m_stacktop - depth > 0)
-            {
-                ++depth;
-                if (m_functionEntryStack[m_stacktop - depth].objentry)
-                {
-                    objentry = m_functionEntryStack[m_stacktop - depth].objentry;
-                    return m_functionEntryStack[m_stacktop - depth].funcentry;
-                }
-            }
-
-            // -- no methods
-            objentry = NULL;
-            return (NULL);
-        }
+        CFunctionEntry* GetExecuting(CObjectEntry*& objentry, int32& varoffset);
+		bool GetExecutingByIndex(CObjectEntry*& objentry, CFunctionEntry*& funcentry, uint32& _ns_hash,
+								 uint32& _cb_hash, int32& _linenumber, int32 stack_top_offset);
+   		CFunctionEntry* GetTopMethod(CObjectEntry*& objentry);
 
         struct tFunctionCallEntry
         {
@@ -449,11 +405,28 @@ class CFunctionCallStack
         // -- to manage stepping over/out, we might need to track which stack depth is appropriate to break on
         int32 mDebuggerBreakOnStackDepth;
 
+		// -- for the crash reporter, we may need to get the complete script callstack being executed
+		static int32 GetCompleteExecutionStack(CObjectEntry** _objentry_list, CFunctionEntry** _funcentry_list,
+											   uint32* _ns_hash_list, uint32* _cb_hash_list,
+											   int32* _linenumber_list, int32 max_count);
+
 	private:
         char m_functionStackStorage[sizeof(tFunctionCallEntry) * kExecFuncCallDepth];
         tFunctionCallEntry* m_functionEntryStack;
 		int32 m_size;
 		int32 m_stacktop;
+
+		// -- we need to keep track of the full script callstack
+		// note:  lots of things execute functions with their own independent CFunctionCallStack
+		// (e.g. schedules, conditionals, watches, etc...)...
+		// -- the "power" of this system is in part
+		// that you can declare a Function and Execution stacks, and spin off the VM independently...
+		// hence a function call stack could be "completed" even though it's not at the top of the stack
+		// -- If the crash reporter needs to gather the full script stack of everything that is executing,
+		// we need to gather from all the "active" call stacks
+		static CFunctionCallStack* m_ExecutionHead;
+		CFunctionCallStack* m_ExecutionPrev;
+		CFunctionCallStack* m_ExecutionNext;
 };
 
 bool8 ExecuteCodeBlock(CCodeBlock& codeblock);

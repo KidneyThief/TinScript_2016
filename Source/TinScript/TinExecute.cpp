@@ -105,6 +105,107 @@ bool8 CopyStackParameters(CFunctionEntry* fe, CExecStack& execstack, CFunctionCa
 }
 
 // ====================================================================================================================
+// -- constructor
+// ====================================================================================================================
+CFunctionCallStack* CFunctionCallStack::m_ExecutionHead = nullptr;
+
+CFunctionCallStack::CFunctionCallStack()
+{
+	m_functionEntryStack = (tFunctionCallEntry*)m_functionStackStorage;
+	m_size = kExecFuncCallDepth;
+	m_stacktop = 0;
+
+	// -- debugger members
+	mDebuggerBreakStep = false;
+	mDebuggerLastBreak = -1;
+	mDebuggerObjectDeleted = 0;
+	mDebuggerFunctionReload = 0;
+	mDebuggerBreakOnStackDepth = -1;
+
+	// -- add this to the execution linked list
+	// lets limit this to the main thread (we don't want, the IDE's execution on a separate thread clouding things)
+	m_ExecutionPrev = nullptr;
+	m_ExecutionNext = nullptr;
+	if (TinScript::GetContext()->IsMainThread())
+	{
+		m_ExecutionNext = m_ExecutionHead;
+		if (m_ExecutionHead != nullptr)
+			m_ExecutionHead->m_ExecutionPrev = this;
+		m_ExecutionHead = this;
+	}
+}
+
+// ====================================================================================================================
+// -- destructor
+// ====================================================================================================================
+CFunctionCallStack::~CFunctionCallStack()
+{
+	// -- remove this from the execution linked list
+	if (TinScript::GetContext()->IsMainThread())
+	{
+		CFunctionCallStack* found = m_ExecutionHead;
+		while (found != nullptr && found != this)
+		{
+			found = found->m_ExecutionNext;
+		}
+
+		// -- arguably should assert here, if not found...
+		if (found != nullptr)
+		{
+			if (found->m_ExecutionNext != nullptr)
+				found->m_ExecutionNext->m_ExecutionPrev = found->m_ExecutionPrev;
+			if (found->m_ExecutionPrev != nullptr)
+				found->m_ExecutionPrev->m_ExecutionNext = found->m_ExecutionNext;
+			else
+				m_ExecutionHead = found->m_ExecutionNext;
+		}
+	}
+}
+
+// ====================================================================================================================
+// GetCompleteExecutionStack():  walks through all callstacks, and returns the executing function calls for each
+// -- the populated object/function lists should contain a complete callstack of current script calls
+// ====================================================================================================================
+int32 CFunctionCallStack::GetCompleteExecutionStack(CObjectEntry** _objentry_list, CFunctionEntry** _funcentry_list,
+													uint32* _ns_hash_list, uint32* _cb_hash_list,
+													int32* _linenumber_list, int32 max_count)
+{
+	// -- sanity check
+	if (_objentry_list == nullptr || _funcentry_list == nullptr ||
+		_cb_hash_list == nullptr || _linenumber_list == nullptr || max_count <= 0)
+	{
+		return 0;
+	}
+
+	// -- restrict this call to the main thread
+	if (!TinScript::GetContext()->IsMainThread())
+	{
+		return 0;
+	}
+
+	int32 current_stack_index = 0;
+	CFunctionCallStack* walk = m_ExecutionHead;
+	while (walk != nullptr)
+	{
+		int32 walk_depth = walk->GetStackDepth();
+		for (int32 walk_index = 0; walk_index < walk_depth; ++walk_index)
+		{
+			if (walk->GetExecutingByIndex(_objentry_list[current_stack_index], _funcentry_list[current_stack_index],
+										  _ns_hash_list[current_stack_index], _cb_hash_list[current_stack_index],
+										  _linenumber_list[current_stack_index], walk_index))
+			{
+				if (++current_stack_index >= max_count)
+					return current_stack_index;
+			}
+		}
+
+		walk = walk->m_ExecutionNext;
+	}
+
+	return current_stack_index;
+}
+
+// ====================================================================================================================
 // DebuggerUpdateStackTopCurrentLine():  the top of the function call stack is the currently executing function,
 // -- but since it hasn't executed a function call (as it's the top), it's func call line number is unused/unset
 // ====================================================================================================================
@@ -510,6 +611,70 @@ void CFunctionCallStack::BeginExecution()
 	assert(m_stacktop > 0);
     assert(m_functionEntryStack[m_stacktop - 1].isexecuting == false);
     m_functionEntryStack[m_stacktop - 1].isexecuting = true;
+}
+
+// ====================================================================================================================
+// GetExecuting():  Get the function entry at the top of the stack, that is currently executing
+// ====================================================================================================================
+CFunctionEntry* CFunctionCallStack::GetExecuting(CObjectEntry*& objentry, int32& varoffset)
+{
+    int32 temp = m_stacktop - 1;
+    while (temp >= 0)
+    {
+        if (m_functionEntryStack[temp].isexecuting)
+        {
+            objentry = m_functionEntryStack[temp].objentry;
+            varoffset = m_functionEntryStack[temp].stackvaroffset;
+            return m_functionEntryStack[temp].funcentry;
+        }
+        --temp;
+    }
+    return (NULL);
+}
+
+// ====================================================================================================================
+// GetExecutingByIndex():  Get the function entry at the stack index (from the top), if executing
+// ====================================================================================================================
+bool CFunctionCallStack::GetExecutingByIndex(CObjectEntry*& objentry, CFunctionEntry*& funcentry, uint32& _ns_hash,
+											 uint32& _cb_hash, int32& _linenumber, int32 stack_top_offset)
+{
+	// note:  we count from the top down
+	int32 stack_top_index = m_stacktop - 1;
+	if (stack_top_offset > stack_top_index)
+		return false;
+
+	int32 stack_index = stack_top_index - stack_top_offset;
+	if (!m_functionEntryStack[stack_index].isexecuting)
+		return false;
+
+	objentry = m_functionEntryStack[stack_index].objentry;
+	funcentry = m_functionEntryStack[stack_index].funcentry;
+	_ns_hash = funcentry->GetNamespaceHash();
+	_cb_hash = funcentry->GetCodeBlock() != nullptr ? funcentry->GetCodeBlock()->GetFilenameHash() : 0;
+	_linenumber = m_functionEntryStack[stack_index].linenumberfunccall;
+
+	return (true);
+}
+
+// ====================================================================================================================
+// GetTopMethod():  Get the top function entry, actively executing or not...
+// ====================================================================================================================
+CFunctionEntry* CFunctionCallStack::GetTopMethod(CObjectEntry*& objentry)
+{
+    int32 depth = 0;
+    while (m_stacktop - depth > 0)
+    {
+        ++depth;
+        if (m_functionEntryStack[m_stacktop - depth].objentry)
+        {
+            objentry = m_functionEntryStack[m_stacktop - depth].objentry;
+            return m_functionEntryStack[m_stacktop - depth].funcentry;
+        }
+    }
+
+    // -- no methods
+    objentry = NULL;
+    return (NULL);
 }
 
 // ====================================================================================================================

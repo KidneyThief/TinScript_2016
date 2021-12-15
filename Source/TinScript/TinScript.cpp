@@ -2338,6 +2338,68 @@ void CScriptContext::ToggleVarWatch(int32 watch_request_id, uint32 object_id, ui
 }
 
 // ====================================================================================================================
+// GetExecutionCallStack():  Walk the function call execution stack, and return populated lists for the
+// current script execution callstack
+// ====================================================================================================================
+int32 CScriptContext::GetExecutionCallStack(tIdentifierString* _obj_identifier_list, tIdentifierString* _funcname_list,
+											tIdentifierString* _ns_list, tIdentifierString* _filename_list,
+											int32* _linenumber_list, int32 max_count)
+{
+	// sanity check
+	if (_obj_identifier_list == nullptr || _funcname_list == nullptr || _ns_list == nullptr ||
+		_filename_list == nullptr || _linenumber_list == nullptr || max_count <= 0)
+	{
+		return 0;
+	}
+
+	// -- arbitrary max depth of, say, 32
+	constexpr int32 kMaxDepth = 32;
+	CObjectEntry* oeList[kMaxDepth];
+	CFunctionEntry* feList[kMaxDepth];
+	uint32 nsHashList[kMaxDepth];
+	uint32 cbHashList[kMaxDepth];
+	int32 lineNumberList[kMaxDepth];
+
+	int32 stack_depth = CFunctionCallStack::GetCompleteExecutionStack(oeList, feList, nsHashList, cbHashList,
+																	  lineNumberList, kMaxDepth);
+
+	// -- return the callstack as readable strings
+	int32 stack_index = 0;
+	while (stack_index < stack_depth && stack_index < max_count)
+	{
+		// -- function name
+		SafeStrcpy(_funcname_list[stack_index].Text, tIdentifierString::Length,
+				   TinScript::UnHash(feList[stack_index]->GetHash()));
+
+		// -- object name/ID
+		if (oeList[stack_index] != nullptr)
+		{
+			sprintf_s(_obj_identifier_list[stack_index].Text, tIdentifierString::Length, "[%d] %s", oeList[stack_index]->GetID(),
+					  (oeList[stack_index]->GetNameHash() != 0 ? TinScript::UnHash(oeList[stack_index]->GetNameHash()) : ""));
+		}
+		else
+		{
+			_obj_identifier_list[stack_index].Text[0] = '\0';
+		}
+
+		// -- namespace
+		SafeStrcpy(_ns_list[stack_index].Text, tIdentifierString::Length,
+				   (nsHashList[stack_index] != 0 ? TinScript::UnHash(nsHashList[stack_index]) : ""));
+
+		// -- filename
+		SafeStrcpy(_filename_list[stack_index].Text, tIdentifierString::Length,
+				   (cbHashList[stack_index] != 0 ? TinScript::UnHash(cbHashList[stack_index]) : ""));
+
+		// -- line number
+		_linenumber_list[stack_index] = lineNumberList[stack_index];
+
+		++stack_index;
+	}
+
+	return stack_index;
+}
+
+// ====================================================================================================================
 // DebuggerCurrentWorkingDir():  Use the packet type DATA, and notify the debugger of our current working directory
 // ====================================================================================================================
 void CScriptContext::DebuggerNotifyDirectories(const char* cwd, const char* exe_dir)

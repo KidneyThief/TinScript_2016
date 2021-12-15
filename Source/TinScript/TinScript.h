@@ -229,6 +229,15 @@ const char* GetStringTableName();
 void SaveStringTable();
 void LoadStringTable(const char* from_dir = NULL);
 
+// ====================================================================================================================
+// struct tIdentifierString:  helper to retrieve arrays of strings
+// ====================================================================================================================
+struct tIdentifierString
+{
+	static constexpr int Length = kMaxNameLength;
+	char Text[Length];
+};
+
 // -- CThreadMutex is only functional in Win32
 // ====================================================================================================================
 // class CThreadMutex:  Prevents access to namespace objects from different threads
@@ -500,6 +509,10 @@ class CScriptContext
 		CFunctionCallStack* mDebuggerBreakFuncCallStack;
 		CExecStack* mDebuggerBreakExecStack;
         int32 mDebuggerVarWatchRequestID;
+
+		int32 GetExecutionCallStack(tIdentifierString* _obj_identifier_list, tIdentifierString* _funcname_list,
+									tIdentifierString* _ns_list, tIdentifierString* _filename_list,
+									int32* _linenumber_list, int32 max_count);
 
         // -- communication with the debugger
         void DebuggerNotifyDirectories(const char* cwd, const char* exe_dir);
