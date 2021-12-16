@@ -58,6 +58,10 @@
 #define PLATFORM_UE4 0
 #define PLATFORM_VS_2019 1
 
+// -- if this define is enabled, every function executed from script to C++ and vice versa, will
+// be logged
+#define LOG_FUNCTION_EXEC 0
+
 // ------------------------------------------------------------------------------------------------
 // -- TYPES
 // ------------------------------------------------------------------------------------------------
