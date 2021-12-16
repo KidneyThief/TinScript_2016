@@ -273,40 +273,8 @@ class CFunctionCallStack
 		CFunctionCallStack();
 		virtual ~CFunctionCallStack();
 
-		void Push(CFunctionEntry* functionentry, CObjectEntry* objentry, int32 varoffset)
-		{
-			assert(functionentry != NULL);
-            assert(m_stacktop < m_size);
-            m_functionEntryStack[m_stacktop].objentry = objentry;
-            m_functionEntryStack[m_stacktop].funcentry = functionentry;
-            m_functionEntryStack[m_stacktop].stackvaroffset = varoffset;
-            m_functionEntryStack[m_stacktop].isexecuting = false;
-            m_functionEntryStack[m_stacktop].mLocalObjectCount = 0;
-            ++m_stacktop;
-		}
-
-		CFunctionEntry* Pop(CObjectEntry*& objentry, int32& var_offset)
-        {
-            assert(m_stacktop > 0);
-            objentry = m_functionEntryStack[m_stacktop - 1].objentry;
-            var_offset = m_functionEntryStack[m_stacktop - 1].stackvaroffset;
-
-			// -- any time we pop a function call, we auto-destroy the local objects
-            CFunctionEntry* function_entry = m_functionEntryStack[m_stacktop - 1].funcentry;
-            uint32* local_object_id_ptr = m_functionEntryStack[m_stacktop - 1].mLocalObjectIDList;
-            for (int32 i = 0; i < m_functionEntryStack[m_stacktop - 1].mLocalObjectCount; ++i)
-			{
-				// -- if the object still exists, destroy it
-				CObjectEntry* local_object =
-					TinScript::GetContext()->FindObjectEntry(*local_object_id_ptr++);
-				if (local_object != nullptr)
-				{
-					TinScript::GetContext()->DestroyObject(local_object->GetID());
-				}
-			}
-
-            return (m_functionEntryStack[--m_stacktop].funcentry);
-		}
+		void Push(CFunctionEntry* functionentry, CObjectEntry* objentry, int32 varoffset);
+		CFunctionEntry* Pop(CObjectEntry*& objentry, int32& var_offset);
 
 		void NotifyLocalObjectID(uint32 local_object_id)
 		{
@@ -372,6 +340,7 @@ class CFunctionCallStack
 		bool GetExecutingByIndex(CObjectEntry*& objentry, CFunctionEntry*& funcentry, uint32& _ns_hash,
 								 uint32& _cb_hash, int32& _linenumber, int32 stack_top_offset);
    		CFunctionEntry* GetTopMethod(CObjectEntry*& objentry);
+		const char* GetExecutingFunctionCallString(bool& isScriptFunction);
 
         struct tFunctionCallEntry
         {

@@ -163,6 +163,64 @@ CFunctionCallStack::~CFunctionCallStack()
 }
 
 // ====================================================================================================================
+// Push():  pushes a function entry (and obj, if this is a method) onto the call stack - still needs to be 
+// "prepared" (e.g. assign arg values to the function context parameter vars) before BeginExecution()
+// ====================================================================================================================
+void CFunctionCallStack::Push(CFunctionEntry* functionentry, CObjectEntry* objentry, int32 varoffset)
+{
+	assert(functionentry != NULL);
+	assert(m_stacktop < m_size);
+	m_functionEntryStack[m_stacktop].objentry = objentry;
+	m_functionEntryStack[m_stacktop].funcentry = functionentry;
+	m_functionEntryStack[m_stacktop].stackvaroffset = varoffset;
+	m_functionEntryStack[m_stacktop].isexecuting = false;
+	m_functionEntryStack[m_stacktop].mLocalObjectCount = 0;
+	++m_stacktop;
+}
+
+// ====================================================================================================================
+// Pop():  Execution of the given function has completed
+// ====================================================================================================================
+CFunctionEntry* CFunctionCallStack::Pop(CObjectEntry*& objentry, int32& var_offset)
+{
+	assert(m_stacktop > 0);
+
+#if LOG_FUNCTION_EXEC
+	if (TinScript::GetContext()->IsMainThread())
+	{
+		// -- function declarations will push and pop to the stack, so it's legitimate for
+		// an empty function_call_str, as declaring isn't executing
+		bool is_script_function = false;
+		const char* function_call_str = GetExecutingFunctionCallString(is_script_function);
+		if (function_call_str && function_call_str[0])
+		{
+			TinPrint(TinScript::GetContext(), "### [%s] Pop Function: %s",
+											  is_script_function ? "TS" : "C++", function_call_str);
+		}
+	}
+#endif
+
+	objentry = m_functionEntryStack[m_stacktop - 1].objentry;
+	var_offset = m_functionEntryStack[m_stacktop - 1].stackvaroffset;
+
+	// -- any time we pop a function call, we auto-destroy the local objects
+	CFunctionEntry* function_entry = m_functionEntryStack[m_stacktop - 1].funcentry;
+	uint32* local_object_id_ptr = m_functionEntryStack[m_stacktop - 1].mLocalObjectIDList;
+	for (int32 i = 0; i < m_functionEntryStack[m_stacktop - 1].mLocalObjectCount; ++i)
+	{
+		// -- if the object still exists, destroy it
+		CObjectEntry* local_object =
+			TinScript::GetContext()->FindObjectEntry(*local_object_id_ptr++);
+		if (local_object != nullptr)
+		{
+			TinScript::GetContext()->DestroyObject(local_object->GetID());
+		}
+	}
+
+	return (m_functionEntryStack[--m_stacktop].funcentry);
+}
+
+// ====================================================================================================================
 // GetCompleteExecutionStack():  walks through all callstacks, and returns the executing function calls for each
 // -- the populated object/function lists should contain a complete callstack of current script calls
 // ====================================================================================================================
@@ -633,6 +691,57 @@ CFunctionEntry* CFunctionCallStack::GetExecuting(CObjectEntry*& objentry, int32&
 }
 
 // ====================================================================================================================
+// GetExecutingFunctionCallString():  Get a loggable string representing the executing function call
+// ====================================================================================================================
+const char* CFunctionCallStack::GetExecutingFunctionCallString(bool& isScriptFunction)
+{
+	isScriptFunction = false;
+	CObjectEntry* fc_oe = nullptr;
+	CFunctionEntry* fc_fe = nullptr;
+	uint32 fc_ns = 0;
+	uint32 fc_fn = 0;
+	int32 fc_ln = -1;
+	if (GetExecutingByIndex(fc_oe, fc_fe, fc_ns, fc_fn, fc_ln, 0))
+	{
+		isScriptFunction = fc_fe->GetType() == eFuncTypeScript;
+		char* bufferptr = TinScript::GetContext()->GetScratchBuffer();
+		if (fc_oe != nullptr)
+		{
+			sprintf_s(bufferptr, kMaxTokenLength, "%s%s%s(), obj: [%d] %s, src: %s @ %d", 
+					  // -- function call
+					  fc_ns != 0 ? TinScript::UnHash(fc_ns) : "",
+					  fc_ns != 0 ? "::" : "",
+					  TinScript::UnHash(fc_fe->GetHash()),
+
+					  // -- object
+					  fc_oe->GetID(),
+					  fc_oe->GetNameHash() != 0 ? TinScript::UnHash(fc_oe->GetNameHash()) : "",
+
+					  // -- source
+					  fc_fn != 0 ? TinScript::UnHash(fc_fn) : "C++",
+					  fc_fn != 0 ? fc_ln : -1);
+		}
+		else
+		{
+			sprintf_s(bufferptr, kMaxTokenLength, "%s%s%s(), src: %s @ %d", 
+					  // -- function call
+					  fc_ns != 0 ? TinScript::UnHash(fc_ns) : "",
+					  fc_ns != 0 ? "::" : "",
+					  TinScript::UnHash(fc_fe->GetHash()),
+
+					  // -- source
+					  fc_fn != 0 ? TinScript::UnHash(fc_fn) : "C++",
+					  fc_fn != 0 ? fc_ln : -1);
+		}
+		return bufferptr;
+	}
+	else
+	{
+		return "";
+	}
+}
+
+// ====================================================================================================================
 // GetExecutingByIndex():  Get the function entry at the stack index (from the top), if executing
 // ====================================================================================================================
 bool CFunctionCallStack::GetExecutingByIndex(CObjectEntry*& objentry, CFunctionEntry*& funcentry, uint32& _ns_hash,
@@ -686,6 +795,21 @@ bool8 CodeBlockCallFunction(CFunctionEntry* fe, CObjectEntry* oe, CExecStack& ex
     // -- at this point, the funccallstack has the CFunctionEntry pushed
     // -- and all parameters have been copied - either to the function's local var table
     // -- for registered 'C' functions, or to the execstack for scripted functions
+
+#if LOG_FUNCTION_EXEC
+	if (TinScript::GetContext()->IsMainThread())
+	{
+		// -- it *should* be impossible to get an empty function_call_str here, unlike Pop(), since we're actually
+		// executing, but... safety...
+		bool is_script_function = false;
+		const char* function_call_str = funccallstack.GetExecutingFunctionCallString(is_script_function);
+		if (function_call_str && function_call_str[0])
+		{
+			TinPrint(TinScript::GetContext(), "### [%s] Push Function: %s",
+											  is_script_function ? "TS" : "C++", function_call_str);
+		}
+	}
+#endif
 
     // -- scripted function
     if (fe->GetType() == eFuncTypeScript)
