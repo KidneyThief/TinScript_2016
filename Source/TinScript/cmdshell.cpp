@@ -70,17 +70,9 @@ int CmdShellPrintf(const char* fmt, ...)
 // ====================================================================================================================
 bool8 CmdShellAssertHandler(TinScript::CScriptContext* script_context, const char* condition,
                             const char* file, int32 linenumber, const char* fmt, ...) {
-    if (!script_context->IsAssertStackSkipped() || script_context->IsAssertEnableTrace())
+    if (!script_context->IsAssertStackSkipped())
     {
-        if (!script_context->IsAssertStackSkipped())
-        {
-            TinPrint(script_context, "*************************************************************\n");
-        }
-        else
-        {
-            TinPrint(script_context, "\n");
-        }
-
+        TinPrint(script_context, "*************************************************************\n");
         if (linenumber >= 0)
         {
             TinPrint(script_context, "Assert(%s)\nfile: %s, line %d:\n", condition, file, linenumber + 1);
@@ -100,33 +92,29 @@ bool8 CmdShellAssertHandler(TinScript::CScriptContext* script_context, const cha
         // -- dump the callstack after the error message
         script_context->DumpExecutionCallStack(5);
 
-        if (!script_context->IsAssertStackSkipped())
+        TinPrint(script_context, "*************************************************************\n");
+
+        // -- see if we should break or skip
+        bool assert_break = false;
+
+        int32 debugger_session = 0;
+        if (!script_context->IsDebuggerConnected(debugger_session))
         {
-            TinPrint(script_context, "*************************************************************\n");
+            TinPrint(script_context, "Press 'b' to break, any other key to ignore...\n");
+            char ch = getchar();
+            if (ch == 'b')
+                assert_break = true;
+        }
 
-            // -- see if we should break or skip
-            bool assert_break = false;
-
-            int32 debugger_session = 0;
-            if (!script_context->IsDebuggerConnected(debugger_session))
-            {
-                TinPrint(script_context, "Press 'b' to break, any other key to ignore...\n");
-                char ch = getchar();
-                if (ch == 'b')
-                    assert_break = true;
-            }
-
-            // -- handle the result
-            if (assert_break)
-            {
-                return false;
-            }
-            else
-            {
-                script_context->SetAssertStackSkipped(true);
-                script_context->SetAssertEnableTrace(false);
-                return true;
-            }
+        // -- handle the result
+        if (assert_break)
+        {
+            return false;
+        }
+        else
+        {
+            script_context->SetAssertStackSkipped(true);
+            return true;
         }
     }
 

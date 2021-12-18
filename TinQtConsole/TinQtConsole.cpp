@@ -395,7 +395,7 @@ int CConsoleWindow::Exec()
 
 // ------------------------------------------------------------------------------------------------
 // -- create a handler to register, so we can receive print messages and asserts
-bool PushAssertDialog(const char* assertmsg, const char* errormsg, bool& skip, bool& trace);
+bool PushAssertDialog(const char* assertmsg, const char* errormsg, bool& skip);
 
 int32 ConsolePrint(const char* fmt, ...)
 {
@@ -471,12 +471,9 @@ int32 ConsolePrint(const char* fmt, ...)
 bool8 AssertHandler(TinScript::CScriptContext* script_context, const char* condition,
                     const char* file, int32 linenumber, const char* fmt, ...)
 {
-    if (!script_context->IsAssertStackSkipped() || script_context->IsAssertEnableTrace())
+    if (!script_context->IsAssertStackSkipped())
     {
-        if(!script_context->IsAssertStackSkipped())
-            ConsolePrint("\n*************************************************************\n");
-        else
-            ConsolePrint("\n");
+        ConsolePrint("\n*************************************************************\n");
 
         // -- get the assert msg
         char assertmsg[2048];
@@ -494,16 +491,13 @@ bool8 AssertHandler(TinScript::CScriptContext* script_context, const char* condi
         ConsolePrint(assertmsg);
         ConsolePrint(errormsg);
 
-        if(!script_context->IsAssertStackSkipped())
-            ConsolePrint("*************************************************************\n");
-        if(!script_context->IsAssertStackSkipped()) {
-            bool press_skip = false;
-            bool press_trace = false;
-            bool result = PushAssertDialog(assertmsg, errormsg, press_skip, press_trace);
-            script_context->SetAssertEnableTrace(press_trace);
-            script_context->SetAssertStackSkipped(press_skip);
-            return (result);
-        }
+        script_context->DumpExecutionCallStack(5);
+        ConsolePrint("*************************************************************\n");
+
+        bool press_skip = false;
+        bool result = PushAssertDialog(assertmsg, errormsg, press_skip);
+        script_context->SetAssertStackSkipped(press_skip);
+        return (result);
     }
 
     // -- handled - return true so we don't break
@@ -2259,14 +2253,13 @@ void CConsoleOutput::HandlePacketObjectCreated(int32* dataPtr)
 // ====================================================================================================================
 // PushAssertDialog():  Handler for a ScriptAssert_(), returns ignore/trace/break input
 // ====================================================================================================================
-bool PushAssertDialog(const char* assertmsg, const char* errormsg, bool& skip, bool& trace) {
+bool PushAssertDialog(const char* assertmsg, const char* errormsg, bool& skip) {
     QMessageBox msgBox;
 
     QString dialog_msg = QString(assertmsg) + QString("\n") + QString(errormsg);
     msgBox.setText(dialog_msg);
 
     QPushButton *ignore_button = msgBox.addButton("Ignore", QMessageBox::ActionRole);
-    QPushButton *trace_button = msgBox.addButton("Trace", QMessageBox::ActionRole);
     QPushButton *break_button = msgBox.addButton("Break", QMessageBox::ActionRole);
 
     msgBox.exec();
@@ -2274,17 +2267,10 @@ bool PushAssertDialog(const char* assertmsg, const char* errormsg, bool& skip, b
     bool handled = false;
     if (msgBox.clickedButton() == ignore_button) {
         skip = true;
-        trace = false;
-        handled = true;
-    }
-    else if (msgBox.clickedButton() == trace_button) {
-        skip = true;
-        trace = true;
         handled = true;
     }
     else if (msgBox.clickedButton() == break_button) {
         skip = false;
-        trace = false;
         handled = false;
     }
     return (handled);

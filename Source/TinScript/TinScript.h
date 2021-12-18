@@ -397,8 +397,6 @@ class CScriptContext
 
         TinPrintHandler GetPrintHandler() { return (mTinPrintHandler); }
         TinAssertHandler GetAssertHandler() { return (mTinAssertHandler); }
-        bool8 IsAssertEnableTrace() { return (mAssertEnableTrace); }
-        void SetAssertEnableTrace(bool8 torf) { mAssertEnableTrace = torf; }
         bool8 IsAssertStackSkipped() { return (mAssertStackSkipped); }
         void SetAssertStackSkipped(bool8 torf) { mAssertStackSkipped = torf; }
         void ResetAssertStack();
@@ -591,7 +589,6 @@ class CScriptContext
         // -- assert/print handlers
         TinPrintHandler mTinPrintHandler;
         TinAssertHandler mTinAssertHandler;
-        bool8 mAssertEnableTrace;
         bool8 mAssertStackSkipped;
 
         // -- global namespace for this context

@@ -227,7 +227,6 @@ int NullPrintHandler(const char*, ...)
 // ====================================================================================================================
 void CScriptContext::ResetAssertStack()
 {
-    mAssertEnableTrace = false;
     mAssertStackSkipped = false;
 }
 
@@ -329,7 +328,6 @@ CScriptContext::CScriptContext(TinPrintHandler printfunction, TinAssertHandler a
     mTinPrintHandler = printfunction ? printfunction : NullPrintHandler;
     mTinAssertHandler = asserthandler ? asserthandler : NullAssertHandler;
     mAssertStackSkipped = false;
-    mAssertEnableTrace = false;
 
     // -- initialize the current working directory
     InitializeDirectory(true);

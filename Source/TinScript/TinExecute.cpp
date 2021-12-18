@@ -1244,7 +1244,6 @@ bool8 DebuggerBreakLoop(CCodeBlock* cb, const uint32* instrptr, CExecStack& exec
         if (is_assert)
         {
             script_context->SetAssertStackSkipped(true);
-            script_context->SetAssertEnableTrace(true);
         }
 
         // -- we spin forever in this loop, until either the debugger disconnects,
@@ -1286,7 +1285,6 @@ bool8 DebuggerBreakLoop(CCodeBlock* cb, const uint32* instrptr, CExecStack& exec
     if (is_assert)
     {
         script_context->SetAssertStackSkipped(true);
-        script_context->SetAssertEnableTrace(true);
     }
 
     // -- release the guard
