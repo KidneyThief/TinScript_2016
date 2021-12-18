@@ -513,6 +513,7 @@ class CScriptContext
 		int32 GetExecutionCallStack(tIdentifierString* _obj_identifier_list, tIdentifierString* _funcname_list,
 									tIdentifierString* _ns_list, tIdentifierString* _filename_list,
 									int32* _linenumber_list, int32 max_count);
+        void DumpExecutionCallStack(int32 depth);
 
         // -- communication with the debugger
         void DebuggerNotifyDirectories(const char* cwd, const char* exe_dir);

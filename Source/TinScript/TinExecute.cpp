@@ -194,7 +194,7 @@ CFunctionEntry* CFunctionCallStack::Pop(CObjectEntry*& objentry, int32& var_offs
 		const char* function_call_str = GetExecutingFunctionCallString(is_script_function);
 		if (function_call_str && function_call_str[0])
 		{
-			TinPrint(TinScript::GetContext(), "### [%s] Pop Function: %s",
+			TinPrint(TinScript::GetContext(), "### [%s] Pop Function: %s\n",
 											  is_script_function ? "TS" : "C++", function_call_str);
 		}
 	}
@@ -261,6 +261,36 @@ int32 CFunctionCallStack::GetCompleteExecutionStack(CObjectEntry** _objentry_lis
 	}
 
 	return current_stack_index;
+}
+
+// ====================================================================================================================
+// GetExecutionStackDepth():  Traverses all executionstacks, and returns the total execution stack depth
+// ====================================================================================================================
+int32 CFunctionCallStack::GetExecutionStackDepth()
+{
+    // -- restrict this call to the main thread
+    if (!TinScript::GetContext()->IsMainThread())
+    {
+        return 0;
+    }
+
+    int32 total_stack_depth = 0;
+	CFunctionCallStack* walk = m_ExecutionHead;
+	while (walk != nullptr)
+	{
+		int32 walk_depth = walk->GetStackDepth();
+		for (int32 walk_index = 0; walk_index < walk_depth; ++walk_index)
+		{
+			if (walk->IsExecutingByIndex(walk_index))
+			{
+                ++total_stack_depth;
+			}
+		}
+
+		walk = walk->m_ExecutionNext;
+	}
+
+	return total_stack_depth;
 }
 
 // ====================================================================================================================
@@ -693,6 +723,48 @@ CFunctionEntry* CFunctionCallStack::GetExecuting(CObjectEntry*& objentry, int32&
 // ====================================================================================================================
 // GetExecutingFunctionCallString():  Get a loggable string representing the executing function call
 // ====================================================================================================================
+void CFunctionCallStack::FormatFunctionCallString(char* bufferptr, int32 buffer_len, CObjectEntry* fc_oe,
+                                                  CFunctionEntry* fc_fe, uint32 fc_ns, uint32 fc_fn, int32 fc_ln)
+{
+    // -- sanity check
+    if (bufferptr == nullptr || buffer_len <= 0 || fc_fe == nullptr)
+    {
+        return;
+    }
+    bufferptr[0] = '\0';
+    if (fc_oe != nullptr)
+    {
+        sprintf_s(bufferptr, buffer_len, "%s%s%s(), obj: [%d] %s, src: %s @ %d",
+            // -- function call
+            fc_ns != 0 ? TinScript::UnHash(fc_ns) : "",
+            fc_ns != 0 ? "::" : "",
+            TinScript::UnHash(fc_fe->GetHash()),
+
+            // -- object
+            fc_oe->GetID(),
+            fc_oe->GetNameHash() != 0 ? TinScript::UnHash(fc_oe->GetNameHash()) : "",
+
+            // -- source
+            fc_fn != 0 ? TinScript::UnHash(fc_fn) : "C++",
+            fc_fn != 0 ? fc_ln : -1);
+    }
+    else
+    {
+        sprintf_s(bufferptr, buffer_len, "%s%s%s(), src: %s @ %d",
+            // -- function call
+            fc_ns != 0 ? TinScript::UnHash(fc_ns) : "",
+            fc_ns != 0 ? "::" : "",
+            TinScript::UnHash(fc_fe->GetHash()),
+
+            // -- source
+            fc_fn != 0 ? TinScript::UnHash(fc_fn) : "C++",
+            fc_fn != 0 ? fc_ln : -1);
+    }
+}
+
+// ====================================================================================================================
+// GetExecutingFunctionCallString():  Get a loggable string representing the executing function call
+// ====================================================================================================================
 const char* CFunctionCallStack::GetExecutingFunctionCallString(bool& isScriptFunction)
 {
 	isScriptFunction = false;
@@ -705,34 +777,7 @@ const char* CFunctionCallStack::GetExecutingFunctionCallString(bool& isScriptFun
 	{
 		isScriptFunction = fc_fe->GetType() == eFuncTypeScript;
 		char* bufferptr = TinScript::GetContext()->GetScratchBuffer();
-		if (fc_oe != nullptr)
-		{
-			sprintf_s(bufferptr, kMaxTokenLength, "%s%s%s(), obj: [%d] %s, src: %s @ %d", 
-					  // -- function call
-					  fc_ns != 0 ? TinScript::UnHash(fc_ns) : "",
-					  fc_ns != 0 ? "::" : "",
-					  TinScript::UnHash(fc_fe->GetHash()),
-
-					  // -- object
-					  fc_oe->GetID(),
-					  fc_oe->GetNameHash() != 0 ? TinScript::UnHash(fc_oe->GetNameHash()) : "",
-
-					  // -- source
-					  fc_fn != 0 ? TinScript::UnHash(fc_fn) : "C++",
-					  fc_fn != 0 ? fc_ln : -1);
-		}
-		else
-		{
-			sprintf_s(bufferptr, kMaxTokenLength, "%s%s%s(), src: %s @ %d", 
-					  // -- function call
-					  fc_ns != 0 ? TinScript::UnHash(fc_ns) : "",
-					  fc_ns != 0 ? "::" : "",
-					  TinScript::UnHash(fc_fe->GetHash()),
-
-					  // -- source
-					  fc_fn != 0 ? TinScript::UnHash(fc_fn) : "C++",
-					  fc_fn != 0 ? fc_ln : -1);
-		}
+        FormatFunctionCallString(bufferptr, kMaxTokenLength, fc_oe, fc_fe, fc_ns, fc_fn, fc_ln);
 		return bufferptr;
 	}
 	else
@@ -742,19 +787,35 @@ const char* CFunctionCallStack::GetExecutingFunctionCallString(bool& isScriptFun
 }
 
 // ====================================================================================================================
+// IsExecutingByIndex():  return bool if the index is a valid executing function call
+// ====================================================================================================================
+bool CFunctionCallStack::IsExecutingByIndex(int32 stack_top_offset)
+{
+    // note:  we count from the top down
+    int32 stack_top_index = m_stacktop - 1;
+    if (stack_top_offset > stack_top_index)
+        return false;
+
+    int32 stack_index = stack_top_index - stack_top_offset;
+    if (!m_functionEntryStack[stack_index].isexecuting)
+        return false;
+
+    // -- valid index for an executing function
+    return true;
+}
+
+// ====================================================================================================================
 // GetExecutingByIndex():  Get the function entry at the stack index (from the top), if executing
 // ====================================================================================================================
 bool CFunctionCallStack::GetExecutingByIndex(CObjectEntry*& objentry, CFunctionEntry*& funcentry, uint32& _ns_hash,
 											 uint32& _cb_hash, int32& _linenumber, int32 stack_top_offset)
 {
+    if (!IsExecutingByIndex(stack_top_offset))
+        return (false);
+
 	// note:  we count from the top down
 	int32 stack_top_index = m_stacktop - 1;
-	if (stack_top_offset > stack_top_index)
-		return false;
-
 	int32 stack_index = stack_top_index - stack_top_offset;
-	if (!m_functionEntryStack[stack_index].isexecuting)
-		return false;
 
 	objentry = m_functionEntryStack[stack_index].objentry;
 	funcentry = m_functionEntryStack[stack_index].funcentry;
@@ -805,7 +866,7 @@ bool8 CodeBlockCallFunction(CFunctionEntry* fe, CObjectEntry* oe, CExecStack& ex
 		const char* function_call_str = funccallstack.GetExecutingFunctionCallString(is_script_function);
 		if (function_call_str && function_call_str[0])
 		{
-			TinPrint(TinScript::GetContext(), "### [%s] Push Function: %s",
+			TinPrint(TinScript::GetContext(), "### [%s] Push Function: %s\n",
 											  is_script_function ? "TS" : "C++", function_call_str);
 		}
 	}

@@ -2400,6 +2400,46 @@ int32 CScriptContext::GetExecutionCallStack(tIdentifierString* _obj_identifier_l
 }
 
 // ====================================================================================================================
+// DumpExecutionCallStack():  Print the entire script callstack
+// ====================================================================================================================
+void CScriptContext::DumpExecutionCallStack(int32 depth)
+{
+    // -- arbitrary max depth of, say, 32
+    constexpr int32 kMaxDepth = 32;
+    CObjectEntry* oeList[kMaxDepth];
+    CFunctionEntry* feList[kMaxDepth];
+    uint32 nsHashList[kMaxDepth];
+    uint32 cbHashList[kMaxDepth];
+    int32 lineNumberList[kMaxDepth];
+
+    int dump_depth = depth > 0 && depth < kMaxDepth ? depth : kMaxDepth;
+    int32 actual_depth = CFunctionCallStack::GetExecutionStackDepth();
+    int32 stack_depth = CFunctionCallStack::GetCompleteExecutionStack(oeList, feList, nsHashList, cbHashList,
+                                                                      lineNumberList, dump_depth);
+    // -- if there's no execution stack available (because a console command was being executed probably), return
+    if (stack_depth <= 0)
+    {
+        return;
+    }
+
+    if (actual_depth > stack_depth)
+    {
+        TinPrint(this, "### Script Callstack [%d / %d]:\n", stack_depth, actual_depth);
+    }
+    else
+    {
+        TinPrint(this, "### Script Callstack:\n");
+    }
+    char* bufferptr = TinScript::GetContext()->GetScratchBuffer();
+    for (int32 i = 0; i < stack_depth; ++i)
+    {
+        CFunctionCallStack::FormatFunctionCallString(bufferptr, kMaxTokenLength, oeList[i], feList[i], nsHashList[i],
+                                                     cbHashList[i], lineNumberList[i]);
+        TinPrint(this, "    %s\n", bufferptr);
+    }
+}
+
+// ====================================================================================================================
 // DebuggerCurrentWorkingDir():  Use the packet type DATA, and notify the debugger of our current working directory
 // ====================================================================================================================
 void CScriptContext::DebuggerNotifyDirectories(const char* cwd, const char* exe_dir)

@@ -83,7 +83,7 @@ bool8 CmdShellAssertHandler(TinScript::CScriptContext* script_context, const cha
 
         if (linenumber >= 0)
         {
-            TinPrint(script_context, "Assert(%s) file: %s, line %d:\n", condition, file, linenumber + 1);
+            TinPrint(script_context, "Assert(%s)\nfile: %s, line %d:\n", condition, file, linenumber + 1);
         }
         else
         {
@@ -97,40 +97,29 @@ bool8 CmdShellAssertHandler(TinScript::CScriptContext* script_context, const cha
         va_end(args);
         TinPrint(script_context, msgbuf);
 
+        // -- dump the callstack after the error message
+        script_context->DumpExecutionCallStack(5);
+
         if (!script_context->IsAssertStackSkipped())
         {
             TinPrint(script_context, "*************************************************************\n");
 
-            // -- see if we should break, trace (dump the rest of the assert stack), or skip
-            bool assert_trace = false;
+            // -- see if we should break or skip
             bool assert_break = false;
 
             int32 debugger_session = 0;
-            if (script_context->IsDebuggerConnected(debugger_session))
+            if (!script_context->IsDebuggerConnected(debugger_session))
             {
-                // $$$TZA trace, or simply skip?
-                assert_trace = false;
-            }
-            else
-            {
-                TinPrint(script_context, "Press 'b' to break, 't' to trace, otherwise skip...\n");
+                TinPrint(script_context, "Press 'b' to break, any other key to ignore...\n");
                 char ch = getchar();
                 if (ch == 'b')
                     assert_break = true;
-                else if (ch == 't')
-                    assert_trace = true;
             }
 
             // -- handle the result
             if (assert_break)
             {
                 return false;
-            }
-            else if (assert_trace)
-            {
-                script_context->SetAssertStackSkipped(true);
-                script_context->SetAssertEnableTrace(true);
-                return true;
             }
             else
             {
@@ -156,7 +145,7 @@ CCmdShell::CCmdShell()
     mCurrentLineIsPrompt = false;
     mRefreshPrompt = false;
 
-    // -- initialize the mHistory indicies
+    // -- initialize the mHistory indices
     mHistoryFull = false;
     mHistoryIndex = -1;
     mHistoryLastIndex = -1;

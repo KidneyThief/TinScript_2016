@@ -337,9 +337,13 @@ class CFunctionCallStack
         void BeginExecution();
 
         CFunctionEntry* GetExecuting(CObjectEntry*& objentry, int32& varoffset);
+        bool IsExecutingByIndex(int32 stack_top_offset);
 		bool GetExecutingByIndex(CObjectEntry*& objentry, CFunctionEntry*& funcentry, uint32& _ns_hash,
 								 uint32& _cb_hash, int32& _linenumber, int32 stack_top_offset);
    		CFunctionEntry* GetTopMethod(CObjectEntry*& objentry);
+        static void FormatFunctionCallString(char* bufferptr, int32 buffer_len, CObjectEntry* fc_oe,
+                                                          CFunctionEntry* fc_fe, uint32 fc_ns, uint32 fc_fn,
+                                                          int32 fc_ln);
 		const char* GetExecutingFunctionCallString(bool& isScriptFunction);
 
         struct tFunctionCallEntry
@@ -378,6 +382,7 @@ class CFunctionCallStack
 		static int32 GetCompleteExecutionStack(CObjectEntry** _objentry_list, CFunctionEntry** _funcentry_list,
 											   uint32* _ns_hash_list, uint32* _cb_hash_list,
 											   int32* _linenumber_list, int32 max_count);
+        static int32 GetExecutionStackDepth();
 
 	private:
         char m_functionStackStorage[sizeof(tFunctionCallEntry) * kExecFuncCallDepth];
