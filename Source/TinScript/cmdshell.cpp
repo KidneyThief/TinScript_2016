@@ -32,6 +32,7 @@
 #include "conio.h"
 
 // -- TinScript includes
+#include "integration.h"
 #include "TinScript.h"
 #include "TinRegistration.h"
 
@@ -90,7 +91,7 @@ bool8 CmdShellAssertHandler(TinScript::CScriptContext* script_context, const cha
         TinPrint(script_context, msgbuf);
 
         // -- dump the callstack after the error message
-        script_context->DumpExecutionCallStack(5);
+        script_context->DumpExecutionCallStack(script_context->GetAssertStackDepth());
 
         TinPrint(script_context, "*************************************************************\n");
 
@@ -101,6 +102,7 @@ bool8 CmdShellAssertHandler(TinScript::CScriptContext* script_context, const cha
         if (!script_context->IsDebuggerConnected(debugger_session))
         {
             TinPrint(script_context, "Press 'b' to break, any other key to ignore...\n");
+
             char ch = getchar();
             if (ch == 'b')
                 assert_break = true;

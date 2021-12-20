@@ -198,6 +198,21 @@ void Terminate()
 }
 
 // ====================================================================================================================
+// IsLIstening(): return if we're not yet connected, but listening
+// ====================================================================================================================
+bool IsListening()
+{
+    // -- see if we can enable listening
+    if (mThreadSocket)
+    {
+        return (mThreadSocket->IsListening());
+    }
+
+    // -- not listening for new connections
+    return (false);
+}
+
+// ====================================================================================================================
 // Listen(): Set the connection to listen for incoming connect requests
 // ====================================================================================================================
 bool Listen()
@@ -592,6 +607,14 @@ CSocket::~CSocket()
     // -- if we have an open connection socket, we also need to cleanup WSA
     if (mConnectSocket != nullptr)
         closesocket((SOCKET)mConnectSocket);
+}
+
+// ====================================================================================================================
+// IsListening():  see if we're not connected, but listening for a connection
+// ====================================================================================================================
+bool CSocket::IsListening()
+{
+    return (!mConnected && mListen);
 }
 
 // ====================================================================================================================
@@ -1515,6 +1538,7 @@ bool CSocket::ProcessRecvData(void* data, int dataSize)
 // ====================================================================================================================
 // -- TinScript Registration
 REGISTER_FUNCTION(SocketListen, SocketManager::Listen);
+REGISTER_FUNCTION(SocketIsListening, SocketManager::IsListening);
 REGISTER_FUNCTION(SocketConnect, SocketManager::Connect);
 REGISTER_FUNCTION(SocketDisconnect, SocketManager::Disconnect);
 REGISTER_FUNCTION(SocketIsConnected, SocketManager::IsConnected);

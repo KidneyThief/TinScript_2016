@@ -58,6 +58,7 @@ void Initialize();
 void Terminate();
 
 // -- request a connection
+bool IsListening();
 bool Listen();
 bool Connect(const char* ipAddress);
 void Disconnect();
@@ -223,6 +224,7 @@ class CSocket
         }
 
         // -- see if we have anyone requesting a connection
+        bool IsListening();
         bool Listen();
 
         // -- request a connection

@@ -381,6 +381,8 @@ CScriptContext::CScriptContext(TinPrintHandler printfunction, TinAssertHandler a
     mScratchBufferIndex = 0;
 
     // -- debugger members
+    m_DebuggerAssertConnectTime = kExecAssertConnectWaitTime;
+    m_AssertMsgStackDepth = kExecAssertStackDepth;
 	mDebuggerSessionNumber = 0;
     mDebuggerConnected = false;
     mDebuggerActionForceBreak = false;

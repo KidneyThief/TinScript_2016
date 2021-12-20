@@ -38,6 +38,7 @@
 // -- external includes
 #include "socket.h"
 #include <windows.h>
+#include <chrono>
 
 // -- TinScript includes
 #include "TinScript.h"
@@ -1069,6 +1070,10 @@ bool8 ExecuteScheduledFunction(CScriptContext* script_context, uint32 objectid, 
                           "Error - Unable to call function: %s()\n",
                           UnHash(fe->GetHash()));
         }
+
+        // -- at this point, our execution stack is fully "unwound", we can reset asserts
+        script_context->ResetAssertStack();
+
         return false;
     }
 
@@ -1081,6 +1086,10 @@ bool8 ExecuteScheduledFunction(CScriptContext* script_context, uint32 objectid, 
         ScriptAssert_(script_context, 0, "<internal>", -1,
                                          "Error - no return value for scheduled func: %s()\n",
                                           UnHash(fe->GetHash()));
+
+        // -- at this point, our execution stack is fully "unwound", we can reset asserts
+        script_context->ResetAssertStack();
+
         return (false);
     }
 
@@ -1091,6 +1100,10 @@ bool8 ExecuteScheduledFunction(CScriptContext* script_context, uint32 objectid, 
         ScriptAssert_(script_context, 0, "<internal>", -1,
                      "Error - invalid return parameter for scheduled func: %s()\n",
                      UnHash(fe->GetHash()));
+
+        // -- at this point, our execution stack is fully "unwound", we can reset asserts
+        script_context->ResetAssertStack();
+
         return (false);
     }
 
@@ -1102,6 +1115,10 @@ bool8 ExecuteScheduledFunction(CScriptContext* script_context, uint32 objectid, 
         {
             ScriptAssert_(script_context, 0, "<internal>", -1,
                           "Error - invalid return parameter for func: %s()\n", UnHash(fe->GetHash()));
+
+            // -- at this point, our execution stack is fully "unwound", we can reset asserts
+            script_context->ResetAssertStack();
+
             return (false);
         }
         return_ve->SetValue(oe ? oe->GetAddr() : NULL, converted_addr, NULL, NULL);
@@ -1109,6 +1126,9 @@ bool8 ExecuteScheduledFunction(CScriptContext* script_context, uint32 objectid, 
 
     // -- also copy them into the script context's return value
     script_context->SetFunctionReturnValue(contentptr, contenttype);
+
+    // -- there was no assert, but still...
+    script_context->ResetAssertStack();
 
     return (true);
 }
@@ -1148,20 +1168,90 @@ bool8 DebuggerAssertLoop(const char* condition, CCodeBlock* cb, const uint32* in
 }
 
 // ====================================================================================================================
+// DebuggerWaitForConnection():  If we're listening for a remote debugger, on assert, wait for connection
+// ====================================================================================================================
+bool8 DebuggerWaitForConnection(CScriptContext* script_context, const char* assert_msg)
+{
+    // -- we'll only wait if we're on the main thread, and not already breaking or skipping
+    if (script_context == nullptr || script_context->mDebuggerBreakLoopGuard || script_context->IsAssertStackSkipped())
+    {
+        return false;
+    }
+
+    // -- if we're already connected, we're done
+    int32 debugger_session = 0;
+    if (script_context->IsDebuggerConnected(debugger_session))
+    {
+        return true;
+    }
+
+    // -- if we're not actively listening for a connection, we're done waiting
+    if (!SocketManager::IsListening())
+    {
+        return false;
+    }
+
+    // -- make sure we have a valid time to wait
+    float timeout_seconds = script_context->GetAssertConnectTime();
+    if (timeout_seconds <= 0.0f)
+    {
+        return false;
+    }
+
+    // -- print the assert message, and the "waiting" message
+    TinPrint(script_context, "*************************************************************\n");
+    TinPrint(script_context, assert_msg);
+    TinPrint(script_context, "\n*** Waiting for %.1f seconds to connect the IDE to debug...\n", timeout_seconds);
+    TinPrint(script_context, "*************************************************************\n");
+
+    // -- loop, processing thread commands, until we receive a connected notification, or we time out
+    auto time_start = std::chrono::high_resolution_clock::now();
+    while (true)
+    {
+        // -- process the thread commands (e.g. notification of a debugger connection)
+        script_context->ProcessThreadCommands();
+        if (script_context->IsDebuggerConnected(debugger_session))
+        {
+            return true;
+        }
+
+        // -- ensure we only wait for the given duration
+        auto current_time = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<float, std::milli> elapsed_milli = current_time - time_start;
+        if (elapsed_milli.count() > timeout_seconds * 1000.0f)
+        {
+            return false;
+        }
+        Sleep(1);
+    }
+
+    // -- time out - note:  we only get one shot at this, or waiting *every* assert
+    // hereafter would be tedious
+    script_context->SetAssertConnectTime(0.0f);
+    return false;
+}
+
+// ====================================================================================================================
 // DebuggerBreakLoop():  If a remote debugger is connected, we'll halt the VM until released by the debugger
 // ====================================================================================================================
 bool8 DebuggerBreakLoop(CCodeBlock* cb, const uint32* instrptr, CExecStack& execstack,
                         CFunctionCallStack& funccallstack, const char* assert_msg)
 {
+    // -- sanity check
+    if (cb == nullptr || cb->GetScriptContext() == nullptr)
+    {
+        return false;
+    }
+
     // -- asserts, and breakpoints both need to do the same thing - notify the debugger of the file/line,
     // -- loop until the user makes choice.  Asserts have an additional message
-
-    // -- if we're not able to handle the break loop, return false (possibly so an assert can trigger instead)
-	int32 debugger_session = 0;
-    if (!cb || !cb->GetScriptContext() || !cb->GetScriptContext()->IsDebuggerConnected(debugger_session))
-        return (false);
-
+    // -- if we don't have a connection, and we're done waiting for one, we don't loop
     CScriptContext* script_context = cb->GetScriptContext();
+    if (!DebuggerWaitForConnection(script_context, assert_msg))
+    {
+        return false;
+    }
+
     int32 cur_line = cb->CalcLineNumber(instrptr);
     uint32 codeblock_hash = cb->GetFilenameHash();
 

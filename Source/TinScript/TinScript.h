@@ -468,6 +468,11 @@ class CScriptContext
         char* GetScratchBuffer();
 
         // -- debugger interface
+        float GetAssertConnectTime() const { return m_DebuggerAssertConnectTime; }
+        void SetAssertConnectTime(float seconds) { m_DebuggerAssertConnectTime = m_DebuggerAssertConnectTime; }
+        int32 GetAssertStackDepth() const { return m_AssertMsgStackDepth; }
+        void SetAssertStackDepth(int32 depth) { m_AssertMsgStackDepth = depth; }
+
         void SetDebuggerConnected(bool8 connected);
         bool IsDebuggerConnected(int32& debugger_session);
         void DebuggerNotifyAssert();
@@ -493,6 +498,11 @@ class CScriptContext
         bool8 EvaluateWatchExpression(const char* expression, bool8 conditional);
 		void ToggleVarWatch(int32 watch_request_id, uint32 object_id, uint32 var_name_hash, bool breakOnWrite,
                             const char* condition, const char* trace, bool8 trace_on_cond);
+
+        // -- in seconds, the duration the target will wait for a debugger to be connected, on assert
+        // (if there's a socket listening)
+        float m_DebuggerAssertConnectTime;
+        int32 m_AssertMsgStackDepth;
 
         // -- set the bool to indicate we're not stepping through each line in a debugger
 		int32 mDebuggerSessionNumber;

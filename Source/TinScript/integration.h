@@ -129,6 +129,9 @@ const int32 kExecStackSize = 4096;
 const int32 kExecFuncCallDepth = 2048;
 const int32 kExecFuncCallMaxLocalObjects = 32;
 
+const float kExecAssertConnectWaitTime = 30.0f;
+const int32 kExecAssertStackDepth = 5;
+
 const int32 kStringTableSize = 1024 * 1024;
 const int32 kStringTableDictionarySize = 1553;
 

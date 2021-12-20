@@ -383,6 +383,24 @@ void ContextScheduleCancelObject(uint32 objectid)
     script_context->GetScheduler()->CancelObject(objectid);
 }
 
+// ====================================================================================================================
+// ContextSetAssertConnectTime():  On Assert, if the IDE is not connected, how long do we wait for a connection.
+// ====================================================================================================================
+void ContextSetAssertConnectTime(float in_time_sec)
+{
+    CScriptContext* script_context = TinScript::GetContext();
+    script_context->SetAssertConnectTime(in_time_sec);
+}
+
+// ====================================================================================================================
+// ContextSetAssertConnectTime():  On Assert, how deep to we append the callstack to the assert message
+// ====================================================================================================================
+void ContextSetAssertStackDepth(int32 depth)
+{
+    CScriptContext* script_context = TinScript::GetContext();
+    script_context->SetAssertStackDepth(depth);
+}
+
 // == Registration ====================================================================================================
 
 // -- these methods all wrap some call to a member of ScriptContext
@@ -410,6 +428,9 @@ REGISTER_FUNCTION(SaveObjects, ContextSaveObjects);
 REGISTER_FUNCTION(ListSchedules, ContextListSchedules);
 REGISTER_FUNCTION(ScheduleCancel, ContextScheduleCancel);
 REGISTER_FUNCTION(ScheduleCancelObject, ContextScheduleCancelObject);
+
+REGISTER_FUNCTION(SetAssertConnectTime, ContextSetAssertConnectTime);
+REGISTER_FUNCTION(SetAssertStackDepth, ContextSetAssertStackDepth);
 
 // -- while technically not a context specific function, we need access to these functions anyways
 REGISTER_FUNCTION(Hash, CalcHash);
