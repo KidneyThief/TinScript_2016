@@ -469,7 +469,7 @@ class CScriptContext
 
         // -- debugger interface
         float GetAssertConnectTime() const { return m_DebuggerAssertConnectTime; }
-        void SetAssertConnectTime(float seconds) { m_DebuggerAssertConnectTime = m_DebuggerAssertConnectTime; }
+        void SetAssertConnectTime(float seconds) { m_DebuggerAssertConnectTime = seconds; }
         int32 GetAssertStackDepth() const { return m_AssertMsgStackDepth; }
         void SetAssertStackDepth(int32 depth) { m_AssertMsgStackDepth = depth; }
 
