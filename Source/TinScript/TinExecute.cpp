@@ -1541,8 +1541,8 @@ bool8 CCodeBlock::Execute(uint32 offset, CExecStack& execstack, CFunctionCallSta
         {
             if (funccallstack.mDebuggerObjectDeleted == 0 && funccallstack.mDebuggerFunctionReload == 0)
             {
-                ScriptAssert_(GetScriptContext(), false, GetFileName(), CalcLineNumber(instrptr - 1),
-                              "Error - Unable to execute OP:  %s\n", GetOperationString(curoperation));
+                DebuggerAssert_(false, this, instrptr - 1, execstack, funccallstack,
+                                "Error - Unable to execute OP:  %s\n", GetOperationString(curoperation));
             }
             return (false);
         }
