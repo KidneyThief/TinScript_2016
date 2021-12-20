@@ -1198,6 +1198,11 @@ bool8 DebuggerWaitForConnection(CScriptContext* script_context, const char* asse
         return false;
     }
 
+    // -- now set the timeout to 0.0...
+    // --we only get one shot at this, or waiting *every* assert
+    // hereafter would be tedious
+    script_context->SetAssertConnectTime(0.0f);
+
     // -- print the assert message, and the "waiting" message
     TinPrint(script_context, "*************************************************************\n");
     TinPrint(script_context, assert_msg);
@@ -1225,9 +1230,6 @@ bool8 DebuggerWaitForConnection(CScriptContext* script_context, const char* asse
         Sleep(1);
     }
 
-    // -- time out - note:  we only get one shot at this, or waiting *every* assert
-    // hereafter would be tedious
-    script_context->SetAssertConnectTime(0.0f);
     return false;
 }
 
