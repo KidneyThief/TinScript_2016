@@ -45,7 +45,7 @@ CCmdShell* CCmdShell::sm_cmdShell = nullptr;
 // ====================================================================================================================
 // CmdShellPrintf():  Default printf handler.
 // ====================================================================================================================
-int CmdShellPrintf(const char* fmt, ...)
+int CmdShellPrintf(int32 severity, const char* fmt, ...)
 {
     // -- notify the shell we're about to print
     if (CCmdShell::GetInstance() != nullptr)
@@ -57,7 +57,30 @@ int CmdShellPrintf(const char* fmt, ...)
     char buffer[1024];
     vsprintf_s(buffer, 1024, fmt, args);
     va_end(args);
-    printf(buffer);
+
+
+    switch (severity)
+    {
+        // "log" or "warning", or error - all go to the shell printf
+        default:
+        case 0:
+        case 1:
+        case 2:
+        {
+            printf(buffer);
+        }
+        break;
+
+        // -- asserts - we add an extra message that we'll wait for X seconds, to allow the IDE to be connected
+        case 3:
+        {
+            printf("*************************************************************\n");
+            printf(buffer);
+            printf("\n*** Waiting for %.1f seconds to connect the IDE to debug...\n", TinScript::GetContext()->GetAssertConnectTime());
+            printf("*************************************************************\n");
+        }
+        break;
+    }
 
     // -- notify the shell we're about to print
     if (CCmdShell::GetInstance() != nullptr)

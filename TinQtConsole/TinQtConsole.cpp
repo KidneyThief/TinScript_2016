@@ -397,7 +397,7 @@ int CConsoleWindow::Exec()
 // -- create a handler to register, so we can receive print messages and asserts
 bool PushAssertDialog(const char* assertmsg, const char* errormsg, bool& skip);
 
-int32 ConsolePrint(const char* fmt, ...)
+int32 ConsolePrint(int32 severity, const char* fmt, ...)
 {
     static bool initialized = false;
     static char last_msg[4096] = { '\0' };
@@ -473,7 +473,7 @@ bool8 AssertHandler(TinScript::CScriptContext* script_context, const char* condi
 {
     if (!script_context->IsAssertStackSkipped())
     {
-        ConsolePrint("\n*************************************************************\n");
+        ConsolePrint(3, "\n*************************************************************\n");
 
         // -- get the assert msg
         char assertmsg[2048];
@@ -488,11 +488,11 @@ bool8 AssertHandler(TinScript::CScriptContext* script_context, const char* condi
         vsprintf_s(errormsg, 2048, fmt, args);
         va_end(args);
 
-        ConsolePrint(assertmsg);
-        ConsolePrint(errormsg);
+        ConsolePrint(3, assertmsg);
+        ConsolePrint(3, errormsg);
 
         script_context->DumpExecutionCallStack(5);
-        ConsolePrint("*************************************************************\n");
+        ConsolePrint(3, "*************************************************************\n");
 
         bool press_skip = false;
         bool result = PushAssertDialog(assertmsg, errormsg, press_skip);
@@ -547,10 +547,10 @@ void CConsoleWindow::NotifyOnConnect()
     mConsoleInput->NotifyConnectionStatus(true);
 
     // -- add some details
-    ConsolePrint("*******************************************************************\n");
-    ConsolePrint("*                                 Debugger Connected                                     *\n");
-    ConsolePrint("*  All console input will be redirected to the connected target.  *\n");
-    ConsolePrint("*******************************************************************\n");
+    ConsolePrint(0, "*******************************************************************\n");
+    ConsolePrint(0, "*                                 Debugger Connected                                     *\n");
+    ConsolePrint(0, "*  All console input will be redirected to the connected target.  *\n");
+    ConsolePrint(0, "*******************************************************************\n");
 }
 
 void CConsoleWindow::NotifyOnDisconnect()
@@ -1472,9 +1472,9 @@ void CConsoleInput::OnReturnPressed()
 
     bool8 is_connected = CConsoleWindow::GetInstance()->IsConnected();
     if (is_connected)
-        ConsolePrint("%s%s\n", kConsoleSendPrefix, input_text);
+        ConsolePrint(0, "%s%s\n", kConsoleSendPrefix, input_text);
     else
-        ConsolePrint("%s%s\n", kLocalSendPrefix, input_text);
+        ConsolePrint(0, "%s%s\n", kLocalSendPrefix, input_text);
 
     // -- add this to the history buf
     const char* historyptr = (mHistoryLastIndex < 0) ? NULL : mHistory[mHistoryLastIndex].text;
@@ -1527,7 +1527,7 @@ void CConsoleInput::OnButtonExecPressed()
     {
         char cmd_buf[TinScript::kMaxNameLength];
         sprintf_s(cmd_buf, "Exec('%s');", filename);
-        ConsolePrint("%s%s\n", kConsoleSendPrefix, cmd_buf);
+        ConsolePrint(0, "%s%s\n", kConsoleSendPrefix, cmd_buf);
         SocketManager::SendCommand(cmd_buf);
     }
 }
@@ -2137,6 +2137,9 @@ void CConsoleOutput::HandlePacketPrintMsg(int32* dataPtr)
     // -- skip past the packet ID
     ++dataPtr;
 
+    // -- for now, skip past the severity
+    int32 severity = *dataPtr++;
+
     // -- get the length of the message string
     int32 msg_length = *dataPtr++;
 
@@ -2145,7 +2148,7 @@ void CConsoleOutput::HandlePacketPrintMsg(int32* dataPtr)
     dataPtr += (msg_length / 4);
 
     // -- add the message, preceded with some indication that it's a remote message
-    ConsolePrint("%s%s", kConsoleRecvPrefix, msg);
+    ConsolePrint(0, "%s%s", kConsoleRecvPrefix, msg);
 }
 
 // ====================================================================================================================
@@ -2286,8 +2289,8 @@ bool PushDebuggerAssertDialog(const char* assertmsg, bool& ignore)
     QString dialog_msg = QString(assertmsg);
     msgBox.setText(dialog_msg);
 
-    ConsolePrint("*** ASSERT ***\n");
-    ConsolePrint("%s\n", assertmsg);
+    ConsolePrint(3, "\n*** ASSERT ***\n");
+    ConsolePrint(3, "%s\n", assertmsg);
 
     QPushButton *ignore_button = msgBox.addButton("Ignore", QMessageBox::ActionRole);
     QPushButton *break_button = msgBox.addButton("Break", QMessageBox::ActionRole);

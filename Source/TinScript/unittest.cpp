@@ -942,7 +942,20 @@ void BeginUnitTests(bool8 results_only = false, const char* specific_test = NULL
 DWORD WINAPI MyThreadFunction(LPVOID lpParam)
 {
     // -- create a new script context
-    TinScript::CScriptContext* thread_context = TinScript::CScriptContext::Create(printf, NULL, false);
+	auto ThreadPrintf = [](int32 severity, const char* fmt, ...)
+	{
+		// -- compose the message
+		va_list args;
+		va_start(args, fmt);
+		char msg_buf[512];
+		vsprintf_s(msg_buf, 512, fmt, args);
+		va_end(args);
+
+		printf(msg_buf);
+		return 0;
+	};
+
+    TinScript::CScriptContext* thread_context = TinScript::CScriptContext::Create(ThreadPrintf, NULL, false);
 
     MTPrint("ALT THREAD:  Executing unit tests (results only) in a separate thread with its own context\n");
     BeginUnitTests(true);

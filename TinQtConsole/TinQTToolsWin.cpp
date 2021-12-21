@@ -210,12 +210,12 @@ void CDebugToolButton::OnButtonPressed()
     bool8 is_connected = CConsoleWindow::GetInstance()->IsConnected();
     if (is_connected)
     {
-        ConsolePrint("%s%s\n", kConsoleSendPrefix, mCommand);
+        ConsolePrint(0, "%s%s\n", kConsoleSendPrefix, mCommand);
         SocketManager::SendCommandf(mCommand);
     }
     else
     {
-        ConsolePrint("%s%s\n", kLocalSendPrefix, mCommand);
+        ConsolePrint(0, "%s%s\n", kLocalSendPrefix, mCommand);
         TinScript::ExecCommand(mCommand);
     }
 }
@@ -282,12 +282,12 @@ void CDebugToolSlider::OnSliderReleased()
     if (is_connected)
     {
         // -- for sliders, we need to embed the value, so the command is only the function name
-        ConsolePrint("%s%s\n", kConsoleSendPrefix, command_buf);
+        ConsolePrint(0, "%s%s\n", kConsoleSendPrefix, command_buf);
         SocketManager::SendCommandf(command_buf);
     }
     else
     {
-        ConsolePrint("%s%s\n", kLocalSendPrefix, command_buf);
+        ConsolePrint(0, "%s%s\n", kLocalSendPrefix, command_buf);
         TinScript::ExecCommand(command_buf);
     }
 }
@@ -350,12 +350,12 @@ void CDebugToolTextEdit::OnReturnPressed()
     if (is_connected)
     {
         // -- for sliders, we need to embed the value, so the command is only the function name
-        ConsolePrint("%s%s\n", kConsoleSendPrefix, command_buf);
+        ConsolePrint(0, "%s%s\n", kConsoleSendPrefix, command_buf);
         SocketManager::SendCommandf(command_buf);
     }
     else
     {
-        ConsolePrint("%s%s\n", kLocalSendPrefix, command_buf);
+        ConsolePrint(0, "%s%s\n", kLocalSendPrefix, command_buf);
         TinScript::ExecCommand(command_buf);
     }
 }
@@ -417,12 +417,12 @@ void CDebugToolCheckBox::OnClicked()
     if (is_connected)
     {
         // -- for sliders, we need to embed the value, so the command is only the function name
-        ConsolePrint("%s%s\n", kConsoleSendPrefix, command_buf);
+        ConsolePrint(0, "%s%s\n", kConsoleSendPrefix, command_buf);
         SocketManager::SendCommandf(command_buf);
     }
     else
     {
-        ConsolePrint("%s%s\n", kLocalSendPrefix, command_buf);
+        ConsolePrint(0, "%s%s\n", kLocalSendPrefix, command_buf);
         TinScript::ExecCommand(command_buf);
     }
 }

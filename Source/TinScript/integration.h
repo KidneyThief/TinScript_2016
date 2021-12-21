@@ -129,7 +129,16 @@ const int32 kExecStackSize = 4096;
 const int32 kExecFuncCallDepth = 2048;
 const int32 kExecFuncCallMaxLocalObjects = 32;
 
-const float kExecAssertConnectWaitTime = 30.0f;
+#if PLATFORM_UE4
+	// -- the AssertWaitForConnection uses an FMessageDialog, which halts execution
+	// until 'OK' is pressed...  as such, there's no need for a timeout
+	const float kExecAssertConnectWaitTime = 0.01f;
+#else
+	// -- in the default case, we may or may not have UI input, so the default implementation
+	// simply prints the assert message, and auto-continues after this timeout, if no IDE is connected
+	const float kExecAssertConnectWaitTime = 15.0f;
+#endif	
+
 const int32 kExecAssertStackDepth = 5;
 
 const int32 kStringTableSize = 1024 * 1024;
@@ -259,12 +268,34 @@ typedef bool8 (*TinAssertHandler)(TinScript::CScriptContext* script_context, con
     }
 
 // -- Pass a function of the following prototype when creating the CScriptContext
-typedef int32 (*TinPrintHandler)(const char* fmt, ...);
-#define TinPrint(scriptcontext, fmt, ...)                           \
-    if (scriptcontext != NULL)                                      \
-    {                                                               \
-        scriptcontext->GetPrintHandler()(fmt, ##__VA_ARGS__);       \
-        scriptcontext->DebuggerSendPrint(fmt, ##__VA_ARGS__);       \
+// -- we're going to use a simple "severity" int, which can redirect output per platform
+typedef int32 (*TinPrintHandler)(int32 severity, const char* fmt, ...);
+#define TinPrint(scriptcontext, fmt, ...)									\
+    if (scriptcontext != NULL)												\
+    {																		\
+        scriptcontext->GetPrintHandler()(0, fmt, ##__VA_ARGS__);			\
+        scriptcontext->DebuggerSendPrint(0, fmt, ##__VA_ARGS__);			\
+    }
+
+#define TinWarning(scriptcontext, fmt, ...)									\
+    if (scriptcontext != NULL)												\
+    {																		\
+        scriptcontext->GetPrintHandler()(1, fmt, ##__VA_ARGS__);			\
+        scriptcontext->DebuggerSendPrint(1, fmt, ##__VA_ARGS__);			\
+    }
+
+#define TinError(scriptcontext, fmt, ...)									\
+    if (scriptcontext != NULL)												\
+    {																		\
+        scriptcontext->GetPrintHandler()(2, fmt, ##__VA_ARGS__);			\
+        scriptcontext->DebuggerSendPrint(2, fmt, ##__VA_ARGS__);			\
+    }
+
+#define TinAssert(scriptcontext, fmt, ...)									\
+    if (scriptcontext != NULL)												\
+    {																		\
+        scriptcontext->GetPrintHandler()(3, fmt, ##__VA_ARGS__);			\
+        scriptcontext->DebuggerSendPrint(3, fmt, ##__VA_ARGS__);			\
     }
 
 #endif // __INTEGRATION_H

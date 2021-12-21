@@ -32,7 +32,7 @@
 #include "TinRegistration.h"
 
 // == prototypes ======================================================================================================
-int32 CmdShellPrintf(const char* fmt, ...);
+int32 CmdShellPrintf(int32 severity, const char* fmt, ...);
 bool8 CmdShellAssertHandler(TinScript::CScriptContext* script_context, const char* condition,
                             const char* file, int32 linenumber, const char* fmt, ...);
 

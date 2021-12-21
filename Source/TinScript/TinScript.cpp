@@ -215,7 +215,7 @@ bool8 NullAssertHandler(CScriptContext*, const char*, const char*, int32, const 
 // ====================================================================================================================
 // NullAssertHandler():  Default assert handler called, if one isn't provided
 // ====================================================================================================================
-int NullPrintHandler(const char*, ...)
+int NullPrintHandler(int32 severity, const char*, ...)
 {
     return (0);
 }
@@ -3095,7 +3095,7 @@ void CScriptContext::DebuggerSendAssert(const char* assert_msg, uint32 codeblock
 // ====================================================================================================================
 // DebuggerSendPrint():  Send a print message to the debugger (usually to echo the local output)
 // ====================================================================================================================
-void CScriptContext::DebuggerSendPrint(const char* fmt, ...)
+void CScriptContext::DebuggerSendPrint(int32 severity, const char* fmt, ...)
 {
     // -- ensure we have a valid string, and a connected debugger
     if (!fmt || !SocketManager::IsConnected())
@@ -3113,6 +3113,9 @@ void CScriptContext::DebuggerSendPrint(const char* fmt, ...)
 
     // -- first int32 will be identifying this data packet
     total_size += sizeof(int32);
+
+	// -- next int32 will be the severity
+	total_size += sizeof(int32);
 
     // -- send the length of the assert message, including EOL, and 4-byte aligned
     int32 msgLength = (int32)strlen(msg_buf) + 1;
@@ -3139,6 +3142,9 @@ void CScriptContext::DebuggerSendPrint(const char* fmt, ...)
 
     // -- write the identifier - defined in the debugger constants near the top of TinScript.h
     *dataPtr++ = k_DebuggerPrintMsgPacketID;
+
+	// -- send the length of the assert message, including EOL, and 4-byte aligned
+	*dataPtr++ = severity;
 
     // -- send the length of the assert message, including EOL, and 4-byte aligned
     *dataPtr++ = msgLength;

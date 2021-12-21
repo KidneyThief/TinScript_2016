@@ -537,7 +537,7 @@ class CScriptContext
         void DebuggerSendObjectVarTable(CDebuggerWatchVarEntry* callingFunction, CObjectEntry* oe, uint32 ns_hash,
                                         tVarTable* var_table);
         void DebuggerSendAssert(const char* assert_msg, uint32 codeblock_hash, int32 line_number);
-        void DebuggerSendPrint(const char* fmt, ...);
+        void DebuggerSendPrint(int32 severity, const char* fmt, ...);
 
         // -- methods to send object status updates to the debugger
         void DebuggerNotifyCreateObject(CObjectEntry* oe);

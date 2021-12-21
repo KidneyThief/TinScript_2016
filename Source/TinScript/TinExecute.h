@@ -409,6 +409,8 @@ bool8 ExecuteScheduledFunction(CScriptContext* script_context, uint32 objectid, 
 bool8 CodeBlockCallFunction(CFunctionEntry* fe, CObjectEntry* oe, CExecStack& execstack,
                             CFunctionCallStack& funccallstack, bool copy_stack_parameters);
 
+bool8 DebuggerWaitForConnection(CScriptContext* script_context, const char* assert_msg);
+
 bool8 DebuggerBreakLoop(CCodeBlock* cb, const uint32* instrptr, CExecStack& execstack,
                         CFunctionCallStack& funccallstack, const char* assert_msg = NULL);
 

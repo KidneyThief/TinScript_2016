@@ -401,7 +401,7 @@ class CConsoleOutput : public QListWidget
 // ====================================================================================================================
 // -- global interface
 TinScript::CScriptContext* GetScriptContext();
-int ConsolePrint(const char* fmt, ...);
+int ConsolePrint(int32 severity, const char* fmt, ...);
 
 #endif // __TINQTCONSOLE_H
 

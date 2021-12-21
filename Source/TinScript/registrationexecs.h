@@ -146,7 +146,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     // -- execute the function
     if (!ExecuteScheduledFunction(GetContext(), object_id, ns_hash, func_hash, fe->GetContext()))
     {
-        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - unable to exec function %s()\n", UnHash(func_hash));
+        TinPrint(script_context, "Error - unable to exec function %s()\n", UnHash(func_hash));
         return false;
     }
 
@@ -287,7 +287,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     // -- execute the function
     if (!ExecuteScheduledFunction(GetContext(), object_id, ns_hash, func_hash, fe->GetContext()))
     {
-        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - unable to exec function %s()\n", UnHash(func_hash));
+        TinPrint(script_context, "Error - unable to exec function %s()\n", UnHash(func_hash));
         return false;
     }
 
@@ -447,7 +447,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     // -- execute the function
     if (!ExecuteScheduledFunction(GetContext(), object_id, ns_hash, func_hash, fe->GetContext()))
     {
-        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - unable to exec function %s()\n", UnHash(func_hash));
+        TinPrint(script_context, "Error - unable to exec function %s()\n", UnHash(func_hash));
         return false;
     }
 
@@ -626,7 +626,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     // -- execute the function
     if (!ExecuteScheduledFunction(GetContext(), object_id, ns_hash, func_hash, fe->GetContext()))
     {
-        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - unable to exec function %s()\n", UnHash(func_hash));
+        TinPrint(script_context, "Error - unable to exec function %s()\n", UnHash(func_hash));
         return false;
     }
 
@@ -824,7 +824,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     // -- execute the function
     if (!ExecuteScheduledFunction(GetContext(), object_id, ns_hash, func_hash, fe->GetContext()))
     {
-        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - unable to exec function %s()\n", UnHash(func_hash));
+        TinPrint(script_context, "Error - unable to exec function %s()\n", UnHash(func_hash));
         return false;
     }
 
@@ -1041,7 +1041,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     // -- execute the function
     if (!ExecuteScheduledFunction(GetContext(), object_id, ns_hash, func_hash, fe->GetContext()))
     {
-        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - unable to exec function %s()\n", UnHash(func_hash));
+        TinPrint(script_context, "Error - unable to exec function %s()\n", UnHash(func_hash));
         return false;
     }
 
@@ -1277,7 +1277,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     // -- execute the function
     if (!ExecuteScheduledFunction(GetContext(), object_id, ns_hash, func_hash, fe->GetContext()))
     {
-        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - unable to exec function %s()\n", UnHash(func_hash));
+        TinPrint(script_context, "Error - unable to exec function %s()\n", UnHash(func_hash));
         return false;
     }
 
@@ -1532,7 +1532,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     // -- execute the function
     if (!ExecuteScheduledFunction(GetContext(), object_id, ns_hash, func_hash, fe->GetContext()))
     {
-        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - unable to exec function %s()\n", UnHash(func_hash));
+        TinPrint(script_context, "Error - unable to exec function %s()\n", UnHash(func_hash));
         return false;
     }
 
@@ -1806,7 +1806,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     // -- execute the function
     if (!ExecuteScheduledFunction(GetContext(), object_id, ns_hash, func_hash, fe->GetContext()))
     {
-        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - unable to exec function %s()\n", UnHash(func_hash));
+        TinPrint(script_context, "Error - unable to exec function %s()\n", UnHash(func_hash));
         return false;
     }
 
@@ -2099,7 +2099,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     // -- execute the function
     if (!ExecuteScheduledFunction(GetContext(), object_id, ns_hash, func_hash, fe->GetContext()))
     {
-        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - unable to exec function %s()\n", UnHash(func_hash));
+        TinPrint(script_context, "Error - unable to exec function %s()\n", UnHash(func_hash));
         return false;
     }
 
@@ -2411,7 +2411,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     // -- execute the function
     if (!ExecuteScheduledFunction(GetContext(), object_id, ns_hash, func_hash, fe->GetContext()))
     {
-        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - unable to exec function %s()\n", UnHash(func_hash));
+        TinPrint(script_context, "Error - unable to exec function %s()\n", UnHash(func_hash));
         return false;
     }
 
@@ -2742,7 +2742,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     // -- execute the function
     if (!ExecuteScheduledFunction(GetContext(), object_id, ns_hash, func_hash, fe->GetContext()))
     {
-        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - unable to exec function %s()\n", UnHash(func_hash));
+        TinPrint(script_context, "Error - unable to exec function %s()\n", UnHash(func_hash));
         return false;
     }
 
@@ -3092,7 +3092,7 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     // -- execute the function
     if (!ExecuteScheduledFunction(GetContext(), object_id, ns_hash, func_hash, fe->GetContext()))
     {
-        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - unable to exec function %s()\n", UnHash(func_hash));
+        TinPrint(script_context, "Error - unable to exec function %s()\n", UnHash(func_hash));
         return false;
     }
 

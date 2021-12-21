@@ -1456,7 +1456,7 @@ def GenerateExecs(maxparamcount, outputfilename):
         outputfile.write("    // -- execute the function\n");
         outputfile.write("    if (!ExecuteScheduledFunction(GetContext(), object_id, ns_hash, func_hash, fe->GetContext()))\n");
         outputfile.write("    {\n");
-        outputfile.write('        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - unable to exec function %s()\\n", UnHash(func_hash));\n');
+        outputfile.write('        TinPrint(script_context, "Error - unable to exec function %s()\\n", UnHash(func_hash));\n');
         outputfile.write("        return false;\n");
         outputfile.write("    }\n\n");
 

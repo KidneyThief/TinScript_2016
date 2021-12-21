@@ -169,7 +169,7 @@ void CScheduleEntry::OnButtonKillPressed()
     if (is_connected)
     {
         // -- for sliders, we need to embed the value, so the command is only the function name
-        ConsolePrint("%s%s\n", kConsoleSendPrefix, command_buf);
+        ConsolePrint(0, "%s%s\n", kConsoleSendPrefix, command_buf);
         SocketManager::SendCommand(command_buf);
     }
 }
