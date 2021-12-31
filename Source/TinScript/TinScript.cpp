@@ -360,6 +360,9 @@ CScriptContext::CScriptContext(TinPrintHandler printfunction, TinAssertHandler a
         regfunc = regfunc->GetNext();
     }
 
+    // -- for all registered functions/methods, register the defined default values
+    CRegDefaultArgValues::RegisterDefaultValues();
+
     // -- register globals
     CRegisterGlobal::RegisterGlobals(this);
 

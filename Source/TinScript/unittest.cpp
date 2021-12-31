@@ -1265,17 +1265,30 @@ REGISTER_FUNCTION(VoidStr1, VoidStr1)
 REGISTER_METHOD(CBase, TestP1, TestP1)
 REGISTER_METHOD(CBase, VoidP1, VoidP1)
 
-/*
-class Foo
+void TestDefaults(float testFName, int testIName, const char* testSName)
 {
+    TinPrint(TinScript::GetContext(), "### TestDefaults: %.2f, %d, %s\n", testFName, testIName, testSName);
+}
+//REGISTER_FUNCTION(TestDefaults, TestDefaults);
+REGISTER_FUNCTION(TestDefaults, TestDefaults);
+REGISTER_FUNCTION_DEFAULT_ARGS_P3(TestDefaults, "void", "in_float", 67.0f, "in_int", 49, "in_str", "foobar", "This is the help string for my function!");
+
+class TestFoo
+{
+public:
+    void TestDefaults(float testFName, int testIName, const char* testSName)
+    {
+        TinPrint(TinScript::GetContext(), "### TestDefaults: %.2f, %d, %s\n", testFName, testIName, testSName);
+    }
 };
 
-void TestBadParam(Foo* my_foo)
-{
-}
+REGISTER_SCRIPT_CLASS_BEGIN(TestFoo, VOID)
+REGISTER_SCRIPT_CLASS_END()
 
-REGISTER_FUNCTION(TestBadParam, TestBadParam);
-*/
+REGISTER_METHOD(TestFoo, TestDefaults, TestDefaults);
+REGISTER_METHOD_DEFAULT_ARGS_P3(TestFoo, TestDefaults, "void", "in_float", 67.0f, "in_int", 49, "in_str", "foobar", "This is the help string for my function!");
+
+
 
 // ------------------------------------------------------------------------------------------------
 // eof

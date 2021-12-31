@@ -2262,10 +2262,8 @@ bool8 OpExecFuncCallArgs(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CE
     }
 
     // -- push the function entry onto the call stack
-    // -- we're also going to zero out all parameters - by default, calling
-    // -- a function without passing a parameter value is the same as that
-    // -- passing 0
-    fe->GetContext()->ClearParameters();
+    // -- we're also going to initialize the parameters to the default values (if set, zero otherwise)
+    fe->GetContext()->InitDefaultArgs(fe);
 
     funccallstack.Push(fe, NULL, execstack.GetStackTop());
     DebugTrace(op, "%s", UnHash(fe->GetHash()));
@@ -2389,10 +2387,8 @@ bool8 OpExecMethodCallArgs(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, 
     }
 
     // -- push the function entry onto the call stack
-    // -- we're also going to zero out all parameters - by default, calling
-    // -- a function without passing a parameter value is the same as that
-    // -- passing 0
-    fe->GetContext()->ClearParameters();
+    // -- we're also going to initialize the parameters to the default values (if set, zero otherwise)
+    fe->GetContext()->InitDefaultArgs(fe);
 
     // -- push the function entry onto the call stack
     funccallstack.Push(fe, oe, execstack.GetStackTop());

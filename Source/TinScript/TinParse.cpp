@@ -1105,6 +1105,11 @@ void DumpFuncEntry(CScriptContext* script_context, CFunctionEntry* fe)
     eVarType return_type = func_context->GetParameterCount() > 0 ? func_context->GetParameter(0)->GetType()
                                                                  : TYPE_void;
 
+    // -- for registered functions, we may have a default values registration object
+    CRegDefaultArgValues* default_args = fe->GetType() == eFuncTypeRegistered && fe->GetRegObject()
+                                         ? fe->GetRegObject()->GetDefaultArgValues()
+                                         : nullptr;
+
     // -- some engines have print functions that auto-append EOL, so we want to print the signature as one line
     int32 length_left = kMaxTokenLength;
     char signature_buf[kMaxTokenLength];
@@ -1120,16 +1125,69 @@ void DumpFuncEntry(CScriptContext* script_context, CFunctionEntry* fe)
     {
         // -- subsequent params need commas...
         CVariableEntry* param = func_context->GetParameter(i);
-        len = sprintf_s(sig_ptr, length_left, "%s%s %s", (i >= 2 ? ", " : ""), GetRegisteredTypeName(param->GetType()),
-                                              UnHash(param->GetHash()));
+
+        bool has_default_value = false;
+        const char* default_arg_name = nullptr;
+        eVarType default_arg_type = TYPE_COUNT;
+        void* default_arg_value = nullptr;
+        if (default_args != nullptr && default_args->GetDefaultArgValue(i, default_arg_name, default_arg_type, default_arg_value))
+        {
+            // -- convert the default value to a string
+            char* value_as_string = nullptr;
+            if (default_arg_type == TYPE_string)
+                value_as_string = *(char**)default_arg_value;
+            else
+            {
+                value_as_string = script_context->GetScratchBuffer();
+                if (default_arg_type < TYPE_COUNT && gRegisteredTypeToString[default_arg_type] == nullptr ||
+                    !gRegisteredTypeToString[default_arg_type](script_context, default_arg_value, value_as_string, kMaxTokenLength))
+                {
+                    value_as_string = nullptr;
+                }
+            }
+            if (value_as_string != nullptr)
+            {
+                // -- strings continue to be a pain
+                if (default_arg_type == TYPE_string)
+                {
+                    len = sprintf_s(sig_ptr, length_left, "%s%s %s = `%s`", (i >= 2 ? ", " : ""), GetRegisteredTypeName(param->GetType()),
+                                                           default_arg_name, value_as_string);
+                }
+                else
+                {
+                    len = sprintf_s(sig_ptr, length_left, "%s%s %s = %s", (i >= 2 ? ", " : ""), GetRegisteredTypeName(param->GetType()),
+                                                           default_arg_name, value_as_string);
+                }
+                has_default_value = true;
+            }
+        }
+
+        // -- if we don't have a default value, or were unable to find/convert, print the standard param name
+        if (!has_default_value)
+        {
+            len = sprintf_s(sig_ptr, length_left, "%s%s %s", (i >= 2 ? ", " : ""), GetRegisteredTypeName(param->GetType()),
+                                                  UnHash(param->GetHash()));
+        }
         length_left -= len;
         sig_ptr += len;
         if (length_left <= 0)
             break;
     }
 
-    // -- close the signature string, and print
-    sprintf_s(sig_ptr, length_left, ")\n");
+    // -- close the signature string
+    len = sprintf_s(sig_ptr, length_left, ")\n");
+    sig_ptr += len;
+    length_left -= len;
+
+    // -- append the help string, if it exists
+    const char* help_str = default_args != nullptr ? default_args->GetHelpString() : nullptr;
+    if (help_str != nullptr && help_str[0] != '\0')
+    {
+        len = sprintf_s(sig_ptr, length_left, "        use: %s\n", help_str);
+        sig_ptr += len;
+        length_left -= len;
+    }
+
     TinPrint(script_context, signature_buf);
 }
 

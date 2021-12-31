@@ -94,6 +94,24 @@ def GenerateMacros(maxparamcount, outputfilename):
         regobjstring = regobjstring + "> _reg_##scriptname(#scriptname, funcname);";
         outputfile.write(regobjstring);
 
+
+        # function default args
+        regfuncdefaults = "\n\n#define REGISTER_FUNCTION_DEFAULT_ARGS_P%d" % paramcount + "(scriptname, r_name";
+        i = 1;
+        while (i <= paramcount):
+            regfuncdefaults = regfuncdefaults + ", p%d_name, p%d_value" % (i, i);
+            i = i + 1;
+        regfuncdefaults = regfuncdefaults + ", help_str) \\\n";
+        outputfile.write(regfuncdefaults);
+
+        regfuncargsobj = "    static ::TinScript::CRegisterDefaultArgsP%d _reg_defaults_##scriptname(&_reg_##scriptname, r_name" % paramcount
+        i = 1;
+        while (i <= paramcount):
+            regfuncargsobj = regfuncargsobj + ", p%d_name, p%d_value" % (i, i);
+            i = i + 1;
+        regfuncargsobj = regfuncargsobj + ", help_str)\n";
+        outputfile.write(regfuncargsobj);
+
         #  method
         regfuncstring = "\n\n#define REGISTER_METHOD_P%d" % paramcount + "(classname, scriptname, methodname, R";
         i = 1;
@@ -103,7 +121,7 @@ def GenerateMacros(maxparamcount, outputfilename):
         regfuncstring = regfuncstring + ")    \\\n";
         outputfile.write(regfuncstring);
         
-        wrapperstring = "    static R classname##methodname(classname* obj"
+        wrapperstring = "    static R classname##_##scriptname(classname* obj"
         i = 1;
         while (i <= paramcount):
             wrapperstring = wrapperstring + ", T%d t%d" % (i, i);
@@ -127,8 +145,25 @@ def GenerateMacros(maxparamcount, outputfilename):
         while (i <= paramcount):
             regobjstring = regobjstring + ", T%d" % i;
             i = i + 1;
-        regobjstring = regobjstring + "> _reg_##classname##methodname(#scriptname, classname##methodname);";
+        regobjstring = regobjstring + "> _reg_##classname##_##scriptname(#scriptname, classname##_##scriptname);";
         outputfile.write(regobjstring);
+
+        # method default args
+        regmethoddefaults = "\n\n#define REGISTER_METHOD_DEFAULT_ARGS_P%d" % paramcount + "(classname, scriptname, r_name";
+        i = 1;
+        while (i <= paramcount):
+            regmethoddefaults = regmethoddefaults + ", p%d_name, p%d_value" % (i, i);
+            i = i + 1;
+        regmethoddefaults = regmethoddefaults + ", help_str) \\\n";
+        outputfile.write(regmethoddefaults);
+
+        regmethodargsobj = "    static ::TinScript::CRegisterDefaultArgsP%d _reg_defaults_##classname##_##scriptname(&_reg_##classname##_##scriptname, r_name" % paramcount
+        i = 1;
+        while (i <= paramcount):
+            regmethodargsobj = regmethodargsobj + ", p%d_name, p%d_value" % (i, i);
+            i = i + 1;
+        regmethodargsobj = regmethodargsobj + ", help_str)\n";
+        outputfile.write(regmethodargsobj);
 
         # next class definition
         paramcount = paramcount + 1;
@@ -583,6 +618,77 @@ def GenerateClasses(maxparamcount, outputfilename):
     outputfile.close();
 
 # -----------------------------------------------------------------------------
+def GenerateDefaultArgs(maxparamcount, outputfilename):    
+    #open the output file
+    outputfile = open(outputfilename, 'w');
+
+    # -- add the MIT license to the top of the output file
+    OutputLicense(outputfile);
+
+    outputfile.write("// ------------------------------------------------------------------------------------------------\n");
+    outputfile.write("// Generated classes for function registration\n");
+    outputfile.write("// ------------------------------------------------------------------------------------------------\n");
+    outputfile.write("\n\n");
+
+    outputfile.write('#include "TinRegistration.h"\n');
+    outputfile.write('#include "TinVariableEntry.h"\n');
+    outputfile.write('#include "TinFunctionEntry.h"\n');
+
+    paramcount = 0;
+    while (paramcount <= maxparamcount):
+        outputfile.write("\n");
+        outputfile.write("// -------------------\n");
+        outputfile.write("// Parameter count: %d\n" % paramcount);
+        outputfile.write("// -------------------\n");
+        outputfile.write("\n");
+        
+        if (paramcount > 0):
+            template_string = "template<";
+            i = 1;
+            while (i <= paramcount):
+                if (i > 1):
+                    template_string = template_string + ", ";
+                template_string = template_string + "typename T%d" % i;
+                i = i + 1;
+            template_string = template_string + ">\n";
+            outputfile.write(template_string);
+
+        outputfile.write("class CRegisterDefaultArgsP%d : public CRegDefaultArgValues {\n" % paramcount);
+        outputfile.write("public:\n");
+        outputfile.write("\n");
+        outputfile.write("    CRegisterDefaultArgsP%d(::TinScript::CRegFunctionBase* reg_object, const char* _r_name,\n" % paramcount);
+        i = 1;
+        while (i <= paramcount):
+            outputfile.write("                            const char* _p%d_name, T%d _p%d_value,\n" % (i, i, i));
+            i = i + 1;
+        outputfile.write("                            const char* _help_str = \"\")\n");
+        outputfile.write("        : CRegDefaultArgValues(reg_object, %d, _help_str)\n" % paramcount);
+        outputfile.write("    {\n");
+        outputfile.write("        mDefaultValues[0].mName = _r_name;\n");
+        i = 1;
+        while (i <= paramcount):
+            outputfile.write("        mDefaultValues[%d].mName = _p%d_name;\n" % (i, i));
+            outputfile.write("        mDefaultValues[%d].mType = TinScript::GetRegisteredType(TinScript::GetTypeID<T%d>());\n" % (i, i));
+            outputfile.write("        memcpy(mDefaultValues[%d].mValue, &_p%d_value, sizeof(uint32) * MAX_TYPE_SIZE);\n\n" % (i, i));
+            i = i + 1;
+        outputfile.write("    }\n\n");
+
+        outputfile.write("    virtual int32 GetDefaultArgStorage(tDefaultValue*& out_storage)\n");
+        outputfile.write("    {\n");
+        outputfile.write("        out_storage = mDefaultValues;\n");
+        outputfile.write("        return %d;\n" % (paramcount + 1));
+        outputfile.write("    }\n\n");
+        outputfile.write("private:\n");
+        outputfile.write("    tDefaultValue mDefaultValues[%d];\n\n" % (paramcount + 1));
+        outputfile.write("};\n");
+
+        # -----------------------------------------------------------------------------------------
+        # next class definition
+        paramcount = paramcount + 1;
+
+    outputfile.close();
+
+# -----------------------------------------------------------------------------
 def GenerateVariadicClasses(maxparamcount, outputfilename):
     print("GenerateVariadicClasses - Output: %s" % outputfilename);
     
@@ -599,22 +705,22 @@ def GenerateVariadicClasses(maxparamcount, outputfilename):
 
     outputfile.write('#define REGISTER_FUNCTION(name, funcptr) \\\n');
     outputfile.write('    static const int gArgCount_##name = ::TinScript::SignatureArgCount<decltype(funcptr)>::arg_count; \\\n');
-    outputfile.write('    static ::TinScript::CRegisterFunction<gArgCount_##name, decltype(funcptr)> gReg_##name(#name, funcptr);\n');
+    outputfile.write('    static ::TinScript::CRegisterFunction<gArgCount_##name, decltype(funcptr)> _reg_##name(#name, funcptr);\n');
     outputfile.write("\n");
 
     outputfile.write("#if !PLATFORM_VS_2019\n");
     outputfile.write('    #define REGISTER_METHOD(classname, name, methodptr) \\\n');
     outputfile.write('        static const int gArgCount_##classname##_##name = ::TinScript::SignatureArgCount<decltype(std::declval<classname>().methodptr)>::arg_count; \\\n');
-    outputfile.write('        static ::TinScript::CRegisterMethod<gArgCount_##classname##_##name, classname, decltype(std::declval<classname>().methodptr)> gReg_##classname##_##name(#name, &classname::methodptr);\n');
+    outputfile.write('        static ::TinScript::CRegisterMethod<gArgCount_##classname##_##name, classname, decltype(std::declval<classname>().methodptr)> _reg_##classname##_##name(#name, &classname::methodptr);\n');
     outputfile.write("#else\n");
     outputfile.write('    #define REGISTER_METHOD(classname, name, methodptr) \\\n');
     outputfile.write('        static const int gArgCount_##classname##_##name = ::TinScript::MethodArgCount<decltype(&classname::methodptr)>::arg_count; \\\n');
-    outputfile.write('        static ::TinScript::CRegisterMethod<gArgCount_##classname##_##name, classname, decltype(&classname::methodptr)> gReg_##classname##_##name(#name, &classname::methodptr);\n');
+    outputfile.write('        static ::TinScript::CRegisterMethod<gArgCount_##classname##_##name, classname, decltype(&classname::methodptr)> _reg_##classname##_##name(#name, &classname::methodptr);\n');
     outputfile.write("#endif\n");
 
     outputfile.write('#define REGISTER_CLASS_FUNCTION(classname, name, methodptr) \\\n');
     outputfile.write('    static const int gArgCount_##classname##_##name = ::TinScript::SignatureArgCount<decltype(std::declval<classname>().methodptr)>::arg_count; \\\n');
-    outputfile.write('    static ::TinScript::CRegisterFunction<gArgCount_##classname##_##name, decltype(std::declval<classname>().methodptr)> gReg_##classname##_##name(#name, &classname::methodptr); \\\n');
+    outputfile.write('    static ::TinScript::CRegisterFunction<gArgCount_##classname##_##name, decltype(std::declval<classname>().methodptr)> _reg_##classname##_##name(#name, &classname::methodptr); \\\n');
     outputfile.write("\n");
 
     outputfile.write('template<typename S>\n');
@@ -1481,6 +1587,7 @@ def main():
     print ("***********************************\n");
     
     classesfilename = "registrationclasses.h";
+    defaultargsfilename = "registrationdefaultargs.h"
     macrosfilename = "registrationmacros.h";
     execsfilename = "registrationexecs.h";
 
@@ -1504,6 +1611,14 @@ def main():
                 maxparamcount = int(sys.argv[currentarg + 1]);
                 currentarg = currentarg + 2;
             
+        elif (sys.argv[currentarg] == "-od" or sys.argv[currentarg] == "-outputdefaultargs"):
+            if(currentarg + 1 >= argcount):
+                printhelp = 1;
+                currentarg = argcount;
+            else:
+                defaultargsfilename = sys.argv[currentarg + 1];
+                currentarg = currentarg + 2;
+
         elif (sys.argv[currentarg] == "-oc" or sys.argv[currentarg] == "-outputclasses"):
             if(currentarg + 1 >= argcount):
                 printhelp = 1;
@@ -1530,12 +1645,14 @@ def main():
         print (str("-h | -help").rjust(help_width) + " :  " + str("This help menu."));
         print (str("-maxparam <count>").rjust(help_width) + " :  " + str("maximum number or parameters"));
         print (str("-oc | -outputclasses <filename>").rjust(help_width) + " :  " + str("templated classes output file."));
+        print (str("-od | -outputcdefaultargs <filename>").rjust(help_width) + " :  " + str("default args output file."));
         print (str("-om | -outputmacros <filename>").rjust(help_width) + " :  " + str("macros output file."));
         print (str("-oe | -outputexecs <filename>").rjust(help_width) + " :  " + str("execs output file."));
         exit(0);
         
     else:
         GenerateClasses(maxparamcount, classesfilename);
+        GenerateDefaultArgs(maxparamcount, defaultargsfilename);
         GenerateMacros(maxparamcount, macrosfilename);
         GenerateExecs(maxparamcount, execsfilename);
         GenerateVariadicClasses(maxparamcount, variadicfilename);

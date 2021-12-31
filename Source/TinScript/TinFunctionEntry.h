@@ -57,6 +57,7 @@ public:
     int32 CalculateLocalVarStackSize();
     bool8 IsParameter(CVariableEntry* ve);
     void ClearParameters();
+    bool InitDefaultArgs(CFunctionEntry* fe);
     void InitStackVarOffsets(CFunctionEntry* fe);
 
     enum { eMaxParameterCount = 16,eMaxLocalVarCount = 37 };

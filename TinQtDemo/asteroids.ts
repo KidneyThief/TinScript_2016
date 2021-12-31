@@ -476,6 +476,9 @@ void AsteroidsGame::OnUpdate()
     {
         object delete_me = self.delete_set.GetObjectByIndex(0);
         destroy delete_me;
+
+        // uncomment this to see attaching the IDE *after* an assert has triggered
+        Print(1 / 0);
     }
 }
 

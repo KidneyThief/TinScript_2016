@@ -57,6 +57,45 @@ typedef CHashTable<CFunctionEntry> tFuncTable;
 // -- default usage is:  python genregclasses.py -maxparams 8
 #include "registrationmacros.h"
 
+class CRegFunctionBase;
+
+// ====================================================================================================================
+// class RegDefaultArgValues:  Base class for registering the default values, for registered functions.
+// ====================================================================================================================
+class CRegDefaultArgValues
+{
+public:
+    CRegDefaultArgValues(::TinScript::CRegFunctionBase* reg_object = nullptr, int default_arg_count = 0,
+                         const char*_help_str = "");
+
+    // -- we need to loop through the default variables "generically", so for each default values, we store a table
+    // -- of the max number of parameters
+    struct tDefaultValue
+    {
+        const char* mName = nullptr;
+        eVarType mType = TYPE_COUNT;
+        uint32 mValue[MAX_TYPE_SIZE];
+    };
+
+    virtual int32 GetDefaultArgStorage(tDefaultValue*& out_storage) = 0;
+    const char* GetHelpString() const { return mHelpString; }
+
+    // -- our base class can look up in the derived registered values, the name and address
+    bool GetDefaultArgValue(int32 index, const char*& out_name, eVarType& out_type, void*& out_val_addr);
+
+    // -- the only thing we need to do for registration, is hook up the default values object to the registration object
+    void Register();
+    static void RegisterDefaultValues();
+
+private:
+    CRegFunctionBase* mRegObject = nullptr;
+    int32 mArgCount = 0;
+    const char* mHelpString = "";
+
+    static CRegDefaultArgValues* gRegistrationList;
+    CRegDefaultArgValues* mNext = nullptr;
+};
+
 // ====================================================================================================================
 // class CRegFunctionBase:  Base class for registering functions.
 // Templated versions for each parameter variation are derived from this class, implemented in registrationclasses.h.
@@ -78,6 +117,9 @@ class CRegFunctionBase
         CFunctionContext* CreateContext();
         CFunctionContext* GetContext();
 
+        void SetDefaultArgValues(CRegDefaultArgValues* default_args) { m_DefaultArgs = default_args; }
+        CRegDefaultArgValues* GetDefaultArgValues() const { return m_DefaultArgs; }
+
         virtual void DispatchFunction(void*) = 0;
 
         virtual bool Register() = 0;
@@ -92,6 +134,10 @@ class CRegFunctionBase
         uint32 m_FunctionNameHash;
 
         CRegFunctionBase* next;
+
+        // -- used by ListFunctions() to pring a more helpful signature,
+        // and when preparing to call a registered function, we initialize with default args
+        CRegDefaultArgValues* m_DefaultArgs = nullptr;
 };
 
 // ====================================================================================================================
@@ -101,6 +147,7 @@ class CRegFunctionBase
 // -- default usage is:  python genregclasses.py -maxparams 8
 // -- included after the definition of CRegFunctionBase
 #include "registrationclasses.h"
+#include "registrationdefaultargs.h"
 #include "variadicclasses.h"
 
 }  // TinScript

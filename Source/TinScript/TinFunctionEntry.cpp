@@ -246,6 +246,71 @@ void CFunctionContext::ClearParameters()
 }
 
 // ====================================================================================================================
+// InitDefaultArgs():  Reset the value of all parameters to either '0', or to the default value
+// ====================================================================================================================
+bool CFunctionContext::InitDefaultArgs(CFunctionEntry* fe)
+{
+    // -- sanity check
+    if (fe == nullptr)
+        return false;
+
+    // -- for registered functions, we may have a default values registration object
+    CRegDefaultArgValues* default_args = fe->GetType() == eFuncTypeRegistered && fe->GetRegObject()
+        ? fe->GetRegObject()->GetDefaultArgValues()
+        : nullptr;
+
+    // -- if we have no default args, simply clear
+    if (default_args == nullptr)
+    {
+        ClearParameters();
+        return true;
+    }
+
+    // -- initialize the input parameters (starting at 1, since param 0 is the return value)
+    for (int32 i = 1; i < GetParameterCount(); ++i)
+    {
+        // -- subsequent params need commas...
+        CVariableEntry* ve = GetParameter(i);
+
+        bool has_default_value = false;
+        const char* default_arg_name = nullptr;
+        eVarType default_arg_type = TYPE_COUNT;
+        void* default_arg_value = nullptr;
+        if (default_args != nullptr && default_args->GetDefaultArgValue(i, default_arg_name, default_arg_type, default_arg_value))
+        {
+            // $$$TZA hashtable/array defaults are still "zero"
+            if (ve->GetType() == TYPE_hashtable || ve->IsArray())
+            {
+                ve->ClearArrayParameter();
+            }
+            else if (ve->GetType() != default_arg_type)
+            {
+                TinPrint(TinScript::GetContext(), "Error - %s(): InitDefaultArgs() - default arg %d is a different type\n",
+                    TinScript::UnHash(fe->GetHash()), i);
+                return false;
+            }
+            else
+            {
+                // note:  default_arg_value is the address of the value.. so if the value is a const char*, we've
+                // actually got a const char**... as always, strings are a pain
+                if (default_arg_type == TYPE_string)
+                {
+                    ve->SetValueAddr(NULL, (void*)(*(const char**)default_arg_value));
+                }
+                else
+                {
+                    // -- we're going to avoid the conversion, and require the types to be exact
+                    ve->SetValueAddr(NULL, (void*)default_arg_value);
+                }
+            }
+        }
+    }
+
+    // -- success
+    return true;
+}
+
+// ====================================================================================================================
 // InitStackVarOffsets():  Initialize the offset where the memory for a local variable can be found.
 // ====================================================================================================================
 void CFunctionContext::InitStackVarOffsets(CFunctionEntry* fe)

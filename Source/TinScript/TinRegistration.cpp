@@ -39,6 +39,125 @@
 namespace TinScript
 {
 
+// -- class CRegDefaultArgValues --------------------------------------------------------------------------------------
+
+CRegDefaultArgValues* CRegDefaultArgValues::gRegistrationList = nullptr;
+
+// ====================================================================================================================
+// constructor
+// ====================================================================================================================
+CRegDefaultArgValues::CRegDefaultArgValues(::TinScript::CRegFunctionBase* reg_object, int default_arg_count,
+                                           const char* help_str)
+    : mRegObject(reg_object)
+    , mArgCount(default_arg_count)
+    , mHelpString(help_str)
+{
+    mNext = gRegistrationList;
+    gRegistrationList = this;
+}
+
+// ====================================================================================================================
+// Register():  notifies the function registration object of this container of param names and default values
+// ====================================================================================================================
+void CRegDefaultArgValues::Register()
+{
+    CScriptContext* script_context = TinScript::GetContext();
+    if (script_context != nullptr && mRegObject != nullptr)
+    {
+        // -- find the function entry, and iterate through the parameters - ensure the count and type match
+        CNamespace* namespaceentry = mRegObject->GetClassNameHash() != 0
+                                     ? script_context->GetNamespaceDictionary()->FindItem(mRegObject->GetClassNameHash())
+                                     : script_context->GetGlobalNamespace();
+            
+        CFunctionEntry* fe = namespaceentry != nullptr
+                             ? namespaceentry->GetFuncTable()->FindItem(mRegObject->GetFunctionNameHash())
+                             : nullptr;
+        CFunctionContext* fc = fe != nullptr ? fe->GetContext() : nullptr;
+
+        bool verified = false;
+        if (fe != nullptr && fc != nullptr)
+        {
+            tDefaultValue* storage = nullptr;
+            int32 default_count = GetDefaultArgStorage(storage);
+
+            // -- ensure we have matching arg counts (account for the extra return)
+            if (default_count != fc->GetParameterCount())
+            {
+                TinPrint(TinScript::GetContext(), "mismatched arg count - specify %d default values\n", default_count);
+            }
+            else
+            {
+                verified = true;
+
+                // -- iterate through the default args, checking types
+                // note:  because this is C++, and for performance, there's no upside to allowing compatible types at the
+                // cost of a conversion - register the default args accurately!
+                for (int32 i = 1; i < default_count; ++i)
+                {
+                    CVariableEntry* ve = fc->GetParameter(i);
+                    if (ve->GetType() != storage[i].mType)
+                    {
+                        verified = false;
+                        TinPrint(TinScript::GetContext(), "Type mismatch on param: %d, should be %s\n", i, GetRegisteredTypeName(ve->GetType()));
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (verified)
+        {
+            mRegObject->SetDefaultArgValues(this);
+        }
+        else
+        {
+            if (mRegObject->GetClassNameHash() != 0)
+            {
+                TinPrint(script_context, "Error - CRegDefaultArgValues::Register() failed: method %s::%s()",
+                                          TinScript::UnHash(mRegObject->GetClassNameHash()),
+                                          TinScript::UnHash(mRegObject->GetFunctionNameHash()));
+            }
+            else
+            {
+                TinPrint(script_context, "Error - CRegDefaultArgValues::Register() failed: function %s()",
+                                         TinScript::UnHash(mRegObject->GetFunctionNameHash()));
+            }
+        }
+    }
+}
+
+// ====================================================================================================================
+// RegisterDefaultValues():  initialization function, called on TinScript::CreateContext()
+// ====================================================================================================================
+void CRegDefaultArgValues::RegisterDefaultValues()
+{
+    CRegDefaultArgValues* current = gRegistrationList;
+    while (current != nullptr)
+    {
+        current->Register();
+        current = current->mNext;
+    }
+}
+
+// ====================================================================================================================
+// GetDefaultArgValue():  get the name and default value (address) for a registered function
+// ====================================================================================================================
+bool CRegDefaultArgValues::GetDefaultArgValue(int32 index, const char*& out_name, eVarType& out_val_type,
+                                              void*& out_val_addr)
+{
+    tDefaultValue* storage = nullptr;
+    int32 param_count = GetDefaultArgStorage(storage);
+
+    // sanity check - note param 0 is the return, p1 = arg1 etc, just like CFunctionContext
+    if (index < 1 || index >= param_count)
+        return false;
+
+    out_name = storage[index].mName;
+    out_val_type = storage[index].mType;
+    out_val_addr = (void*)(&(storage[index].mValue));
+    return true;
+}
+
 // -- class CRegFunctionBase ------------------------------------------------------------------------------------------
 
 CRegFunctionBase* CRegFunctionBase::gRegistrationList = NULL;

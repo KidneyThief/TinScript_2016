@@ -26,20 +26,20 @@
 
 #define REGISTER_FUNCTION(name, funcptr) \
     static const int gArgCount_##name = ::TinScript::SignatureArgCount<decltype(funcptr)>::arg_count; \
-    static ::TinScript::CRegisterFunction<gArgCount_##name, decltype(funcptr)> gReg_##name(#name, funcptr);
+    static ::TinScript::CRegisterFunction<gArgCount_##name, decltype(funcptr)> _reg_##name(#name, funcptr);
 
 #if !PLATFORM_VS_2019
     #define REGISTER_METHOD(classname, name, methodptr) \
         static const int gArgCount_##classname##_##name = ::TinScript::SignatureArgCount<decltype(std::declval<classname>().methodptr)>::arg_count; \
-        static ::TinScript::CRegisterMethod<gArgCount_##classname##_##name, classname, decltype(std::declval<classname>().methodptr)> gReg_##classname##_##name(#name, &classname::methodptr);
+        static ::TinScript::CRegisterMethod<gArgCount_##classname##_##name, classname, decltype(std::declval<classname>().methodptr)> _reg_##classname##_##name(#name, &classname::methodptr);
 #else
     #define REGISTER_METHOD(classname, name, methodptr) \
         static const int gArgCount_##classname##_##name = ::TinScript::MethodArgCount<decltype(&classname::methodptr)>::arg_count; \
-        static ::TinScript::CRegisterMethod<gArgCount_##classname##_##name, classname, decltype(&classname::methodptr)> gReg_##classname##_##name(#name, &classname::methodptr);
+        static ::TinScript::CRegisterMethod<gArgCount_##classname##_##name, classname, decltype(&classname::methodptr)> _reg_##classname##_##name(#name, &classname::methodptr);
 #endif
 #define REGISTER_CLASS_FUNCTION(classname, name, methodptr) \
     static const int gArgCount_##classname##_##name = ::TinScript::SignatureArgCount<decltype(std::declval<classname>().methodptr)>::arg_count; \
-    static ::TinScript::CRegisterFunction<gArgCount_##classname##_##name, decltype(std::declval<classname>().methodptr)> gReg_##classname##_##name(#name, &classname::methodptr); \
+    static ::TinScript::CRegisterFunction<gArgCount_##classname##_##name, decltype(std::declval<classname>().methodptr)> _reg_##classname##_##name(#name, &classname::methodptr); \
 
 template<typename S>
 class SignatureArgCount;
