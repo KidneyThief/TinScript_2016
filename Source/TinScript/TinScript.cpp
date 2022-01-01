@@ -3197,6 +3197,9 @@ void CScriptContext::DebuggerRequestFunctionAssist(uint32 object_id)
                     entry.mParameterCount = 0;
                     SafeStrcpy(entry.mSearchName, sizeof(entry.mSearchName), current_name);
 
+                    entry.mHasDefaultValues = false;
+                    entry.mHelpString[0] = '\0';
+
                     // -- send the entry
                     DebuggerSendFunctionAssistEntry(entry);
                 }
@@ -3301,6 +3304,44 @@ void CScriptContext::DebuggerSendFunctionTable(int32 object_id, uint32 ns_hash, 
             entry.mNameHash[i] = parameter->GetHash();
         }
 
+        // -- fill in the help string and default values
+        CRegDefaultArgValues* default_args = function_entry->GetRegObject()
+                                             ? function_entry->GetRegObject()->GetDefaultArgValues()
+                                             : nullptr;
+        if (default_args != nullptr)
+        {
+            // -- copy the help string
+            SafeStrcpy(entry.mHelpString, sizeof(entry.mHelpString), default_args->GetHelpString());
+
+            // -- default arg types are guaranteed to match parameter types
+            CRegDefaultArgValues::tDefaultValue* storage = nullptr;
+            int32 default_count = default_args->GetDefaultArgStorage(storage);
+            entry.mHasDefaultValues = (default_count > 0);
+            for (int i = 0; i < default_count; ++i)
+            {
+                // -- replace the name hash, with the default args param name
+                if (storage[i].mName[0] != '\0')
+                    entry.mNameHash[i] = Hash(storage[i].mName);
+
+                // -- copy the block of data representing the default value
+                // -- if this is a string, we want to send the string hash instead
+                // note:  parameter 0 is the return value, the default value is meaningless
+                if (storage[i].mType == TYPE_string)
+                {
+                    uint32 hash = Hash(*(char**)storage[i].mValue);
+                    memcpy(entry.mDefaultValue[i], &hash, sizeof(uint32));
+                }
+                else if (storage[i].mType < TYPE_COUNT && gRegisteredTypeSize[storage[i].mType] > 0)
+                {
+                    memcpy(entry.mDefaultValue[i], storage[i].mValue, gRegisteredTypeSize[storage[i].mType]);
+                }
+                else
+                {
+                    memset(entry.mDefaultValue[i], 0, sizeof(uint32) * MAX_TYPE_SIZE);
+                }
+            }
+        }
+
         // -- send the entry
         DebuggerSendFunctionAssistEntry(entry);
 
@@ -3351,10 +3392,28 @@ void CScriptContext::DebuggerSendFunctionAssistEntry(const CDebuggerFunctionAssi
     total_size += (sizeof(int32) * function_assist_entry.mParameterCount);
 
     // -- is array (x parameter count)
-    total_size += (sizeof(int32) * function_assist_entry.mParameterCount);;
+    total_size += (sizeof(int32) * function_assist_entry.mParameterCount);
 
     // -- parameter name hash (x parameter count)
-    total_size += (sizeof(int32) * function_assist_entry.mParameterCount);;
+    total_size += (sizeof(int32) * function_assist_entry.mParameterCount);
+
+    // -- help string
+    int32 helpLength = (int32)strlen(function_assist_entry.mHelpString) + 1;
+    helpLength += 4 - (helpLength % 4);
+
+    // -- add the help string length, followed by the actual string
+    total_size += sizeof(int32);
+    total_size += helpLength;
+
+    // -- add the bool for sending default arg values
+    total_size += sizeof(int32);
+
+    // -- if we send default values, add the storage size
+    // note:  we don't send a default value for 0, since it's the return parameter
+    if (function_assist_entry.mHasDefaultValues)
+    {
+        total_size += (sizeof(uint32) * MAX_TYPE_SIZE) * (function_assist_entry.mParameterCount - 1);
+    }
 
     // -- declare a header
     // -- note, if we ever implement a request/acknowledge approach, we can use the mID field
@@ -3411,6 +3470,26 @@ void CScriptContext::DebuggerSendFunctionAssistEntry(const CDebuggerFunctionAssi
 
         // -- name hash
         *dataPtr++ = function_assist_entry.mNameHash[i];
+    }
+
+    // -- send the help string length
+    *dataPtr++ = helpLength;
+
+    // -- write the help string
+    SafeStrcpy((char*)dataPtr, helpLength, function_assist_entry.mHelpString, helpLength);
+    dataPtr += (helpLength / 4);
+
+    // -- send the bool for sending default arg values
+    *dataPtr++ = function_assist_entry.mHasDefaultValues ? true : false;
+
+    // -- if we send default values, add the storage size
+    if (function_assist_entry.mHasDefaultValues)
+    {
+        for (int i = 1; i < function_assist_entry.mParameterCount; ++i)
+        {
+            memcpy((void*)dataPtr, function_assist_entry.mDefaultValue[i], sizeof(uint32) * MAX_TYPE_SIZE);
+            dataPtr += MAX_TYPE_SIZE;
+        }
     }
 
     // -- send the packet

@@ -1132,19 +1132,7 @@ void DumpFuncEntry(CScriptContext* script_context, CFunctionEntry* fe)
         void* default_arg_value = nullptr;
         if (default_args != nullptr && default_args->GetDefaultArgValue(i, default_arg_name, default_arg_type, default_arg_value))
         {
-            // -- convert the default value to a string
-            char* value_as_string = nullptr;
-            if (default_arg_type == TYPE_string)
-                value_as_string = *(char**)default_arg_value;
-            else
-            {
-                value_as_string = script_context->GetScratchBuffer();
-                if (default_arg_type < TYPE_COUNT && gRegisteredTypeToString[default_arg_type] == nullptr ||
-                    !gRegisteredTypeToString[default_arg_type](script_context, default_arg_value, value_as_string, kMaxTokenLength))
-                {
-                    value_as_string = nullptr;
-                }
-            }
+            const char* value_as_string = CRegDefaultArgValues::GetDefaultValueAsString(default_arg_type, default_arg_value, false);
             if (value_as_string != nullptr)
             {
                 // -- strings continue to be a pain

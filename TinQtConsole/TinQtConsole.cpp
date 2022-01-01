@@ -2174,7 +2174,7 @@ void CConsoleOutput::HandlePacketFunctionAssist(int32* dataPtr)
 	// -- function hash
 	function_assist_entry.mFunctionHash = *dataPtr++;
 
-    // -- value string length
+    // -- name string length
     int32 name_length = *dataPtr++;
 
     // -- copy the search name string
@@ -2200,6 +2200,27 @@ void CConsoleOutput::HandlePacketFunctionAssist(int32* dataPtr)
 
         // -- name hash
         function_assist_entry.mNameHash[i] = *dataPtr++;
+    }
+
+    // -- help string length
+    int32 help_length = *dataPtr++;
+
+    // -- copy the help string
+    TinScript::SafeStrcpy(function_assist_entry.mHelpString, sizeof(function_assist_entry.mHelpString),
+                          (const char*)dataPtr);
+    dataPtr += (help_length / 4);
+
+    // -- see if we have default values
+    function_assist_entry.mHasDefaultValues = (bool)*dataPtr++;
+
+    // -- if we send default values, add the storage size
+    if (function_assist_entry.mHasDefaultValues)
+    {
+        for (int i = 1; i < function_assist_entry.mParameterCount; ++i)
+        {
+            memcpy(function_assist_entry.mDefaultValue[i], (void*)dataPtr, sizeof(uint32) * MAX_TYPE_SIZE);
+            dataPtr += MAX_TYPE_SIZE;
+        }
     }
 
     // -- notify the function assist window

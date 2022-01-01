@@ -87,6 +87,11 @@ public:
     void Register();
     static void RegisterDefaultValues();
 
+    // -- we need a way to convert to a readable string -
+    // locally (e.g. for ListFunctions()), default values store const char** string literals
+    // remote (e.g. from the TinQtConsole), the serialized value is the string hash
+    static const char* GetDefaultValueAsString(eVarType type, void* value, bool uses_ste);
+
 private:
     CRegFunctionBase* mRegObject = nullptr;
     int32 mArgCount = 0;

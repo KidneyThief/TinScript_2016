@@ -92,9 +92,32 @@ void CRegDefaultArgValues::Register()
                 // -- iterate through the default args, checking types
                 // note:  because this is C++, and for performance, there's no upside to allowing compatible types at the
                 // cost of a conversion - register the default args accurately!
-                for (int32 i = 1; i < default_count; ++i)
+                for (int32 i = 0; i < default_count; ++i)
                 {
+                    // -- add the default name to the string table
+                    if (storage[i].mName[0] != '\0')
+                    {
+                        Hash(storage[i].mName);
+                    }
+
+                    // -- we don't use a default type or value for the return parameter
+                    if (i == 0)
+                        continue;
+
                     CVariableEntry* ve = fc->GetParameter(i);
+
+                    // -- we only care about types that can actually have a default value
+                    if (ve->GetType() == TYPE_hashtable || ve->IsArray())
+                        continue;
+                    if (ve->GetType() == TYPE_object)
+                        continue;
+
+                    // -- if the default value is a string, also add it to the string table
+                    if (storage[i].mType == TYPE_string && ((char*)storage[i].mValue)[0] != '\0')
+                    {
+                        Hash((char*)storage[i].mValue);
+                    }
+
                     if (ve->GetType() != storage[i].mType)
                     {
                         verified = false;
@@ -156,6 +179,42 @@ bool CRegDefaultArgValues::GetDefaultArgValue(int32 index, const char*& out_name
     out_val_type = storage[index].mType;
     out_val_addr = (void*)(&(storage[index].mValue));
     return true;
+}
+
+// ====================================================================================================================
+// GetDefaultValueAsString():  returns the const char* of a default value
+// ====================================================================================================================
+const char* CRegDefaultArgValues::GetDefaultValueAsString(eVarType type, void* value, bool uses_ste)
+{
+    // -- sanity check
+    if (value == nullptr)
+        return "";
+
+    // -- convert the default value to a string
+    const char* value_as_string = nullptr;
+    if (type == TYPE_string)
+    {
+        if (!uses_ste)
+        {
+            value_as_string = *(char**)value;
+        }
+        else
+        {
+            value_as_string = TinScript::UnHash(*(uint32*)value);
+        }
+    }
+    else
+    {
+        value_as_string = TinScript::GetContext()->GetScratchBuffer();
+        if (type >= TYPE_COUNT || gRegisteredTypeToString[type] == nullptr ||
+            !gRegisteredTypeToString[type](TinScript::GetContext(), value, const_cast<char*>(value_as_string),
+                                           kMaxTokenLength))
+        {
+            value_as_string = nullptr;
+        }
+    }
+
+    return value_as_string;
 }
 
 // -- class CRegFunctionBase ------------------------------------------------------------------------------------------

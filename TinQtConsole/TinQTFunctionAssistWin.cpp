@@ -28,6 +28,7 @@
 #include <qlist.h>
 #include <qlabel.h>
 #include <QKeyEvent>
+#include <QToolTip>
 
 // -- TinScript includes
 #include "TinScript.h"
@@ -1255,6 +1256,11 @@ void CFunctionAssistList::OnClicked(QTreeWidgetItem* item)
 {
     CFunctionListEntry* entry = static_cast<CFunctionListEntry*>(item);
     mOwner->NotifyAssistEntryClicked(entry->mFunctionAssistEntry);
+
+    if (entry != nullptr && entry->mFunctionAssistEntry != nullptr && entry->mFunctionAssistEntry->mHelpString[0] != '\0')
+    {
+        QToolTip::showText(QCursor::pos(), QString(entry->mFunctionAssistEntry->mHelpString));
+    }
 }
 
 // ====================================================================================================================
@@ -1272,7 +1278,7 @@ void CFunctionAssistList::OnDoubleClicked(QTreeWidgetItem* item)
 // constructor:  For an entry representing a variable (type, name, array, value).
 // ====================================================================================================================
 CFunctionParameterEntry::CFunctionParameterEntry(TinScript::eVarType var_type, bool is_array, const char* _name,
-                                                 QTreeWidget* _owner)
+                                                 uint32* default_value, QTreeWidget* _owner)
     : QTreeWidgetItem(_owner)
 {
     mIsOriginEntry = false;
@@ -1282,6 +1288,22 @@ CFunctionParameterEntry::CFunctionParameterEntry(TinScript::eVarType var_type, b
     sprintf_s(type_buf, "%s%s", type_name, is_array ? "[]" : "");
     setText(0, type_buf);
     setText(1, _name);
+
+    // -- see if we have a default value
+    // -- this is weird, but we can use the tool's integration of TinScript to convert from the default value to
+    // a string format
+    if (default_value != nullptr)
+    {
+        const char* value_as_string = TinScript::CRegDefaultArgValues::GetDefaultValueAsString(var_type, default_value, true);
+        if (value_as_string != nullptr)
+        {
+            // -- wrap in quotes, if needed
+            if (var_type == TinScript::TYPE_string)
+                setText(2, QString("`").append(value_as_string).append("`"));
+            else
+                setText(2, value_as_string);
+        }
+    }
 }
 
 // ====================================================================================================================
@@ -1335,7 +1357,8 @@ CFunctionParameterList::CFunctionParameterList(QWidget* parent)
   	mHeader = new QTreeWidgetItem();
 	mHeader->setText(0, QString("Type"));
 	mHeader->setText(1, QString("Name"));
-	setHeaderItem(mHeader);
+    mHeader->setText(2, QString("Default"));
+    setHeaderItem(mHeader);
 
     // -- connect up both the clicked and double clicked slots
     QObject::connect(this,SIGNAL(itemDoubleClicked(QTreeWidgetItem*,int)),this,SLOT(OnDoubleClicked(QTreeWidgetItem*)));
@@ -1382,7 +1405,10 @@ void CFunctionParameterList::PopulateWithSignature(TinScript::CDebuggerFunctionA
         TinScript::eVarType var_type = assist_entry->mType[i];
         bool is_array = assist_entry->mIsArray[i];
         const char* var_name = TinScript::UnHash(assist_entry->mNameHash[i]);
-        CFunctionParameterEntry* new_parameter = new CFunctionParameterEntry(var_type, is_array, var_name, this);
+        // note:  parameter 0 is the return value, and cannot have a default value
+        uint32* default_value = i > 0 && assist_entry->mHasDefaultValues ? assist_entry->mDefaultValue[i] : nullptr;
+        CFunctionParameterEntry* new_parameter = new CFunctionParameterEntry(var_type, is_array, var_name,
+                                                                             default_value, this);
         mParameterList.append(new_parameter);
     }
 }

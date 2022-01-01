@@ -341,6 +341,12 @@ enum class eFunctionEntryType: uint8 { None = 0,Object,Namespace,Function,Count 
 class CDebuggerFunctionAssistEntry
 {
     public:
+        CDebuggerFunctionAssistEntry()
+        {
+            mSearchName[0] = '\0';
+            mHelpString[0] = '\0';
+        }
+
         // -- the assist requests are for a specific object (or the global namespace)
         eFunctionEntryType mEntryType = eFunctionEntryType::None;
 		uint32 mObjectID = 0;
@@ -356,6 +362,11 @@ class CDebuggerFunctionAssistEntry
         eVarType mType[kMaxRegisteredParameterCount + 1];
         bool8 mIsArray[kMaxRegisteredParameterCount + 1];
         uint32 mNameHash[kMaxRegisteredParameterCount + 1];
+
+        // -- we may also have a help string, and default arg values
+        char mHelpString[kMaxNameLength];
+        bool mHasDefaultValues = false;
+        uint32 mDefaultValue[kMaxRegisteredParameterCount + 1][MAX_TYPE_SIZE];
 };
 
 // ====================================================================================================================

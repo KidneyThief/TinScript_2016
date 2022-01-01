@@ -1269,9 +1269,8 @@ void TestDefaults(float testFName, int testIName, const char* testSName)
 {
     TinPrint(TinScript::GetContext(), "### TestDefaults: %.2f, %d, %s\n", testFName, testIName, testSName);
 }
-//REGISTER_FUNCTION(TestDefaults, TestDefaults);
 REGISTER_FUNCTION(TestDefaults, TestDefaults);
-REGISTER_FUNCTION_DEFAULT_ARGS_P3(TestDefaults, "void", "in_float", 67.0f, "in_int", 49, "in_str", "foobar", "This is the help string for my function!");
+REGISTER_FUNCTION_DEFAULT_ARGS_P3(TestDefaults, "return", "in_float", 67.0f, "in_int", 49, "in_str", "foobar", "This is the help string for my function!");
 
 class TestFoo
 {
@@ -1286,9 +1285,7 @@ REGISTER_SCRIPT_CLASS_BEGIN(TestFoo, VOID)
 REGISTER_SCRIPT_CLASS_END()
 
 REGISTER_METHOD(TestFoo, TestDefaults, TestDefaults);
-REGISTER_METHOD_DEFAULT_ARGS_P3(TestFoo, TestDefaults, "void", "in_float", 67.0f, "in_int", 49, "in_str", "foobar", "This is the help string for my function!");
-
-
+REGISTER_METHOD_DEFAULT_ARGS_P3(TestFoo, TestDefaults, "return", "in_float", 67.0f, "in_int", 49, "in_str", "foobar", "This is the help string for my function!");
 
 // ------------------------------------------------------------------------------------------------
 // eof

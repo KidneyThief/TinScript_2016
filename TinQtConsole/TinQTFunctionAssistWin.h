@@ -203,7 +203,8 @@ class CFunctionAssistList : public QTreeWidget
 class CFunctionParameterEntry : public QTreeWidgetItem
 {
     public:
-        CFunctionParameterEntry(TinScript::eVarType var_type, bool is_array, const char* _name, QTreeWidget* _owner);
+        CFunctionParameterEntry(TinScript::eVarType var_type, bool is_array, const char* _name,
+                                uint32* default_value, QTreeWidget* _owner);
         CFunctionParameterEntry(const char* _filename, uint32 _filehash, int32 _line_number, QTreeWidget* _owner);
         ~CFunctionParameterEntry();
 
