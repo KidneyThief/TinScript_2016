@@ -32,6 +32,49 @@
 namespace TinScript
 {
 
+// -- the object must exist
+inline bool8 ObjHasMethod(void* obj_addr, int32 method_hash)
+{
+    CScriptContext* script_context = TinScript::GetContext();
+    if (script_context == nullptr)
+    {
+        ScriptAssert_(script_context, 0, "<internal>", -1, "TinScript context does not exist!\n");
+        return false;
+    }
+
+    CObjectEntry* oe = script_context->FindObjectByAddress(obj_addr);
+    if (oe == nullptr)
+    {
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - object not found\n");
+        return false;
+    }
+
+    CFunctionEntry* fe = oe->GetFunctionEntry(0, method_hash);
+    return (fe != nullptr);
+}
+
+// -- the object must exist
+inline bool8 ObjHasMethod(uint32 obj_id, int32 method_hash)
+{
+    CScriptContext* script_context = TinScript::GetContext();
+    if (script_context == nullptr)
+    {
+        ScriptAssert_(script_context, 0, "<internal>", -1, "TinScript context does not exist!\n");
+        return false;
+    }
+
+    CObjectEntry* oe = script_context->FindObjectEntry(obj_id);
+    if (oe == nullptr)
+    {
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - object not found\n");
+        return false;
+    }
+
+    CFunctionEntry* fe = oe->GetFunctionEntry(0, method_hash);
+    return (fe != nullptr);
+}
+
+
 
 // -- Parameter count: 0
 template<typename R>

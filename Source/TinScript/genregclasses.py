@@ -1293,7 +1293,49 @@ def GenerateExecs(maxparamcount, outputfilename):
     outputfile.write('#include "TinExecute.h"\n\n');
 
     outputfile.write("namespace TinScript\n");
+    outputfile.write("{\n\n");
+
+    outputfile.write("// -- the object must exist\n");
+    outputfile.write("inline bool8 ObjHasMethod(void* obj_addr, int32 method_hash)\n");
     outputfile.write("{\n");
+    outputfile.write("    CScriptContext* script_context = TinScript::GetContext();\n");
+    outputfile.write("    if (script_context == nullptr)\n");
+    outputfile.write("    {\n");
+    outputfile.write("        ScriptAssert_(script_context, 0, \"<internal>\", -1, \"TinScript context does not exist!\\n\");\n");
+    outputfile.write("        return false;\n");
+    outputfile.write("    }\n\n");
+
+    outputfile.write("    CObjectEntry* oe = script_context->FindObjectByAddress(obj_addr);\n");
+    outputfile.write("    if (oe == nullptr)\n");
+    outputfile.write("    {\n");
+    outputfile.write("        ScriptAssert_(script_context, 0, \"<internal>\", -1, \"Error - object not found\\n\");\n");
+    outputfile.write("        return false;\n");
+    outputfile.write("    }\n\n");
+
+    outputfile.write("    CFunctionEntry* fe = oe->GetFunctionEntry(0, method_hash);\n");
+    outputfile.write("    return (fe != nullptr);\n");
+    outputfile.write("}\n\n");
+
+    outputfile.write("// -- the object must exist\n");
+    outputfile.write("inline bool8 ObjHasMethod(uint32 obj_id, int32 method_hash)\n");
+    outputfile.write("{\n");
+    outputfile.write("    CScriptContext* script_context = TinScript::GetContext();\n");
+    outputfile.write("    if (script_context == nullptr)\n");
+    outputfile.write("    {\n");
+    outputfile.write("        ScriptAssert_(script_context, 0, \"<internal>\", -1, \"TinScript context does not exist!\\n\");\n");
+    outputfile.write("        return false;\n");
+    outputfile.write("    }\n\n");
+
+    outputfile.write("    CObjectEntry* oe = script_context->FindObjectEntry(obj_id);\n");
+    outputfile.write("    if (oe == nullptr)\n");
+    outputfile.write("    {\n");
+    outputfile.write("        ScriptAssert_(script_context, 0, \"<internal>\", -1, \"Error - object not found\\n\");\n");
+    outputfile.write("        return false;\n");
+    outputfile.write("    }\n\n");
+
+    outputfile.write("    CFunctionEntry* fe = oe->GetFunctionEntry(0, method_hash);\n");
+    outputfile.write("    return (fe != nullptr);\n");
+    outputfile.write("}\n\n");
 
     paramcount = 0;
     while (paramcount <= maxparamcount):
