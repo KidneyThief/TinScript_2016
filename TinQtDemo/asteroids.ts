@@ -478,7 +478,8 @@ void AsteroidsGame::OnUpdate()
         destroy delete_me;
 
         // uncomment this to see attaching the IDE *after* an assert has triggered
-        Print(1 / 0);
+        //Print(1 / 0);
+        ensure(false, "### DEBUG test Assert()");
     }
 }
 

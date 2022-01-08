@@ -438,7 +438,7 @@ int32 ConsolePrint(int32 severity, const char* fmt, ...)
         if (eol_ptr)
         {
             *eol_ptr = '\0';
-            CConsoleWindow::GetInstance()->AddText(const_cast<char*>(buf_ptr));
+            CConsoleWindow::GetInstance()->AddText(severity, const_cast<char*>(buf_ptr));
             buf_ptr = eol_ptr + 1;
         }
         else
@@ -451,7 +451,7 @@ int32 ConsolePrint(int32 severity, const char* fmt, ...)
     if (*buf_ptr != '\0')
     {
         // -- add the last message
-        CConsoleWindow::GetInstance()->AddText(const_cast<char*>(buf_ptr));
+        CConsoleWindow::GetInstance()->AddText(severity, const_cast<char*>(buf_ptr));
 
         // -- copy the message to the beginning of the buffer
         if (buf_ptr > last_msg)
@@ -1182,7 +1182,7 @@ void CConsoleWindow::ExpandToParentSize(QWidget* in_console_widget)
 // ====================================================================================================================
 // AddText():  Adds a message to the console output window.
 // ====================================================================================================================
-void CConsoleWindow::AddText(char* msg)
+void CConsoleWindow::AddText(int severity, char* msg)
 {
     if(!msg)
         return;
@@ -1200,7 +1200,23 @@ void CConsoleWindow::AddText(char* msg)
     }
 
     // -- add to the output window
-    mConsoleOutput->addItem(msg);
+    QListWidgetItem* msg_item = new QListWidgetItem(QString(msg), mConsoleOutput);
+    if (severity == 1)
+    {
+        QFont bold_font;
+        bold_font.setBold(true);
+        msg_item->setFont(bold_font);
+        msg_item->setForeground(QColor(255, 128, 0));
+    }
+    else if (severity >= 2)
+    {
+        QFont bold_font;
+        bold_font.setBold(true);
+        msg_item->setFont(bold_font);
+        msg_item->setForeground(Qt::red);
+    }
+
+    mConsoleOutput->addItem(msg_item);
 
     // -- scroll to the bottom of the window
     int count = mConsoleOutput->count();
@@ -2148,7 +2164,7 @@ void CConsoleOutput::HandlePacketPrintMsg(int32* dataPtr)
     dataPtr += (msg_length / 4);
 
     // -- add the message, preceded with some indication that it's a remote message
-    ConsolePrint(0, "%s%s", kConsoleRecvPrefix, msg);
+    ConsolePrint(severity, "%s%s", kConsoleRecvPrefix, msg);
 }
 
 // ====================================================================================================================

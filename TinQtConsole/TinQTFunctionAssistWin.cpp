@@ -760,7 +760,7 @@ void CDebugFunctionAssistWin::OnButtonCopyToConsolePressed()
                 sprintf_s(buf, "%s() has an invalid signature - REGISTER_FUNCTION() contains an unregistered param type",
                     assist_entry->mSearchName);
 
-            CConsoleWindow::GetInstance()->AddText(const_cast<char*>(buf));
+            CConsoleWindow::GetInstance()->AddText(0, const_cast<char*>(buf));
             return;
         }
 

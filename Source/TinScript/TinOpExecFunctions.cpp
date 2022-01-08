@@ -3112,6 +3112,82 @@ bool8 OpExecType(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExecStack
 }
 
 // ====================================================================================================================
+// OpEnsure():  Pops the error message, and the conditional result, pushes the conditional result back on.
+// ====================================================================================================================
+bool8 OpExecEnsure(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExecStack& execstack,
+	CFunctionCallStack& funccallstack)
+{
+    // -- pop the error string
+    CVariableEntry* ve0 = NULL;
+    CObjectEntry* oe0 = NULL;
+    eVarType val0type;
+    void* val0 = execstack.Pop(val0type);
+    if (!GetStackValue(cb->GetScriptContext(), execstack, funccallstack, val0, val0type, ve0, oe0))
+    {
+        DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
+                        "Error - ExecStack should contain a hashtable variable\n");
+        return false;
+    }
+    if (val0type != TYPE_string)
+    {
+        DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
+                        "Error - ExecStack should contain a string\n");
+        return false;
+    }
+
+    // -- pop the conditional string
+    CVariableEntry* ve1 = NULL;
+    CObjectEntry* oe1 = NULL;
+    eVarType val1type;
+    void* val1 = execstack.Pop(val1type);
+    if (!GetStackValue(cb->GetScriptContext(), execstack, funccallstack, val1, val1type, ve1, oe1))
+    {
+        DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
+                        "Error - ExecStack should contain a bool\n");
+        return false;
+    }
+    if (val1type != TYPE_bool)
+    {
+        DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
+                        "Error - ExecStack should contain a bool\n");
+        return false;
+    }
+
+    // -- get the conditional - if true, we debug trace, push true back onto the stack
+    bool conditional = *(bool*)val1;
+    if (conditional)
+    {
+        DebugTrace(op, "ensure(true): no error");
+        execstack.Push(&conditional, TYPE_bool);
+    }
+
+    // -- otherwise, debug trace, DebugAssert_() to connect to the debugger, output the message, etc...
+    else
+    {
+        // -- get the string
+        CScriptContext* script_context = cb->GetScriptContext();
+        void* ensure_msg = TypeConvert(script_context, val0type, val0, TYPE_string);
+        if (!ensure_msg)
+        {
+            DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
+                            "Error - ExecStack should contain TYPE_string\n");
+            return false;
+        }
+
+        DebugTrace(op, "ensure(false): %s", UnHash(*(uint32*)ensure_msg));
+
+        // -- use the usual assert mechanism
+        DebuggerAssert_(false, cb, instrptr, execstack, funccallstack, "%s\n", UnHash(*(uint32*)ensure_msg));
+
+        // -- push the conditional back onto the stack, as a "return" value of ensure()
+        execstack.Push(&conditional, TYPE_bool);
+    }
+
+    // -- even if the ensure() triggers an assert, we still return true, as the ensure() executed successfully
+    return (true);
+}
+
+// ====================================================================================================================
 // OpExecSelfVarDecl():  Declare a member for the object executing the current method.
 // ====================================================================================================================
 bool8 OpExecSelfVarDecl(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExecStack& execstack,

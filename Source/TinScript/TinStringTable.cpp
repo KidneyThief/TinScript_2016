@@ -317,26 +317,68 @@ int32 CharToInt(const char* input_string)
 REGISTER_FUNCTION(CharToInt, CharToInt);
 
 // ====================================================================================================================
-// Print():  script method to call the main thread print handler
-// Concatenates the strings as a side effect
+// PrintWithSeverity():  helper to print with different severities, from Print(), Warn(), Error(), and Assert()
+// ====================================================================================================================
+const char* PrintWithSeverity(int32 severity, const char* str0, const char* str1, const char* str2, const char* str3,
+                              const char* str4, const char* str5, const char* str6, const char* str7)
+{
+    TinScript::CScriptContext* script_context = ::TinScript::GetContext();
+    const char* str_concat = StringCat(str0, str1, str2, str3, str4, str5, str6, str7);
+    if (script_context == nullptr || !str_concat)
+        return ("");
+
+    // -- automatically add a '\n'
+    switch (severity)
+    {
+        default:
+        case 0:
+            TinPrint(script_context, "%s\n", str_concat);
+            break;
+        case 1:
+            TinWarning(script_context, "%s\n", str_concat);
+            break;
+        case 2:
+            TinError(script_context, "%s\n", str_concat);
+            break;
+        case 3:
+            TinAssert(script_context, "%s\n", str_concat);
+            break;
+    }
+
+    // -- return the concatenated string
+    return str_concat;
+}
+
+// ====================================================================================================================
+// Print():  script method to call the main thread print handler with severity 0
 // ====================================================================================================================
 const char* Print(const char* str0, const char* str1, const char* str2, const char* str3, const char* str4,
                   const char* str5, const char* str6, const char* str7)
 {
-    const char* str_concat = StringCat(str0, str1, str2, str3, str4, str5, str6, str7);
-    if (!str_concat)
-        return ("");
+    return (PrintWithSeverity(0, str0, str1, str2, str3, str4, str5, str6, str7));
+}
 
-    TinScript::CScriptContext* script_context = ::TinScript::GetContext();
+// ====================================================================================================================
+// Warn():  script method to call the main thread print handler with severity 1
+// ====================================================================================================================
+const char* Warn(const char* str0, const char* str1, const char* str2, const char* str3, const char* str4,
+    const char* str5, const char* str6, const char* str7)
+{
+    return (PrintWithSeverity(1, str0, str1, str2, str3, str4, str5, str6, str7));
+}
 
-    // -- automatically add a '\n'
-    TinPrint(script_context, "%s\n", str_concat);
-
-    // -- return the concatenated string
-    return (str_concat);
+// ====================================================================================================================
+// Error():  script method to call the main thread print handler with severity 2
+// ====================================================================================================================
+const char* Error(const char* str0, const char* str1, const char* str2, const char* str3, const char* str4,
+    const char* str5, const char* str6, const char* str7)
+{
+    return (PrintWithSeverity(2, str0, str1, str2, str3, str4, str5, str6, str7));
 }
 
 REGISTER_FUNCTION(Print, Print);
+REGISTER_FUNCTION(Warn, Warn);
+REGISTER_FUNCTION(Error, Error);
 
 // ====================================================================================================================
 // EOF

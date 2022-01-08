@@ -55,6 +55,7 @@ class CWhileLoopNode;
 	CompileNodeTypeEntry(Comment)				\
 	CompileNodeTypeEntry(BinaryNOP)			    \
 	CompileNodeTypeEntry(DebugNOP)			    \
+	CompileNodeTypeEntry(Ensure)  	            \
 	CompileNodeTypeEntry(Type)  	            \
 	CompileNodeTypeEntry(Value)					\
 	CompileNodeTypeEntry(Self)       			\
@@ -113,6 +114,7 @@ const char* GetNodeTypeString(ECompileNodeType nodetype);
 	OperationEntry(NULL)				\
 	OperationEntry(NOP)					\
 	OperationEntry(DebugMsg)			\
+	OperationEntry(Ensure)				\
 	OperationEntry(Type)				\
 	OperationEntry(VarDecl)				\
 	OperationEntry(ParamDecl)			\
@@ -851,6 +853,21 @@ class CTypeNode : public CCompileTreeNode
 
 	protected:
 		CTypeNode() { }
+};
+
+// ====================================================================================================================
+// class CEnsureNode:  Parse tree node, evaluates the left condition and pushes it as a result... asserts if false
+// ====================================================================================================================
+class CEnsureNode : public CCompileTreeNode
+{
+public:
+	CEnsureNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber);
+	virtual int32 Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
+
+	virtual bool8 CompileToC(int32 indent, char*& out_buffer, int32& max_size, bool root_node) const;
+
+protected:
+	CEnsureNode() { }
 };
 
 // ====================================================================================================================

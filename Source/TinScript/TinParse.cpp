@@ -2303,6 +2303,10 @@ bool8 TryParseExpression(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTre
         return (true);
     }
 
+    // -- an ensure() completes an expression
+    if (TryParseEnsure(codeblock, filebuf, exprlink))
+        return (true);
+
     // -- a type() completes an expression
     if (TryParseType(codeblock, filebuf, exprlink))
         return (true);
@@ -4453,6 +4457,72 @@ bool8 TryParseType(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*
 
 	// -- success
 	return (true);
+}
+
+// ====================================================================================================================
+// TryParseEnsure():  Evaluates the condition and pushes the result... if false, triggers an assert with the msg
+// ====================================================================================================================
+bool8 TryParseEnsure(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link)
+{
+    // -- ensure the next token is the 'ensure' keyword
+    tReadToken peektoken(filebuf);
+    if (!GetToken(peektoken) || peektoken.type != TOKEN_KEYWORD)
+        return (false);
+
+    int32 reservedwordtype = GetReservedKeywordType(peektoken.tokenptr, peektoken.length);
+    if (reservedwordtype != KEYWORD_ensure)
+        return (false);
+
+    // -- read the opening parenthesis
+    if (!GetToken(peektoken) || peektoken.type != TOKEN_PAREN_OPEN)
+        return (false);
+
+    // -- we're committed to a hashtable_keys expression
+    filebuf = peektoken;
+
+    // -- create the CTypeNode, leftchild is the string[] to copy the keys to,
+    CEnsureNode* ensure_node = TinAlloc(ALLOC_TreeNode, CEnsureNode, codeblock, link, filebuf.linenumber);
+
+    // -- ensure we have an expression to fill the left child
+    bool8 result = TryParseStatement(codeblock, filebuf, ensure_node->leftchild);
+    if (!result || !ensure_node->leftchild)
+    {
+        ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
+                      "Error - ensure() requires boolean expression.\n");
+        return (false);
+    }
+
+    // -- consume the comma
+    if (!GetToken(filebuf) || filebuf.type != TOKEN_COMMA)
+    {
+        ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
+                      filebuf.linenumber, "Error - expecting ','\n");
+        return (false);
+    }
+
+    // -- ensure we have a string message to fill the right child
+    result = TryParseStatement(codeblock, filebuf, ensure_node->rightchild);
+    if (!result || !ensure_node->rightchild)
+    {
+        ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
+                      "Error - ensure() requires an error message.\n");
+        return (false);
+    }
+
+    // -- read the closing parenthesis
+    peektoken = filebuf;
+    if (!GetToken(peektoken) || peektoken.type != TOKEN_PAREN_CLOSE)
+    {
+        ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
+                      "Error - ensure() expression, expecting ')'\n");
+        return (false);
+    }
+
+    // -- update the file buf
+    filebuf = peektoken;
+
+    // -- success
+    return (true);
 }
 
 // ====================================================================================================================

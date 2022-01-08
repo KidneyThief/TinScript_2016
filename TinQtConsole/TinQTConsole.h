@@ -77,7 +77,7 @@ class CConsoleWindow
         int Exec();
 
         // -- scripted methods
-        void AddText(char* msg);
+        void AddText(int severity, char* msg);
 
         // -- Qt component accessors
         CConsoleOutput* GetOutput() { return (mConsoleOutput); }

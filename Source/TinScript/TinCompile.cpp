@@ -3236,13 +3236,13 @@ int32 CTypeNode::Eval(uint32*& instrptr, eVarType pushresult, bool countonly) co
         return (-1);
     }
 
-   	// -- left child will have pushed the hashtable variable
+   	// -- left child will have pushed the variable
     int32 tree_size = leftchild->Eval(instrptr, TYPE__var, countonly);
     if (tree_size < 0)
         return (-1);
     size += tree_size;
 
-    // -- push the "has key", which will pop the hashtable, and potential key, and push a bool if the key exists
+    // -- push the 'type' instruction
     size += PushInstruction(countonly, instrptr, OP_Type, DBG_instr);
 
 	return size;
@@ -3254,6 +3254,65 @@ int32 CTypeNode::Eval(uint32*& instrptr, eVarType pushresult, bool countonly) co
 bool8 CTypeNode::CompileToC(int32 indent, char*& out_buffer, int32& max_size, bool root_node) const
 {
     TinPrint(TinScript::GetContext(), "CHashtableIter::CompileToC() not implemented.\n");
+    return (true);
+}
+
+// == class CEnsureNode ===============================================================================================
+
+// ====================================================================================================================
+// Constructor
+// ====================================================================================================================
+CEnsureNode::CEnsureNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber)
+	: CCompileTreeNode(_codeblock, _link, eEnsure, _linenumber)
+{
+}
+
+// ====================================================================================================================
+// Eval():  Generates the byte code instruction compiled from this node.
+// ====================================================================================================================
+int32 CEnsureNode::Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const
+{
+	DebugEvaluateNode(*this, countonly, instrptr);
+	int32 size = 0;
+
+    if (!leftchild)
+    {
+        ScriptAssert_(codeblock->GetScriptContext(), leftchild != NULL, codeblock->GetFileName(), linenumber,
+                      "Error - CEnsureNode::Eval() - missing leftchild\n");
+        return (-1);
+    }
+
+    if (!rightchild)
+    {
+        ScriptAssert_(codeblock->GetScriptContext(), rightchild != NULL, codeblock->GetFileName(), linenumber,
+                      "Error - CEnsureNode::Eval() - missing rightchild\n");
+        return (-1);
+    }
+
+   	// -- left child will have pushed the boolean result
+    int32 tree_size = leftchild->Eval(instrptr, TYPE_bool, countonly);
+    if (tree_size < 0)
+        return (-1);
+    size += tree_size;
+
+    // -- right child will have pushed the error string
+    tree_size = rightchild->Eval(instrptr, TYPE_string, countonly);
+    if (tree_size < 0)
+        return (-1);
+    size += tree_size;
+
+    // -- push the ensure instruction
+    size += PushInstruction(countonly, instrptr, OP_Ensure, DBG_instr);
+
+	return size;
+}
+
+// ====================================================================================================================
+// CompileToC(): Convert the parse tree to valid C, to compile directly to the executable. 
+// ====================================================================================================================
+bool8 CEnsureNode::CompileToC(int32 indent, char*& out_buffer, int32& max_size, bool root_node) const
+{
+    TinPrint(TinScript::GetContext(), "CEnsureNode::CompileToC() not implemented.\n");
     return (true);
 }
 
