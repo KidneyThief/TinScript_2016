@@ -235,7 +235,7 @@ uint32 CMemoryTracker::CalculateFileLineHash(uint32 codeblock_hash, int32 line_n
 // Constructor for the helper class, implementing a non-tracked simple hash table
 // ====================================================================================================================
 CMemoryTracker::tObjectCreateEntry::tObjectCreateEntry(uint32 _object_id, int32 _stack_size,
-                                                       uint32* _codeblock_array, uint32* _line_number_array)
+                                                       uint32* _codeblock_array, int32* _line_number_array)
 {
     object_id = _object_id;
     stack_size = _stack_size < 0 ? 0 : _stack_size > kDebuggerCallstackSize ? kDebuggerCallstackSize : _stack_size;
@@ -243,7 +243,7 @@ CMemoryTracker::tObjectCreateEntry::tObjectCreateEntry(uint32 _object_id, int32 
     if (stack_size > 0 && _codeblock_array != nullptr && _line_number_array != nullptr)
     {
         memcpy(codeblock_array, _codeblock_array, sizeof(uint32) * stack_size);
-        memcpy(line_number_array, _line_number_array, sizeof(uint32) * stack_size);
+        memcpy(line_number_array, _line_number_array, sizeof(int32) * stack_size);
     }
 
     file_line_hash = stack_size > 0 ? CMemoryTracker::CalculateFileLineHash(codeblock_array[0], line_number_array[0])
@@ -279,7 +279,7 @@ void CMemoryTracker::NotifyObjectCreated(uint32 object_id, const CFunctionCallSt
     uint32 objid_array[kDebuggerCallstackSize];
     uint32 namespace_array[kDebuggerCallstackSize];
     uint32 func_array[kDebuggerCallstackSize];
-    uint32 linenumber_array[kDebuggerCallstackSize];
+    int32 linenumber_array[kDebuggerCallstackSize];
     int32 stack_size =
         funccallstack->DebuggerGetCallstack(codeblock_array,objid_array,
                                             namespace_array,func_array,

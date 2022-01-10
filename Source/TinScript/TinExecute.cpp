@@ -320,7 +320,7 @@ void CFunctionCallStack::DebuggerUpdateStackTopCurrentLine(uint32 cur_codeblock,
 // ====================================================================================================================
 int32 CFunctionCallStack::DebuggerGetCallstack(uint32* codeblock_array, uint32* objid_array,
                                                uint32* namespace_array, uint32* func_array,
-                                               uint32* linenumber_array, int32 max_array_size) const
+                                               int32* linenumber_array, int32 max_array_size) const
 {
     int32 entry_count = 0;
     int32 temp = m_stacktop - 1;
@@ -334,7 +334,7 @@ int32 CFunctionCallStack::DebuggerGetCallstack(uint32* codeblock_array, uint32* 
             uint32 objid = m_functionEntryStack[temp].objentry ? m_functionEntryStack[temp].objentry->GetID() : 0;
             uint32 namespace_hash = m_functionEntryStack[temp].funcentry->GetNamespaceHash();
             uint32 func_hash = m_functionEntryStack[temp].funcentry->GetHash();
-            uint32 linenumber = m_functionEntryStack[temp].linenumberfunccall;
+            int32 linenumber = m_functionEntryStack[temp].linenumberfunccall;
 
             codeblock_array[entry_count] = codeblock_hash;
             objid_array[entry_count] = objid;
@@ -1284,7 +1284,7 @@ bool8 DebuggerBreakLoop(CCodeBlock* cb, const uint32* instrptr, CExecStack& exec
     uint32 objid_array[kDebuggerCallstackSize];
     uint32 namespace_array[kDebuggerCallstackSize];
     uint32 func_array[kDebuggerCallstackSize];
-    uint32 linenumber_array[kDebuggerCallstackSize];
+    int32 linenumber_array[kDebuggerCallstackSize];
     int32 stack_size =
         funccallstack.DebuggerGetCallstack(codeblock_array, objid_array,
                                             namespace_array, func_array,
@@ -1292,7 +1292,7 @@ bool8 DebuggerBreakLoop(CCodeBlock* cb, const uint32* instrptr, CExecStack& exec
 
     script_context->DebuggerSendCallstack(codeblock_array, objid_array,
                                             namespace_array, func_array,
-                                            linenumber_array, stack_size);
+                                            linenumber_array, stack_size, 0);
 
     // -- get the entire list of variables, at every level for the current call stack
     CDebuggerWatchVarEntry watch_var_stack[kDebuggerWatchWindowSize];

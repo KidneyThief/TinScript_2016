@@ -732,9 +732,10 @@ CCallstackEntry::CCallstackEntry(uint32 codeblock_hash, int32 line_number, uint3
 
     char buf[2048];
     const char* full_path = TinScript::UnHash(codeblock_hash);
-    const char* file_name_ptr = CConsoleWindow::GetInstance()->GetDebugSourceWin()->GetFileName(full_path);
+    const char* file_name_ptr = codeblock_hash > 0 ? CConsoleWindow::GetInstance()->GetDebugSourceWin()->GetFileName(full_path)
+                                                   : "[C++]";
     sprintf_s(buf, 2048, "[ %d ] %s::%s   %s @ %d", object_id, TinScript::UnHash(namespace_hash),
-              TinScript::UnHash(function_hash), file_name_ptr, line_number);
+              TinScript::UnHash(function_hash), file_name_ptr, codeblock_hash > 0 ? line_number : -1);
     setText(buf);
 };
 

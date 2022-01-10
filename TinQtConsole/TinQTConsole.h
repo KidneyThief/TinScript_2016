@@ -32,6 +32,7 @@
 #include <qlayout.h>
 #include <qlabel.h>
 #include "qlistwidget.h"
+#include <QListWidgetItem>
 #include <QDockWidget>
 #include <QDialog>
 #include <QStringList>
@@ -60,6 +61,7 @@ class CDebugObjectBrowserWin;
 class CDebugObjectInspectWin;
 class CDebugSchedulesWin;
 class CDebugFunctionAssistWin;
+class CCallstackEntry;
 
 // -- new "dock widget" framework
 class MainWindow;
@@ -77,7 +79,7 @@ class CConsoleWindow
         int Exec();
 
         // -- scripted methods
-        void AddText(int severity, char* msg);
+        void AddText(int severity, uint32 msg_id, char* msg);
 
         // -- Qt component accessors
         CConsoleOutput* GetOutput() { return (mConsoleOutput); }
@@ -225,6 +227,32 @@ class CConsoleWindow
         // -- font metrics members
         static int32 gPaddedFontWidth;
         static int32 gPaddedFontHeight;
+};
+
+// ====================================================================================================================
+// class CConsoleTextEntry: widget item that contains the text and other data (time?  color?  callstack?)
+// ====================================================================================================================
+class CConsoleTextEntry : public QListWidgetItem
+{
+public:
+    CConsoleTextEntry(QListWidget* in_parent = nullptr, const QString& in_text = QString(),
+                      uint32 in_msg_id = 0, int32 in_severity = 0);
+    virtual ~CConsoleTextEntry();
+
+    void SetMessageID(uint32 msg_id) { mMessageID = msg_id; }
+    uint32 GetMessageID() const { return mMessageID; }
+    int32 GetStackSize() const { return mCallstack.count(); }
+    const QString GetStackTextByIndex(int32 index) const;
+
+    void ClearCallstack();
+    void SetCallstack(uint32* codeblock_array, uint32* objid_array, uint32* namespace_array, uint32* func_array,
+                      uint32* linenumber_array, int array_size);
+
+private:
+    char mText[256];
+    uint32 mMessageID = 0;
+    int32 mSeverity = 0;
+    QList<CCallstackEntry*> mCallstack;
 };
 
 // ====================================================================================================================
@@ -384,8 +412,14 @@ class CConsoleOutput : public QListWidget
         // -- called while handling a breakpoint, to ensure we still get to update our own context
         void DebuggerUpdate();
 
+        // -- some text entries (e.g. error) may have a callstack associated with them
+        void TextEntrySetCallstack(uint32 msg_id, uint32* codeblock_array, uint32* objid_array,
+                                   uint32* namespace_array, uint32* func_array, uint32* linenumber_array,
+                                   int array_size);
+
     public slots:
         void Update();
+        void HandleTextEntryClicked(QListWidgetItem* item);
 
     private:
         // -- the console output handles the current time, and timer events to call Update()

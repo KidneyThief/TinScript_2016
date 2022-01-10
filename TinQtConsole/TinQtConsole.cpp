@@ -43,6 +43,7 @@
 #include <QMessageBox>
 #include <qcolor.h>
 #include <QShortcut>
+#include <QToolTip>
 
 #include "qmainwindow.h"
 #include "qmetaobject.h"
@@ -266,6 +267,9 @@ CConsoleWindow::CConsoleWindow()
     QObject::connect(mButtonConnect, SIGNAL(clicked()), mConsoleInput, SLOT(OnButtonConnectPressed()));
     QObject::connect(mConnectIP, SIGNAL(returnPressed()), mConsoleInput, SLOT(OnConnectIPReturnPressed()));
 
+    QObject::connect(mConsoleOutput, SIGNAL(itemClicked(QListWidgetItem*)), mConsoleOutput,
+                                     SLOT(HandleTextEntryClicked(QListWidgetItem*)));
+
     QObject::connect(mConsoleInput, SIGNAL(returnPressed()), mConsoleInput, SLOT(OnReturnPressed()));
 
     QObject::connect(mDebugSourceWin, SIGNAL(itemDoubleClicked(QListWidgetItem*)), mDebugSourceWin,
@@ -438,7 +442,7 @@ int32 ConsolePrint(int32 severity, const char* fmt, ...)
         if (eol_ptr)
         {
             *eol_ptr = '\0';
-            CConsoleWindow::GetInstance()->AddText(severity, const_cast<char*>(buf_ptr));
+            CConsoleWindow::GetInstance()->AddText(severity, 0, const_cast<char*>(buf_ptr));
             buf_ptr = eol_ptr + 1;
         }
         else
@@ -451,7 +455,7 @@ int32 ConsolePrint(int32 severity, const char* fmt, ...)
     if (*buf_ptr != '\0')
     {
         // -- add the last message
-        CConsoleWindow::GetInstance()->AddText(severity, const_cast<char*>(buf_ptr));
+        CConsoleWindow::GetInstance()->AddText(severity, 0, const_cast<char*>(buf_ptr));
 
         // -- copy the message to the beginning of the buffer
         if (buf_ptr > last_msg)
@@ -464,7 +468,7 @@ int32 ConsolePrint(int32 severity, const char* fmt, ...)
         last_msg[0] = '\0';
     }
 
-    return(0);
+    return 0;
 }
 
 // -- returns false if we should break
@@ -690,12 +694,19 @@ void CConsoleWindow::HandleBreakpointHit(const char* breakpoint_msg)
 // ====================================================================================================================
 void CConsoleWindow::NotifyAssertTriggered(const char* assert_msg, uint32 codeblock_hash, int32 line_number)
 {
+    if (assert_msg == nullptr)
+        return;
+
+
     // -- set the bool
     mAssertTriggered = true;
 
     strcpy_s(mAssertMessage, assert_msg);
     mBreakpointCodeblockHash = codeblock_hash;
     mBreakpointLinenumber = line_number;
+
+    ConsolePrint(3, "\n*** ASSERT ***\n");
+    ConsolePrint(3, "%s\n", assert_msg);
 }
 
 // ====================================================================================================================
@@ -1182,7 +1193,7 @@ void CConsoleWindow::ExpandToParentSize(QWidget* in_console_widget)
 // ====================================================================================================================
 // AddText():  Adds a message to the console output window.
 // ====================================================================================================================
-void CConsoleWindow::AddText(int severity, char* msg)
+void CConsoleWindow::AddText(int severity, uint32 msg_id, char* msg)
 {
     if(!msg)
         return;
@@ -1200,22 +1211,7 @@ void CConsoleWindow::AddText(int severity, char* msg)
     }
 
     // -- add to the output window
-    QListWidgetItem* msg_item = new QListWidgetItem(QString(msg), mConsoleOutput);
-    if (severity == 1)
-    {
-        QFont bold_font;
-        bold_font.setBold(true);
-        msg_item->setFont(bold_font);
-        msg_item->setForeground(QColor(255, 128, 0));
-    }
-    else if (severity >= 2)
-    {
-        QFont bold_font;
-        bold_font.setBold(true);
-        msg_item->setFont(bold_font);
-        msg_item->setForeground(Qt::red);
-    }
-
+    CConsoleTextEntry* msg_item = new CConsoleTextEntry(mConsoleOutput, QString(msg), msg_id, severity);
     mConsoleOutput->addItem(msg_item);
 
     // -- scroll to the bottom of the window
@@ -1247,6 +1243,94 @@ void CConsoleWindow::SetTargetInfoMessage(const char* message)
 
     if (mTargetInfoLabel)
         mTargetInfoLabel->setText(QString(message));
+}
+
+// -- class CConsoleTextEntry -----------------------------------------------------------------------------------------
+
+// ====================================================================================================================
+// Constructor
+// ====================================================================================================================
+CConsoleTextEntry::CConsoleTextEntry(QListWidget* in_parent, const QString& in_text, uint32 in_msg_id,
+                                     int32 in_severity)
+    : QListWidgetItem(in_text, in_parent)
+    , mMessageID(in_msg_id)
+    , mSeverity(in_severity)
+{
+    TinScript::SafeStrcpy(mText, 256, text().toUtf8());
+
+    // -- apply color, if the severity > 0
+    if (mSeverity == 1)
+    {
+        QFont bold_font;
+        bold_font.setBold(true);
+        setFont(bold_font);
+        setForeground(QColor(255, 128, 0));
+    }
+    else if (mSeverity >= 2)
+    {
+        QFont bold_font;
+        bold_font.setBold(true);
+        setFont(bold_font);
+        setForeground(Qt::red);
+    }
+}
+
+// ====================================================================================================================
+// Deconstructor
+// ====================================================================================================================
+CConsoleTextEntry::~CConsoleTextEntry()
+{
+    ClearCallstack();
+}
+
+// ====================================================================================================================
+// ClearCallstack():  delete the callstack entries for the given text message
+// ====================================================================================================================
+void CConsoleTextEntry::ClearCallstack()
+{
+    while (mCallstack.size()) {
+        CCallstackEntry* entry = mCallstack.at(0);
+        mCallstack.removeAt(0);
+        delete entry;
+    }
+}
+
+// ====================================================================================================================
+// SetCallstack():  Set the callstack for a given text entry
+// ====================================================================================================================
+void CConsoleTextEntry::SetCallstack(uint32* codeblock_array, uint32* objid_array, uint32* namespace_array,
+                                     uint32* func_array, uint32* linenumber_array, int array_size)
+{
+    ClearCallstack();
+
+    // -- sanity check
+    if (array_size <= 0 || codeblock_array == nullptr || objid_array == nullptr || namespace_array == nullptr ||
+        func_array == nullptr || linenumber_array == nullptr)
+    {
+        return;
+    }
+
+    for (int i = 0; i < array_size; ++i)
+    {
+        CCallstackEntry* list_item = new CCallstackEntry(codeblock_array[i], linenumber_array[i], objid_array[i],
+                                                         namespace_array[i], func_array[i]);
+        mCallstack.append(list_item);
+    }
+}
+
+// ====================================================================================================================
+// CConsoleTextEntry():  get the text for the callstack entry, by stack index
+// ====================================================================================================================
+const QString CConsoleTextEntry::GetStackTextByIndex(int32 index) const
+{
+    if (index < 0 || index >= mCallstack.count())
+        return {};
+
+    CCallstackEntry* entry = mCallstack.at(index);
+    if (entry == nullptr)
+        return {};
+
+    return entry->text();
 }
 
 // ====================================================================================================================
@@ -1803,6 +1887,66 @@ void CConsoleOutput::Update()
 }
 
 // ====================================================================================================================
+// TextEntrySetCallstack():  copy the callstack into the console text entry, for display in the tooltips
+// ====================================================================================================================
+void CConsoleOutput::TextEntrySetCallstack(uint32 msg_id, uint32* codeblock_array, uint32* objid_array,
+                                           uint32* namespace_array, uint32* func_array, uint32* linenumber_array,
+                                           int array_size)
+{
+    // sanity check
+    if (array_size <= 0 || msg_id == 0 || codeblock_array == nullptr || objid_array == nullptr ||
+        namespace_array == nullptr || func_array == nullptr || linenumber_array == nullptr)
+    {
+        return;
+    }
+
+    // -- see if we can find the message by msg_id
+    // -- normally we'd use a map for direct access, but the realistic usage of this is, the callstack for a message
+    // will arrive immediately after the actual message - this should always will apply to the last message received
+    bool found = false;
+    int row_count = count() - 1;
+    for (; row_count >= 0; --row_count)
+    {
+        CConsoleTextEntry* entry = (CConsoleTextEntry*)item(row_count);
+        if (entry->GetMessageID() == msg_id)
+        {
+            entry->SetCallstack(codeblock_array, objid_array, namespace_array, func_array, linenumber_array, array_size);
+            found = true;
+        }
+
+        // -- message IDs are always in increasing order, but a multi-line message will
+        // have multiple entries - so keep going until we've hit a previous msg_id
+        if ((found || entry->GetMessageID() > 0) && entry->GetMessageID() < msg_id)
+        {
+            break;
+        }
+    }
+}
+
+void CConsoleOutput::HandleTextEntryClicked(QListWidgetItem* item)
+{
+    // -- sanity check
+    if (item == nullptr)
+        return;
+
+    CConsoleTextEntry* entry = (CConsoleTextEntry*)item;
+    if (entry != nullptr && entry->GetStackSize() > 0)
+    {
+        QString tooltip_string;
+        for (int i = 0; i < entry->GetStackSize(); ++i)
+        {
+            if (i > 0)
+            {
+                tooltip_string.append("\n");
+            }
+            tooltip_string.append(entry->GetStackTextByIndex(i));
+        }
+
+        QToolTip::showText(QCursor::pos(), tooltip_string);
+    }
+}
+
+// ====================================================================================================================
 // DebuggerUpdate():  An abbreviated update to keep us alive while we're handing a breakpoint
 // ====================================================================================================================
 void CConsoleOutput::DebuggerUpdate()
@@ -2028,6 +2172,9 @@ void CConsoleOutput::HandlePacketCallstack(int32* dataPtr)
     // -- skip past the packet ID
     ++dataPtr;
 
+    // -- get the print msg id
+    uint32 print_msg_id = *dataPtr++;
+
     // -- get the array size
     int32 array_size = *dataPtr++;
 
@@ -2051,8 +2198,18 @@ void CConsoleOutput::HandlePacketCallstack(int32* dataPtr)
     uint32* linenumber_array = (uint32*)dataPtr;
     dataPtr += array_size;
 
-    // -- notify the debugger
-    DebuggerNotifyCallstack(codeblock_array, objid_array, namespace_array, func_array, linenumber_array, array_size);
+    // -- if this callstack has no message id, then it's from a breakpoint - notify the debugger
+    if (print_msg_id == 0)
+    {
+        DebuggerNotifyCallstack(codeblock_array, objid_array, namespace_array, func_array, linenumber_array,
+                                array_size);
+    }
+    // else notify the console output, and attach the given callstack by print msg id
+    else
+    {
+        TextEntrySetCallstack(print_msg_id, codeblock_array, objid_array, namespace_array, func_array,
+                                linenumber_array, array_size);
+    }
 }
 
 // ====================================================================================================================
@@ -2128,6 +2285,9 @@ void CConsoleOutput::HandlePacketAssertMsg(int32* dataPtr)
     // -- skip past the packet ID
     ++dataPtr;
 
+    // -- get the print_msg_id - so we can associate a callstack with the assert
+    uint32 print_msg_id = *dataPtr++;
+
     // -- get the length of the message string
     int32 msg_length = *dataPtr++;
 
@@ -2141,8 +2301,21 @@ void CConsoleOutput::HandlePacketAssertMsg(int32* dataPtr)
     // -- get the line number
     int32 line_number = *dataPtr++;
 
+    int32 current_row_count = count();
+
     // -- notify the debugger
     CConsoleWindow::GetInstance()->NotifyAssertTriggered(assert_msg, codeblock_hash, line_number);
+
+    // -- if we've added rows, and the print_msg_id > 0, then tag all the added messages with this id
+    if (print_msg_id > 0)
+    {
+        int32 new_row_count = count();
+        for (int32 i = current_row_count; i < new_row_count; ++i)
+        {
+            CConsoleTextEntry* entry = (CConsoleTextEntry*)item(i);
+            entry->SetMessageID(print_msg_id);
+        }
+    }
 }
 
 // ====================================================================================================================
@@ -2153,7 +2326,10 @@ void CConsoleOutput::HandlePacketPrintMsg(int32* dataPtr)
     // -- skip past the packet ID
     ++dataPtr;
 
-    // -- for now, skip past the severity
+    // -- get the print_msg_id - so we can associate a callstack with the msg
+    uint32 print_msg_id = *dataPtr++;
+
+    // -- get the severity - errors are displayed differently than simple messages
     int32 severity = *dataPtr++;
 
     // -- get the length of the message string
@@ -2163,8 +2339,21 @@ void CConsoleOutput::HandlePacketPrintMsg(int32* dataPtr)
     const char* msg = (char*)dataPtr;
     dataPtr += (msg_length / 4);
 
+    int32 current_row_count = count();
+
     // -- add the message, preceded with some indication that it's a remote message
     ConsolePrint(severity, "%s%s", kConsoleRecvPrefix, msg);
+
+    // -- if we've added rows, and the print_msg_id > 0, then tag all the added messages with this id
+    if (print_msg_id > 0)
+    {
+        int32 new_row_count = count();
+        for (int32 i = current_row_count; i < new_row_count; ++i)
+        {
+            CConsoleTextEntry* entry = (CConsoleTextEntry*)item(i);
+            entry->SetMessageID(print_msg_id);
+        }
+    }
 }
 
 // ====================================================================================================================
@@ -2325,9 +2514,6 @@ bool PushDebuggerAssertDialog(const char* assertmsg, bool& ignore)
 
     QString dialog_msg = QString(assertmsg);
     msgBox.setText(dialog_msg);
-
-    ConsolePrint(3, "\n*** ASSERT ***\n");
-    ConsolePrint(3, "%s\n", assertmsg);
 
     QPushButton *ignore_button = msgBox.addButton("Ignore", QMessageBox::ActionRole);
     QPushButton *break_button = msgBox.addButton("Break", QMessageBox::ActionRole);

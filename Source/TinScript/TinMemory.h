@@ -97,12 +97,12 @@ class CMemoryTracker
         struct tObjectCreateEntry
         {
             tObjectCreateEntry(uint32 _object_id,int32 _stack_size,
-                               uint32* _codeblock_array, uint32* _line_number_array);
+                               uint32* _codeblock_array, int32* _line_number_array);
 
             int32 stack_size;
             uint32 object_id;
             uint32 codeblock_array[kDebuggerCallstackSize];
-            uint32 line_number_array[kDebuggerCallstackSize];
+            int32 line_number_array[kDebuggerCallstackSize];
             uint32 file_line_hash;
             tObjectCreateEntry* next;
         };

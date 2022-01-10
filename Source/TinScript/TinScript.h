@@ -542,7 +542,9 @@ class CScriptContext
         void DebuggerVarWatchConfirm(int32 request_id, uint32 watch_object_id, uint32 var_name_hash);
         void DebuggerSendCallstack(uint32* codeblock_array, uint32* objid_array,
                                    uint32* namespace_array,uint32* func_array,
-                                   uint32* linenumber_array, int array_size);
+                                   int32* linenumber_array, int array_size, uint32 print_msg_id);
+        void DebuggerSendCallstack(CObjectEntry** oeList, CFunctionEntry** feList, uint32* nsHashList,
+                                   uint32* cbHashList, int32* lineNumberList, int array_size, uint32 print_msg_id);
         void DebuggerSendWatchVariable(CDebuggerWatchVarEntry* watch_var_entry);
         void DebuggerSendObjectMembers(CDebuggerWatchVarEntry* callingFunction, uint32 objectID);
         void DebuggerSendObjectVarTable(CDebuggerWatchVarEntry* callingFunction, CObjectEntry* oe, uint32 ns_hash,
@@ -606,6 +608,10 @@ class CScriptContext
         // -- will be permitted to write out the string dictionary
         bool mIsMainThread;
         uint32 mObjectIDGenerator;
+
+        // -- we're going to use an ID for each print message, since some
+        // (e.g. errors) have a callstack associated with them
+        uint32 mDebuggerPrintMsgId;
 
         // -- assert/print handlers
         TinPrintHandler mTinPrintHandler;

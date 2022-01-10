@@ -305,6 +305,9 @@ CScriptContext::CScriptContext(TinPrintHandler printfunction, TinAssertHandler a
     // -- initialize the ID generator
     mObjectIDGenerator = 0;
 
+    // -- initialize the print msg ID generator
+    mDebuggerPrintMsgId = 0;
+
     // -- set the thread local singleton
     gThreadContext = this;
     if (is_main_thread)
@@ -2701,8 +2704,8 @@ void CScriptContext::DebuggerVarWatchConfirm(int32 request_id, uint32 watch_obje
 // DebuggerSendCallstack():  Use the packet type DATA, and send the callstack data packet directly to the debugger.
 // ====================================================================================================================
 void CScriptContext::DebuggerSendCallstack(uint32* codeblock_array, uint32* objid_array,
-                                           uint32* namespace_array,uint32* func_array,
-                                           uint32* linenumber_array, int array_size)
+                                           uint32* namespace_array, uint32* func_array,
+                                           int32* linenumber_array, int array_size, uint32 print_msg_id)
 {
     // -- calculate the size of the data
     int32 total_size = 0;
@@ -2710,11 +2713,14 @@ void CScriptContext::DebuggerSendCallstack(uint32* codeblock_array, uint32* obji
     // -- first int32 will be identifying this data packet
     total_size += sizeof(int32);
 
-    // -- second int32 will be the array size
+    // -- send the id of the print msg this callstack is associated with (errors for now...)
+    total_size += sizeof(uint32);
+
+    // -- next int32 will be the array size
     total_size += sizeof(int32);
 
     // -- finally, we have a uint32 for each of codeblock, objid, namespace, function, and line number
-    // -- note:  the debugger suppors a callstack of up to 32, so our max packet size is about 640 bytes
+    // -- note:  the debugger supports a callstack of up to 32, so our max packet size is about 640 bytes
     // -- which is less than the max packet size (1024) specified in socket.h
     total_size += 5 * (sizeof(uint32)) * array_size;
 
@@ -2735,6 +2741,9 @@ void CScriptContext::DebuggerSendCallstack(uint32* codeblock_array, uint32* obji
 
     // -- write the identifier - defined in the debugger constants near the top of TinScript.h
     *dataPtr++ = k_DebuggerCallstackPacketID;
+
+    // -- now the print msg id, if this callstack is associated with an error message (as opposed to a breakpoint)
+    *dataPtr++ = print_msg_id;
 
     // -- write the array size
     *dataPtr++ = array_size;
@@ -2761,6 +2770,35 @@ void CScriptContext::DebuggerSendCallstack(uint32* codeblock_array, uint32* obji
 
     // -- now send the packet
     SocketManager::SendDataPacket(newPacket);
+}
+
+// ====================================================================================================================
+// DebuggerSendCallstack():  Convert the raw execution stack arrays to the format used by the debugger.
+// ====================================================================================================================
+void CScriptContext::DebuggerSendCallstack(CObjectEntry** oeList, CFunctionEntry** feList, uint32* nsHashList,
+                                           uint32* cbHashList, int32* lineNumberList, int array_size,
+                                           uint32 print_msg_id)
+{
+    // -- sanity check
+    if (array_size <= 0 || oeList == nullptr || feList == nullptr || nsHashList == nullptr || cbHashList == nullptr ||
+        lineNumberList == nullptr)
+    {
+        return;
+    }
+    // -- limit the amount of data we're sending (this method is used for assert messages, etc... not the actual
+    // callstack view in the debugger
+    if (array_size > kExecAssertStackDepth)
+        array_size = kExecAssertStackDepth;
+
+    uint32 objid_array[kExecAssertStackDepth];
+    uint32 func_hash_array[kExecAssertStackDepth];
+    for (int32 i = 0; i < array_size; ++i)
+    {
+        objid_array[i] = oeList[i] != nullptr ? oeList[i]->GetID() : 0;
+        func_hash_array[i] = feList[i] != nullptr ? feList[i]->GetHash() : 0;
+    }
+
+    DebuggerSendCallstack(cbHashList, objid_array, nsHashList, func_hash_array, lineNumberList, array_size, print_msg_id);
 }
 
 // ====================================================================================================================
@@ -3046,6 +3084,9 @@ void CScriptContext::DebuggerSendAssert(const char* assert_msg, uint32 codeblock
     // -- first int32 will be identifying this data packet
     total_size += sizeof(int32);
 
+    // -- next is the message id
+    total_size += sizeof(uint32);
+
     // -- send the length of the assert message, including EOL, and 4-byte aligned
     int32 msgLength = (int32)strlen(assert_msg) + 1;
     msgLength += 4 - (msgLength % 4);
@@ -3078,6 +3119,10 @@ void CScriptContext::DebuggerSendAssert(const char* assert_msg, uint32 codeblock
     // -- write the identifier - defined in the debugger constants near the top of TinScript.h
     *dataPtr++ = k_DebuggerAssertMsgPacketID;
 
+    // -- write the print msg id - so we can associated a callstack with this message (if applicable)
+    uint32 print_msg_id = ++mDebuggerPrintMsgId;
+    *dataPtr++ = print_msg_id;
+
     // -- send the length of the assert message, including EOL, and 4-byte aligned
     *dataPtr++ = msgLength;
 
@@ -3093,6 +3138,26 @@ void CScriptContext::DebuggerSendAssert(const char* assert_msg, uint32 codeblock
 
     // -- send the packet
     SocketManager::SendDataPacket(newPacket);
+
+    // -- attach a callstack to the assert msg
+    // -- use the integration tunable, since this limits how much data we're sending to the debugger
+    CObjectEntry* oeList[kExecAssertStackDepth];
+    CFunctionEntry* feList[kExecAssertStackDepth];
+    uint32 nsHashList[kExecAssertStackDepth];
+    uint32 cbHashList[kExecAssertStackDepth];
+    int32 lineNumberList[kExecAssertStackDepth];
+
+    int32 depth = GetAssertStackDepth();
+    int dump_depth = depth > 0 && depth < kExecAssertStackDepth ? depth : kExecAssertStackDepth;
+    int32 actual_depth = CFunctionCallStack::GetExecutionStackDepth();
+    int32 stack_depth = CFunctionCallStack::GetCompleteExecutionStack(oeList, feList, nsHashList, cbHashList,
+                                                                      lineNumberList, dump_depth);
+
+    // -- if there's no execution stack available (because a console command was being executed probably), return
+    if (stack_depth > 0)
+    {
+        DebuggerSendCallstack(oeList, feList, nsHashList, cbHashList, lineNumberList, stack_depth, print_msg_id);
+    }
 }
 
 // ====================================================================================================================
@@ -3115,6 +3180,9 @@ void CScriptContext::DebuggerSendPrint(int32 severity, const char* fmt, ...)
     int32 total_size = 0;
 
     // -- first int32 will be identifying this data packet
+    total_size += sizeof(int32);
+
+    // -- next int32 will be the print msg id (so later we can associate a callstack with the message)
     total_size += sizeof(int32);
 
 	// -- next int32 will be the severity
@@ -3146,6 +3214,10 @@ void CScriptContext::DebuggerSendPrint(int32 severity, const char* fmt, ...)
     // -- write the identifier - defined in the debugger constants near the top of TinScript.h
     *dataPtr++ = k_DebuggerPrintMsgPacketID;
 
+    // -- write the print msg id - so we can associated a callstack with this message (if applicable)
+    uint32 print_msg_id = ++mDebuggerPrintMsgId;
+    *dataPtr++ = print_msg_id;
+
 	// -- send the length of the assert message, including EOL, and 4-byte aligned
 	*dataPtr++ = severity;
 
@@ -3158,6 +3230,29 @@ void CScriptContext::DebuggerSendPrint(int32 severity, const char* fmt, ...)
 
     // -- send the packet
     SocketManager::SendDataPacket(newPacket);
+
+    // -- for now, only attach a callstack to warnings/errors etc...
+    if (severity > 0)
+    {
+        // -- use the integration tunable, since this limits how much data we're sending to the debugger
+        CObjectEntry* oeList[kExecAssertStackDepth];
+        CFunctionEntry* feList[kExecAssertStackDepth];
+        uint32 nsHashList[kExecAssertStackDepth];
+        uint32 cbHashList[kExecAssertStackDepth];
+        int32 lineNumberList[kExecAssertStackDepth];
+
+        int32 depth = GetAssertStackDepth();
+        int dump_depth = depth > 0 && depth < kExecAssertStackDepth ? depth : kExecAssertStackDepth;
+        int32 actual_depth = CFunctionCallStack::GetExecutionStackDepth();
+        int32 stack_depth = CFunctionCallStack::GetCompleteExecutionStack(oeList, feList, nsHashList, cbHashList,
+                                                                          lineNumberList, dump_depth);
+
+        // -- if there's no execution stack available (because a console command was being executed probably), return
+        if (stack_depth > 0)
+        {
+            DebuggerSendCallstack(oeList, feList, nsHashList, cbHashList, lineNumberList, stack_depth, print_msg_id);
+        }
+    }
 }
 
 // ====================================================================================================================

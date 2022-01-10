@@ -4501,7 +4501,7 @@ bool8 TryParseEnsure(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNod
     }
 
     // -- ensure we have a string message to fill the right child
-    result = TryParseStatement(codeblock, filebuf, ensure_node->rightchild);
+    result = TryParseExpression(codeblock, filebuf, ensure_node->rightchild);
     if (!result || !ensure_node->rightchild)
     {
         ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
