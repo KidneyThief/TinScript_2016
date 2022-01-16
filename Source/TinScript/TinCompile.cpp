@@ -2957,7 +2957,7 @@ int32 CArrayCountNode::Eval(uint32*& instrptr, eVarType pushresult, bool counton
 	{
 		ScriptAssert_(codeblock->GetScriptContext(), leftchild != NULL, codeblock->GetFileName(),
 			linenumber,
-			"Error - CArrayDeclNode::Eval() - missing leftchild\n");
+			"Error - CArrayCountNode::Eval() - missing leftchild\n");
 		return (-1);
 	}
 
@@ -2981,6 +2981,60 @@ int32 CArrayCountNode::Eval(uint32*& instrptr, eVarType pushresult, bool counton
 bool8 CArrayCountNode::CompileToC(int32 indent, char*& out_buffer, int32& max_size, bool root_node) const
 {
     TinPrint(TinScript::GetContext(), "CArrayCountNode::CompileToC() not implemented.\n");
+    return (true);
+}
+
+// == class CArrayContainsNode ===========================================================================================
+
+// ====================================================================================================================
+// Constructor
+// ====================================================================================================================
+CArrayContainsNode::CArrayContainsNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber)
+	: CCompileTreeNode(_codeblock, _link, eArrayContains, _linenumber)
+{
+}
+
+// ====================================================================================================================
+// Eval():  Generates the byte code instruction compiled from this node.
+// ====================================================================================================================
+int32 CArrayContainsNode::Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const
+{
+	DebugEvaluateNode(*this, countonly, instrptr);
+	int32 size = 0;
+
+	if (!leftchild)
+	{
+		ScriptAssert_(codeblock->GetScriptContext(), leftchild != NULL, codeblock->GetFileName(),
+			linenumber,
+			"Error - CArrayContainsNode::Eval() - missing leftchild\n");
+		return (-1);
+	}
+
+	// -- left child will have pushed the array variable
+	int32 tree_size = leftchild->Eval(instrptr, TYPE__var, countonly);
+	if (tree_size < 0)
+		return (-1);
+	size += tree_size;
+
+    // -- right child will have pushed a value to compare
+	tree_size = rightchild->Eval(instrptr, TYPE__resolve, countonly);
+	if (tree_size < 0)
+		return (-1);
+	size += tree_size;
+
+	// -- push the instruction to read the and push true if the array contains the value
+	size += PushInstruction(countonly, instrptr, OP_ArrayContains, DBG_instr);
+
+	// -- success
+	return (size);
+}
+
+// ====================================================================================================================
+// CompileToC(): Convert the parse tree to valid C, to compile directly to the executable. 
+// ====================================================================================================================
+bool8 CArrayContainsNode::CompileToC(int32 indent, char*& out_buffer, int32& max_size, bool root_node) const
+{
+    TinPrint(TinScript::GetContext(), "CArrayContainsNode::CompileToC() not implemented.\n");
     return (true);
 }
 
@@ -3018,7 +3072,7 @@ int32 CMathUnaryFuncNode::Eval(uint32*& instrptr, eVarType pushresult, bool coun
 		return (-1);
 	size += tree_size;
 
-	// -- push the instruction to read the and push the size of the array
+	// -- push the instruction to read the and push the float result
 	size += PushInstruction(countonly, instrptr, OP_MathUnaryFunc, DBG_instr);
     size += PushInstruction(countonly, instrptr, mFuncType, DBG_instr);
 
@@ -3083,7 +3137,7 @@ int32 CMathBinaryFuncNode::Eval(uint32*& instrptr, eVarType pushresult, bool cou
 		return (-1);
 	size += tree_size;
 
-	// -- push the instruction to read the and push the size of the array
+	// -- push the instruction to read the and push the float result
 	size += PushInstruction(countonly, instrptr, OP_MathBinaryFunc, DBG_instr);
     size += PushInstruction(countonly, instrptr, mFuncType, DBG_instr);
 
@@ -3158,6 +3212,60 @@ int32 CHashtableHasKey::Eval(uint32*& instrptr, eVarType pushresult, bool counto
 bool8 CHashtableHasKey::CompileToC(int32 indent, char*& out_buffer, int32& max_size, bool root_node) const
 {
     TinPrint(TinScript::GetContext(), "CHashtableHasKey::CompileToC() not implemented.\n");
+    return (true);
+}
+
+// == class CHashtableContainsNode ====================================================================================
+
+// ====================================================================================================================
+// Constructor
+// ====================================================================================================================
+CHashtableContainsNode::CHashtableContainsNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber)
+	: CCompileTreeNode(_codeblock, _link, eHashtableContains, _linenumber)
+{
+}
+
+// ====================================================================================================================
+// Eval():  Generates the byte code instruction compiled from this node.
+// ====================================================================================================================
+int32 CHashtableContainsNode::Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const
+{
+	DebugEvaluateNode(*this, countonly, instrptr);
+	int32 size = 0;
+
+	if (!leftchild)
+	{
+		ScriptAssert_(codeblock->GetScriptContext(), leftchild != NULL, codeblock->GetFileName(),
+			linenumber,
+			"Error - CHashtableContainsNode::Eval() - missing leftchild\n");
+		return (-1);
+	}
+
+	// -- left child will have pushed the hashtable variable
+	int32 tree_size = leftchild->Eval(instrptr, TYPE_hashtable, countonly);
+	if (tree_size < 0)
+		return (-1);
+	size += tree_size;
+
+    // -- right child will have pushed a value to compare
+	tree_size = rightchild->Eval(instrptr, TYPE__resolve, countonly);
+	if (tree_size < 0)
+		return (-1);
+	size += tree_size;
+
+	// -- push the instruction to read the and push true if the value is found within the hashtable
+	size += PushInstruction(countonly, instrptr, OP_HashtableContains, DBG_instr);
+
+	// -- success
+	return (size);
+}
+
+// ====================================================================================================================
+// CompileToC(): Convert the parse tree to valid C, to compile directly to the executable. 
+// ====================================================================================================================
+bool8 CHashtableContainsNode::CompileToC(int32 indent, char*& out_buffer, int32& max_size, bool root_node) const
+{
+    TinPrint(TinScript::GetContext(), "CArrayContainsNode::CompileToC() not implemented.\n");
     return (true);
 }
 

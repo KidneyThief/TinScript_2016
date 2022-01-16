@@ -479,7 +479,7 @@ void AsteroidsGame::OnUpdate()
 
         // uncomment this to see attaching the IDE *after* an assert has triggered
         //Print(1 / 0);
-        ensure(false, "### DEBUG test Assert()");
+        //ensure(false, "### DEBUG test Assert()");
     }
 }
 

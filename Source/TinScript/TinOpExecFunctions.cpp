@@ -2807,6 +2807,103 @@ bool8 OpExecArrayCopy(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExec
 }
 
 // ====================================================================================================================
+// OpExecArrayContains():  Pushes a bool, if the pushed array contains the pushed value
+// ====================================================================================================================
+bool8 OpExecArrayContains(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExecStack& execstack,
+	CFunctionCallStack& funccallstack)
+{
+	// -- pull the array variable off the stack
+	CVariableEntry* ve_1 = NULL;
+	CObjectEntry* oe_1 = NULL;
+	eVarType valtype_1;
+	void* val_1 = execstack.Pop(valtype_1);
+	if (!GetStackValue(cb->GetScriptContext(), execstack, funccallstack, val_1, valtype_1, ve_1, oe_1))
+	{
+		DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
+					    "Error - ExecStack should contain a value\n");
+		return false;
+	}
+
+    // -- pull the array variable off the stack
+    CVariableEntry* ve_0 = NULL;
+    CObjectEntry* oe_0 = NULL;
+    eVarType valtype_0;
+    void* val_0 = execstack.Pop(valtype_0);
+    if (!GetStackValue(cb->GetScriptContext(), execstack, funccallstack, val_0, valtype_0, ve_0, oe_0))
+    {
+        DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
+                        "Error - ExecStack should contain an array variable\n");
+        return false;
+    }
+
+	// -- ensure we found an array
+	if (!ve_0 || !ve_0->IsArray())
+	{
+		DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
+			            "Error - ExecStack should contain an array variable\n");
+		return false;
+	}
+
+    // -- first, ensure the value can be converted to that contained by the array
+    void* compare_val = TypeConvert(cb->GetScriptContext(), valtype_1, val_1, valtype_0);
+    if (compare_val == nullptr)
+    {
+        bool return_false = false;
+        execstack.Push(&return_false, TYPE_bool);
+
+        DebugTrace(op, "Array: %s[] does not contain: %s", UnHash(ve_0->GetHash()), DebugPrintVar(ve_1, valtype_1));
+        return true;
+    }
+
+    TypeOpOverride compare_func = GetTypeOpOverride(OP_CompareEqual, valtype_0);
+    if (compare_func == nullptr)
+    {
+        bool return_false = false;
+        execstack.Push(&return_false, TYPE_bool);
+
+        DebugTrace(op, "Array: %s[] has no compare for type: %s", UnHash(ve_0->GetHash()), GetRegisteredTypeName(valtype_0));
+        return false;
+    }
+
+    // -- this is a painful linear search...
+	// -- get and the array count
+	int32 count = ve_0->GetArraySize();
+    bool found = false;
+    for (int32 i = 0; i < count; ++i)
+    {
+        void* array_val = ve_0->GetArrayVarAddr(oe_0 ? oe_0->GetAddr() : nullptr, i);
+        if (array_val == nullptr)
+            continue;
+
+        // -- if we found an operation, see if it can be performed successfully
+        char result[MAX_TYPE_SIZE * sizeof(uint32)];
+        eVarType result_type = TYPE__resolve;
+        bool success = (compare_func(cb->GetScriptContext(), OP_CompareEqual, result_type, (void*)result,
+                                     valtype_0, array_val, valtype_0, compare_val));
+        if (!success)
+            continue;
+
+        // -- note:  compare ops return -1, 0, 1 for (less than, equal, greater than), so we need a 0 return value
+        // but in the type of the original args...  the most accurate here is to convert to a float
+        void* compare_result = TypeConvert(cb->GetScriptContext(), result_type, result, TYPE_float);
+        if (compare_result != nullptr && *(float*)compare_result == 0.0f)
+        {
+            found = true;
+            break;
+        }
+    }
+
+    // -- push the result, if the value was found
+	execstack.Push(&found, TYPE_bool);
+
+    // -- debug trace
+    DebugTrace(op, "Array: %s[] %s: %s", UnHash(ve_0->GetHash()), (found ? "contains" : "not contains"),
+                    DebugPrintVar(ve_1, valtype_1));
+
+	return (true);
+}
+
+// ====================================================================================================================
 // OpExecMathUnaryFunc():  Pops the top float value, and performs the math function (e.g. abs()), pushes the result
 // ====================================================================================================================
 
@@ -2966,13 +3063,12 @@ bool8 OpExecHashtableHasKey(CCodeBlock* cb, eOpCode op, const uint32*& instrptr,
         return false;
     }
 
-    if (!ve0 || (ve0->GetType() != TYPE_hashtable && !ve0->IsArray()))
+    if (!ve0 || (ve0->GetType() != TYPE_hashtable))
     {
         DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
                         "Error - ExecStack should contain hashtable variable\n");
         return false;
     }
-
 
     // -- get the var table
     // note:  hashtable isn't a natural C++ type, so there's no such thing as
@@ -2987,6 +3083,115 @@ bool8 OpExecHashtableHasKey(CCodeBlock* cb, eOpCode op, const uint32*& instrptr,
     execstack.Push(&found, TYPE_bool);
  
 	DebugTrace(op, "HashTable: %s[%s] %s", UnHash(ve0->GetHash()), UnHash(arrayvarhash), found ? "found" : "not found");
+
+	return (true);
+}
+
+// ====================================================================================================================
+// OpExecHashtableContains():  Pushes a bool, if the pushed hashtable contains the pushed value
+// ====================================================================================================================
+bool8 OpExecHashtableContains(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExecStack& execstack,
+	CFunctionCallStack& funccallstack)
+{
+	// -- pull the array variable off the stack
+	CVariableEntry* ve_1 = NULL;
+	CObjectEntry* oe_1 = NULL;
+	eVarType valtype_1;
+	void* val_1 = execstack.Pop(valtype_1);
+	if (!GetStackValue(cb->GetScriptContext(), execstack, funccallstack, val_1, valtype_1, ve_1, oe_1))
+	{
+		DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
+					    "Error - ExecStack should contain a value\n");
+		return false;
+	}
+
+    // -- pull the array variable off the stack
+    CVariableEntry* ve_0 = NULL;
+    CObjectEntry* oe_0 = NULL;
+    eVarType valtype_0;
+    void* val_0 = execstack.Pop(valtype_0);
+    if (!GetStackValue(cb->GetScriptContext(), execstack, funccallstack, val_0, valtype_0, ve_0, oe_0))
+    {
+        DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
+                        "Error - ExecStack should contain a hashtable variable\n");
+        return false;
+    }
+
+	// -- ensure we found an array
+    if (!ve_0 || ve_0->GetType() != TYPE_hashtable)
+    {
+        DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
+                        "Error - ExecStack should contain hashtable variable\n");
+        return false;
+    }
+
+    // -- get the var table
+    // note:  hashtable isn't a natural C++ type, so there's no such thing as
+    // -- an addr + offset to an object's registered hashtable
+    tVarTable* vartable = (tVarTable*)ve_0->GetAddr(NULL);
+    if (vartable == nullptr)
+    {
+        DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
+                        "Error - ExecStack should contain hashtable variable\n");
+        return false;
+    }
+
+    // -- iterate through the hashtable, see if the given value is there
+    bool found = false;
+    CVariableEntry* ht_ve = vartable->First();
+    while (ht_ve != nullptr)
+    {
+        void* ht_val = ht_ve->GetAddr(nullptr);
+        if (ht_val == nullptr)
+        {
+            ht_ve = vartable->Next();
+            continue;
+        }
+
+        // -- see if we can convert the given value to the type stored in the hashtable
+        void* convert_val = TypeConvert(cb->GetScriptContext(), valtype_1, val_1, ht_ve->GetType());
+        if (convert_val == nullptr)
+        {
+            ht_ve = vartable->Next();
+            continue;
+        }
+
+        TypeOpOverride compare_func = GetTypeOpOverride(OP_CompareEqual, ht_ve->GetType());
+        if (compare_func == nullptr)
+        {
+            ht_ve = vartable->Next();
+            continue;
+        }
+
+        // -- if we found an operation, see if it can be performed successfully
+        char result[MAX_TYPE_SIZE * sizeof(uint32)];
+        eVarType result_type = TYPE__resolve;
+        bool success = (compare_func(cb->GetScriptContext(), OP_CompareEqual, result_type, (void*)result,
+                                     ht_ve->GetType(), ht_val, ht_ve->GetType(), convert_val));
+        if (!success)
+        {
+            ht_ve = vartable->Next();
+            continue;
+        }
+
+        // -- note:  compare ops return -1, 0, 1 for (less than, equal, greater than), so we need a 0 return value
+        // but in the type of the original args...  the most accurate here is to convert to a float
+        void* compare_result = TypeConvert(cb->GetScriptContext(), result_type, result, TYPE_float);
+        if (compare_result != nullptr && *(float*)compare_result == 0.0f)
+        {
+            found = true;
+            break;
+        }
+
+        ht_ve = vartable->Next();
+    }
+
+    // -- push the result, if the value was found
+	execstack.Push(&found, TYPE_bool);
+
+    // -- debug trace
+    DebugTrace(op, "hashtable: %s[] %s: %s", UnHash(ve_0->GetHash()), (found ? "contains" : "not contains"),
+                    DebugPrintVar(ve_1, valtype_1));
 
 	return (true);
 }

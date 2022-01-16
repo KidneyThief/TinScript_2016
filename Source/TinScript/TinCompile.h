@@ -84,9 +84,11 @@ class CWhileLoopNode;
 	CompileNodeTypeEntry(ArrayDecl)			    \
 	CompileNodeTypeEntry(ArrayCount)		    \
 	CompileNodeTypeEntry(ArrayCopy)		        \
+	CompileNodeTypeEntry(ArrayContains)	        \
 	CompileNodeTypeEntry(MathUnaryFunc)			\
-	CompileNodeTypeEntry(MathBinaryFunc)			\
+	CompileNodeTypeEntry(MathBinaryFunc)		\
 	CompileNodeTypeEntry(HashtableHasKey)		\
+	CompileNodeTypeEntry(HashtableContains)    	\
 	CompileNodeTypeEntry(HashtableCopy)	    	\
 	CompileNodeTypeEntry(HashtableIter)		    \
 	CompileNodeTypeEntry(SelfVarDecl)			\
@@ -184,10 +186,12 @@ const char* GetNodeTypeString(ECompileNodeType nodetype);
 	OperationEntry(ArrayDecl)		    \
 	OperationEntry(ArrayCount)		    \
 	OperationEntry(ArrayCopy)		    \
+	OperationEntry(ArrayContains)	    \
 	OperationEntry(MathUnaryFunc)		\
 	OperationEntry(MathBinaryFunc)		\
 	OperationEntry(HashtableHasKey)		\
 	OperationEntry(HashtableCopy)		\
+	OperationEntry(HashtableContains)   \
 	OperationEntry(HashtableIter)		\
 	OperationEntry(SelfVarDecl)		    \
 	OperationEntry(ObjMemberDecl)       \
@@ -776,6 +780,21 @@ class CArrayCountNode : public CCompileTreeNode
 };
 
 // ====================================================================================================================
+// class CArrayContainsNode:  Parse tree node, pushes the bool if the left array var contains the right value
+// ====================================================================================================================
+class CArrayContainsNode : public CCompileTreeNode
+{
+public:
+	CArrayContainsNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber);
+	virtual int32 Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
+
+	virtual bool8 CompileToC(int32 indent, char*& out_buffer, int32& max_size, bool root_node) const;
+
+protected:
+	CArrayContainsNode() { }
+};
+
+// ====================================================================================================================
 // class CMathUnaryFuncNode:  Parse tree node, executes a math function (e.g. abs()), taking a single float arg
 // ====================================================================================================================
 class CMathUnaryFuncNode : public CCompileTreeNode
@@ -822,6 +841,21 @@ class CHashtableHasKey : public CCompileTreeNode
 
 	protected:
 		CHashtableHasKey() { }
+};
+
+// ====================================================================================================================
+// class CHashtableContainsNode:  Parse tree node, pushes the bool if the left hashtable var contains the right value
+// ====================================================================================================================
+class CHashtableContainsNode : public CCompileTreeNode
+{
+public:
+	CHashtableContainsNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber);
+	virtual int32 Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
+
+	virtual bool8 CompileToC(int32 indent, char*& out_buffer, int32& max_size, bool root_node) const;
+
+protected:
+	CHashtableContainsNode() { }
 };
 
 // ====================================================================================================================

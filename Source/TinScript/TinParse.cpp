@@ -2319,6 +2319,10 @@ bool8 TryParseExpression(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTre
 	if (TryParseArrayCount(codeblock, filebuf, exprlink))
 		return (true);
 
+    // -- a array_contains() completes an expression
+    if (TryParseArrayContains(codeblock, filebuf, exprlink))
+        return (true);
+
     // -- a abs() completes an expression
     if (TryParseMathUnaryFunction(codeblock, filebuf, exprlink))
         return (true);
@@ -2331,7 +2335,11 @@ bool8 TryParseExpression(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTre
 	if (TryParseHashtableHasKey(codeblock, filebuf, exprlink))
 		return (true);
 
-	// -- a hashtable_first/next() completes an expression
+    // -- a hashtable_contains() completes an expression
+    if (TryParseHashtableContains(codeblock, filebuf, exprlink))
+        return (true);
+
+    // -- a hashtable_first/next() completes an expression
 	if (TryParseHashtableIter(codeblock, filebuf, exprlink))
 		return (true);
 
@@ -4256,7 +4264,7 @@ bool8 TryParseArrayCount(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTre
 	// -- we're committed to an array count expression
 	filebuf = peektoken;
 
-	// -- create the ArrayVarNode, leftchild is the hashtable var, right is the hash value
+	// -- create the ArrayVarNode, leftchild is the array var
 	CArrayCountNode* array_count_node = TinAlloc(ALLOC_TreeNode, CArrayCountNode, codeblock, link,
 											     filebuf.linenumber);
 
@@ -4274,11 +4282,88 @@ bool8 TryParseArrayCount(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTre
 	if (!GetToken(peektoken) || peektoken.type != TOKEN_PAREN_CLOSE)
 	{
 		ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
-			          "Error - count() expression, expecting ')' following array variable\n");
+			          "Error - array_count() expression, expecting ')'\n");
 		return (false);
 	}
 
 	// -- update the file buf
+	filebuf = peektoken;
+
+	// -- success
+	return (true);
+}
+
+// ====================================================================================================================
+// TryParseArrayContains():  The keyword "array_contains" has a well defined syntax.
+// ====================================================================================================================
+bool8 TryParseArrayContains(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link)
+{
+	// -- ensure the next token is the 'hash' keyword
+	tReadToken peektoken(filebuf);
+	if (!GetToken(peektoken) || peektoken.type != TOKEN_KEYWORD)
+		return (false);
+
+	int32 reservedwordtype = GetReservedKeywordType(peektoken.tokenptr, peektoken.length);
+	if (reservedwordtype != KEYWORD_array_contains)
+		return (false);
+
+	// -- read the opening parenthesis
+	if (!GetToken(peektoken) || peektoken.type != TOKEN_PAREN_OPEN)
+		return (false);
+
+	// -- we're committed to an array count expression
+	filebuf = peektoken;
+
+    // -- increment the paren depth
+    ++gGlobalExprParenDepth;
+
+	// -- create the ArrayVarNode, leftchild is the array var
+	CArrayContainsNode* array_contains_node = TinAlloc(ALLOC_TreeNode, CArrayContainsNode, codeblock, link,
+											           filebuf.linenumber);
+
+	// -- ensure we have an expression to fill the right child
+	bool8 result = TryParseExpression(codeblock, filebuf, array_contains_node->leftchild);
+	if (!result || !array_contains_node->leftchild)
+	{
+		ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
+			          "Error - count() requires an array variable expression\n");
+		return (false);
+	}
+
+    // -- the next token must be a comma
+    peektoken = filebuf;
+    if (!GetToken(peektoken) || peektoken.type != TOKEN_COMMA)
+    {
+        ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
+            "Error - array_contains() requires 2nd parameter index expression\n");
+        return (false);
+    }
+
+    // -- update the file buf
+    filebuf = peektoken;
+
+    // -- ensure we have an expression to fill the right child
+    result = TryParseExpression(codeblock, filebuf, array_contains_node->rightchild);
+    if (!result || !array_contains_node->rightchild)
+    {
+        ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
+            "Error - count() requires a value expression\n");
+        return (false);
+    }
+
+	// -- read the closing parenthesis
+	peektoken = filebuf;
+	if (!GetToken(peektoken) || peektoken.type != TOKEN_PAREN_CLOSE)
+	{
+		ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
+			          "Error - array_contains() expression, expecting ')'\n");
+		return (false);
+	}
+
+    // -- decrement the paren depth
+    --gGlobalExprParenDepth;
+
+    // -- update the file buf
 	filebuf = peektoken;
 
 	// -- success
@@ -4306,6 +4391,9 @@ bool8 TryParseHashtableHasKey(CCodeBlock* codeblock, tReadToken& filebuf, CCompi
 	// -- we're committed to a hashtable_haskey expression
 	filebuf = peektoken;
 
+    // -- increment the paren depth
+    ++gGlobalExprParenDepth;
+
 	// -- create the ArrayVarNode, leftchild is the hashtable var, right is the hash value
 	CHashtableHasKey* hashtable_haskey_node = TinAlloc(ALLOC_TreeNode, CHashtableHasKey, codeblock, link,
 											     filebuf.linenumber);
@@ -4327,6 +4415,7 @@ bool8 TryParseHashtableHasKey(CCodeBlock* codeblock, tReadToken& filebuf, CCompi
 			          "Error - hashtable_haskey() requires 2nd parameter key expression\n");
 		return (false);        
     }
+
 	// -- update the file buf
 	filebuf = peektoken;
 
@@ -4348,7 +4437,87 @@ bool8 TryParseHashtableHasKey(CCodeBlock* codeblock, tReadToken& filebuf, CCompi
 		return (false);
 	}
 
+    // -- increment the paren depth
+    ++gGlobalExprParenDepth;
+
 	// -- update the file buf
+	filebuf = peektoken;
+
+	// -- success
+	return (true);
+}
+
+// ====================================================================================================================
+// TryParseHashtableContains():  pushes true, if the hashtable contains the given value (not the key)
+// ====================================================================================================================
+bool8 TryParseHashtableContains(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link)
+{
+	// -- ensure the next token is the 'hash' keyword
+	tReadToken peektoken(filebuf);
+	if (!GetToken(peektoken) || peektoken.type != TOKEN_KEYWORD)
+		return (false);
+
+	int32 reservedwordtype = GetReservedKeywordType(peektoken.tokenptr, peektoken.length);
+	if (reservedwordtype != KEYWORD_hashtable_contains)
+		return (false);
+
+	// -- read the opening parenthesis
+	if (!GetToken(peektoken) || peektoken.type != TOKEN_PAREN_OPEN)
+		return (false);
+
+	// -- we're committed to an array count expression
+	filebuf = peektoken;
+
+    // -- increment the paren depth
+    ++gGlobalExprParenDepth;
+
+	// -- create the ArrayVarNode, leftchild is the array var
+	CHashtableContainsNode* ht_contains_node = TinAlloc(ALLOC_TreeNode, CHashtableContainsNode, codeblock, link,
+											            filebuf.linenumber);
+
+	// -- ensure we have an expression to fill the left child
+	bool8 result = TryParseExpression(codeblock, filebuf, ht_contains_node->leftchild);
+	if (!result || !ht_contains_node->leftchild)
+	{
+		ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
+			          "Error - hashtable_contains() requires a hashtable variable expression\n");
+		return (false);
+	}
+
+    // -- the next token must be a comma
+    peektoken = filebuf;
+    if (!GetToken(peektoken) || peektoken.type != TOKEN_COMMA)
+    {
+        ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
+            "Error - array_contains() requires 2nd parameter index expression\n");
+        return (false);
+    }
+
+    // -- update the file buf
+    filebuf = peektoken;
+
+    // -- ensure we have an expression to fill the right child
+    result = TryParseExpression(codeblock, filebuf, ht_contains_node->rightchild);
+    if (!result || !ht_contains_node->rightchild)
+    {
+        ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
+                      "Error - hashtable_contains() requires a value expression\n");
+        return (false);
+    }
+
+	// -- read the closing parenthesis
+	peektoken = filebuf;
+	if (!GetToken(peektoken) || peektoken.type != TOKEN_PAREN_CLOSE)
+	{
+		ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
+			          "Error - hashtable_contains() expression, expecting ')'\n");
+		return (false);
+	}
+
+    // -- decrement the paren depth
+    --gGlobalExprParenDepth;
+
+    // -- update the file buf
 	filebuf = peektoken;
 
 	// -- success
@@ -4480,6 +4649,9 @@ bool8 TryParseEnsure(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNod
     // -- we're committed to a hashtable_keys expression
     filebuf = peektoken;
 
+    // -- increment the paren depth
+    ++gGlobalExprParenDepth;
+
     // -- create the CTypeNode, leftchild is the string[] to copy the keys to,
     CEnsureNode* ensure_node = TinAlloc(ALLOC_TreeNode, CEnsureNode, codeblock, link, filebuf.linenumber);
 
@@ -4517,6 +4689,9 @@ bool8 TryParseEnsure(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNod
                       "Error - ensure() expression, expecting ')'\n");
         return (false);
     }
+
+    // -- decrement the paren depth
+    --gGlobalExprParenDepth;
 
     // -- update the file buf
     filebuf = peektoken;
