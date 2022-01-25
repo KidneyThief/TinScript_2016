@@ -538,6 +538,8 @@ void CScriptContext::ShutdownDictionaries()
     {
         mNamespaceDictionary->DestroyAll();
         TinFree(mNamespaceDictionary);
+        mNamespaceDictionary = nullptr;
+        mGlobalNamespace = nullptr;
     }
 
     // -- delete the Object dictionaries
@@ -545,6 +547,7 @@ void CScriptContext::ShutdownDictionaries()
     {
         mObjectDictionary->DestroyAll();
         TinFree(mObjectDictionary);
+        mObjectDictionary = nullptr;
     }
 
     // -- objects will have been destroyed above, so simply clear this hash table
@@ -552,12 +555,14 @@ void CScriptContext::ShutdownDictionaries()
     {
         mAddressDictionary->RemoveAll();
         TinFree(mAddressDictionary);
+        mAddressDictionary = nullptr;
     }
 
     if (mNameDictionary)
     {
         mNameDictionary->RemoveAll();
         TinFree(mNameDictionary);
+        mNameDictionary = nullptr;
     }
 }
 
@@ -894,8 +899,8 @@ bool8 CScriptContext::GetFullPath(const char* in_file_name, char* out_full_path,
     }
 
     // -- get the full path name, by pre-pending the current working directory (if required)
-    size_t fn_length = strlen(in_file_name);
-    size_t dir_length = strlen(mCurrentWorkingDirectory);
+    int32 fn_length = (int32)strlen(in_file_name);
+    int32 dir_length = (int32)strlen(mCurrentWorkingDirectory);
     if (fn_length + dir_length > in_max_length)
     {
         TinPrint(this, "Error GetFullPath() - full path length exceeds %d: %s%s",
@@ -4957,23 +4962,29 @@ CDebuggerWatchExpression::~CDebuggerWatchExpression()
 {
     // -- if we had been initialized, we need to destroy the function entry and codeblock
     // -- which will happen, by clearing the expression
-	if (TinScript::GetContext() != nullptr)
+    // -- during shutdown, the Global Namespace is the first to be destroyed, and it contains the watch/conditional
+    // function definitions...
+    CScriptContext* script_context = TinScript::GetContext();
+    CNamespace* global_ns = script_context != nullptr ? TinScript::GetContext()->GetGlobalNamespace() : nullptr;
+    if (global_ns != nullptr)
 	{
 		if (mWatchFunctionEntry)
 		{
 			CCodeBlock* codeblock = mWatchFunctionEntry->GetCodeBlock();
-			if (codeblock != nullptr)
-				codeblock->RemoveFunction(mWatchFunctionEntry);
-			TinScript::GetContext()->GetGlobalNamespace()->GetFuncTable()->RemoveItem(mWatchFunctionEntry->GetHash());
-		}
+            if (codeblock != nullptr)
+                codeblock->RemoveFunction(mWatchFunctionEntry);
+            global_ns->GetFuncTable()->RemoveItem(mWatchFunctionEntry->GetHash());
+            TinFree(mWatchFunctionEntry);
+        }
 
 		if (mTraceFunctionEntry)
 		{
 			CCodeBlock* codeblock = mTraceFunctionEntry->GetCodeBlock();
 			if (codeblock != nullptr)
 				codeblock->RemoveFunction(mTraceFunctionEntry);
-			TinScript::GetContext()->GetGlobalNamespace()->GetFuncTable()->RemoveItem(mTraceFunctionEntry->GetHash());
-		}
+            global_ns->GetFuncTable()->RemoveItem(mTraceFunctionEntry->GetHash());
+            TinFree(mTraceFunctionEntry);
+        }
 	}
 }
 
