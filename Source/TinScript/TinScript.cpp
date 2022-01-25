@@ -1978,7 +1978,8 @@ bool8 CScriptContext::InitWatchExpression(CDebuggerWatchExpression& debugger_wat
     int32 stacktop = 0;
     CFunctionEntry* cur_function = NULL;
     CObjectEntry* cur_object = NULL;
-    cur_function = call_stack.GetExecuting(cur_object, stacktop);
+    uint32 cur_oe_id = 0;
+    cur_function = call_stack.GetExecuting(cur_oe_id, cur_object, stacktop);
 
     // -- make sure we've got a valid function
     if (!cur_function)
@@ -2112,7 +2113,8 @@ bool8 CScriptContext::EvalWatchExpression(CDebuggerWatchExpression& debugger_wat
     int32 stacktop = 0;
     CFunctionEntry* cur_function = NULL;
     CObjectEntry* cur_object = NULL;
-    cur_function = cur_call_stack.GetExecuting(cur_object, stacktop);
+    uint32 cur_oe_id = 0;
+    cur_function = cur_call_stack.GetExecuting(cur_oe_id, cur_object, stacktop);
 
     // -- make sure we've got a valid function
     if (!cur_function)
@@ -2183,7 +2185,8 @@ bool8 CScriptContext::EvaluateWatchExpression(const char* expression, bool8 cond
     int32 stacktop = 0;
     CFunctionEntry* cur_function = NULL;
     CObjectEntry* cur_object = NULL;
-    cur_function = mDebuggerBreakFuncCallStack->GetExecuting(cur_object, stacktop);
+    uint32 cur_oe_id = 0;
+    cur_function = mDebuggerBreakFuncCallStack->GetExecuting(cur_oe_id, cur_object, stacktop);
 
     // -- make sure we've got a valid function
     if (!cur_function)

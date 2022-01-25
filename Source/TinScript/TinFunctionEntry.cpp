@@ -427,14 +427,13 @@ CFunctionEntry::CFunctionEntry(uint32 _nshash, const char* _name, uint32 _hash, 
 // ====================================================================================================================
 CFunctionEntry::~CFunctionEntry()
 {
+    // -- if any execution stack is currently executing this function, we need to notify the VM so we can cleanly
+    // abort execution... this is legitimate for reloading scripts at, say, a breakpoint
+    CFunctionCallStack::NotifyFunctionDeleted(this);
+
     // -- notify the codeblock that this entry no longer exists
     if (mCodeblock)
     {
-#if TIN_DEBUGGER
-        // -- if we're currently broken in the debugger, on this function, we need to exit the VM cleanly
-        if (TinScript::GetContext()->mDebuggerBreakFuncCallStack)
-            TinScript::GetContext()->mDebuggerBreakFuncCallStack->DebuggerNotifyFunctionDeleted(0, this);
-#endif
         mCodeblock->RemoveFunction(this);
     }
 }

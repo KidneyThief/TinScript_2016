@@ -1153,6 +1153,11 @@ class CCodeBlock
             mFunctionList->RemoveItem(_func->GetHash());
         }
 
+		bool HasFunction(uint32 func_hash)
+		{
+			return mFunctionList != nullptr && mFunctionList->FindItem(func_hash) != nullptr;
+		}
+
         int32 IsInUse()
         {
             return (mIsParsing || !mFunctionList->IsEmpty());

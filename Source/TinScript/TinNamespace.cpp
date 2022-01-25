@@ -69,13 +69,6 @@ CObjectEntry::CObjectEntry(CScriptContext* script_context, uint32 _objid, uint32
 // ====================================================================================================================
 CObjectEntry::~CObjectEntry()
 {
-
-#if TIN_DEBUGGER
-        // -- if we're currently broken in the debugger, on this object, we need to exit the VM cleanly
-        if (GetScriptContext()->mDebuggerBreakFuncCallStack)
-            GetScriptContext()->mDebuggerBreakFuncCallStack->DebuggerNotifyFunctionDeleted(this, 0);
-#endif
-
     if (mDynamicVariables)
    { 
         mDynamicVariables->DestroyAll();

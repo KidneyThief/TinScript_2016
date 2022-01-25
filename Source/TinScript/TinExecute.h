@@ -331,15 +331,13 @@ class CFunctionCallStack
 		bool DebuggerFindStackTopVar(CScriptContext* script_context, CExecStack& execstack, uint32 var_hash,
 								     CDebuggerWatchVarEntry& watch_entry, CVariableEntry*& ve);
 
-        void DebuggerNotifyFunctionDeleted(CObjectEntry* oe, CFunctionEntry* fe);
-
         void BeginExecution(const uint32* instrptr);
         void BeginExecution();
 
-        CFunctionEntry* GetExecuting(CObjectEntry*& objentry, int32& varoffset);
+        CFunctionEntry* GetExecuting(uint32& obj_id, CObjectEntry*& objentry, int32& varoffset);
         bool IsExecutingByIndex(int32 stack_top_offset);
-		bool GetExecutingByIndex(CObjectEntry*& objentry, CFunctionEntry*& funcentry, uint32& _ns_hash,
-								 uint32& _cb_hash, int32& _linenumber, int32 stack_top_offset);
+		bool GetExecutingByIndex(uint32& oe_id, CObjectEntry*& objentry, uint32& fe_hash, CFunctionEntry*& funcentry,
+                                 uint32& _ns_hash, uint32& _cb_hash, int32& _linenumber, int32 stack_top_offset);
    		CFunctionEntry* GetTopMethod(CObjectEntry*& objentry);
         static void FormatFunctionCallString(char* bufferptr, int32 buffer_len, CObjectEntry* fc_oe,
                                                           CFunctionEntry* fc_fe, uint32 fc_ns, uint32 fc_fn,
@@ -349,30 +347,25 @@ class CFunctionCallStack
         struct tFunctionCallEntry
         {
             tFunctionCallEntry(CFunctionEntry* _funcentry = NULL, CObjectEntry* _objentry = NULL,
-                               int32 _varoffset = -1)
-            {
-                funcentry = _funcentry;
-                objentry = _objentry;
-                stackvaroffset = _varoffset;
-                linenumberfunccall = 0;
-                isexecuting = false;
-				mLocalObjectCount = 0;
-            }
+                               int32 _varoffset = -1);
 
-            CFunctionEntry* funcentry;
-            CObjectEntry* objentry;
-            int32 stackvaroffset;
-            uint32 linenumberfunccall;
-            bool8 isexecuting;
-			int32 mLocalObjectCount;
-			uint32 mLocalObjectIDList[kExecFuncCallMaxLocalObjects];
+            CFunctionEntry* funcentry = nullptr;
+            CObjectEntry* objentry = nullptr;
+            uint32 fe_hash = 0;
+            uint32 fe_ns_hash = 0;
+            uint32 fe_cb_hash = 0;
+            uint32 oe_id = 0;
+            int32 stackvaroffset = 0;
+            uint32 linenumberfunccall = 0;
+            bool8 isexecuting = false;
+            int32 mLocalObjectCount = 0;
+            uint32 mLocalObjectIDList[kExecFuncCallMaxLocalObjects];
         };
 
         // -- because we can have multiple virtual machines running,
         // -- the debugger (break, line) members must be stored per execution stack
         bool8 mDebuggerBreakStep;
         int32 mDebuggerLastBreak;
-        uint32 mDebuggerObjectDeleted;
         uint32 mDebuggerFunctionReload;
 
         // -- to manage stepping over/out, we might need to track which stack depth is appropriate to break on
@@ -383,6 +376,7 @@ class CFunctionCallStack
 											   uint32* _ns_hash_list, uint32* _cb_hash_list,
 											   int32* _linenumber_list, int32 max_count);
         static int32 GetExecutionStackDepth();
+        static void NotifyFunctionDeleted(CFunctionEntry* deleted_fe);
 
 	private:
         char m_functionStackStorage[sizeof(tFunctionCallEntry) * kExecFuncCallDepth];

@@ -106,6 +106,25 @@ bool8 CopyStackParameters(CFunctionEntry* fe, CExecStack& execstack, CFunctionCa
 }
 
 // ====================================================================================================================
+// -- constructor for the internal tFunctionCallEntry
+// ====================================================================================================================
+CFunctionCallStack::tFunctionCallEntry::tFunctionCallEntry(CFunctionEntry* _funcentry, CObjectEntry* _objentry,
+                                                           int32 _varoffset)
+{
+    funcentry = _funcentry;
+    objentry = _objentry;
+    fe_hash = funcentry != nullptr ? funcentry->GetHash() : 0;
+    fe_ns_hash = funcentry != nullptr ? funcentry->GetNamespaceHash() : 0;
+    fe_cb_hash = funcentry != nullptr && funcentry->GetCodeBlock() != nullptr
+                 ? funcentry->GetCodeBlock()->GetFilenameHash() : 0;
+    oe_id = objentry != nullptr ? objentry->GetID() : 0;
+    stackvaroffset = _varoffset;
+    linenumberfunccall = 0;
+    isexecuting = false;
+    mLocalObjectCount = 0;
+}
+
+// ====================================================================================================================
 // -- constructor
 // ====================================================================================================================
 CFunctionCallStack* CFunctionCallStack::m_ExecutionHead = nullptr;
@@ -119,7 +138,6 @@ CFunctionCallStack::CFunctionCallStack()
 	// -- debugger members
 	mDebuggerBreakStep = false;
 	mDebuggerLastBreak = -1;
-	mDebuggerObjectDeleted = 0;
 	mDebuggerFunctionReload = 0;
 	mDebuggerBreakOnStackDepth = -1;
 
@@ -173,6 +191,13 @@ void CFunctionCallStack::Push(CFunctionEntry* functionentry, CObjectEntry* objen
 	assert(m_stacktop < m_size);
 	m_functionEntryStack[m_stacktop].objentry = objentry;
 	m_functionEntryStack[m_stacktop].funcentry = functionentry;
+
+    m_functionEntryStack[m_stacktop].fe_hash = functionentry != nullptr ? functionentry->GetHash() : 0;
+    m_functionEntryStack[m_stacktop].fe_ns_hash = functionentry != nullptr ? functionentry->GetNamespaceHash() : 0;
+    m_functionEntryStack[m_stacktop].fe_cb_hash = functionentry != nullptr && functionentry->GetCodeBlock() != nullptr
+                                                  ? functionentry->GetCodeBlock()->GetFilenameHash() : 0;
+    m_functionEntryStack[m_stacktop].oe_id = objentry != nullptr ? objentry->GetID() : 0;
+
 	m_functionEntryStack[m_stacktop].stackvaroffset = varoffset;
 	m_functionEntryStack[m_stacktop].isexecuting = false;
 	m_functionEntryStack[m_stacktop].mLocalObjectCount = 0;
@@ -205,6 +230,8 @@ CFunctionEntry* CFunctionCallStack::Pop(CObjectEntry*& objentry, int32& var_offs
 	var_offset = m_functionEntryStack[m_stacktop - 1].stackvaroffset;
 
 	// -- any time we pop a function call, we auto-destroy the local objects
+    // $$$TZA we need to do this when a function is reloaded during execution as well,
+    // --atm, this is just an object leak during a debugging workflow
 	CFunctionEntry* function_entry = m_functionEntryStack[m_stacktop - 1].funcentry;
 	uint32* local_object_id_ptr = m_functionEntryStack[m_stacktop - 1].mLocalObjectIDList;
 	for (int32 i = 0; i < m_functionEntryStack[m_stacktop - 1].mLocalObjectCount; ++i)
@@ -249,9 +276,12 @@ int32 CFunctionCallStack::GetCompleteExecutionStack(CObjectEntry** _objentry_lis
 		int32 walk_depth = walk->GetStackDepth();
 		for (int32 walk_index = 0; walk_index < walk_depth; ++walk_index)
 		{
-			if (walk->GetExecutingByIndex(_objentry_list[current_stack_index], _funcentry_list[current_stack_index],
-										  _ns_hash_list[current_stack_index], _cb_hash_list[current_stack_index],
-										  _linenumber_list[current_stack_index], walk_index))
+            uint32 oe_id = 0;
+            uint32 fe_hash = 0;
+			if (walk->GetExecutingByIndex(oe_id, _objentry_list[current_stack_index], fe_hash,
+                                          _funcentry_list[current_stack_index],  _ns_hash_list[current_stack_index],
+                                          _cb_hash_list[current_stack_index], _linenumber_list[current_stack_index],
+                                          walk_index))
 			{
 				if (++current_stack_index >= max_count)
 					return current_stack_index;
@@ -295,6 +325,48 @@ int32 CFunctionCallStack::GetExecutionStackDepth()
 }
 
 // ====================================================================================================================
+// NotifyFunctionDeleted():  if during execution, a function is redefined - any existing execution callstack
+// containing that function has to be aborted - this is legitimate when reloading a script
+// ====================================================================================================================
+void CFunctionCallStack::NotifyFunctionDeleted(CFunctionEntry* deleted_fe)
+{
+    // -- restrict this call to the main thread
+    if (!TinScript::GetContext()->IsMainThread())
+    {
+        return;
+    }
+
+    // -- note:  this will have to be re-thought, if we have *active* multi-threading for TinScript
+    // -- at present, the only use cases are from the MainThread... but we could!
+    CFunctionCallStack* walk = m_ExecutionHead;
+    while (walk != nullptr)
+    {
+        int32 walk_depth = walk->GetStackDepth();
+        for (int32 walk_index = 0; walk_index < walk_depth; ++walk_index)
+        {
+            uint32 oe_id = 0;
+            uint32 fe_hash = 0;
+            CObjectEntry* fc_oe = nullptr;
+            CFunctionEntry* fc_fe = nullptr;
+            uint32 fc_ns = 0;
+            uint32 fc_fn = 0;
+            int32 fc_ln = -1;
+            if (walk->GetExecutingByIndex(oe_id, fc_oe, fe_hash, fc_fe, fc_ns, fc_fn, fc_ln, walk_index))
+            {
+                // -- if we've found our deleted function in the execution stack, mark the callstack
+                if (walk->mDebuggerFunctionReload == 0 && deleted_fe != nullptr && deleted_fe->GetHash() == fe_hash)
+                {
+                    walk->mDebuggerFunctionReload = fe_hash;
+                    break;
+                }
+            }
+        }
+
+        walk = walk->m_ExecutionNext;
+    }
+}
+
+// ====================================================================================================================
 // DebuggerUpdateStackTopCurrentLine():  the top of the function call stack is the currently executing function,
 // -- but since it hasn't executed a function call (as it's the top), it's func call line number is unused/unset
 // ====================================================================================================================
@@ -305,8 +377,7 @@ void CFunctionCallStack::DebuggerUpdateStackTopCurrentLine(uint32 cur_codeblock,
     // and that it's executing from the code block given
     if (m_stacktop < 1 || !m_functionEntryStack[m_stacktop - 1].isexecuting ||
         m_functionEntryStack[m_stacktop - 1].funcentry == nullptr ||
-        m_functionEntryStack[m_stacktop - 1].funcentry->GetCodeBlock() == nullptr ||
-        m_functionEntryStack[m_stacktop - 1].funcentry->GetCodeBlock()->GetFilenameHash() != cur_codeblock)
+        m_functionEntryStack[m_stacktop - 1].fe_cb_hash != cur_codeblock)
     {
         return;
     }
@@ -328,12 +399,10 @@ int32 CFunctionCallStack::DebuggerGetCallstack(uint32* codeblock_array, uint32* 
     {
         if (m_functionEntryStack[temp].isexecuting)
         {
-            CCodeBlock* codeblock = NULL;
-            m_functionEntryStack[temp].funcentry->GetCodeBlockOffset(codeblock);
-            uint32 codeblock_hash = codeblock->GetFilenameHash();
-            uint32 objid = m_functionEntryStack[temp].objentry ? m_functionEntryStack[temp].objentry->GetID() : 0;
-            uint32 namespace_hash = m_functionEntryStack[temp].funcentry->GetNamespaceHash();
-            uint32 func_hash = m_functionEntryStack[temp].funcentry->GetHash();
+            uint32 codeblock_hash = m_functionEntryStack[temp].fe_cb_hash;
+            uint32 objid = m_functionEntryStack[temp].oe_id;
+            uint32 namespace_hash = m_functionEntryStack[temp].fe_ns_hash;
+            uint32 func_hash = m_functionEntryStack[temp].fe_hash;
             int32 linenumber = m_functionEntryStack[temp].linenumberfunccall;
 
             codeblock_array[entry_count] = codeblock_hash;
@@ -413,7 +482,7 @@ int32 CFunctionCallStack::DebuggerGetStackVarEntries(CScriptContext* script_cont
         if (m_functionEntryStack[stack_index].isexecuting)
         {
             // -- if this function call is a method, send the "self" variable
-            if (m_functionEntryStack[stack_index].objentry != NULL)
+            if (m_functionEntryStack[stack_index].oe_id != 0)
             {
                 // -- limit of kDebuggerWatchWindowSize
                 if (entry_count >= max_array_size)
@@ -428,9 +497,9 @@ int32 CFunctionCallStack::DebuggerGetStackVarEntries(CScriptContext* script_cont
                 cur_entry->mStackLevel = stack_index;
 
                 // -- copy the calling function info
-                cur_entry->mFuncNamespaceHash = m_functionEntryStack[stack_index].funcentry->GetNamespaceHash();
-                cur_entry->mFunctionHash = m_functionEntryStack[stack_index].funcentry->GetHash();
-                cur_entry->mFunctionObjectID = m_functionEntryStack[stack_index].objentry->GetID();
+                cur_entry->mFuncNamespaceHash = m_functionEntryStack[stack_index].fe_ns_hash;
+                cur_entry->mFunctionHash = m_functionEntryStack[stack_index].fe_hash;
+                cur_entry->mFunctionObjectID = m_functionEntryStack[stack_index].oe_id;
 
                 // -- this isn't a member of an object
                 cur_entry->mObjectID = 0;
@@ -447,9 +516,15 @@ int32 CFunctionCallStack::DebuggerGetStackVarEntries(CScriptContext* script_cont
                 cur_entry->mVarObjectID = cur_entry->mFunctionObjectID;
             }
 
-            // -- get the variable table
-            tVarTable* func_vt = m_functionEntryStack[stack_index].funcentry->GetLocalVarTable();
-            CVariableEntry* ve = func_vt->First();
+            // -- get the variable table - note - if the function has been deleted during a reload, we need to find
+            // the *new* function entry
+            CNamespace* verify_fe_ns = script_context->FindNamespace(m_functionEntryStack[stack_index].fe_ns_hash);
+            CFunctionEntry* verify_fe = verify_fe_ns != nullptr
+                                        ? verify_fe_ns->GetFuncTable()->FindItem(m_functionEntryStack[stack_index].fe_hash)
+                                        : nullptr;
+
+            tVarTable* func_vt = verify_fe != nullptr ? verify_fe->GetLocalVarTable() : nullptr;
+            CVariableEntry* ve = func_vt != nullptr ? func_vt->First() : nullptr;
             while (ve)
             {
                 // -- the first variable is usually the "__return", which we handle separately
@@ -475,11 +550,9 @@ int32 CFunctionCallStack::DebuggerGetStackVarEntries(CScriptContext* script_cont
                 cur_entry->mStackLevel = stack_index;
 
                 // -- copy the calling function info
-                cur_entry->mFuncNamespaceHash = m_functionEntryStack[stack_index].funcentry->GetNamespaceHash();
-                cur_entry->mFunctionHash = m_functionEntryStack[stack_index].funcentry->GetHash();
-                cur_entry->mFunctionObjectID = m_functionEntryStack[stack_index].objentry
-                                               ? m_functionEntryStack[stack_index].objentry->GetID()
-                                               : 0;
+                cur_entry->mFuncNamespaceHash = m_functionEntryStack[stack_index].fe_ns_hash;
+                cur_entry->mFunctionHash = m_functionEntryStack[stack_index].fe_hash;
+                cur_entry->mFunctionObjectID = m_functionEntryStack[stack_index].oe_id;
 
                 // -- this isn't a member of an object
                 cur_entry->mObjectID = 0;
@@ -548,11 +621,9 @@ bool CFunctionCallStack::DebuggerFindStackTopVar(CScriptContext* script_context,
                 watch_entry.mStackLevel = stack_index;
 
 				// -- copy the calling function info
-				watch_entry.mFuncNamespaceHash = m_functionEntryStack[stack_index].funcentry->GetNamespaceHash();
-				watch_entry.mFunctionHash = m_functionEntryStack[stack_index].funcentry->GetHash();
-				watch_entry.mFunctionObjectID = m_functionEntryStack[stack_index].objentry
-												? m_functionEntryStack[stack_index].objentry->GetID()
-												: 0;
+				watch_entry.mFuncNamespaceHash = m_functionEntryStack[stack_index].fe_ns_hash;
+				watch_entry.mFunctionHash = m_functionEntryStack[stack_index].fe_hash;
+				watch_entry.mFunctionObjectID = m_functionEntryStack[stack_index].oe_id;
 
 				// -- this isn't a member of an object
 				watch_entry.mObjectID = 0;
@@ -561,11 +632,11 @@ bool CFunctionCallStack::DebuggerFindStackTopVar(CScriptContext* script_context,
 				// -- copy the var type, name and value
 				watch_entry.mType = TYPE_object;
 				strcpy_s(watch_entry.mVarName, "self");
-				sprintf_s(watch_entry.mValue, "%d", m_functionEntryStack[stack_index].objentry->GetID());
+				sprintf_s(watch_entry.mValue, "%d", m_functionEntryStack[stack_index].oe_id);
 
 				// -- copy the var type
 				watch_entry.mVarHash = var_hash;
-				watch_entry.mVarObjectID = m_functionEntryStack[stack_index].objentry->GetID();
+				watch_entry.mVarObjectID = m_functionEntryStack[stack_index].oe_id;
 
 				return (true);
 			}
@@ -590,11 +661,9 @@ bool CFunctionCallStack::DebuggerFindStackTopVar(CScriptContext* script_context,
                         watch_entry.mStackLevel = stack_index;
 
 						// -- copy the calling function info
-						watch_entry.mFuncNamespaceHash = m_functionEntryStack[stack_index].funcentry->GetNamespaceHash();
-						watch_entry.mFunctionHash = m_functionEntryStack[stack_index].funcentry->GetHash();
-						watch_entry.mFunctionObjectID = m_functionEntryStack[stack_index].objentry
-														? m_functionEntryStack[stack_index].objentry->GetID()
-														: 0;
+						watch_entry.mFuncNamespaceHash = m_functionEntryStack[stack_index].fe_ns_hash;
+						watch_entry.mFunctionHash = m_functionEntryStack[stack_index].fe_hash;
+						watch_entry.mFunctionObjectID = m_functionEntryStack[stack_index].oe_id;
 
 						// -- this isn't a member of an object
 						watch_entry.mObjectID = 0;
@@ -654,27 +723,6 @@ bool CFunctionCallStack::DebuggerFindStackTopVar(CScriptContext* script_context,
 }
 
 // ====================================================================================================================
-// DebuggerNotifyFunctionDeleted():  Called from the CFunctionEntry deconstructor, ensuring we abort the VM if needed.
-// ====================================================================================================================
-void CFunctionCallStack::DebuggerNotifyFunctionDeleted(CObjectEntry* oe, CFunctionEntry* fe)
-{
-    // -- if this function is anywhere on the current execution stack, we need to abort the debugger break loop
-    int32 stack_index = m_stacktop - 1;
-    while (stack_index >= 0)
-    {
-        if ((oe && m_functionEntryStack[stack_index].objentry == oe) || m_functionEntryStack[stack_index].funcentry == fe)
-        {
-            mDebuggerObjectDeleted = oe ? oe->GetID() : 0;
-            mDebuggerFunctionReload = fe->GetHash();
-            break;
-        }
-
-        // -- next
-        --stack_index;
-    }
-}
-
-// ====================================================================================================================
 // BeginExecution():  Begin execution of the function we've prepared to call (assigned args, etc...)
 // ====================================================================================================================
 void CFunctionCallStack::BeginExecution(const uint32* instrptr)
@@ -705,13 +753,16 @@ void CFunctionCallStack::BeginExecution()
 // ====================================================================================================================
 // GetExecuting():  Get the function entry at the top of the stack, that is currently executing
 // ====================================================================================================================
-CFunctionEntry* CFunctionCallStack::GetExecuting(CObjectEntry*& objentry, int32& varoffset)
+CFunctionEntry* CFunctionCallStack::GetExecuting(uint32& obj_id, CObjectEntry*& objentry, int32& varoffset)
 {
     int32 temp = m_stacktop - 1;
     while (temp >= 0)
     {
         if (m_functionEntryStack[temp].isexecuting)
         {
+            // -- note  we *could* add additional verification that the oe_id still exists - but
+            // that should only be necessary when we *begin* a self.XXX instruction, not in the middle of all the ops
+            obj_id = m_functionEntryStack[temp].oe_id;
             objentry = m_functionEntryStack[temp].objentry;
             varoffset = m_functionEntryStack[temp].stackvaroffset;
             return m_functionEntryStack[temp].funcentry;
@@ -771,10 +822,12 @@ const char* CFunctionCallStack::GetExecutingFunctionCallString(bool& isScriptFun
 	isScriptFunction = false;
 	CObjectEntry* fc_oe = nullptr;
 	CFunctionEntry* fc_fe = nullptr;
+    uint32 fc_oe_id = 0;
+    uint32 fc_fe_hash = 0;
 	uint32 fc_ns = 0;
 	uint32 fc_fn = 0;
 	int32 fc_ln = -1;
-	if (GetExecutingByIndex(fc_oe, fc_fe, fc_ns, fc_fn, fc_ln, 0))
+	if (GetExecutingByIndex(fc_oe_id, fc_oe, fc_fe_hash, fc_fe, fc_ns, fc_fn, fc_ln, 0))
 	{
 		isScriptFunction = fc_fe->GetType() == eFuncTypeScript;
 		char* bufferptr = TinScript::GetContext()->GetScratchBuffer();
@@ -808,7 +861,8 @@ bool CFunctionCallStack::IsExecutingByIndex(int32 stack_top_offset)
 // ====================================================================================================================
 // GetExecutingByIndex():  Get the function entry at the stack index (from the top), if executing
 // ====================================================================================================================
-bool CFunctionCallStack::GetExecutingByIndex(CObjectEntry*& objentry, CFunctionEntry*& funcentry, uint32& _ns_hash,
+bool CFunctionCallStack::GetExecutingByIndex(uint32& oe_id, CObjectEntry*& objentry, uint32& fe_hash,
+                                             CFunctionEntry*& funcentry, uint32& _ns_hash,
 											 uint32& _cb_hash, int32& _linenumber, int32 stack_top_offset)
 {
     if (!IsExecutingByIndex(stack_top_offset))
@@ -818,10 +872,18 @@ bool CFunctionCallStack::GetExecutingByIndex(CObjectEntry*& objentry, CFunctionE
 	int32 stack_top_index = m_stacktop - 1;
 	int32 stack_index = stack_top_index - stack_top_offset;
 
-	objentry = m_functionEntryStack[stack_index].objentry;
-	funcentry = m_functionEntryStack[stack_index].funcentry;
-	_ns_hash = funcentry->GetNamespaceHash();
-	_cb_hash = funcentry->GetCodeBlock() != nullptr ? funcentry->GetCodeBlock()->GetFilenameHash() : 0;
+    // -- note:  this is used by asserts, possibly when a function or codeblock has been deleted -
+    // do not dereference or return any unvalidated pointers here (e.g.  oe or fe)
+    CScriptContext* script_context = TinScript::GetContext();
+    oe_id = m_functionEntryStack[stack_index].oe_id;
+    objentry = oe_id != 0 ? script_context->FindObjectEntry(oe_id) : nullptr;
+
+    fe_hash = m_functionEntryStack[stack_index].fe_hash;
+    CNamespace* ns = script_context->FindNamespace(m_functionEntryStack[stack_index].fe_ns_hash);
+    funcentry = ns != nullptr ? ns->GetFuncTable()->FindItem(fe_hash) : nullptr;
+
+	_ns_hash = m_functionEntryStack[stack_index].fe_ns_hash;
+	_cb_hash = m_functionEntryStack[stack_index].fe_cb_hash;
 	_linenumber = m_functionEntryStack[stack_index].linenumberfunccall;
 
 	return (true);
@@ -892,10 +954,10 @@ bool8 CodeBlockCallFunction(CFunctionEntry* fe, CObjectEntry* oe, CExecStack& ex
 
         // -- execute the function via codeblock/offset
         bool8 success = funccb->Execute(funcoffset, execstack, funccallstack);
-
         if (!success)
         {
-            if (funccallstack.mDebuggerObjectDeleted == 0 && funccallstack.mDebuggerFunctionReload == 0)
+            // -- we only assert if the failure was not because the function was reloaded
+            if (funccallstack.mDebuggerFunctionReload == 0)
             {
                 ScriptAssert_(TinScript::GetContext(), 0, "<internal>", -1,
                               "Error - error executing function: %s()\n",
@@ -1064,7 +1126,8 @@ bool8 ExecuteScheduledFunction(CScriptContext* script_context, uint32 objectid, 
     bool8 result = CodeBlockCallFunction(fe, oe, execstack, funccallstack, true);
     if (!result)
     {
-        if (funccallstack.mDebuggerObjectDeleted == 0 && funccallstack.mDebuggerFunctionReload == 0)
+        // -- we only assert if the failure was not because the function was reloaded
+        if (funccallstack.mDebuggerFunctionReload == 0)
         {
             ScriptAssert_(script_context, 0, "<internal>", -1,
                           "Error - Unable to call function: %s()\n",
@@ -1363,7 +1426,7 @@ bool8 DebuggerBreakLoop(CCodeBlock* cb, const uint32* instrptr, CExecStack& exec
         }
 
         // -- if the function call stack is no longer valid because a function was reloaded, break
-        if (funccallstack.mDebuggerObjectDeleted != 0 || funccallstack.mDebuggerFunctionReload != 0)
+        if (funccallstack.mDebuggerFunctionReload != 0)
         {
             break;
         }
@@ -1518,17 +1581,11 @@ bool8 CCodeBlock::Execute(uint32 offset, CExecStack& execstack, CFunctionCallSta
 
         // -- if at any point during execution, we deleted a currently executing object, or reloaded a function
         // -- we need to break from this VM so we don't dereference an IP that no longer exists.
-        if (funccallstack.mDebuggerObjectDeleted != 0 || funccallstack.mDebuggerFunctionReload != 0)
+        if (funccallstack.mDebuggerFunctionReload != 0)
         {
-            char msg_buf[kMaxTokenLength];
-            if (funccallstack.mDebuggerFunctionReload != 0)
-                sprintf_s(msg_buf, "Break suspended - function %s() has been redefined.\n",
-                          UnHash(funccallstack.mDebuggerFunctionReload));
-            else
-                sprintf_s(msg_buf, "Break suspended - Object [%d] no longer exists.\n",
-                          funccallstack.mDebuggerObjectDeleted);
-            script_context->DebuggerSendAssert(msg_buf, 0, 0);
-            return (false);
+            TinPrint(TinScript::GetContext(), "### Exiting current execution stack:\n    function %s() was reloaded during execution\n",
+                                              UnHash(funccallstack.mDebuggerFunctionReload));
+            return false;
         }
 
 #endif // TIN_DEBUGGER
@@ -1540,7 +1597,8 @@ bool8 CCodeBlock::Execute(uint32 offset, CExecStack& execstack, CFunctionCallSta
         bool8 success = GetOpExecFunction(curoperation)(this, curoperation, instrptr, execstack, funccallstack);
         if (! success)
         {
-            if (funccallstack.mDebuggerObjectDeleted == 0 && funccallstack.mDebuggerFunctionReload == 0)
+            // -- we only assert if the failure was not because the function was reloaded
+            if (funccallstack.mDebuggerFunctionReload == 0)
             {
                 DebuggerAssert_(false, this, instrptr - 1, execstack, funccallstack,
                                 "Error - Unable to execute OP:  %s\n", GetOperationString(curoperation));

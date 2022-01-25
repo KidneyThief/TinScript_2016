@@ -447,7 +447,8 @@ bool8 CVariableEntry::IsStackVariable(CFunctionCallStack& funccallstack, bool al
 {
     int32 stackoffset = 0;
     CObjectEntry* oe = NULL;
-    CFunctionEntry* fe_executing = funccallstack.GetExecuting(oe, stackoffset);
+    uint32 oe_id = 0;
+    CFunctionEntry* fe_executing = funccallstack.GetExecuting(oe_id, oe, stackoffset);
     CFunctionEntry* fe_top = funccallstack.GetTop(oe, stackoffset);
 
     bool belongs_to_executing_function = (fe_executing && fe_executing == GetFunctionEntry());

@@ -418,6 +418,7 @@ class CScriptContext
         CNamespace* GetGlobalNamespace() { return (mGlobalNamespace); }
         CStringTable* GetStringTable() { return (mStringTable); }
         CHashTable<CCodeBlock>* GetCodeBlockList() { return (mCodeBlockList); }
+        CCodeBlock* GetCodeBlock(uint32 cb_hash) { return mCodeBlockList != nullptr ? mCodeBlockList->FindItem(cb_hash) : nullptr; }
         CScheduler* GetScheduler() { return (mScheduler); }
         CMasterMembershipList* GetMasterMembershipList() { return (mMasterMembershipList); }
 
