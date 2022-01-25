@@ -152,8 +152,7 @@ bool8 CompileToC(const char* filename)
 {
     CScriptContext* script_context = GetContext();
     assert(script_context != NULL);
-    bool8 result = script_context->CompileToC(filename);
-    return (true);
+    return script_context->CompileToC(filename);
 }
 
 // ====================================================================================================================
@@ -217,6 +216,7 @@ bool8 NullAssertHandler(CScriptContext*, const char*, const char*, int32, const 
 // ====================================================================================================================
 int NullPrintHandler(int32 severity, const char*, ...)
 {
+	Unused_(severity);
     return (0);
 }
 
@@ -894,8 +894,8 @@ bool8 CScriptContext::GetFullPath(const char* in_file_name, char* out_full_path,
     }
 
     // -- get the full path name, by pre-pending the current working directory (if required)
-    int fn_length = strlen(in_file_name);
-    int dir_length = strlen(mCurrentWorkingDirectory);
+    size_t fn_length = strlen(in_file_name);
+    size_t dir_length = strlen(mCurrentWorkingDirectory);
     if (fn_length + dir_length > in_max_length)
     {
         TinPrint(this, "Error GetFullPath() - full path length exceeds %d: %s%s",
@@ -1138,7 +1138,6 @@ bool8 CScriptContext::SetDirectory(const char* path)
         return (true);
     }
 
-    bool is_valid = false;
     DWORD ftyp = GetFileAttributesA(path);
     if (ftyp != INVALID_FILE_ATTRIBUTES && ftyp & FILE_ATTRIBUTE_DIRECTORY)
     {
@@ -2138,7 +2137,6 @@ bool8 CScriptContext::EvalWatchExpression(CDebuggerWatchExpression& debugger_wat
         void* dest_stack_addr = execstack.GetStackVarAddr(0, cur_ve->GetStackOffset());
         void* cur_stack_addr = cur_exec_stack.GetStackVarAddr(stacktop, cur_ve->GetStackOffset());
 
-        void* var_addr = cur_ve->GetAddr(NULL);
         memcpy(dest_stack_addr, cur_stack_addr, kMaxTypeSize);
         cur_ve = cur_function->GetLocalVarTable()->Next();
     }
@@ -2171,7 +2169,7 @@ bool8 CScriptContext::EvalWatchExpression(CDebuggerWatchExpression& debugger_wat
 // ====================================================================================================================
 // EvaluateWatchExpression():  Used by the debugger for variable watches.
 // ====================================================================================================================
-bool8 CScriptContext::EvaluateWatchExpression(const char* expression, bool8 conditional)
+bool8 CScriptContext::EvaluateWatchExpression(const char* expression)
 {
     // -- ensure we have an expression
     if (!expression || !expression[0])
@@ -3152,7 +3150,6 @@ void CScriptContext::DebuggerSendAssert(const char* assert_msg, uint32 codeblock
 
     int32 depth = GetAssertStackDepth();
     int dump_depth = depth > 0 && depth < kExecAssertStackDepth ? depth : kExecAssertStackDepth;
-    int32 actual_depth = CFunctionCallStack::GetExecutionStackDepth();
     int32 stack_depth = CFunctionCallStack::GetCompleteExecutionStack(oeList, feList, nsHashList, cbHashList,
                                                                       lineNumberList, dump_depth);
 
@@ -3246,7 +3243,6 @@ void CScriptContext::DebuggerSendPrint(int32 severity, const char* fmt, ...)
 
         int32 depth = GetAssertStackDepth();
         int dump_depth = depth > 0 && depth < kExecAssertStackDepth ? depth : kExecAssertStackDepth;
-        int32 actual_depth = CFunctionCallStack::GetExecutionStackDepth();
         int32 stack_depth = CFunctionCallStack::GetCompleteExecutionStack(oeList, feList, nsHashList, cbHashList,
                                                                           lineNumberList, dump_depth);
 
@@ -3654,7 +3650,7 @@ void CScriptContext::DebuggerNotifyCreateObject(CObjectEntry* oe)
 
     // -- get the object name and length (plus EOL)
     const char* obj_name = oe->GetName();
-    int32 obj_name_length = strlen(obj_name) + 1;
+    int32 obj_name_length = (int32)strlen(obj_name) + 1;
     obj_name_length += 4 - (obj_name_length % 4);
 
     // -- object name length
@@ -4169,7 +4165,7 @@ bool CScriptContext::TabComplete(const char* partial_input, int32& ref_tab_compl
 
     // -- set the pointers for the partial input
     partial_function_ptr = identifier_stack[0];
-    size_t partial_length = strlen(partial_function_ptr);
+    int32 partial_length = (int32)strlen(partial_function_ptr);
 
     // -- ensure we have a non-empty partial string
     if (partial_function_ptr[0] == '\0')
@@ -4831,9 +4827,6 @@ void DebuggerRequestTabComplete(int32 request_id, const char* partial_input, int
     CVariableEntry* ve = nullptr;
     if (script_context->TabComplete(partial_input, tab_complete_index, tab_string_offset, tab_result, fe, ve))
     {
-        // -- update the input buf with the new string
-        int32 tab_complete_length = (int32)strlen(tab_result);
-
         // -- build the function prototype string
         char prototype_string[TinScript::kMaxTokenLength];
 
@@ -4966,7 +4959,21 @@ CDebuggerWatchExpression::~CDebuggerWatchExpression()
     // -- which will happen, by clearing the expression
 	if (TinScript::GetContext() != nullptr)
 	{
-		SetAttributes(false, "", "", false);
+		if (mWatchFunctionEntry)
+		{
+			CCodeBlock* codeblock = mWatchFunctionEntry->GetCodeBlock();
+			if (codeblock != nullptr)
+				codeblock->RemoveFunction(mWatchFunctionEntry);
+			TinScript::GetContext()->GetGlobalNamespace()->GetFuncTable()->RemoveItem(mWatchFunctionEntry->GetHash());
+		}
+
+		if (mTraceFunctionEntry)
+		{
+			CCodeBlock* codeblock = mTraceFunctionEntry->GetCodeBlock();
+			if (codeblock != nullptr)
+				codeblock->RemoveFunction(mTraceFunctionEntry);
+			TinScript::GetContext()->GetGlobalNamespace()->GetFuncTable()->RemoveItem(mTraceFunctionEntry->GetHash());
+		}
 	}
 }
 
@@ -4994,9 +5001,10 @@ void CDebuggerWatchExpression::SetAttributes(bool break_enabled, const char* new
             // -- to delete a function, remove it from it's namespace, and then deleting it will automatically
             // -- remove it from whatever codeblock owned it...
             CCodeBlock* codeblock = mWatchFunctionEntry->GetCodeBlock();
-            TinScript::GetContext()->GetGlobalNamespace()->GetFuncTable()->RemoveItem(mWatchFunctionEntry->GetHash());
+			if (codeblock != nullptr)
+				codeblock->RemoveFunction(mWatchFunctionEntry);
+			TinScript::GetContext()->GetGlobalNamespace()->GetFuncTable()->RemoveItem(mWatchFunctionEntry->GetHash());
             TinFree(mWatchFunctionEntry);
-            CCodeBlock::DestroyCodeBlock(codeblock);
             mWatchFunctionEntry = NULL;
         }
 
@@ -5010,9 +5018,10 @@ void CDebuggerWatchExpression::SetAttributes(bool break_enabled, const char* new
         if (mTraceFunctionEntry)
         {
             CCodeBlock* codeblock = mTraceFunctionEntry->GetCodeBlock();
-            TinScript::GetContext()->GetGlobalNamespace()->GetFuncTable()->RemoveItem(mTraceFunctionEntry->GetHash());
+			if (codeblock != nullptr)
+				codeblock->RemoveFunction(mTraceFunctionEntry);
+			TinScript::GetContext()->GetGlobalNamespace()->GetFuncTable()->RemoveItem(mTraceFunctionEntry->GetHash());
             TinFree(mTraceFunctionEntry);
-            CCodeBlock::DestroyCodeBlock(codeblock);
             mTraceFunctionEntry = NULL;
         }
 

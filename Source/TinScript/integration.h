@@ -76,6 +76,8 @@
     typedef unsigned int        uint32;
     typedef long long           int64;
     typedef unsigned long long  uint64;
+#else
+    #include "Core/Public/HAL/Platform.h"
 #endif
 // -- a little unusual - pre-Cx11, I wanted all types to have a width specifier
 typedef bool                bool8;

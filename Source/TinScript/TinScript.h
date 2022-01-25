@@ -507,7 +507,7 @@ class CScriptContext
         bool8 EvalWatchExpression(CDebuggerWatchExpression& debugger_watch, bool use_trace,
                                   CFunctionCallStack& cur_call_stack, CExecStack& cur_exec_stack);
 
-        bool8 EvaluateWatchExpression(const char* expression, bool8 conditional);
+        bool8 EvaluateWatchExpression(const char* expression);
 		void ToggleVarWatch(int32 watch_request_id, uint32 object_id, uint32 var_name_hash, bool breakOnWrite,
                             const char* condition, const char* trace, bool8 trace_on_cond);
 
