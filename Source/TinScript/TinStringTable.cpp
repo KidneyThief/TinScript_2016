@@ -51,6 +51,55 @@ CStringTable::CStringTable(CScriptContext* owner, uint32 _size)
     mBufptr = mBuffer;
 
     mStringDictionary = TinAlloc(ALLOC_StringTable, CHashTable<tStringEntry>, kStringTableDictionarySize);
+
+#if STRING_TABLE_USE_POOLS
+    // -- initialize all the pools
+    for (int32 pool = (int32)eStringPool::Size16; pool < (int32)eStringPool::Count; ++pool)
+    {
+        // -- get the count
+        int32 pool_count = kStringPoolSizesCount[pool];
+        assert(pool_count > 0);
+
+        // -- get the size (note:  if we change the strategy to not use 16, 32, ...  then adjust this
+        int32 string_size = GetPoolStringSize(pool);
+        assert(string_size > 0);
+
+        // -- get the total size of the string pool
+        int32 pool_size = string_size * pool_count;
+
+        // -- allocate the pool buffer;
+        mStringPoolBuffer[pool] = TinAllocArray(ALLOC_StringTable, char, pool_size);
+        assert(mStringPoolBuffer[pool] != nullptr);
+
+        // allocate the string entry buffer for the pool
+        mStringPoolFreeList[pool] = nullptr;
+        mStringPoolEntryBuffer[pool] = TinAllocArray(ALLOC_StringTable, tStringEntry, pool_count);
+        assert(mStringPoolEntryBuffer[pool] != nullptr);
+
+        // -- initialize all string pool entries
+        char* pool_buffer_ptr = mStringPoolBuffer[pool];
+        tStringEntry* pool_entry_ptr = mStringPoolEntryBuffer[pool];
+        for (int32 entry_index = 0; entry_index < pool_count; ++entry_index)
+        {
+            // -- construct the entry in-place, set the pool member, and hook it into the free list
+            pool_entry_ptr->mPool = (eStringPool)pool;
+            pool_entry_ptr->mNextFree = mStringPoolFreeList[pool];
+            mStringPoolFreeList[pool] = pool_entry_ptr;
+
+            // -- initialize the actual string buffer
+            pool_entry_ptr->mString = pool_buffer_ptr;
+            pool_buffer_ptr[0] = '\0';
+
+            // -- update the ptrs
+            pool_buffer_ptr += string_size;
+            pool_entry_ptr++;
+        }
+
+        // -- initialize the used and high watermark counts
+        mStringPoolEntryUsedCount[pool] = 0;
+        mStringPoolEntryHighCount[pool] = 0;
+    }
+#endif
 }
 
 // ====================================================================================================================
@@ -58,12 +107,44 @@ CStringTable::CStringTable(CScriptContext* owner, uint32 _size)
 // ====================================================================================================================
 CStringTable::~CStringTable()
 {
-    // -- destroy the hash table entries
-    mStringDictionary->DestroyAll();
+    DumpStringTableStats();
+
+    // -- zero out the ref count for all strings, and then remove unreferenced strings
+    // -- this will return pool entries to the pool, and allocated entries will be deleted
+    tStringEntry* ste = mStringDictionary->First();
+    while (ste != nullptr)
+    {
+        ste->mRefCount = 0;
+        ste = mStringDictionary->Next();
+    }
+    RemoveUnreferencedStrings();
 
     // -- destroy the table and buffer
     TinFree(mStringDictionary);
     TinFree(mBuffer);
+
+#if STRING_TABLE_USE_POOLS
+    // -- destroy the pools
+    for (int32 pool = (int32)eStringPool::Size16; pool < (int32)eStringPool::Count; ++pool)
+    {
+        TinFreeArray(mStringPoolBuffer[pool]);
+        TinFreeArray(mStringPoolEntryBuffer[pool]);
+    }
+#endif
+}
+
+// ====================================================================================================================
+// GetPoolStringSize():  we're using sizes of 16, 32, 64, 128 by default...  we use this function in case this changes
+// ====================================================================================================================
+int32 CStringTable::GetPoolStringSize(int32 pool) const
+{
+#if STRING_TABLE_USE_POOLS
+    if (pool >= 0 && pool < (int32)eStringPool::Count)
+    {
+        return 16 * (int32)pow(2, pool);
+    }
+#endif
+    return 0;
 }
 
 // ====================================================================================================================
@@ -85,6 +166,58 @@ const char* CStringTable::AddString(const char* s, int length, uint32 hash, bool
         if (length < 0)
             length = (int32)strlen(s);
 
+#if STRING_TABLE_USE_POOLS
+        int32 pool = (int32)eStringPool::None;
+        int32 pool_string_size = 0;
+        for (; pool < (int32)eStringPool::Count; ++pool)
+        {
+            // --remember to leave room for the terminator
+            pool_string_size = GetPoolStringSize(pool);
+            if (length + 1 <= pool_string_size)
+            {
+                break;
+            }
+        }
+
+        // -- see if we can add the string to the pool
+        if (pool < (int32)eStringPool::Count)
+        {
+            if (mStringPoolFreeList[pool] != nullptr)
+            {
+                // -- pop an entry off the free list
+                tStringEntry* pool_entry = mStringPoolFreeList[pool];
+                mStringPoolFreeList[pool] = pool_entry->mNextFree;
+                pool_entry->mNextFree = nullptr;
+
+                // -- initialize the ref count
+                pool_entry->mRefCount = inc_refcount ? 1 : 0;
+
+                // -- copy the string
+                SafeStrcpy(const_cast<char*>(pool_entry->mString), pool_string_size, s, length + 1);
+
+                // -- add to the dictionary
+                pool_entry->mHash = hash;
+                mStringDictionary->AddItem(*pool_entry, hash);
+
+                // -- update the count - if we've depleted the pool the first time, send an assert message
+                mStringPoolEntryUsedCount[pool]++;
+                if (mStringPoolEntryUsedCount[pool] == kStringPoolSizesCount[pool] &&
+                    mStringPoolEntryHighCount[pool] < kStringPoolSizesCount[pool])
+                {
+                    // -- no free entries - assert, and fall through - the string will be added to the
+                    // regular string table
+                    ScriptAssert_(TinScript::GetContext(), 0, "<internal>", -1,
+                                  "Warning - StringTable pool of size %d is full\n", pool_string_size);
+                }
+
+                if (mStringPoolEntryUsedCount[pool] > mStringPoolEntryHighCount[pool])
+                    mStringPoolEntryHighCount[pool] = mStringPoolEntryUsedCount[pool];
+
+                return pool_entry->mString;
+            }
+        }
+#endif
+
         // -- space left
         int32 remaining = int32(mSize - (kPointerToUInt32(mBufptr) -
                                             kPointerToUInt32(mBuffer)));
@@ -99,10 +232,13 @@ const char* CStringTable::AddString(const char* s, int length, uint32 hash, bool
         SafeStrcpy(mBufptr, remaining, s, length + 1);
         mBufptr += length + 1;
 
-        // -- create the string table entry
+        // -- create the string table entry, also add it to the tail list
         tStringEntry* new_entry = TinAlloc(ALLOC_StringTable, tStringEntry, stringptr);
+        new_entry->mNextFree = mTailEntryList;
+        mTailEntryList = new_entry;
 
         // -- add the entry to the dictionary
+        new_entry->mHash = hash;
         mStringDictionary->AddItem(*new_entry, hash);
 
         // -- if this item is meant to persist, increment the ref count
@@ -169,8 +305,21 @@ void CStringTable::RefCountDecrement(uint32 hash)
         return;
 
     tStringEntry* ste = mStringDictionary->FindItem(hash);
-    if (ste)
-        ste->mRefCount--;
+    if (!ste)
+        return;
+
+    // -- decrement the ref count
+    ste->mRefCount--;
+
+#if STRING_TABLE_USE_POOLS
+    if (ste->mPool != eStringPool::None && ste->mRefCount == 0)
+    {
+        // -- push it onto the delete list - we'll delete *after* completion of
+        // the execution stack... (in case the value is still needed)
+        ste->mNextFree = mPoolDeleteList;
+        mPoolDeleteList = ste;
+    }
+#endif
 }
 
 // ====================================================================================================================
@@ -182,29 +331,73 @@ void CStringTable::RefCountDecrement(uint32 hash)
 void CStringTable::RemoveUnreferencedStrings()
 {
     // -- loop back from the end of the linked list, removing all entries
-    // -- with a zero refcount
-    uint32 last_hash = 0;
-    tStringEntry* last_entry = mStringDictionary->Last(&last_hash);
-    while (last_entry)
+    // -- with a zero refcount (note:  entries from the main buffer, not pooled entries
+    while (mTailEntryList != nullptr)
     {
         // -- if we hit an entry that is still being used (e.g. assigned to
         // -- a variable) we're done
-        if (last_entry->mRefCount > 0)
+        if (mTailEntryList->mRefCount > 0)
             break;
 
         // -- remove the entry from the dictionary
-        tStringEntry* delete_me = last_entry;
-        mStringDictionary->RemoveItem(last_hash);
+        tStringEntry* delete_me = mTailEntryList;
+        mTailEntryList = mTailEntryList->mNextFree;
+        mStringDictionary->RemoveItem(delete_me->mHash);
 
         // -- back up the buf ptr, to store the next string
         mBufptr = const_cast<char*>(delete_me->mString);
 
         // -- delete the entry
         TinFree(delete_me);
-
-        // -- next entry
-        last_entry = mStringDictionary->Last(&last_hash);
     }
+
+#if STRING_TABLE_USE_POOLS
+    while (mPoolDeleteList != nullptr)
+    {
+        // -- pop the entry off the front of the delete list
+        tStringEntry* ste = mPoolDeleteList;
+        mPoolDeleteList = ste->mNextFree;
+
+        // -- if the ref count is *still* 0, reset the entry and return to the free list
+        if (ste->mRefCount == 0)
+        {
+            // -- pop the ste back onto its free list
+            ste->mNextFree = mStringPoolFreeList[(int32)ste->mPool];
+            mStringPoolFreeList[(int32)ste->mPool] = ste;
+            const_cast<char*>(ste->mString)[0] = '\0';
+
+            // -- remove it from the dictionary
+            mStringDictionary->RemoveItem(ste->mHash);
+            ste->mHash = 0;
+
+            // -- decrement the used count
+            mStringPoolEntryUsedCount[(int32)ste->mPool]--;
+        }
+    }
+#endif
+}
+
+// ====================================================================================================================
+// DumpStringTableStats():  print out the used and high pool entry stats
+// ====================================================================================================================
+void CStringTable::DumpStringTableStats()
+{
+    CScriptContext* script_context = TinScript::GetContext();
+    TinPrint(script_context, "### StringTable Stats:\n");
+    int32 remaining = int32(mSize - (kPointerToUInt32(mBufptr) - kPointerToUInt32(mBuffer)));
+    int32 used = kStringTableSize - remaining;
+    TinPrint(script_context, "    Main Buffer used %d / %d, %.2f%%%%\n", used,
+                             kStringTableSize, (float(used) / float(kStringTableSize)) * 100.0f);
+
+#if STRING_TABLE_USE_POOLS
+    for (int32 pool = 0; pool < (int32)eStringPool::Count; ++pool)
+    {
+        int string_size = GetPoolStringSize(pool);
+        TinPrint(script_context, "    Pool %d high usage: %d / %d, %.2f%%%%\n", string_size,
+                                 mStringPoolEntryHighCount[pool], kStringPoolSizesCount[pool],
+                                 (float(mStringPoolEntryHighCount[pool]) / float(kStringPoolSizesCount[pool])) * 100.0f);
+    }
+#endif
 }
 
 } // TinScript
@@ -379,6 +572,19 @@ const char* Error(const char* str0, const char* str1, const char* str2, const ch
 REGISTER_FUNCTION(Print, Print);
 REGISTER_FUNCTION(Warn, Warn);
 REGISTER_FUNCTION(Error, Error);
+
+// ====================================================================================================================
+// StringTablePoolMem():  dump out the used and high pool usage for each pool
+// ====================================================================================================================
+void StringTableDumpStats()
+{
+    if (TinScript::GetContext() != nullptr && TinScript::GetContext()->GetStringTable() != nullptr)
+    {
+        TinScript::GetContext()->GetStringTable()->DumpStringTableStats();
+    }
+}
+
+REGISTER_FUNCTION(StringTableDumpStats, StringTableDumpStats);
 
 // ====================================================================================================================
 // EOF

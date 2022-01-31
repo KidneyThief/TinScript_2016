@@ -27,6 +27,7 @@
 #define __TINSTRINGTABLE_H
 
 // -- includes
+#include "integration.h"
 #include "string.h"
 
 // == namespace TinScript =============================================================================================
@@ -41,21 +42,42 @@ namespace TinScript
 class CStringTable
 {
     public:
+
+        // the string table "as is", only ever "frees" unused strings from the end of the mBuffer...
+        // we can help avoid fragmentation, if we set up pools for strings of size 16, 32, 64, 128
+        // to use this, enable STRING_TABLE_USE_POOLS in integration.h
+        enum class eStringPool : int8
+        {
+            None = -1,
+            Size16,
+            Size32,
+            Size64,
+            Size128,
+            Count
+        };
+
         // -- each string table entry is a ref counted const char*, so when a string is no longer
         // -- being used, it can be deleted from the dictionary buffer
         // -- without garbage collection, we simply remove unreferenced strings from the end
         // -- of the linked list
         struct tStringEntry
         {
-            tStringEntry(const char* _string)
+            tStringEntry(const char* _string = nullptr)
+                : mRefCount(0)
+                , mString(_string)
+                , mHash(0)
+                , mNextFree(nullptr)
             {
-                mRefCount = 0;
-                mString = _string;
             }
 
-            int32 mRefCount;
-            const char* mString;
+            int32 mRefCount = 0;
+            const char* mString = nullptr;
+            uint32 mHash = 0;
+            tStringEntry* mNextFree = nullptr;
+            eStringPool mPool = eStringPool::None;
         };
+
+        int32 GetPoolStringSize(int32 pool) const;
 
         CStringTable(CScriptContext* owner, uint32 _size);
         virtual ~CStringTable();
@@ -72,6 +94,8 @@ class CStringTable
 
         const CHashTable<tStringEntry>* GetStringDictionary() { return (mStringDictionary); }
 
+        void DumpStringTableStats();
+
     private:
         CScriptContext* mContextOwner;
 
@@ -80,6 +104,16 @@ class CStringTable
         char* mBufptr;
 
         CHashTable<tStringEntry>* mStringDictionary;
+        tStringEntry* mTailEntryList = nullptr;
+
+#if STRING_TABLE_USE_POOLS
+        char* mStringPoolBuffer[(int32)eStringPool::Count];
+        tStringEntry* mStringPoolEntryBuffer[(int32)eStringPool::Count];
+        tStringEntry* mStringPoolFreeList[(int32)eStringPool::Count];
+        int32 mStringPoolEntryUsedCount[(int32)eStringPool::Count];
+        int32 mStringPoolEntryHighCount[(int32)eStringPool::Count];
+        tStringEntry* mPoolDeleteList = nullptr;
+#endif
 };
 
 } // TinScript

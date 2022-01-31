@@ -127,7 +127,7 @@ CFunctionCallStack::tFunctionCallEntry::tFunctionCallEntry(CFunctionEntry* _func
 // ====================================================================================================================
 // -- constructor
 // ====================================================================================================================
-CFunctionCallStack* CFunctionCallStack::m_ExecutionHead = nullptr;
+_declspec(thread) CFunctionCallStack* g_ExecutionHead = nullptr;
 
 CFunctionCallStack::CFunctionCallStack()
 {
@@ -145,13 +145,10 @@ CFunctionCallStack::CFunctionCallStack()
 	// lets limit this to the main thread (we don't want, the IDE's execution on a separate thread clouding things)
 	m_ExecutionPrev = nullptr;
 	m_ExecutionNext = nullptr;
-	if (TinScript::GetContext()->IsMainThread())
-	{
-		m_ExecutionNext = m_ExecutionHead;
-		if (m_ExecutionHead != nullptr)
-			m_ExecutionHead->m_ExecutionPrev = this;
-		m_ExecutionHead = this;
-	}
+	m_ExecutionNext = g_ExecutionHead;
+	if (g_ExecutionHead != nullptr)
+		g_ExecutionHead->m_ExecutionPrev = this;
+	g_ExecutionHead = this;
 }
 
 // ====================================================================================================================
@@ -160,25 +157,29 @@ CFunctionCallStack::CFunctionCallStack()
 CFunctionCallStack::~CFunctionCallStack()
 {
 	// -- remove this from the execution linked list
-	if (TinScript::GetContext()->IsMainThread())
+	CFunctionCallStack* found = g_ExecutionHead;
+	while (found != nullptr && found != this)
 	{
-		CFunctionCallStack* found = m_ExecutionHead;
-		while (found != nullptr && found != this)
-		{
-			found = found->m_ExecutionNext;
-		}
-
-		// -- arguably should assert here, if not found...
-		if (found != nullptr)
-		{
-			if (found->m_ExecutionNext != nullptr)
-				found->m_ExecutionNext->m_ExecutionPrev = found->m_ExecutionPrev;
-			if (found->m_ExecutionPrev != nullptr)
-				found->m_ExecutionPrev->m_ExecutionNext = found->m_ExecutionNext;
-			else
-				m_ExecutionHead = found->m_ExecutionNext;
-		}
+		found = found->m_ExecutionNext;
 	}
+
+	// -- arguably should assert here, if not found...
+	if (found != nullptr)
+	{
+		if (found->m_ExecutionNext != nullptr)
+			found->m_ExecutionNext->m_ExecutionPrev = found->m_ExecutionPrev;
+		if (found->m_ExecutionPrev != nullptr)
+			found->m_ExecutionPrev->m_ExecutionNext = found->m_ExecutionNext;
+		else
+			g_ExecutionHead = found->m_ExecutionNext;
+	}
+
+    // -- if the execution head is empty - the stack is completely unwound, and this is a good time
+    // to remove all unreferenced strings from the string table
+    if (TinScript::GetContext()->GetStringTable())
+    {
+        TinScript::GetContext()->GetStringTable()->RemoveUnreferencedStrings();
+    }
 }
 
 // ====================================================================================================================
@@ -263,14 +264,8 @@ int32 CFunctionCallStack::GetCompleteExecutionStack(CObjectEntry** _objentry_lis
 		return 0;
 	}
 
-	// -- restrict this call to the main thread
-	if (!TinScript::GetContext()->IsMainThread())
-	{
-		return 0;
-	}
-
 	int32 current_stack_index = 0;
-	CFunctionCallStack* walk = m_ExecutionHead;
+	CFunctionCallStack* walk = g_ExecutionHead;
 	while (walk != nullptr)
 	{
 		int32 walk_depth = walk->GetStackDepth();
@@ -299,14 +294,8 @@ int32 CFunctionCallStack::GetCompleteExecutionStack(CObjectEntry** _objentry_lis
 // ====================================================================================================================
 int32 CFunctionCallStack::GetExecutionStackDepth()
 {
-    // -- restrict this call to the main thread
-    if (!TinScript::GetContext()->IsMainThread())
-    {
-        return 0;
-    }
-
     int32 total_stack_depth = 0;
-	CFunctionCallStack* walk = m_ExecutionHead;
+	CFunctionCallStack* walk = g_ExecutionHead;
 	while (walk != nullptr)
 	{
 		int32 walk_depth = walk->GetStackDepth();
@@ -330,15 +319,9 @@ int32 CFunctionCallStack::GetExecutionStackDepth()
 // ====================================================================================================================
 void CFunctionCallStack::NotifyFunctionDeleted(CFunctionEntry* deleted_fe)
 {
-    // -- restrict this call to the main thread
-    if (!TinScript::GetContext()->IsMainThread())
-    {
-        return;
-    }
-
     // -- note:  this will have to be re-thought, if we have *active* multi-threading for TinScript
     // -- at present, the only use cases are from the MainThread... but we could!
-    CFunctionCallStack* walk = m_ExecutionHead;
+    CFunctionCallStack* walk = g_ExecutionHead;
     while (walk != nullptr)
     {
         int32 walk_depth = walk->GetStackDepth();
@@ -991,7 +974,6 @@ bool8 CodeBlockCallFunction(CFunctionEntry* fe, CObjectEntry* oe, CExecStack& ex
         // -- clear all parameters for the function - this will ensure all
         // -- strings are decremented, keeping the string table clear of unassigned values
         fe->GetContext()->ClearParameters();
-        TinScript::GetContext()->GetStringTable()->RemoveUnreferencedStrings();
         
         // -- since we called a 'C' function, there's no OP_FuncReturn - pop the function call stack
         int32 var_offset = 0;

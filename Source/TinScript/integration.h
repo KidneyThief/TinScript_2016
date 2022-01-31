@@ -62,6 +62,9 @@
 // be logged
 #define LOG_FUNCTION_EXEC 0
 
+// -- enable the use of string pools, for smaller string, for less fragmentation
+#define STRING_TABLE_USE_POOLS 1
+
 // ------------------------------------------------------------------------------------------------
 // -- TYPES
 // ------------------------------------------------------------------------------------------------
@@ -143,7 +146,7 @@ const int32 kExecFuncCallMaxLocalObjects = 32;
 
 const int32 kExecAssertStackDepth = 5;
 
-const int32 kStringTableSize = 1024 * 1024;
+const int32 kStringTableSize = 512 * 1024;
 const int32 kStringTableDictionarySize = 1553;
 
 const int32 kObjectTableSize = 10007;
@@ -155,6 +158,15 @@ const int32 kHashTableIteratorTableSize = 7;
 const int32 kMaxScratchBuffers = 32;
 
 const int32 kThreadExecBufferSize = 32 * 1024;
+
+// -- we're using pools for strings of size 16, 32, 64 and 128
+// -- here we're defining the number in each pool... the total memory
+// -- for each is the count * string size (not including the count x sizeof(StringEntry))
+// -- e.g.  if we have 2048 strings of size 16, then our mem usage for
+// that pool is 32Kb + 2048 * sizeof(tStringEntry)
+// note:  ensure if we change the number of pools in the enum eStringPool,
+// we update the counts array here, to match
+const int32 kStringPoolSizesCount[4] = { 8192, 4096, 1024, 512 };
 
 // ------------------------------------------------------------------------------------------------
 // -- MEMORY
@@ -209,21 +221,27 @@ namespace TinScript
 #define TinAlloc(alloctype, T, ...) \
     new (reinterpret_cast<T*>(TinScript::CMemoryTracker::Alloc(alloctype, sizeof(T)))) T(__VA_ARGS__);
 
-#define TinFree(addr) \
-    { \
-        void* notify_addr = (void*)addr; \
-        TinScript::CMemoryTracker::Free(notify_addr);                    \
-        delete addr; \
+#define TinFree(addr)                                           \
+    {                                                           \
+        if (addr != nullptr)                                    \
+        {                                                       \
+            void* notify_addr = (void*)addr;                    \
+            TinScript::CMemoryTracker::Free(notify_addr);       \
+            delete addr;                                        \
+        }                                                       \
     }
 
 #define TinAllocArray(alloctype, T, size) \
         new (reinterpret_cast<T*>(TinScript::CMemoryTracker::Alloc(alloctype, sizeof(T) * size))) T[size];
 
-#define TinFreeArray(addr) \
-    { \
-        void* notify_addr = (void*)addr; \
-        TinScript::CMemoryTracker::Free(notify_addr); \
-        delete[] addr; \
+#define TinFreeArray(addr)                                      \
+    {                                                           \
+        if (addr != nullptr)                                    \
+        {                                                       \
+            void* notify_addr = (void*)addr;                    \
+            TinScript::CMemoryTracker::Free(notify_addr);       \
+            delete[] addr;                                      \
+        }                                                       \
     }
 
 #define TinObjectCreated(object_id, funccallstack) \
