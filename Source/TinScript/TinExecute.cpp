@@ -176,7 +176,7 @@ CFunctionCallStack::~CFunctionCallStack()
 
     // -- if the execution head is empty - the stack is completely unwound, and this is a good time
     // to remove all unreferenced strings from the string table
-    if (TinScript::GetContext()->GetStringTable())
+    if (g_ExecutionHead == nullptr && TinScript::GetContext()->GetStringTable())
     {
         TinScript::GetContext()->GetStringTable()->RemoveUnreferencedStrings();
     }

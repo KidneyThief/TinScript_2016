@@ -190,7 +190,21 @@ const char* CStringTable::AddString(const char* s, int length, uint32 hash, bool
                 pool_entry->mNextFree = nullptr;
 
                 // -- initialize the ref count
-                pool_entry->mRefCount = inc_refcount ? 1 : 0;
+                if (inc_refcount)
+                {
+                    pool_entry->mRefCount = 1;
+                    pool_entry->mMarkedForDelete = false;
+                }
+                else
+                {
+                    // -- because we're not referencing, this string may be temporary - we'll add it now
+                    // to the pool delete list, so if it's still unreferenced, it can be cleaned
+                    // at when the current execution stack has concluded
+                    pool_entry->mRefCount = 0;
+                    pool_entry->mNextFree = mPoolDeleteList;
+                    mPoolDeleteList = pool_entry;
+                    pool_entry->mMarkedForDelete = true;
+                }
 
                 // -- copy the string
                 SafeStrcpy(const_cast<char*>(pool_entry->mString), pool_string_size, s, length + 1);
@@ -314,10 +328,15 @@ void CStringTable::RefCountDecrement(uint32 hash)
 #if STRING_TABLE_USE_POOLS
     if (ste->mPool != eStringPool::None && ste->mRefCount == 0)
     {
-        // -- push it onto the delete list - we'll delete *after* completion of
-        // the execution stack... (in case the value is still needed)
-        ste->mNextFree = mPoolDeleteList;
-        mPoolDeleteList = ste;
+        // -- we only want to add to the delete list once of course
+        if (!ste->mMarkedForDelete)
+        {
+            // -- push it onto the delete list - we'll delete *after* completion of
+            // the execution stack... (in case the value is still needed)
+            ste->mNextFree = mPoolDeleteList;
+            mPoolDeleteList = ste;
+            ste->mMarkedForDelete = true;
+        }
     }
 #endif
 }
@@ -357,6 +376,7 @@ void CStringTable::RemoveUnreferencedStrings()
         // -- pop the entry off the front of the delete list
         tStringEntry* ste = mPoolDeleteList;
         mPoolDeleteList = ste->mNextFree;
+        ste->mMarkedForDelete = false;
 
         // -- if the ref count is *still* 0, reset the entry and return to the free list
         if (ste->mRefCount == 0)
@@ -393,8 +413,9 @@ void CStringTable::DumpStringTableStats()
     for (int32 pool = 0; pool < (int32)eStringPool::Count; ++pool)
     {
         int string_size = GetPoolStringSize(pool);
-        TinPrint(script_context, "    Pool %d high usage: %d / %d, %.2f%%%%\n", string_size,
-                                 mStringPoolEntryHighCount[pool], kStringPoolSizesCount[pool],
+        TinPrint(script_context, "    Pool %d used: %d, high: %d, max: %d  [%.2f%%%%]\n", string_size,
+                                 mStringPoolEntryUsedCount[pool], mStringPoolEntryHighCount[pool],
+                                 kStringPoolSizesCount[pool],
                                  (float(mStringPoolEntryHighCount[pool]) / float(kStringPoolSizesCount[pool])) * 100.0f);
     }
 #endif

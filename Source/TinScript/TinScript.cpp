@@ -671,11 +671,16 @@ void SaveStringTable()
     if (!script_context)
         return;
 
-    const CHashTable<CStringTable::tStringEntry>* string_table =
-        script_context->GetStringTable()->GetStringDictionary();
+    CStringTable* string_table_src = script_context->GetStringTable();
+    if (string_table_src == nullptr)
+        return;
 
+    const CHashTable<CStringTable::tStringEntry>* string_table = string_table_src->GetStringDictionary();
     if (!string_table)
         return;
+
+    // -- before we write, lets remove all unreferenced strings
+    string_table_src->RemoveUnreferencedStrings();
 
   	// -- open the file
 	FILE* filehandle = NULL;

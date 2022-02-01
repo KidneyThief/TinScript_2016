@@ -75,6 +75,7 @@ class CStringTable
             uint32 mHash = 0;
             tStringEntry* mNextFree = nullptr;
             eStringPool mPool = eStringPool::None;
+            bool mMarkedForDelete = false;
         };
 
         int32 GetPoolStringSize(int32 pool) const;
