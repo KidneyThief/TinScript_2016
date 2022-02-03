@@ -803,6 +803,13 @@ int32 CValueNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 countonly) 
 				int32 resultsize = kBytesToWordCount(gRegisteredTypeSize[pushtype]);
     		    size += PushInstructionRaw(countonly, instrptr, (void*)valuebuf, resultsize,
 										   DBG_value);
+
+                // -- if the value type is a string literal, we need to ensure it's added to the dictionary
+                // $$$TZA This is necessary for unit test "flow_if", I'm not 100% certain this doesn't cause
+                // strings to be ref-counted beyond their use, but better to ensure the string still exists,
+                // than to remove a string that is still needed...
+                if (pushtype == TYPE_string && !countonly)
+                    codeblock->GetScriptContext()->GetStringTable()->RefCountIncrement(*(uint32*)valuebuf);
     		}
 			else
             {

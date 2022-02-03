@@ -832,9 +832,9 @@ bool8 CreateUnitTests()
         success = success && AddUnitTest("codemodify_scriptint", "Modify scripted gUnitTestScriptInt", "UnitTest_CodeModify();", "23", UnitTest_ScriptIntModify, "", false);
 
         // -- flow control --------------------------------------------------------------------------------------------
-        success = success && AddUnitTest("flow_if", "If intput > 9", "UnitTest_IfStatement(10);", "10 is greater than 9");
-        success = success && AddUnitTest("flow_elseif", "If intput < 9", "UnitTest_IfStatement(8);", "8 is less than 9");
-        success = success && AddUnitTest("flow_else", "If intput == 9", "UnitTest_IfStatement(9);", "9 is equal to 9");
+        success = success && AddUnitTest("flow_if", "If input > 9", "UnitTest_IfStatement(10);", "10 is greater than 9");
+        success = success && AddUnitTest("flow_elseif", "If input < 9", "UnitTest_IfStatement(8);", "8 is less than 9");
+        success = success && AddUnitTest("flow_else", "If input == 9", "UnitTest_IfStatement(9);", "9 is equal to 9");
 
         success = success && AddUnitTest("flow_while", "while loop - count 5 to 1", "UnitTest_WhileStatement();", " 5 4 3 2 1");
         success = success && AddUnitTest("flow_for", "for loop - count 0 to 4", "UnitTest_ForLoop();", " 0 1 2 3 4");
@@ -936,6 +936,22 @@ void BeginUnitTests(bool8 results_only = false, const char* specific_test = NULL
         const CUnitTest* current_test = CUnitTest::gUnitTests->FindItem(fail_test_hash);
 		MTPrint("Unit test failed: %s\n", current_test && current_test->mName ? current_test->mName : "<unnamed>");
         MTPrint("Delete unittest.tso and run from a fresh environment, to ensure no stale compiles\nor pre-defined globals interfere with the tests.\n");
+    }
+}
+
+void ReloadUnitTests()
+{
+    TinScript::CScriptContext* script_context = TinScript::GetContext();
+    MTPrint("Compiling/Executing unittest.ts\n");
+    if (!script_context->CompileScript(kUnitTestScriptName))
+    {
+        MTPrint("Error - unable to compile file: %s\n", kUnitTestScriptName);
+        return;
+    }
+    if (!script_context->ExecScript(kUnitTestScriptName, true, true))
+    {
+        MTPrint("Error - unable to execute file: %s\n", kUnitTestScriptName);
+        return;
     }
 }
 
@@ -1075,6 +1091,7 @@ void BeginMultiThreadTest()
 }
 
 REGISTER_FUNCTION(BeginUnitTests, BeginUnitTests);
+REGISTER_FUNCTION(ReloadUnitTests, ReloadUnitTests);
 REGISTER_FUNCTION(BeginMultiThreadTest, BeginMultiThreadTest);
 
 // -- useful for profiling
