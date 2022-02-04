@@ -112,9 +112,35 @@ CFunctionEntry* CObjectEntry::GetFunctionEntry(uint32 nshash, uint32 funchash)
 {
     CFunctionEntry* fe = NULL;
     CNamespace* objns = GetNamespace();
+
     while (!fe && objns)
     {
         if (nshash == 0 || objns->GetHash() == nshash)
+            fe = objns->GetFuncTable()->FindItem(funchash);
+        objns = objns->GetNext();
+    }
+
+    return fe;
+}
+
+// ====================================================================================================================
+// GetSuperFunctionEntry():  Search the linked list of namespaces looking for a registered method, from the
+// first parent of the given namespace.
+// ====================================================================================================================
+CFunctionEntry* CObjectEntry::GetSuperFunctionEntry(uint32 nshash, uint32 funchash)
+{
+    // -- nshash must be value
+    if (nshash == 0)
+        return nullptr;
+
+    CFunctionEntry* fe = NULL;
+    CNamespace* objns = GetNamespace();
+    bool found_ns = false;
+    while (!fe && objns)
+    {
+        if (objns->GetHash() == nshash)
+            found_ns = true;
+        else if (found_ns)
             fe = objns->GetFuncTable()->FindItem(funchash);
         objns = objns->GetNext();
     }

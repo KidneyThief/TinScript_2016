@@ -2338,6 +2338,10 @@ bool8 OpExecMethodCallArgs(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, 
     // -- get the hash of the namespace, in case we want a specific one
     uint32 nshash = *instrptr++;
 
+    // -- see if this is a "super" method call
+    // (e.g.  call it in the hierarchy, starting with the parent of the current namespace)
+    bool is_super = *instrptr++;
+
     // -- get the hash of the method name
     uint32 methodhash = *instrptr++;
 
@@ -2382,14 +2386,48 @@ bool8 OpExecMethodCallArgs(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, 
         return false;
     }
 
-    // -- find the method entry from the object's namespace hierarachy
+    // -- find the function to call
+    CFunctionEntry* fe = nullptr;
+
+    // -- if we're looking for a super::method(), then we want the fe from an ancestor
+    // of the current ns_hash for the object
+    if (is_super)
+    {
+        fe = oe->GetSuperFunctionEntry(nshash, methodhash);
+    }
+
+    // else find the method entry from the object's namespace hierarchy
     // -- if nshash is 0, then it's from the top of the hierarchy
-    CFunctionEntry* fe = oe->GetFunctionEntry(nshash, methodhash);
+    else
+    {
+        fe = oe->GetFunctionEntry(nshash, methodhash);
+    }
+
     if (!fe)
     {
-        DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
-                        "Error - Unable to find method %s for object %d\n",
-                        UnHash(methodhash), oe->GetID());
+        // -- $$$TZA hmm...  should we allow super::method() calls when there isn't anything defined
+        // in the hierarchy?  we may want to modify HasMethod(), or add HasSuperMethod()...
+        if (is_super)
+        {
+            DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
+                            "Error - failed to execute super::%s()\nno ancestor defines an implementation in the hierarchy of namespace %s::\nfor object %d",
+                            UnHash(methodhash), UnHash(nshash), oe->GetID());
+        }
+        else
+        {
+            if (nshash != 0)
+            {
+                DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
+                                "Error - Unable to find method %s::%s() for object %d\n",
+                                 UnHash(nshash), UnHash(methodhash), oe->GetID());
+            }
+            else
+            {
+                DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
+                                "Error - Unable to find a method %s() for object %d\n",
+                                UnHash(nshash), UnHash(methodhash), oe->GetID());
+            }
+        }
         return false;
     }
 

@@ -162,6 +162,7 @@ class CObjectEntry
 
         CVariableEntry* GetVariableEntry(uint32 varhash);
         CFunctionEntry* GetFunctionEntry(uint32 nshash, uint32 funchash);
+        CFunctionEntry* GetSuperFunctionEntry(uint32 nshash, uint32 funchash);
         void CallFunctionHierarchy(uint32 function_hash, bool8 ascending);
         CNamespace* HasNamespace(uint32 nshash);
 

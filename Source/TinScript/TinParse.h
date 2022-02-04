@@ -249,6 +249,7 @@ enum eMathBinaryFunctionType
 	ReservedKeywordEntry(hashtable_end)         \
 	ReservedKeywordEntry(type)                  \
 	ReservedKeywordEntry(ensure)                \
+	ReservedKeywordEntry(super)                 \
 
 enum eReservedKeyword
 {

@@ -129,7 +129,7 @@ eOpCode GetUnaryOpInstructionType(eUnaryOpType unarytype)
 }
 
 // ====================================================================================================================
-// -- debug type, enum, and string to provide lables for byte code traces and dumps
+// -- debug type, enum, and string to provide labels for byte code traces and dumps
 #define DebugByteCodeTuple \
 	DebugByteCodeEntry(NULL) \
 	DebugByteCodeEntry(instr) \
@@ -140,6 +140,7 @@ eOpCode GetUnaryOpInstructionType(eUnaryOpType unarytype)
 	DebugByteCodeEntry(hash) \
 	DebugByteCodeEntry(nshash) \
 	DebugByteCodeEntry(self) \
+	DebugByteCodeEntry(super) \
 
 enum eDebugByteType {
 	#define DebugByteCodeEntry(a) DBG_##a,
@@ -179,6 +180,7 @@ int32 PushInstructionRaw(bool8 countonly, uint32*& instrptr, void* content, int3
 					    break;
                     case DBG_var:
                     case DBG_func:
+                    case DBG_nshash:
                         debugtypeinfo = UnHash(*(uint32*)content);
                         break;
 				    default:
@@ -2404,12 +2406,13 @@ bool8 CFuncDeclNode::CompileToC(int32 indent, char*& out_buffer, int32& max_size
 // ====================================================================================================================
 CFuncCallNode::CFuncCallNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber,
                              const char* _funcname, int32 _length, const char* _nsname,
-                             int32 _nslength, bool8 _ismethod)
+                             int32 _nslength, bool8 _ismethod, bool8 _issuper)
     : CCompileTreeNode(_codeblock, _link, eFuncCall, _linenumber)
 {
     SafeStrcpy(funcname, sizeof(funcname), _funcname, _length + 1);
     SafeStrcpy(nsname, sizeof(nsname), _nsname, _nslength + 1);
     ismethod = _ismethod;
+    issuper = _issuper;
 }
 
 // ====================================================================================================================
@@ -2430,17 +2433,21 @@ int32 CFuncCallNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 countonl
     {
         size += PushInstruction(countonly, instrptr, OP_MethodCallArgs, DBG_instr);
         size += PushInstruction(countonly, instrptr, 0, DBG_nshash);
+        size += PushInstruction(countonly, instrptr, 0, DBG_super); // unused
     }
     else
     {
         // -- if this isn't a method, but we specified a namespace, then it's a
-        // -- method from a specific namespace in an object's hierarchy.
+        // method from a specific namespace in an object's hierarchy.
         // -- PushSelf, since this will have been called via NS::Func() instead of obj.Func();
+        // -- if this is a 'super::method()' call, then the nshash is actually the current
+        // namespace, and we're looking for the function defined for an ancestor
         if (nshash != 0)
         {
             size += PushInstruction(countonly, instrptr, OP_PushSelf, DBG_self);
             size += PushInstruction(countonly, instrptr, OP_MethodCallArgs, DBG_instr);
             size += PushInstruction(countonly, instrptr, nshash, DBG_nshash);
+            size += PushInstruction(countonly, instrptr, issuper ? 1 : 0, DBG_super);
         }
         else
         {

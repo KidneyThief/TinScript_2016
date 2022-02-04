@@ -645,7 +645,7 @@ class CFuncCallNode : public CCompileTreeNode
 	public:
 		CFuncCallNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber,
                       const char* _funcname, int32 _length, const char* _nsname, int32 _nslength,
-                      bool _ismethod);
+                      bool _ismethod, bool _issuper);
 
 		virtual int32 Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
 		virtual void Dump(char*& output, int32& length)const;
@@ -656,6 +656,7 @@ class CFuncCallNode : public CCompileTreeNode
 		char funcname[kMaxNameLength];
 		char nsname[kMaxNameLength];
         bool8 ismethod;
+		bool8 issuper;
 
 	protected:
 		CFuncCallNode() { }

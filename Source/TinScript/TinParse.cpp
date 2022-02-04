@@ -2136,7 +2136,7 @@ bool8 TryParseStatement(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTree
         else
         {
 		    ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
-                          readexpr.linenumber, "Error - expecting ';'\n");
+                          readexpr.linenumber, "Error - invalid syntax... possibly missing ';'\n");
 		    return (false);
         }
     }
@@ -2356,6 +2356,15 @@ bool8 TryParseExpression(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTre
             // -- committed to self
             filebuf = firsttoken;
 		    CSelfNode* selfnode = TinAlloc(ALLOC_TreeNode, CSelfNode, codeblock, *temp_link, filebuf.linenumber);
+        }
+
+        // -- otherwise if the keyword is "super", we treat it as a ns call, not a method call
+        else if (reservedwordtype == KEYWORD_super)
+        {
+            if (TryParseFuncCall(codeblock, filebuf, *temp_link, false))
+            {
+                // -- committed to function call, filebuf will have already been updated
+            }
         }
         else
             return (false);
@@ -3853,16 +3862,59 @@ bool8 TryParseFuncCall(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeN
 	if (!GetToken(idtoken))
 		return (false);
 
-	if (idtoken.type != TOKEN_IDENTIFIER)
+    // -- "super" is a special kind of namespace identifier in this case
+    bool is_super = false;
+    if (idtoken.type == TOKEN_KEYWORD &&
+        GetReservedKeywordType(idtoken.tokenptr, idtoken.length) == KEYWORD_super)
+    {
+        is_super = true;
+    }
+
+	if (!is_super && idtoken.type != TOKEN_IDENTIFIER)
 		return (false);
 
-    // -- see if this is a namespaced function declaration
+    // -- see if this is a namespace'd function declaration
     bool8 usenamespace = false;
     tReadToken nsnametoken(idtoken);
     tReadToken nstoken(idtoken);
     if (GetToken(nstoken) && nstoken.type == TOKEN_NAMESPACE)
     {
         usenamespace = true;
+
+        // -- if this is a "super::" method, verify that the nsnametoken is "super"
+        if (is_super)
+        {
+            if (strncmp(nsnametoken.tokenptr, "super", 5) != 0)
+            {
+                ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
+                              nsnametoken.linenumber,
+                              "Error - namespace should be 'super' %s::\n",
+                              TokenPrint(nsnametoken));
+                return (false);
+            }
+
+            // -- so now that we're using a super::method(), we want the actual nsnametoken to be
+            // the function we're currently defining
+            int32 cur_method_def_obj_stack_top = 0;
+            CObjectEntry* cur_method_def_obj = NULL;
+            CFunctionEntry* cur_method_def =
+                codeblock->smFuncDefinitionStack->GetTop(cur_method_def_obj, cur_method_def_obj_stack_top);
+            uint32 cur_method_ns_hash = cur_method_def != nullptr ? cur_method_def->GetNamespaceHash() : 0;
+            if (cur_method_def == nullptr || cur_method_ns_hash == 0)
+            {
+                ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
+                              nsnametoken.linenumber,
+                              "Error - cannot call super::method() outside outside of a <namespace>::method() definition\n");
+                return (false);
+            }
+
+            // $$$TZA critical we don't try to write to the nsnametoken
+            const char* cur_method_ns = UnHash(cur_method_ns_hash);
+            int32 cur_method_ns_length = (int32)strlen(cur_method_ns);
+            nsnametoken.tokenptr = cur_method_ns;
+            nsnametoken.length = cur_method_ns_length;
+        }
+
         // -- we'd better find another identifier
         idtoken = nstoken;
         if (!GetToken(idtoken) || idtoken.type != TOKEN_IDENTIFIER)
@@ -3898,7 +3950,7 @@ bool8 TryParseFuncCall(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeN
                                            filebuf.linenumber, idtoken.tokenptr, idtoken.length,
                                            usenamespace ? nsnametoken.tokenptr : "",
                                            usenamespace ? nsnametoken.length : 0,
-                                           ismethod);
+                                           ismethod, is_super);
 
     // -- $$$TZA add default args
 
