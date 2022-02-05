@@ -10,7 +10,6 @@ Include("MissionAI.ts");
 Include("MissionSpawns.ts");
 Include("MissionTree.ts");
 Include("MissionAction.ts");
-Include("MissionTest.ts");
 
 // -- globals ---------------------------------------------------------------------------------------------------------
 
@@ -615,25 +614,25 @@ void MissionSim::UpdateKeys()
         return;
 
     // -- rotate left
-    if (IsKeyPressed(KeyCode_j))
+    if (IsKeyPressed(KeyCode_J))
     {
         gCurrentGame.player.rotation -= gPlayer_RotationSpeed;
     }
     
     // -- rotate right
-    if (IsKeyPressed(KeyCode_l))
+    if (IsKeyPressed(KeyCode_L))
     {
         gCurrentGame.player.rotation += gPlayer_RotationSpeed;
     }
     
     // -- thrust
-    if (IsKeyPressed(KeyCode_i))
+    if (IsKeyPressed(KeyCode_I))
     {
         gCurrentGame.player.ApplyThrust(gPlayer_Thrust);
     }
     
     // -- break
-    if (IsKeyPressed(KeyCode_k))
+    if (IsKeyPressed(KeyCode_K))
     {
         gCurrentGame.player.ApplyBreak();
     }

@@ -10,11 +10,9 @@ object gCurrentGame;
 // ====================================================================================================================
 // PlayerEnterTriggerAction implementation - sets "success" when the player enters the trigger volume
 // ====================================================================================================================
-LinkNamespaces("PlayerEnterTriggerAction", "ActionTriggerVolume");
-void PlayerEnterTriggerAction::OnCreate()
+void PlayerEnterTriggerAction::OnCreate() : ActionTriggerVolume
 {
     // -- construct the base class
-    ActionTriggerVolume::OnCreate();
 }
 
 void PlayerEnterTriggerAction::NotifyOnEnter(object character)
@@ -28,11 +26,9 @@ void PlayerEnterTriggerAction::NotifyOnEnter(object character)
 // ====================================================================================================================
 // PlayerExitTriggerAction implementation - sets "success" when the player enters the trigger volume
 // ====================================================================================================================
-LinkNamespaces("PlayerExitTriggerAction", "ActionTriggerVolume");
-void PlayerExitTriggerAction::OnCreate()
+void PlayerExitTriggerAction::OnCreate() : ActionTriggerVolume
 {
     // -- construct the base class
-    ActionTriggerVolume::OnCreate();
 }
 
 void PlayerExitTriggerAction::NotifyOnExit(object character)
@@ -46,8 +42,7 @@ void PlayerExitTriggerAction::NotifyOnExit(object character)
 // ====================================================================================================================
 // CountdownTimerAction implementation - sets "success" when the timer has elapsed
 // ====================================================================================================================
-LinkNamespaces("CountdownTimerAction", "MissionAction");
-void CountdownTimerAction::OnCreate()
+void CountdownTimerAction::OnCreate() : MissionAction
 {
     // -- construct the base class
     MissionAction::OnCreate();
@@ -99,8 +94,7 @@ void CountdownTimerAction::OnUpdate(float delta_time)
 // SpawnWaveAction implementation
 // ====================================================================================================================
 // -- spawns a wave of enemies, returns success if a given percentage is killed, fail if the player is killed
-LinkNamespaces("SpawnWaveAction", "MissionAction");
-void SpawnWaveAction::OnCreate()
+void SpawnWaveAction::OnCreate() : MissionAction
 {
     // -- construct the base class
     MissionAction::OnCreate();
@@ -198,8 +192,7 @@ void SpawnWaveAction::Complete(bool success)
 // ResetAction implementation
 // ====================================================================================================================
 // -- contains a set of actions, on which to call Reset(), if this action is ever started
-LinkNamespaces("ResetAction", "MissionAction");
-void ResetAction::OnCreate()
+void ResetAction::OnCreate() : MissionAction
 {
     // -- construct the base class
     MissionAction::OnCreate();
@@ -239,8 +232,7 @@ void ResetAction::Begin()
 // DialogAction implementation
 // ====================================================================================================================
 // -- contains a set of actions, on which to call Reset(), if this action is ever started
-LinkNamespaces("DialogAction", "MissionAction");
-void DialogAction::OnCreate()
+void DialogAction::OnCreate() : MissionAction
 {
     // -- construct the base class
     MissionAction::OnCreate();

@@ -49,7 +49,8 @@ void DefaultGame::OnInit()
 void DefaultGame::OnDestroy()
 {
     // -- destroy the group, regardless of who created it
-    destroy self.game_objects;
+    if (IsObject(self.game_objects))
+        destroy self.game_objects;
 }
 
 void DefaultGame::OnUpdate()
