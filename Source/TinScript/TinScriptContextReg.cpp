@@ -252,11 +252,55 @@ void ContextListFunctions(const char* partial)
 }
 
 // ====================================================================================================================
+// ContextListMethods():  If a partial method name is provided, list all methods containing the partial.
+// ====================================================================================================================
+void ContextListMethods(const char* ns_name, const char* partial)
+{
+    if (ns_name == nullptr || ns_name[0] == '\0')
+        return;
+    CScriptContext* script_context = TinScript::GetContext();
+    CNamespace* ns = script_context->FindNamespace(Hash(ns_name, -1, false));
+    if (ns == nullptr)
+        return;
+
+    // -- dump the function table for the given namespace, filtered on a partial method name
+    TinScript::DumpFuncTable(script_context, ns->GetFuncTable(), partial);
+}
+
+// ====================================================================================================================
 // ContextIsFunction():  return true if the global function is defined
 // ====================================================================================================================
-bool8 ContextIsFunction(const char* name)
+bool8 ContextIsFunction(const char* func_name)
 {
-    return (TinScript::GetContext()->FunctionExists(name, ""));
+    return (TinScript::GetContext()->FunctionExists(func_name, ""));
+}
+
+// ====================================================================================================================
+// ContextIsFunctionHash():  return true if the global function is defined
+// ====================================================================================================================
+bool8 ContextIsFunctionHash(int32 func_hash)
+{
+    return (TinScript::GetContext()->FunctionExists(func_hash, 0));
+}
+
+// ====================================================================================================================
+// ContextIsMethod():  return true if the method for the namespace is defined
+// ====================================================================================================================
+bool8 ContextIsMethod(const char* ns_name, const char* func_name)
+{
+    if (ns_name == nullptr || ns_name[0] == '\0')
+        return false;
+    return (TinScript::GetContext()->FunctionExists(func_name, ns_name));
+}
+
+// ====================================================================================================================
+// ContextIsMethodHash():  return true if the method for the namespace is defined
+// ====================================================================================================================
+bool8 ContextIsMethodHash(int32 ns_hash, int32 func_hash)
+{
+    if (ns_hash == 0)
+        return false;
+    return (TinScript::GetContext()->FunctionExists(func_hash, ns_hash));
 }
 
 // ====================================================================================================================
@@ -419,7 +463,11 @@ REGISTER_FUNCTION(IsVariable, ContextIsVariable);
 REGISTER_FUNCTION(ListGlobals, ContextListVariables);  // duplicate of ListVariables
 REGISTER_FUNCTION(IsGlobal, ContextIsVariable);     // duplicate of IsVariable
 REGISTER_FUNCTION(ListFunctions, ContextListFunctions);
+REGISTER_FUNCTION(ListMethods, ContextListMethods);
 REGISTER_FUNCTION(IsFunction, ContextIsFunction);
+REGISTER_FUNCTION(IsFunctionHash, ContextIsFunctionHash);
+REGISTER_FUNCTION(IsMethod, ContextIsMethod);
+REGISTER_FUNCTION(IsMethodHash, ContextIsMethodHash);
 REGISTER_FUNCTION(ListNamespaces, ContextListNamespaces);
 REGISTER_FUNCTION(IsNamespace, ContextIsNamespace);
 REGISTER_FUNCTION(GetObjectNamespace, ContextGetObjectNamespace);
