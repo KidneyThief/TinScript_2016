@@ -199,11 +199,20 @@ class CNamespace
 
         CScriptContext* GetScriptContext() { return (mContextOwner); }
 
-        const char* GetName() { return (mName); }
-        uint32 GetHash() { return (mHash); }
-        uint32 GetTypeID() { return (mTypeID); }
+        const char* GetName() const { return (mName); }
+        uint32 GetHash() const { return (mHash); }
+        uint32 GetTypeID() const { return (mTypeID); }
 
-        bool8 IsRegisteredClass()
+        // -- returns false only if there's a function entry with a non-interface definition
+        // e.g. a function definition with a return type other than TYPE__resolve
+        bool IsInterface() const;
+
+        // -- when we ensure a "Create-able" non-interface namespace has an interface implemented,
+        // we also need to ensure that the interface itself is consistent in its hierarchy
+        bool IsInterfaceVerfied() const { return mIsInterfaceVerified; }
+        void SetInterfaceVerified() { mIsInterfaceVerified = true; }
+
+        bool8 IsRegisteredClass() const
         {
             // -- only classes can be instantiated (obviously)
             return (mCreateFuncptr != NULL);
@@ -228,8 +237,8 @@ class CNamespace
         }
 
         CVariableEntry* GetVarEntry(uint32 varhash);
-        tVarTable* GetVarTable() { return (mMemberTable); }
-        tFuncTable* GetFuncTable() { return (mMethodTable); }
+        tVarTable* GetVarTable() const { return (mMemberTable); }
+        tFuncTable* GetFuncTable() const { return (mMethodTable); }
 
     private:
         CNamespace() { }
@@ -240,6 +249,7 @@ class CNamespace
         uint32 mHash;
         uint32 mTypeID;
         CNamespace* mNext;
+        bool mIsInterfaceVerified = false;
 
         CreateInstance mCreateFuncptr;
         DestroyInstance mDestroyFuncptr;

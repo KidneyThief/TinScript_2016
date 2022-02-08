@@ -939,11 +939,18 @@ void BeginUnitTests(bool8 results_only = false, const char* specific_test = NULL
     }
 }
 
-void ReloadUnitTests()
+void ReloadUnitTests(bool recompile)
 {
     TinScript::CScriptContext* script_context = TinScript::GetContext();
-    MTPrint("Compiling/Executing unittest.ts\n");
-    if (!script_context->CompileScript(kUnitTestScriptName))
+    if (recompile)
+    {
+        MTPrint("Compiling/Executing unittest.ts\n");
+    }
+    else
+    {
+        MTPrint("Executing unittest.ts\n");
+    }
+    if (recompile && !script_context->CompileScript(kUnitTestScriptName))
     {
         MTPrint("Error - unable to compile file: %s\n", kUnitTestScriptName);
         return;

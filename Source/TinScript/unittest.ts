@@ -450,6 +450,19 @@ int MultBy24(int value) {
     return (result);
 }
 
+// -- Interface Test Functions --------------------------------------------------------------------
+
+interface TestInterface::OnCreate() : TestInterfaceBase;
+interface TestInterface::TestMethod1(object required_obj);
+
+interface TestInterfaceBase::TestMethod0(int required_int);
+interface TestInterfaceBase::TestMethod1(object required_obj);
+
+void TestEnsureInterface::OnCreate() { Print("hello"); }
+void TestEnsureInterface::TestMethod0(int required_int) { Print("### DEBUG: ", required_int); }
+void TestEnsureInterface::TestMethod1(object required_obj) { Print("### DEBUG: ", required_obj); }
+ensure_interface("TestEnsureInterface", "TestInterface");
+
 // ------------------------------------------------------------------------------------------------
 // eof
 // ------------------------------------------------------------------------------------------------

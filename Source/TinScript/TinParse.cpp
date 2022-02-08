@@ -2315,7 +2315,12 @@ bool8 TryParseExpression(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTre
     if (TryParseHash(codeblock, filebuf, exprlink))
         return (true);
 
-	// -- a array_count() completes an expression
+    // -- check_interface() ensures that all the methods in the interface namespace
+    /// exist in the hierarchy of the given namespace, including signature (except return type)
+    if (TryParseEnsureInterface(codeblock, filebuf, exprlink))
+        return (true);
+
+    // -- a array_count() completes an expression
 	if (TryParseArrayCount(codeblock, filebuf, exprlink))
 		return (true);
 
@@ -3269,7 +3274,7 @@ bool8 TryParseDoWhileLoop(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTr
     // -- decrement the paren depth
     --gGlobalExprParenDepth;
 
-    // -- consume the statent terminator
+    // -- consume the statement terminator
     if (!GetToken(filebuf) || filebuf.type != TOKEN_SEMICOLON)
     {
         ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
@@ -3462,16 +3467,24 @@ bool8 TryParseForLoop(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNo
 // ====================================================================================================================
 bool8 TryParseFuncDefinition(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link)
 {
-	// -- use temporary vars, to ensure we dont' change the actual bufptr, unless successful
+	// -- use temporary vars, to ensure we don't change the actual filebuf, unless successful
 	tReadToken returntype(filebuf);
 	if (!GetToken(returntype))
 		return (false);
 
+    bool is_interface = false;
+    if (returntype.type == TOKEN_KEYWORD &&
+        GetReservedKeywordType(returntype.tokenptr, returntype.length) == KEYWORD_interface)
+    {
+        is_interface = true;
+    }
+
 	// -- see if we found a registered type
-	if (returntype.type != TOKEN_REGTYPE)
+	if (!is_interface && returntype.type != TOKEN_REGTYPE)
 		return (false);
 
-	eVarType regreturntype = GetRegisteredType(returntype.tokenptr, returntype.length);
+	eVarType regreturntype = !is_interface ? GetRegisteredType(returntype.tokenptr, returntype.length)
+                                           : TYPE__resolve;
 
 	// -- see if the next token is an identifier
 	tReadToken idtoken = returntype;
@@ -3481,10 +3494,11 @@ bool8 TryParseFuncDefinition(CCodeBlock* codeblock, tReadToken& filebuf, CCompil
 	if (idtoken.type != TOKEN_IDENTIFIER)
 		return (false);
 
-    // -- see if this is a namespaced function declaration
+    // -- see if this is a namespace'd function declaration
     bool8 usenamespace = false;
     tReadToken nsnametoken(idtoken);
     tReadToken nstoken(idtoken);
+    CNamespace* func_namespace = nullptr;
     if (GetToken(nstoken) && nstoken.type == TOKEN_NAMESPACE)
     {
         usenamespace = true;
@@ -3516,9 +3530,8 @@ bool8 TryParseFuncDefinition(CCodeBlock* codeblock, tReadToken& filebuf, CCompil
     if (usenamespace)
     {
         // -- see if we need to create a new namespace
-        CNamespace* nsentry = codeblock->GetScriptContext()->
-                                         FindOrCreateNamespace(TokenPrint(nsnametoken), true);
-        if (!nsentry)
+        func_namespace = codeblock->GetScriptContext()->FindOrCreateNamespace(TokenPrint(nsnametoken));
+        if (!func_namespace)
         {
             ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
                           peektoken.linenumber,
@@ -3527,7 +3540,18 @@ bool8 TryParseFuncDefinition(CCodeBlock* codeblock, tReadToken& filebuf, CCompil
             return (false);
         }
 
-        functable = nsentry->GetFuncTable();
+        // -- if this is an interface function definition, ensure we're permitted to
+        // set the namespace as an interface namespace
+        if (is_interface && !func_namespace->IsInterface())
+        {
+            ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
+                            peektoken.linenumber,
+                            "Error - Unable to add an interface method to a non-interface namespace %s::\nAll methods in a namespace must either be interface declarations, or implemented methods\n",
+                            TokenPrint(nsnametoken));
+            return (false);
+        }
+
+        functable = func_namespace->GetFuncTable();
     }
 
     // -- no namespace - must be a global function
@@ -3547,46 +3571,40 @@ bool8 TryParseFuncDefinition(CCodeBlock* codeblock, tReadToken& filebuf, CCompil
     // -- see if this function already existed
     uint32 funchash = Hash(idtoken.tokenptr, idtoken.length);
     uint32 nshash = usenamespace ? Hash(nsnametoken.tokenptr, nsnametoken.length) : 0;
-	CFunctionEntry* exists = functable->FindItem(funchash);
-    CFunctionEntry* curfunction = exists;
+	CFunctionEntry* curfunction = functable->FindItem(funchash);
 
-    // -- if thus function doesn't exist, we're defining it now
-    if (! exists)
+    // -- if we're replacing the function definition, delete the old
+    if (curfunction != nullptr)
     {
-	    curfunction = FuncDeclaration(codeblock->GetScriptContext(), nshash, TokenPrint(idtoken),
-                                      Hash(TokenPrint(idtoken)), eFuncTypeScript);
-        codeblock->smFuncDefinitionStack->Push(curfunction, NULL, 0);
+        functable->RemoveItem(funchash);
+        TinFree(curfunction)
+        curfunction = nullptr;
     }
 
-    else
+    // -- if this is not an interface - ensure we don't try to add any non-interface methods to an interface
+    if (!is_interface && usenamespace && func_namespace != nullptr && functable != nullptr)
     {
-        codeblock->smFuncDefinitionStack->Push(exists, NULL, 0);
+        if (functable->Used() > 0 && func_namespace->IsInterface())
+        {
+            ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
+                          filebuf.linenumber, "Error - non-interface method ::%s() being added to an interface %s::\n",
+                          TokenPrint(idtoken), TokenPrint(nsnametoken));
+            return false;
+        }
     }
+
+    // -- begin the definition for the new definition
+    // note:  we are no longer (but could?) warn if the signature has changed
+    curfunction = FuncDeclaration(codeblock->GetScriptContext(), nshash, TokenPrint(idtoken),
+                                                  Hash(TokenPrint(idtoken)), eFuncTypeScript);
+    codeblock->smFuncDefinitionStack->Push(curfunction, NULL, 0);
 
     // get the function context
     CFunctionContext* funccontext = curfunction->GetContext();
 
-    // $$$TZA TYPE__array - do we need to add additional support?
     // -- first parameter is always the return type
     int32 paramcount = 0;
-    if (!exists)
-        funccontext->AddParameter("__return", Hash("__return"), regreturntype, 1, 0);
-
-    else if (exists->GetReturnType() != regreturntype)
-    {
-        ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
-                      filebuf.linenumber,
-                      "Error - return type doesn't match - Removing %s()\n"
-                      "re-Exec() script to redefine\n", exists->GetName());
-
-        // -- delete the function entirely - re-executing the script will redefine
-        // -- it with the (presumably) updated signature
-        functable->RemoveItem(funchash);
-        TinFree(exists);
-
-        return (false);
-    }
-
+    funccontext->AddParameter("__return", Hash("__return"), regreturntype, 1, 0);
     ++paramcount;
 
     // -- now we build the parameter list
@@ -3667,44 +3685,15 @@ bool8 TryParseFuncDefinition(CCodeBlock* codeblock, tReadToken& filebuf, CCompil
         // -- so far so good
         filebuf = paramname;
 
-        // -- if the function doesn't exists, add the parameter
-        if (!exists)
+        // -- add the parameter to the context
+        if (!funccontext->AddParameter(TokenPrint(paramname), Hash(TokenPrint(paramname)), paramtype,
+                                        param_is_array ? -1 : 1, 0))
         {
-            // -- add the parameter to the context
-            if (!funccontext->AddParameter(TokenPrint(paramname), Hash(TokenPrint(paramname)), paramtype,
-                                           param_is_array ? -1 : 1, 0))
-            {
-                ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
-                              filebuf.linenumber,
-                              "Error - unable to add parameter %s to function declaration %s\n",
-                              TokenPrint(paramname), TokenPrint(idtoken));
-                return (false);
-            }
-        }
-
-        // -- else ensure the parameters match
-        else
-        {
-            int cur_param_count = exists->GetContext()->GetParameterCount();
-            CVariableEntry* paramexists = paramcount < cur_param_count
-                                          ? exists->GetContext()->GetParameter(paramcount)
-                                          : NULL;
-            if (!paramexists || paramexists->GetType() != paramtype ||
-                (paramtype != TYPE_hashtable && paramexists->IsArray() != param_is_array))
-            {
-                ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
-                              filebuf.linenumber,
-                              "Error - function signature does not match: %s\n"
-                              "Removing %s() - re-Exec() to redefine\n",
-                              TokenPrint(idtoken), exists->GetName());
-
-                // -- delete the function entirely - re-executing the script will redefine
-                // -- it with the (presumably) updated signature
-                functable->RemoveItem(funchash);
-                TinFree(exists);
-
-                return (false);
-            }
+            ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
+                            filebuf.linenumber,
+                            "Error - unable to add parameter %s to function declaration %s\n",
+                            TokenPrint(paramname), TokenPrint(idtoken));
+            return (false);
         }
 
         // -- increment the parameter count
@@ -3745,9 +3734,16 @@ bool8 TryParseFuncDefinition(CCodeBlock* codeblock, tReadToken& filebuf, CCompil
     }
 
     // -- see if this is an OnCreate() function, and if we're "deriving" the namespace
-    // -- syntax is:  void ChildNamespace::OnCreate() : Parentnamespace { ... }
+    // -- syntax is:  void ChildNamespace::OnCreate() : ParentNamespace { ... }
     uint32 derived_hash = 0;
     static uint32 oncreate_hash = Hash("OnCreate");
+    if (funchash == oncreate_hash && !usenamespace)
+    {
+        ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
+                     filebuf.linenumber, "Error - OnCreate() must be defined for a namespace, not as a global function\n");
+        return (false);
+    }
+
     if (funchash == oncreate_hash)
     {
         // -- as a "constructor", we want to enforce no parameters, and potentially specifying a derivation
@@ -3770,24 +3766,70 @@ bool8 TryParseFuncDefinition(CCodeBlock* codeblock, tReadToken& filebuf, CCompil
                 return (false);
             }
 
-            // -- set the derived namespace, which will become part of the function declaration node
-            derived_hash = Hash(parenttoken.tokenptr, parenttoken.length);
-
             // -- committed
             peektoken = parenttoken;
             if (!GetToken(peektoken))
             {
-                ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
-                              filebuf.linenumber, "Error - OnCreate() declaration:  expecting '{' or ';'.\n");
+                if (is_interface)
+                {
+                    ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
+                                  filebuf.linenumber, "Error - interface OnCreate() declaration:  expecting ';'\n");
+                }
+                else
+                {
+                    ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
+                                  filebuf.linenumber, "Error - method OnCreate() definition:  expecting '{'\n");
+                }
                 return (false);
+            }
+
+            // -- set the derived namespace, which will become part of the function declaration node
+            derived_hash = Hash(parenttoken.tokenptr, parenttoken.length);
+
+            // -- if this is an interface, it can only be derived from another interface...
+            // -- normally we link namespaces when we actually create an object, but we never create an
+            // instance of an interface, so we need to link them now
+            // -- this means of course, base interfaces must be declared before derived interfaces, a restriction
+            // not imposed on non-interfaces
+            if (is_interface)
+            {
+                const char* parent_interface_name = UnHash(derived_hash);
+                CNamespace* parent_interface =
+                    codeblock->GetScriptContext()->FindOrCreateNamespace(parent_interface_name);
+                if (!parent_interface || !parent_interface->IsInterface())
+                {
+                    ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
+                                  filebuf.linenumber, "Error - invalid parent interface ::%s for \n", parent_interface_name,
+                                  UnHash(nshash));
+                    return false;
+                }
+
+                // -- we link the namespaces here...
+                // -- when ensure_interface() from a non-interface to an interface is called,
+                // the entire interface hierarchy will be validated
+                codeblock->GetScriptContext()->LinkNamespaces(codeblock->GetScriptContext()->FindNamespace(nshash),
+                                                              parent_interface);
             }
         }
     }
 
-    if (peektoken.type == TOKEN_SEMICOLON)
+    // -- for interfaces, ensure this is just a signature
+    if (is_interface)
     {
-        // -- just a declaration
+        if (peektoken.type != TOKEN_SEMICOLON)
+        {
+            ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
+                           filebuf.linenumber, "Error - interface method(), only a signature is permitted, expecting ';'.\n");
+            return (false);
+        }
+
+        // -- update the file buf
         filebuf = peektoken;
+
+        // -- add a funcdecl node, and set its left child to be the statement block
+        CFuncDeclNode* funcdeclnode = TinAlloc(ALLOC_TreeNode, CFuncDeclNode, codeblock, link,
+                                               filebuf.linenumber, idtoken.tokenptr, idtoken.length,
+                                               nsnametoken.tokenptr, nsnametoken.length, derived_hash);
 
         // -- clear the active function definition
         CObjectEntry* dummy = NULL;
@@ -3802,7 +3844,7 @@ bool8 TryParseFuncDefinition(CCodeBlock* codeblock, tReadToken& filebuf, CCompil
     if (peektoken.type != TOKEN_BRACE_OPEN)
     {
         ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
-                      filebuf.linenumber, "Error - expecting '{'\n");
+                      filebuf.linenumber, "Error - non-interface function requires a statement block, expecting '{'\n");
         return (false);
     }
 
@@ -4290,6 +4332,88 @@ bool8 TryParseHash(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*
     sprintf_s(hash_value_buf, 32, "%d", hash_value);
     CValueNode* hash_node = TinAlloc(ALLOC_TreeNode, CValueNode, codeblock, link, filebuf.linenumber, hash_value_buf,
                                      (int32)strlen(hash_value_buf), false, TYPE_int);
+
+    // -- success
+    return (true);
+}
+
+// ====================================================================================================================
+// TryParseEnsureInterface():  The keyword usage is "ensure_interface(ns_hash, interface_hash)":
+// and does not allow expressions
+// ====================================================================================================================
+bool8 TryParseEnsureInterface(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link)
+{
+    // -- ensure the next token is the 'hash' keyword
+    tReadToken peektoken(filebuf);
+    if (!GetToken(peektoken) || peektoken.type != TOKEN_KEYWORD)
+        return (false);
+
+	int32 reservedwordtype = GetReservedKeywordType(peektoken.tokenptr, peektoken.length);
+    if (reservedwordtype != KEYWORD_ensure_interface)
+        return (false);
+
+    // -- we're committed to a hash expression
+    filebuf = peektoken;
+
+    // -- the complete format is: hash("string")
+    // -- read an open parenthesis
+    if (!GetToken(peektoken) || peektoken.type != TOKEN_PAREN_OPEN)
+    {
+        ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
+                      "Error - ensure_interface(): expecting '('\n");
+        return (false);
+    }
+
+    // -- next, we read a non-empty namespace string
+    tReadToken namespace_token(peektoken);
+    if (!GetToken(namespace_token) || namespace_token.type != TOKEN_STRING || namespace_token.length == 0)
+    {
+        ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
+                      "Error - ensure_interface(): expecting a non-empty namespace string literal\n");
+        return (false);
+    }
+
+    // -- update the file buf
+    filebuf = namespace_token;
+
+    // -- consume the comma
+    if (!GetToken(filebuf) || filebuf.type != TOKEN_COMMA)
+    {
+        ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
+            filebuf.linenumber, "Error - ensure_interface(): expecting ','\n");
+        return (false);
+    }
+
+    // -- next, we read a non-empty namespace string
+    tReadToken interface_token(filebuf);
+    if (!GetToken(interface_token) || interface_token.type != TOKEN_STRING || interface_token.length == 0)
+    {
+        ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
+            "Error - ensure_interface(): expecting a non-empty iterface string literal\n");
+        return (false);
+    }
+
+    // -- update the file buf
+    filebuf = interface_token;
+
+    // -- read the closing parenthesis
+    peektoken = interface_token;
+    if (!GetToken(peektoken) || peektoken.type != TOKEN_PAREN_CLOSE)
+    {
+        ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
+                      "Error - hash() expression, expecting ')'\n");
+        return (false);
+    }
+
+    // -- update the file buf
+    filebuf = peektoken;
+
+    // -- ensure_interface expressions resolve at *compile* time, directly into values.
+    // -- because these are literals, add the string to the dictionary, as it may help debugging
+    uint32 ns_hash_value = Hash(namespace_token.tokenptr, namespace_token.length, true);
+    uint32 interface_hash_value = Hash(interface_token.tokenptr, interface_token.length, true);
+    CEnsureInterfaceNode* interface_node = TinAlloc(ALLOC_TreeNode, CEnsureInterfaceNode, codeblock, link, filebuf.linenumber,
+                                                    ns_hash_value, interface_hash_value);
 
     // -- success
     return (true);
@@ -5276,6 +5400,7 @@ bool8 ParseStatementBlock(CCodeBlock* codeblock, CCompileTreeNode*& link, tReadT
 
 		// -- parsing node priority
 		bool8 found = false;
+        const char* cur_file_tokenptr = filetokenbuf.tokenptr;
 		found = found || TryParseComment(codeblock, filetokenbuf, curroot->next);
 		found = found || TryParseVarDeclaration(codeblock, filetokenbuf, curroot->next);
         found = found || TryParseFuncDefinition(codeblock, filetokenbuf, curroot->next);
@@ -5287,7 +5412,18 @@ bool8 ParseStatementBlock(CCodeBlock* codeblock, CCompileTreeNode*& link, tReadT
         found = found || TryParseForLoop(codeblock, filetokenbuf, curroot->next);
 		found = found || TryParseDestroyObject(codeblock, filetokenbuf, curroot->next);
 
-		if (found)
+        // -- ensure we're not parsing in an infinite loop - this can (only?) happen
+        // if there was an error at a lower recursive level, that somehow didn't get surfaced
+        if (found && filetokenbuf.tokenptr == cur_file_tokenptr)
+        {
+            ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
+                filetokenbuf.linenumber, "Parsing failed at token: [%s] %s, line %d\n",
+                gTokenTypeStrings[filetokenbuf.type], TokenPrint(filetokenbuf),
+                filetokenbuf.linenumber);
+            return (false);
+        }
+
+		else if (found)
         {
 			// -- always add to the end of the current root linked list
             while (curroot && curroot->next)
@@ -6060,7 +6196,7 @@ CFunctionEntry* FuncDeclaration(CScriptContext* script_context, uint32 namespace
         ns_string = TinScript::GetContext()->GetStringTable()->FindString(namespacehash);
         if (ns_string && ns_string[0])
         {
-            nsentry = script_context->FindOrCreateNamespace(ns_string, true);
+            nsentry = script_context->FindOrCreateNamespace(ns_string);
         }
     }
 

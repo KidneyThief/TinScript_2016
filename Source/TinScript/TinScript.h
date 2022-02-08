@@ -427,10 +427,11 @@ class CScriptContext
         CHashTable<CObjectEntry>* GetAddressDictionary() { return (mAddressDictionary); }
         CHashTable<CObjectEntry>* GetNameDictionary() { return (mNameDictionary); }
 
-        CNamespace* FindOrCreateNamespace(const char* _nsname, bool create);
+        CNamespace* FindOrCreateNamespace(const char* _nsname);
         CNamespace* FindNamespace(uint32 nshash);
         bool8 LinkNamespaces(const char* parentnsname, const char* childnsname);
         bool8 LinkNamespaces(CNamespace* parentns, CNamespace* childns);
+        bool ValidateInterface(CNamespace* check_ns, CNamespace* interface_ns, CFunctionEntry*& mismatch_fe);
 
         bool8 FunctionExists(uint32 function_hash, uint32 ns_hash);
         bool8 FunctionExists(const char* function_name, const char* ns_name);

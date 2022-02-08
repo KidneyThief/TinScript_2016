@@ -2190,7 +2190,7 @@ int32 CFuncDeclNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 countonl
     tFuncTable* functable = NULL;
     if (funcnshash != 0)
     {
-        CNamespace* nsentry = codeblock->GetScriptContext()->FindOrCreateNamespace(funcnamespace, true);
+        CNamespace* nsentry = codeblock->GetScriptContext()->FindOrCreateNamespace(funcnamespace);
         if (!nsentry)
         {
             ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), linenumber,
@@ -2255,7 +2255,7 @@ int32 CFuncDeclNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 countonl
         if (fe->GetType() != eFuncTypeScript)
         {
             ScriptAssert_(codeblock->GetScriptContext(), false, codeblock->GetFileName(), linenumber,
-                          "Error - there is already a code dregistered function %s()\n"
+                          "Error - there is already a C++ registered function %s()\n"
                           "Removing %s() - re-Exec() to redefine\n", fe->GetName(), fe->GetName());
 
             // -- delete the function entirely - re-executing the script will redefine
@@ -2273,11 +2273,14 @@ int32 CFuncDeclNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 countonl
     // -- before the function body, we need to dump out the dictionary of local vars
     size += CompileVarTable(fe->GetLocalVarTable(), instrptr, countonly);
 
-    // -- compile the function body
-    int32 tree_size = leftchild->Eval(instrptr, returntype, countonly);
-    if (tree_size < 0)
-        return (-1);
-    size += tree_size;
+    // -- compile the function body (unless this is just a prototype)
+    if (leftchild != nullptr)
+    {
+        int32 tree_size = leftchild->Eval(instrptr, returntype, countonly);
+        if (tree_size < 0)
+            return (-1);
+        size += tree_size;
+    }
 
     // -- fill in the jumpcount
     if (!countonly)
@@ -3431,6 +3434,58 @@ int32 CEnsureNode::Eval(uint32*& instrptr, eVarType pushresult, bool countonly) 
 bool8 CEnsureNode::CompileToC(int32 indent, char*& out_buffer, int32& max_size, bool root_node) const
 {
     TinPrint(TinScript::GetContext(), "CEnsureNode::CompileToC() not implemented.\n");
+    return (true);
+}
+
+// == class CEnsureInterfaceNode ======================================================================================
+
+// ====================================================================================================================
+// Constructor
+// ====================================================================================================================
+CEnsureInterfaceNode::CEnsureInterfaceNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber,
+                                           uint32 ns_hash, uint32 interface_hash)
+	: CCompileTreeNode(_codeblock, _link, eEnsureInterface, _linenumber)
+    , m_nsHash(ns_hash)
+    , m_interfaceHash(interface_hash)
+{
+}
+
+// ====================================================================================================================
+// Eval():  Generates the byte code instruction compiled from this node.
+// ====================================================================================================================
+int32 CEnsureInterfaceNode::Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const
+{
+	DebugEvaluateNode(*this, countonly, instrptr);
+	int32 size = 0;
+
+    if (m_nsHash == 0)
+    {
+        ScriptAssert_(codeblock->GetScriptContext(), leftchild != NULL, codeblock->GetFileName(), linenumber,
+                      "Error - CEnsureCEnsureInterfaceNodeNode::Eval() - invalid namespace hash\n");
+        return (-1);
+    }
+
+    if (m_interfaceHash == 0)
+    {
+        ScriptAssert_(codeblock->GetScriptContext(), leftchild != NULL, codeblock->GetFileName(), linenumber,
+                      "Error - CEnsureCEnsureInterfaceNodeNode::Eval() - invalid interface hash\n");
+        return (-1);
+    }
+
+    // -- push the ensure instruction
+    size += PushInstruction(countonly, instrptr, OP_EnsureInterface, DBG_instr);
+    size += PushInstruction(countonly, instrptr, m_nsHash, DBG_nshash);
+    size += PushInstruction(countonly, instrptr, m_interfaceHash, DBG_nshash);
+
+	return size;
+}
+
+// ====================================================================================================================
+// CompileToC(): Convert the parse tree to valid C, to compile directly to the executable. 
+// ====================================================================================================================
+bool8 CEnsureInterfaceNode::CompileToC(int32 indent, char*& out_buffer, int32& max_size, bool root_node) const
+{
+    TinPrint(TinScript::GetContext(), "CEnsureInterfaceNode::CompileToC() not implemented.\n");
     return (true);
 }
 

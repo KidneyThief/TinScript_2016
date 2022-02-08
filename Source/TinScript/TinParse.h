@@ -250,6 +250,8 @@ enum eMathBinaryFunctionType
 	ReservedKeywordEntry(type)                  \
 	ReservedKeywordEntry(ensure)                \
 	ReservedKeywordEntry(super)                 \
+	ReservedKeywordEntry(interface)             \
+	ReservedKeywordEntry(ensure_interface)      \
 
 enum eReservedKeyword
 {
@@ -367,6 +369,7 @@ bool8 TryParseHashtableCopy(CCodeBlock* codeblock, tReadToken& filebuf, CCompile
 bool8 TryParseHashtableIter(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link);
 bool8 TryParseType(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link);
 bool8 TryParseEnsure(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link);
+bool8 TryParseEnsureInterface(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link);
 
 // ====================================================================================================================
 // -- functions for declaring and finding variables and functions

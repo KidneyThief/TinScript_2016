@@ -339,7 +339,7 @@ CScriptContext::CScriptContext(TinPrintHandler printfunction, TinAssertHandler a
     InitializeDictionaries();
 
     // -- create the global namespace for this context
-    mGlobalNamespace = FindOrCreateNamespace(NULL, true);
+    mGlobalNamespace = FindOrCreateNamespace(NULL);
 
     // -- register functions, each to their namespace
     CRegFunctionBase* regfunc = CRegFunctionBase::gRegistrationList;
@@ -487,7 +487,13 @@ void CScriptContext::InitializeDictionaries()
                 // -- link this namespace to its parent
                 if (parentnamespace)
                 {
-                    LinkNamespaces(newnamespace, parentnamespace);
+                    if (!LinkNamespaces(newnamespace, parentnamespace))
+                    {
+                        ScriptAssert_(this, 0, "<internal>", -1,
+                                      "Error - Failed to link namespace ::%s to parent namespace ::%s\n",
+                                      UnHash(regptr->GetHash()), UnHash(regptr->GetParentHash()));
+                        return;
+                    }
                 }
 
                 // -- call the class registration method, to register members/methods

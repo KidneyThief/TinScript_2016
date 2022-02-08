@@ -56,6 +56,7 @@ class CWhileLoopNode;
 	CompileNodeTypeEntry(BinaryNOP)			    \
 	CompileNodeTypeEntry(DebugNOP)			    \
 	CompileNodeTypeEntry(Ensure)  	            \
+	CompileNodeTypeEntry(EnsureInterface)  	    \
 	CompileNodeTypeEntry(Type)  	            \
 	CompileNodeTypeEntry(Value)					\
 	CompileNodeTypeEntry(Self)       			\
@@ -117,6 +118,7 @@ const char* GetNodeTypeString(ECompileNodeType nodetype);
 	OperationEntry(NOP)					\
 	OperationEntry(DebugMsg)			\
 	OperationEntry(Ensure)				\
+	OperationEntry(EnsureInterface)		\
 	OperationEntry(Type)				\
 	OperationEntry(VarDecl)				\
 	OperationEntry(ParamDecl)			\
@@ -903,6 +905,25 @@ public:
 
 protected:
 	CEnsureNode() { }
+};
+
+// ====================================================================================================================
+// class CEnsureInterfaceNode:  Parse tree node, evaluates pushes the EnsureInterfaceOp to check if the
+// namespace hash contains a matching function entry for every function in the hierarchy of the interface hash
+// ====================================================================================================================
+class CEnsureInterfaceNode : public CCompileTreeNode
+{
+public:
+	CEnsureInterfaceNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber,
+			             uint32 ns_hash, uint32 interface_hash);
+	virtual int32 Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
+
+	virtual bool8 CompileToC(int32 indent, char*& out_buffer, int32& max_size, bool root_node) const;
+
+protected:
+	CEnsureInterfaceNode() { }
+	uint32 m_nsHash;
+	uint32 m_interfaceHash;
 };
 
 // ====================================================================================================================

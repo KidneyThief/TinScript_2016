@@ -286,14 +286,14 @@ bool8 CObjectEntry::SetMemberVar(uint32 varhash, void* value)
 // ====================================================================================================================
 // FindOrCreateNamespace():  Find a namespace by name, create if required.
 // ====================================================================================================================
-CNamespace* CScriptContext::FindOrCreateNamespace(const char* _nsname, bool8 create)
+CNamespace* CScriptContext::FindOrCreateNamespace(const char* _nsname)
 {
     // -- ensure the name lives in the string table
     const char* nsname = _nsname && _nsname[0] ? GetStringTable()->AddString(_nsname)
                                                : GetStringTable()->AddString(kGlobalNamespace);
     uint32 nshash = Hash(nsname);
     CNamespace* namespaceentry = mNamespaceDictionary->FindItem(nshash);
-    if (!namespaceentry && create) {
+    if (!namespaceentry) {
         namespaceentry = TinAlloc(ALLOC_Namespace, CNamespace, this, nsname, 0, nullptr);
 
         // -- add the namespace to the dictionary
@@ -324,8 +324,8 @@ bool8 CScriptContext::LinkNamespaces(const char* childnsname, const char* parent
         return (false);
 
     // -- ensure the child exists and the parent exists
-    TinScript::CNamespace* childns = FindOrCreateNamespace(childnsname, true);
-    TinScript::CNamespace* parentns = FindOrCreateNamespace(parentnsname, true);
+    TinScript::CNamespace* childns = FindOrCreateNamespace(childnsname);
+    TinScript::CNamespace* parentns = FindOrCreateNamespace(parentnsname);
     return (LinkNamespaces(childns, parentns));
 }
 
@@ -446,6 +446,133 @@ bool8 CScriptContext::LinkNamespaces(CNamespace* childns, CNamespace* parentns)
 }
 
 // ====================================================================================================================
+// ValidateInterface():  true if all methods in the interface ns exist in the given ns, with the same signatures
+// ====================================================================================================================
+bool CScriptContext::ValidateInterface(CNamespace* check_ns, CNamespace* interface_ns, CFunctionEntry*& mismatch_fe)
+{
+    // -- initialize the return
+    mismatch_fe = nullptr;
+
+    // -- sanity check
+    if (check_ns == nullptr || interface_ns == nullptr)
+        return false;
+    if (check_ns == interface_ns)
+        return true;
+
+    if (!interface_ns->IsInterface())
+    {
+        TinPrint(this, "Error - trying to validate an interface using non-interface namespace: %s\n",
+                       UnHash(interface_ns->GetHash()));
+        return false;
+    }
+
+    // -- make sure the interface hierarchy is verified, all the way to the root
+    CNamespace* check_interface = interface_ns;
+    if (!check_interface->IsInterfaceVerfied())
+    {
+        if (check_interface->GetNext() == nullptr ||
+            ValidateInterface(check_interface, check_interface->GetNext(), mismatch_fe))
+        {
+            check_interface->SetInterfaceVerified();
+        }
+        else if (mismatch_fe != nullptr)
+        {
+            return false;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    // -- go through the interface hierarchy and ensure every method is also found within the namespace
+    const CNamespace* interface = interface_ns;
+    while (interface != nullptr)
+    {
+        const tFuncTable* interface_table = interface->GetFuncTable();
+        if (!interface_table)
+        {
+            interface = interface->GetNext();
+            continue;
+        }
+
+        CFunctionEntry* interface_fe = interface_table->First();
+        while (interface_fe != nullptr)
+        {
+            CFunctionEntry* found_fe = nullptr;
+            const CNamespace* ensure_ns = check_ns;
+            while (ensure_ns != nullptr)
+            {
+                const tFuncTable* ensure_table = ensure_ns->GetFuncTable();
+                if (ensure_table == nullptr)
+                {
+                    ensure_ns = ensure_ns->GetNext();
+                    continue;
+                }
+
+                found_fe = ensure_table->FindItem(interface_fe->GetHash());
+                if (found_fe != nullptr)
+                {
+                    break;
+                }
+
+                // -- check the hierarchy
+                ensure_ns = ensure_ns->GetNext();
+            }
+
+            // -- once we've found our matching fe, ensure all the parameters match
+            if (found_fe != nullptr)
+            {
+                bool params_match = true;
+                int32 param_count = interface_fe->GetContext()->GetParameterCount();
+                if (found_fe->GetContext()->GetParameterCount() != param_count)
+                    params_match = false;
+                else
+                {
+                    // -- we don't (need to) check the return types - just the input parameters
+                    for (int i = 1; i < param_count; ++i)
+                    {
+                        const CVariableEntry* interface_ve = interface_fe->GetContext()->GetParameter(i);
+                        const CVariableEntry* param_ve = found_fe->GetContext()->GetParameter(i);
+                        if (interface_ve->GetType() != param_ve->GetType())
+                        {
+                            params_match = false;
+                            break;
+                        }
+                    }
+                }
+
+                // -- if we found different signatures, assert
+                if (!params_match)
+                {
+                    TinPrint(this, "Error - Namespace %s:: and Interface %s:: have different signatures\nfor method: ::%s()\n",
+                                   UnHash(check_ns->GetHash()), UnHash(interface->GetHash()), UnHash(interface_fe->GetHash()));
+                    mismatch_fe = interface_fe;
+                    return false;
+                }
+            }
+            // -- if we didn't find our function, assert
+            else
+            {
+                TinPrint(this, "Error - Namespace %s:: is missing method ::%s() from Interface %s::\n",
+                               UnHash(check_ns->GetHash()), UnHash(interface_fe->GetHash()), UnHash(interface->GetHash()));
+                mismatch_fe = interface_fe;
+                return false;
+            }
+
+            // -- check the next function
+            interface_fe = interface_table->Next();
+        }
+
+        // -- check the next interface
+        interface = interface->GetNext();
+    }
+
+    // -- no fails
+    return true;
+}
+
+// ====================================================================================================================
 // FunctionExists():  Returns true if the function entry exists, in the given namespace if it exists.
 // ====================================================================================================================
 bool8 CScriptContext::FunctionExists(uint32 func_hash, uint32 ns_hash)
@@ -504,9 +631,13 @@ uint32 CScriptContext::CreateObject(uint32 classhash, uint32 objnamehash, const 
             class_namespace = GetNamespaceDictionary()->FindItem(Hash("CScriptObject"));
             if (class_namespace)
             {
-                LinkNamespaces(namespaceentry, class_namespace);
-                TinPrint(this, "Warning - CreateObject():  Unable to find registered class %s.\n"
-                               "Linking to default base class CScriptObject\n", UnHash(classhash));
+                if (!LinkNamespaces(namespaceentry, class_namespace))
+                {
+                    ScriptAssert_(this, 0, "<internal>", -1,
+                                  "Error - failed to link namespace ::%s to parent namespace ::%s\n",
+                                  UnHash(namespaceentry->GetHash()), UnHash(class_namespace->GetHash()));
+                    return 0;
+                }
             }
         }
 
@@ -531,7 +662,13 @@ uint32 CScriptContext::CreateObject(uint32 classhash, uint32 objnamehash, const 
             else
             {
                 // -- link the namespaces
-                LinkNamespaces(objnamens, namespaceentry);
+                if (!LinkNamespaces(objnamens, namespaceentry))
+                {
+                    ScriptAssert_(this, 0, "<internal>", -1,
+                                  "Error - failed to link namespace ::%s to parent namespace ::%s\n",
+                                  UnHash(objnamens->GetHash()), UnHash(namespaceentry->GetHash()));
+                    return 0;
+                }
             }
         }
 
@@ -628,9 +765,16 @@ uint32 CScriptContext::RegisterObject(void* objaddr, const char* classname, cons
         objnamens = GetNamespaceDictionary()->FindItem(objnamehash);
         if (!objnamens)
             objnamens = namespaceentry;
-        else {
+        else
+        {
             // -- link the namespaces
-            LinkNamespaces(objnamens, namespaceentry);
+            if (!LinkNamespaces(objnamens, namespaceentry))
+            {
+                ScriptAssert_(this, 0, "<internal>", -1,
+                             "Error - failed to link namespace ::%s to parent namespace ::%s\n",
+                             UnHash(objnamens->GetHash()), UnHash(namespaceentry->GetHash()));
+                return 0;
+            }
         }
     }
 
@@ -1469,6 +1613,7 @@ CNamespace::CNamespace(CScriptContext* script_context, const char* _name, uint32
     mDestroyFuncptr = _destroyinstance;
     mMemberTable = TinAlloc(ALLOC_VarTable, tVarTable, kLocalVarTableSize);
     mMethodTable = TinAlloc(ALLOC_FuncTable, tFuncTable, kLocalFuncTableSize);
+    mIsInterfaceVerified = false;
 }
 
 // ====================================================================================================================
@@ -1480,6 +1625,40 @@ CNamespace::~CNamespace()
     TinFree(mMemberTable);
     mMethodTable->DestroyAll();
     TinFree(mMethodTable);
+}
+
+// ====================================================================================================================
+// IsInterface():  This namespace returns false *if* there is a function with a non-resolve return type
+// ====================================================================================================================
+bool CNamespace::IsInterface() const
+{
+    if (mMethodTable == nullptr)
+        return true;
+
+    CFunctionEntry* fe = mMethodTable->First();
+    while (fe != nullptr)
+    {
+        // -- if the function has no context...??  it hasn't been proved a non-interface function
+        CFunctionContext* fe_context = fe->GetContext();
+        if (fe_context == nullptr || fe_context->GetParameterCount() == 0)
+        {
+            fe = mMethodTable->Next();
+            continue;
+        }
+
+        // -- interfaces *always* have TYPE__resolve return values, and no other function definition does
+        CVariableEntry* return_param = fe_context->GetParameter(0);
+        if (return_param->GetType() != TYPE__resolve)
+        {
+            return false;
+        }
+
+        // -- next function
+        fe = mMethodTable->Next();
+    }
+
+    // -- at the moment, this namespace is still only contains signatures, and therefore is still an interface
+    return true;
 }
 
 // ====================================================================================================================

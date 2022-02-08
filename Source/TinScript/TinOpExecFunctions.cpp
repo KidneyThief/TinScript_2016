@@ -2203,7 +2203,11 @@ bool8 OpExecFuncDecl(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExecS
     {
         // -- see if we can link the namespaces
         CNamespace* function_ns = cb->GetScriptContext()->FindNamespace(namespacehash);
+        if (function_ns == nullptr)
+            function_ns = cb->GetScriptContext()->FindOrCreateNamespace(UnHash(namespacehash));
         CNamespace* parent_ns = cb->GetScriptContext()->FindNamespace(parent_ns_hash);
+        if (parent_ns == nullptr)
+            parent_ns = cb->GetScriptContext()->FindOrCreateNamespace(UnHash(parent_ns_hash));
         if (!cb->GetScriptContext()->LinkNamespaces(function_ns, parent_ns))
         {
             ScriptAssert_(cb->GetScriptContext(), 0, cb->GetFileName(), cb->CalcLineNumber(instrptr),
@@ -3441,6 +3445,46 @@ bool8 OpExecEnsure(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExecSta
     }
 
     // -- even if the ensure() triggers an assert, we still return true, as the ensure() executed successfully
+    return (true);
+}
+
+
+// ====================================================================================================================
+// OpExecEnsureInterface(): reads the ns hash, and the interface hash, and validates the interface for the ns
+// ====================================================================================================================
+bool8 OpExecEnsureInterface(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExecStack& execstack,
+    CFunctionCallStack& funccallstack)
+{
+    uint32 ns_hash = *instrptr++;
+    uint32 interface_hash = *instrptr++;
+
+    // -- get the namespace
+    CNamespace* ns = cb->GetScriptContext()->FindNamespace(ns_hash);
+    if (ns == nullptr)
+    {
+        DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
+                        "Error - Namespace %s not found %s\n", UnHash(ns_hash));
+        return false;
+    }
+
+    // -- get the interface
+    CNamespace* interface = cb->GetScriptContext()->FindNamespace(interface_hash);
+    if (interface == nullptr)
+    {
+        DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
+                        "Error - Interface %s not found\n", UnHash(interface_hash));
+        return false;
+    }
+
+    CFunctionEntry* mismatch_fe = nullptr;
+    if (!cb->GetScriptContext()->ValidateInterface(ns, interface, mismatch_fe))
+    {
+        DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
+                        "Error - Namespace %s:: failed to validate interface %s::\n",
+                        UnHash(ns_hash), UnHash(interface_hash));
+        return false;
+    }
+
     return (true);
 }
 
