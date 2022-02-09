@@ -1256,7 +1256,7 @@ void SetDebugCodeBlock(bool torf);
 bool GetDebugCodeBlock();
 
 void SetDebugForceCompile(bool torf);
-bool GetDebugForceCompile();
+bool GetDebugForceCompile(std::time_t& force_compile_time);
 
 }  // TinScript
 

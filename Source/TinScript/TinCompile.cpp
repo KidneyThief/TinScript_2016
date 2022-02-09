@@ -4131,13 +4131,22 @@ bool8 GetDebugCodeBlock()
 void SetDebugForceCompile(bool8 torf)
 {
     CScriptContext::gDebugForceCompile = torf;
+    if (torf)
+    {
+        // -- capture the current time...  we'll use this time when comparing the compiled bin file for
+        // any script we execute - if we're forcing compilation, then we only do it if the bin file
+        // last change time is less than this time..
+        // -- this allows us to force all scripts to be compiled before execution, but only once
+        TinScript::CScriptContext::gDebugForceCompileTime = std::time(nullptr);
+    }
 }
 
 // ====================================================================================================================
 // GetDebugForceCompile():  Returns true if we're forcing compilation of executed scripts.
 // ====================================================================================================================
-bool8 GetDebugForceCompile()
+bool8 GetDebugForceCompile(std::time_t& force_compile_time)
 {
+    force_compile_time = TinScript::CScriptContext::gDebugForceCompileTime;
     return (CScriptContext::gDebugForceCompile);
 }
 

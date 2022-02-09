@@ -30,6 +30,7 @@
 #include "stddef.h"
 #include "stdarg.h"
 #include <typeinfo>
+#include <chrono>
 
 #include "integration.h"
 #include "TinMemory.h"
@@ -47,8 +48,7 @@
 #define DEBUG_TRACE 1
 #define TIN_DEBUGGER 1
 
-// -- these two affect the compiled versions, whether they're to be used, and whether they contain line number offsets
-#define FORCE_COMPILE 0
+// -- this affects the compiled versions, whether the code block contains line number offsets
 #define DEBUG_COMPILE_SYMBOLS 1
 
 // -- mostly untested - affects the Hash function, and which version of Strncmp_ to use...
@@ -580,7 +580,12 @@ class CScriptContext
         static bool8 gDebugParseTree;
         static bool8 gDebugCodeBlock;
         static bool8 gDebugTrace;
+
+        // -- force compile is a bit different - if/when enabled, we capture the current system time
+        // and *then*, any file executed that hasn't been saved since that time is force compiled...
+        // -- this means we'll only force compile exactly *once* after enabling
         static bool8 gDebugForceCompile;
+        static std::time_t gDebugForceCompileTime;
 
         // -- Thread commands are only supported in WIN32
         #ifdef WIN32

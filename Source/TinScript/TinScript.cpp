@@ -33,7 +33,7 @@
 // -- includes
 #include "stdlib.h"
 #include "stdio.h"
-#include "string.h"
+#include <string>
 
 #include "windows.h"
 #include "conio.h"
@@ -68,7 +68,9 @@ static const char* gStringTableFileName = "stringtable.txt";
 bool8 CScriptContext::gDebugParseTree = false;
 bool8 CScriptContext::gDebugCodeBlock = false;
 bool8 CScriptContext::gDebugTrace = false;
+
 bool8 CScriptContext::gDebugForceCompile = false;
+std::time_t CScriptContext::gDebugForceCompileTime;
 
 const char* CScriptContext::kGlobalNamespace = "_global";
 uint32 CScriptContext::kGlobalNamespaceHash = Hash(CScriptContext::kGlobalNamespace);
@@ -984,25 +986,24 @@ bool8 NeedToCompile(const char* full_path_name, const char* binfilename)
         return true;
     else
     {
-
-        // -- if we don't need to compile, then if we're forcing compilation anyways,
-        // -- we only force it on files that aren't already loaded
-        // note:  this can be set dynamically as well, or forced on via the compiler define
-        bool force_compile = GetDebugForceCompile();
-#if FORCE_COMPILE
-        force_compile = true;
-#endif
-
-        if (force_compile)
+        // convert the binft to a time_t, for comparison with the debug force compile time
+        std::time_t force_compile_time;
+        if (GetDebugForceCompile(force_compile_time))
         {
-            uint32 filename_hash = Hash(full_path_name, -1, false);
-            CCodeBlock* already_executed = GetContext()->GetCodeBlockList()->FindItem(filename_hash);
-            return (!already_executed);
+            // -- convert the const char* to a wchar_t*
+            std::string binfilename_str(binfilename);
+            std::wstring binfilename_wstr = std::wstring(binfilename_str.begin(), binfilename_str.end());
+            struct _stat64 fileInfo;
+            if (_wstati64(binfilename_wstr.c_str(), &fileInfo) != 0)
+            {
+                return true;
+            }
+            std::time_t file_time = fileInfo.st_mtime;
+            return (file_time < force_compile_time);
         }
-        else
-        {
-            return false;
-        }
+
+        // -- we're not forcing compiles
+        return false;
     }
 }
 

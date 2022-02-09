@@ -5650,7 +5650,7 @@ bool8 SaveBinary(CCodeBlock* codeblock, const char* binfilename)
     int32 totalsize = (int32)sizeof(uint32) * 3;
     totalsize += (int32)codeblock->GetInstructionCount() * (int32)sizeof(uint32);
     totalsize += linenumbercount * (int32)sizeof(uint32);
-    TinPrint(codeblock->GetScriptContext(), "LoadBinary file: %s, size: %d\n",
+    TinPrint(codeblock->GetScriptContext(), "Compiled file: %s, size: %d\n",
              binfilename, totalsize);
 
 #endif
