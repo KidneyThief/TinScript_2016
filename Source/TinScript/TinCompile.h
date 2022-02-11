@@ -57,6 +57,7 @@ class CWhileLoopNode;
 	CompileNodeTypeEntry(DebugNOP)			    \
 	CompileNodeTypeEntry(Ensure)  	            \
 	CompileNodeTypeEntry(EnsureInterface)  	    \
+	CompileNodeTypeEntry(IncludeScript)         \
 	CompileNodeTypeEntry(Type)  	            \
 	CompileNodeTypeEntry(Value)					\
 	CompileNodeTypeEntry(Self)       			\
@@ -117,6 +118,7 @@ const char* GetNodeTypeString(ECompileNodeType nodetype);
 	OperationEntry(NULL)				\
 	OperationEntry(NOP)					\
 	OperationEntry(DebugMsg)			\
+	OperationEntry(Include)				\
 	OperationEntry(Ensure)				\
 	OperationEntry(EnsureInterface)		\
 	OperationEntry(Type)				\
@@ -317,6 +319,25 @@ protected:
 
 protected:
     CBinaryTreeNode() { }
+};
+
+// ====================================================================================================================
+// class CIncludeScriptNode:  Parse tree node, compiling to an include instruction, with the hash of the filename
+// ====================================================================================================================
+class CIncludeScriptNode : public CCompileTreeNode
+{
+public:
+	CIncludeScriptNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber, uint32 _filename_hash);
+
+	virtual int32 Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
+	virtual void Dump(char*& output, int32& length) const;
+
+	virtual bool8 CompileToC(int32 indent, char*& out_buffer, int32& max_size, bool root_node) const;
+
+protected:
+	uint32 mFilenameHash = 0;
+protected:
+	CIncludeScriptNode() { }
 };
 
 // ====================================================================================================================

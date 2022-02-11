@@ -234,6 +234,7 @@ enum eMathBinaryFunctionType
     ReservedKeywordEntry(execute)		        \
     ReservedKeywordEntry(repeat)		        \
     ReservedKeywordEntry(hash)			        \
+    ReservedKeywordEntry(include)		        \
 	ReservedKeywordEntry(create)   		        \
 	ReservedKeywordEntry(create_local)          \
 	ReservedKeywordEntry(destroy) 		        \
@@ -355,6 +356,7 @@ bool8 TryParseFuncCall(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeN
                       bool8 ismethod);
 bool8 TryParseArrayHash(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link);
 bool8 TryParseHash(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link);
+bool8 TryParseInclude(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link);
 bool8 TryParseArrayCount(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link);
 bool8 TryParseArrayCopy(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link);
 bool8 TryParseArrayContains(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link);

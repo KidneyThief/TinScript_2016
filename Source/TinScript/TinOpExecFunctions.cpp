@@ -1316,6 +1316,20 @@ bool8 OpExecUnaryNot(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExecS
 }
 
 // ====================================================================================================================
+// OpExecInclude():  Executes the given script *immediately*, so "included" globals are defined for this script
+// ====================================================================================================================
+bool8 OpExecInclude(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExecStack& execstack,
+                    CFunctionCallStack& funccallstack)
+{
+    // -- next instruction is the variable name
+    uint32 filename_hash = *instrptr++;
+    const char* filename = UnHash(filename_hash);
+    cb->GetScriptContext()->ExecScript(filename, true, true);
+    DebugTrace(op, "Script: %s", filename = UnHash(filename_hash));
+    return (true);
+}
+
+// ====================================================================================================================
 // OpExecPush():  Push a var/value onto the execution stack.
 // ====================================================================================================================
 bool8 OpExecPush(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExecStack& execstack,

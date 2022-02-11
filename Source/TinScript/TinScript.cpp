@@ -4428,7 +4428,27 @@ void CScriptContext::ProcessThreadCommands()
 
     // -- execute the buffer
     if (has_script_commands)
-        ExecCommand(local_exec_buffer);
+    {
+        // -- if we're at a debug break, we want to execute the command as a watch expression
+        // -- this will allow us to, e.g., print members and local vars from the currently executing method
+        bool handled = false;
+        if (mDebuggerBreakFuncCallStack != nullptr)
+        {
+            CDebuggerWatchExpression watch_expression(false, false, nullptr, local_exec_buffer, false);
+            handled = InitWatchExpression(watch_expression, true, *mDebuggerBreakFuncCallStack);
+            if (handled)
+            {
+                handled = EvalWatchExpression(watch_expression, true, *mDebuggerBreakFuncCallStack,
+                                             *mDebuggerBreakExecStack);
+            }
+        }
+
+        // -- if we haven't handled the command yet, execute it in the global scope
+        if (!handled)
+        {
+            ExecCommand(local_exec_buffer);
+        }
+    }
 }
 
 // ====================================================================================================================

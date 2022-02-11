@@ -4338,6 +4338,78 @@ bool8 TryParseHash(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*
 }
 
 // ====================================================================================================================
+// TryParseInclude():  The keyword "include" will force execution of the included script immediately
+// ====================================================================================================================
+bool8 TryParseInclude(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link)
+{
+    // -- ensure the next token is the 'hash' keyword
+    tReadToken peektoken(filebuf);
+    if (!GetToken(peektoken) || peektoken.type != TOKEN_KEYWORD)
+        return (false);
+
+    int32 reservedwordtype = GetReservedKeywordType(peektoken.tokenptr, peektoken.length);
+    if (reservedwordtype != KEYWORD_include)
+        return (false);
+
+    // -- we're committed to an include statement
+    filebuf = peektoken;
+
+    // -- the complete format is: hash("string")
+    // -- read an open parenthesis
+    if (!GetToken(peektoken) || peektoken.type != TOKEN_PAREN_OPEN)
+    {
+        ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
+                      "Error - include() expression, expecting '('\n");
+        return (false);
+    }
+
+    // -- next, we read a non-empty string
+    tReadToken string_token(peektoken);
+    if (!GetToken(string_token) || string_token.type != TOKEN_STRING || string_token.length == 0)
+    {
+        ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
+                      "Error - include() expression, expecting a non-empty string literal filename\n");
+        return (false);
+    }
+
+    // -- read the closing parenthesis
+    peektoken = string_token;
+    if (!GetToken(peektoken) || peektoken.type != TOKEN_PAREN_CLOSE)
+    {
+        ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
+                      "Error - include() expression, expecting ')'\n");
+        return (false);
+    }
+
+    // -- update the file buf
+    filebuf = peektoken;
+
+    // -- ensure the include statement is executed at the global scope only
+    int32 stacktopdummy = 0;
+    CObjectEntry* dummy = NULL;
+    CFunctionEntry* curfunction = codeblock->smFuncDefinitionStack->GetTop(dummy, stacktopdummy);
+    if (curfunction != nullptr)
+    {
+        ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
+                      "Error - include() can only be executed at the global scope, not within a function.')'\n");
+        return (false);
+    }
+
+    // -- execute the script immediately
+    char filename[kMaxNameLength];
+    SafeStrcpy(filename, kMaxNameLength, string_token.tokenptr, string_token.length + 1);
+    codeblock->GetScriptContext()->ExecScript(filename, true, false);
+
+    // -- we also generate an include node, as when the script doesn't need re-compiling (e.g. parsing)
+    // we still need it to executing the included script immediately
+    uint32 filename_hash = Hash(string_token.tokenptr, string_token.length, true);
+    TinAlloc(ALLOC_TreeNode, CIncludeScriptNode, codeblock, link, filebuf.linenumber, filename_hash);
+
+    // -- success
+    return (true);
+}
+
+// ====================================================================================================================
 // TryParseEnsureInterface():  The keyword usage is "ensure_interface(ns_hash, interface_hash)":
 // and does not allow expressions
 // ====================================================================================================================
@@ -5402,6 +5474,7 @@ bool8 ParseStatementBlock(CCodeBlock* codeblock, CCompileTreeNode*& link, tReadT
 		bool8 found = false;
         const char* cur_file_tokenptr = filetokenbuf.tokenptr;
 		found = found || TryParseComment(codeblock, filetokenbuf, curroot->next);
+        found = found || TryParseInclude(codeblock, filetokenbuf, curroot->next);
 		found = found || TryParseVarDeclaration(codeblock, filetokenbuf, curroot->next);
         found = found || TryParseFuncDefinition(codeblock, filetokenbuf, curroot->next);
 		found = found || TryParseStatement(codeblock, filetokenbuf, curroot->next, true);

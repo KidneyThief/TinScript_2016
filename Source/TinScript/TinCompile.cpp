@@ -668,6 +668,54 @@ bool8 CBinaryTreeNode::CompileToC(int32 indent, char*& out_buffer, int32& max_si
     return (true);
 }
 
+// == class CIncludeScriptNode ========================================================================================
+
+// ====================================================================================================================
+// Constructor
+// ====================================================================================================================
+CIncludeScriptNode::CIncludeScriptNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber,
+                                       uint32 _filename_hash)
+    : CCompileTreeNode(_codeblock, _link, eSelf, _linenumber)
+{
+    mFilenameHash = _filename_hash;
+}
+
+// ====================================================================================================================
+// Eval():  Generates the byte code instruction compiled from this node.
+// ====================================================================================================================
+int32 CIncludeScriptNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 countonly) const
+{
+	
+	DebugEvaluateNode(*this, countonly, instrptr);
+	int32 size = 0;
+
+	// -- if the value is being used, push it on the stack
+    size += PushInstruction(countonly, instrptr, OP_Include, DBG_var);
+    size += PushInstruction(countonly, instrptr, mFilenameHash, DBG_hash);
+
+	return size;
+}
+
+// ====================================================================================================================
+// Dump():  Outputs the text version of the instructions compiled from this node.
+// ====================================================================================================================
+void CIncludeScriptNode::Dump(char*& output, int32& length) const
+{
+    sprintf_s(output, length, "type: %s, filename: %s", gCompileNodeTypes[type], UnHash(mFilenameHash));
+	int32 debuglength = (int32)strlen(output);
+	output += debuglength;
+	length -= debuglength;
+}
+
+// ====================================================================================================================
+// CompileToC(): Convert the parse tree to valid C, to compile directly to the executable. 
+// ====================================================================================================================
+bool8 CIncludeScriptNode::CompileToC(int32 indent, char*& out_buffer, int32& max_size, bool root_node) const
+{
+    TinPrint(TinScript::GetContext(), "CIncludeScriptNode::CompileToC() not implemented.\n");
+    return (true);
+}
+
 // == class CValueNode ================================================================================================
 
 // ====================================================================================================================
