@@ -4359,7 +4359,7 @@ bool8 TryParseInclude(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNo
     if (!GetToken(peektoken) || peektoken.type != TOKEN_PAREN_OPEN)
     {
         ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
-                      "Error - include() expression, expecting '('\n");
+                      "Error - include() statement, expecting '('\n");
         return (false);
     }
 
@@ -4368,7 +4368,7 @@ bool8 TryParseInclude(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNo
     if (!GetToken(string_token) || string_token.type != TOKEN_STRING || string_token.length == 0)
     {
         ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
-                      "Error - include() expression, expecting a non-empty string literal filename\n");
+                      "Error - include() statement, expecting a non-empty string literal filename\n");
         return (false);
     }
 
@@ -4377,7 +4377,16 @@ bool8 TryParseInclude(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNo
     if (!GetToken(peektoken) || peektoken.type != TOKEN_PAREN_CLOSE)
     {
         ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
-                      "Error - include() expression, expecting ')'\n");
+                      "Error - include() statement, expecting ')'\n");
+        return (false);
+    }
+
+        // -- read the statement semicolon
+    peektoken = string_token;
+    if (!GetToken(peektoken) || peektoken.type != TOKEN_SEMICOLON)
+    {
+        ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
+                      "Error - include() statement, expecting ')'\n");
         return (false);
     }
 
