@@ -40,6 +40,9 @@
 namespace TinScript
 {
 
+// -- forward declarations
+CScriptContext* GetContext();
+
 // ====================================================================================================================
 // -- implemented in TinScript.cpp
 uint32 Hash(const char *s, int32 length = -1, bool add_to_table = true);

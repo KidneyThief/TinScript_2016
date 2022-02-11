@@ -2358,7 +2358,7 @@ bool8 OpExecMethodCallArgs(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, 
 
     // -- see if this is a "super" method call
     // (e.g.  call it in the hierarchy, starting with the parent of the current namespace)
-    bool is_super = *instrptr++;
+    bool is_super = *instrptr++ == 0 ? false : true;
 
     // -- get the hash of the method name
     uint32 methodhash = *instrptr++;
