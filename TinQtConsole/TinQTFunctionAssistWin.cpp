@@ -243,6 +243,18 @@ void CDebugFunctionAssistWin::NotifyListObjectsComplete()
 void CDebugFunctionAssistWin::NotifyFunctionAssistComplete()
 {
     mFunctionList->sortItems(1, Qt::AscendingOrder);
+
+    // -- pull the text directly from the function input
+    if (mFunctionInput != nullptr)
+    {
+        QString filter = mFunctionInput->GetInputString();
+        QByteArray text_input = filter.toUtf8();
+        const char* search_text = text_input.data();
+        if (search_text != nullptr && search_text[0] != '\0')
+        {
+            UpdateFilter(search_text, false);
+        }
+    }
 }
 
 // ====================================================================================================================
@@ -486,9 +498,16 @@ void CDebugFunctionAssistWin::UpdateFilter(const char* filter, bool8 force_refre
     // -- alternatively, we're continuing an existing with an updated filter
     if (mSearchObjectID == 0 || !new_object_search)
     {
+        // -- if the filter itself is a simple number, we want to include objects with that ID in the list
+        int32 filter_string_obj_id = TinScript::Atoi(mFilterString, -1);
+
         for (auto iter : mFunctionEntryList)
         {
-            if (FilterStringCompare(iter->mSearchName))
+            if (mSearchObjectID == 0 && filter_string_obj_id > 0 && iter->mObjectID == filter_string_obj_id)
+            {
+                mFunctionList->DisplayEntry(iter);
+            }
+            else if (FilterStringCompare(iter->mSearchName))
             {
                 mFunctionList->DisplayEntry(iter);
             }
@@ -888,6 +907,14 @@ CFunctionAssistInput::CFunctionAssistInput(CDebugFunctionAssistWin* owner, QWidg
     mHistoryLastIndex = -1;
     for(int i = 0; i < kMaxHistory; ++i)
         mHistory[i].text[0] = '\0';
+}
+
+// ====================================================================================================================
+// GetInputString():  get the text to use for the Function Assist search
+// ====================================================================================================================
+QString CFunctionAssistInput::GetInputString() const
+{
+    return text();
 }
 
 // ====================================================================================================================

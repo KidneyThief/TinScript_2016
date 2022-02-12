@@ -136,6 +136,8 @@ class CFunctionAssistInput : public QLineEdit
         explicit CFunctionAssistInput(CDebugFunctionAssistWin* owner, QWidget* parent);
         virtual ~CFunctionAssistInput() { }
 
+        QString GetInputString() const;
+
     protected:
         virtual void keyPressEvent(QKeyEvent * event);
 
