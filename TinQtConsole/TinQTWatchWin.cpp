@@ -70,26 +70,10 @@ CWatchEntry::CWatchEntry(const TinScript::CDebuggerWatchVarEntry& debugger_entry
 		else
 			setText(1, "");
 
-        char value_text[TinScript::kMaxTokenLength];
         const char* value = mDebuggerEntry.mValue;
         if (mDebuggerEntry.mType == TinScript::TYPE_object && mDebuggerEntry.mVarObjectID == 0)
         {
             value = "<invalid>";
-        }
-
-        else if (mDebuggerEntry.mType == TinScript::TYPE_int)
-        {
-            int int_val = TinScript::Atoi(mDebuggerEntry.mValue);
-            if (int_val > 0)
-            {
-                // -- see if the value is a legitimate stringtable value
-                const char* string_value = TinScript::GetContext()->GetStringTable()->FindString(int_val);
-                if (string_value != nullptr && string_value[0] != '\0')
-                {
-                    sprintf_s(value_text, TinScript::kMaxTokenLength, "%d [0x%x: '%s']", int_val, int_val, string_value);
-                    value = value_text;
-                }
-            }
         }
 
         // -- if this is set to value_text above, setText() had better be making a copy!
@@ -116,27 +100,11 @@ void CWatchEntry::UpdateValue(const char* new_value)
         new_value = "";
 
     // -- in case we need to format the value...
-    char value_text[TinScript::kMaxTokenLength];
 
     // -- if it's of type object, it's could be a variable that was uninitialized - re-cache the object ID
     if (mDebuggerEntry.mType == TinScript::TYPE_object && mDebuggerEntry.mVarObjectID == 0)
     {
         new_value = "<invalid>";
-    }
-
-    else if (mDebuggerEntry.mType == TinScript::TYPE_int)
-    {
-        int int_val = TinScript::Atoi(mDebuggerEntry.mValue);
-        if (int_val > 0)
-        {
-            // -- see if the value is a legitimate stringtable value
-            const char* string_value = TinScript::GetContext()->GetStringTable()->FindString(int_val);
-            if (string_value != nullptr && string_value[0] != '\0')
-            {
-                sprintf_s(value_text, TinScript::kMaxTokenLength, "%d [0x%x: '%s']", int_val, int_val, string_value);
-                new_value = value_text;
-            }
-        }
     }
 
     strcpy_s(mDebuggerEntry.mValue, new_value);

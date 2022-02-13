@@ -547,6 +547,7 @@ class CScriptContext
                                    int32* linenumber_array, int array_size, uint32 print_msg_id);
         void DebuggerSendCallstack(CObjectEntry** oeList, CFunctionEntry** feList, uint32* nsHashList,
                                    uint32* cbHashList, int32* lineNumberList, int array_size, uint32 print_msg_id);
+        void DebuggerWatchFormatValue(CDebuggerWatchVarEntry* watch_var_entry, void* val_addr);
         void DebuggerSendWatchVariable(CDebuggerWatchVarEntry* watch_var_entry);
         void DebuggerSendObjectMembers(CDebuggerWatchVarEntry* callingFunction, uint32 objectID);
         void DebuggerSendObjectVarTable(CDebuggerWatchVarEntry* callingFunction, CObjectEntry* oe, uint32 ns_hash,

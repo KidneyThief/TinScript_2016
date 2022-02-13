@@ -1064,6 +1064,75 @@ void DumpVarTable(CObjectEntry* oe, const char* partial)
 // ====================================================================================================================
 // DebugVarTable():  Debug function to print out the variables in a variable table.
 // ====================================================================================================================
+void FormatVarEntry(CScriptContext* script_context, CVariableEntry* ve, void* val_addr,
+                          char* buffer, int32 size)
+{
+    // -- sanity check
+    if (script_context == nullptr || ve == nullptr || val_addr == nullptr || buffer == nullptr || size <= 0)
+        return;
+
+    switch (ve->GetType())
+    {
+        case TYPE_object:
+        {
+            CObjectEntry* oe = script_context->FindObjectEntry(*(uint32*)val_addr);
+            if (oe != nullptr)
+            {
+                int32 bytes_written = 0;
+                if (oe->GetNameHash() != 0 && oe->GetNamespace() != nullptr)
+                {
+                    bytes_written = sprintf_s(buffer, size, "%d: %s [%s]", oe->GetID(), UnHash(oe->GetNameHash()),
+                                                                           UnHash(oe->GetNamespace()->GetHash()));
+                }
+                else if (oe->GetNamespace() != nullptr)
+                {
+                    bytes_written = sprintf_s(buffer, size, "%d: [%s]", oe->GetID(), UnHash(oe->GetNamespace()->GetHash()));
+                }
+                else
+                {
+                    bytes_written = sprintf_s(buffer, size, "%d", oe->GetID());
+                }
+
+                // -- make sure we terminate
+                if (bytes_written >= size)
+                    bytes_written = size - 1;
+                buffer[bytes_written] = '\0';
+            }
+        }
+        break;
+
+        case TYPE_int:
+        {
+            int32 string_hash = *(uint32*)val_addr;
+            const char* hashed_string = script_context->GetStringTable()->FindString(string_hash);
+            if (hashed_string != nullptr && hashed_string[0] != '0')
+            {
+                int32 bytes_written = sprintf_s(buffer, size, "%d  [0x%x `%s`]", string_hash, string_hash, hashed_string);
+
+                // -- make sure we terminate
+                if (bytes_written >= size)
+                    bytes_written = size - 1;
+                buffer[bytes_written] = '\0';
+            }
+            else
+            {
+                sprintf_s(buffer, size, "%d", string_hash);
+            }
+        }
+        break;
+
+        default:
+        {
+            // -- copy the value, as a string (to a max length)
+            gRegisteredTypeToString[ve->GetType()](script_context, val_addr, buffer, size);
+        }
+        break;
+    }
+}
+
+// ====================================================================================================================
+// DebugVarTable():  Debug function to print out the variables in a variable table.
+// ====================================================================================================================
 void DumpVarTable(CScriptContext* script_context, CObjectEntry* oe, const tVarTable* vartable, const char* partial)
 {
 	// -- sanity check
@@ -1079,7 +1148,7 @@ void DumpVarTable(CScriptContext* script_context, CObjectEntry* oe, const tVarTa
         if (!partial || !partial[0] || SafeStrStr(ve_name, partial) != 0)
         {
 		    char valbuf[kMaxTokenLength];
-            gRegisteredTypeToString[ve->GetType()](script_context, ve->GetValueAddr(objaddr), valbuf, kMaxTokenLength);
+            FormatVarEntry(script_context, ve, ve->GetValueAddr(objaddr), valbuf, kMaxTokenLength);
 		    TinPrint(script_context, "    [%s] %s: %s\n", gRegisteredTypeNames[ve->GetType()],
                         ve->GetName(), valbuf);
         }

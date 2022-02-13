@@ -1640,7 +1640,6 @@ void CScriptContext::InitWatchEntryFromVarEntry(CVariableEntry& ve, CObjectEntry
 	// -- type, name, and value string
 	watch_entry.mType = ve.GetType();
 	SafeStrcpy(watch_entry.mVarName, sizeof(watch_entry.mVarName), UnHash(ve.GetHash()), kMaxNameLength);
-	gRegisteredTypeToString[ve.GetType()](this, value_addr, watch_entry.mValue, kMaxNameLength);
 
     // -- fill in the array size
     watch_entry.mArraySize = ve.GetArraySize();
@@ -1655,6 +1654,10 @@ void CScriptContext::InitWatchEntryFromVarEntry(CVariableEntry& ve, CObjectEntry
 		if (oe)
 			watch_entry.mVarObjectID = objectID;
 	}
+
+    // -- after the member_entry has all fields filled in, see if we can format
+    // the mValue to be more readable
+    DebuggerWatchFormatValue(&watch_entry, value_addr);
 }
 
 // ====================================================================================================================
@@ -1928,7 +1931,6 @@ void CScriptContext::AddVariableWatch(int32 request_id, const char* variable_wat
 		        // -- type, name, and value string, and array size
 		        watch_result.mType = returnType;
 		        SafeStrcpy(watch_result.mVarName, sizeof(watch_result.mVarName), variable_watch, kMaxNameLength);
-                gRegisteredTypeToString[returnType](this, returnValue, watch_result.mValue, kMaxNameLength);
                 watch_result.mArraySize = 1;
 
 		        watch_result.mVarHash = Hash(variable_watch);
@@ -1942,6 +1944,10 @@ void CScriptContext::AddVariableWatch(int32 request_id, const char* variable_wat
                     if (oe_0)
                         watch_result.mVarObjectID = oe_0->GetID();
                 }
+
+                // -- after the member_entry has all fields filled in, see if we can format
+                // the mValue to be more readable
+                DebuggerWatchFormatValue(&watch_result, returnValue);
 
 			    // -- send the response
 			    DebuggerSendWatchVariable(&watch_result);
@@ -2820,6 +2826,76 @@ void CScriptContext::DebuggerSendCallstack(CObjectEntry** oeList, CFunctionEntry
 }
 
 // ====================================================================================================================
+// DebuggerWatchFormatValue(): format the mValue to be debugger-friendly (e.g.  object ID with object name, ...)
+// ====================================================================================================================
+void CScriptContext::DebuggerWatchFormatValue(CDebuggerWatchVarEntry* watch_var_entry, void* val_addr)
+{
+    // -- sanity check
+    if (watch_var_entry == nullptr || val_addr == nullptr)
+        return;
+
+    switch (watch_var_entry->mType)
+    {
+        case TYPE_object:
+        {
+            CObjectEntry* oe = FindObjectEntry(watch_var_entry->mVarObjectID);
+            if (oe != nullptr)
+            {
+                uint32 bytes_written = 0;
+                if (oe->GetNameHash() != 0 && oe->GetNamespace() != nullptr)
+                {
+                    bytes_written = sprintf_s(watch_var_entry->mValue, sizeof(watch_var_entry->mValue), "%d: %s [%s]",
+                                              oe->GetID(), UnHash(oe->GetNameHash()),
+                                              UnHash(oe->GetNamespace()->GetHash()));
+                }
+                else if (oe->GetNamespace() != nullptr)
+                {
+                    bytes_written = sprintf_s(watch_var_entry->mValue, sizeof(watch_var_entry->mValue), "%d: [%s]",
+                                              oe->GetID(), UnHash(oe->GetNamespace()->GetHash()));
+                }
+                else
+                {
+                    bytes_written = sprintf_s(watch_var_entry->mValue, sizeof(watch_var_entry->mValue), "%d", oe->GetID());
+                }
+
+                // -- make sure we terminate
+                if (bytes_written >= kMaxNameLength)
+                    bytes_written = kMaxNameLength - 1;
+                watch_var_entry->mValue[bytes_written] = '\0';
+            }
+        }
+        break;
+
+        case TYPE_int:
+        {
+            int32 string_hash = *(uint32*)val_addr;
+            const char* hashed_string = GetStringTable()->FindString(string_hash);
+            if (hashed_string != nullptr && hashed_string[0] != '0')
+            {
+                uint32 bytes_written = sprintf_s(watch_var_entry->mValue, sizeof(watch_var_entry->mValue),
+                                                 "%d  [0x%x `%s`]", string_hash, string_hash, hashed_string);
+                // -- make sure we terminate
+                if (bytes_written >= kMaxNameLength)
+                    bytes_written = kMaxNameLength - 1;
+                watch_var_entry->mValue[bytes_written] = '\0';
+            }
+            else
+            {
+                sprintf_s(watch_var_entry->mValue, sizeof(watch_var_entry->mValue), "%d", string_hash);
+            }
+        }
+        break;
+
+        default:
+        {
+            // -- copy the value, as a string (to a max length)
+            gRegisteredTypeToString[watch_var_entry->mType](this, val_addr, watch_var_entry->mValue, kMaxNameLength);
+            return;
+        }
+    }
+}
+
+// ====================================================================================================================
 // DebuggerSendWatchVariable():  Send a variable entry to the debugger
 // ====================================================================================================================
 void CScriptContext::DebuggerSendWatchVariable(CDebuggerWatchVarEntry* watch_var_entry)
@@ -3067,10 +3143,6 @@ void CScriptContext::DebuggerSendObjectVarTable(CDebuggerWatchVarEntry* callingF
         // -- member name
         SafeStrcpy(member_entry.mVarName, sizeof(member_entry.mVarName), UnHash(member->GetHash()), kMaxNameLength);
 
-        // -- copy the value, as a string (to a max length)
-        gRegisteredTypeToString[member->GetType()](this, member->GetAddr(oe->GetAddr()), member_entry.mValue,
-                                                   kMaxNameLength);
-
         // -- fill in the cached members
         member_entry.mVarHash = member->GetHash();
         member_entry.mVarObjectID = 0;
@@ -3078,6 +3150,10 @@ void CScriptContext::DebuggerSendObjectVarTable(CDebuggerWatchVarEntry* callingF
         {
              member_entry.mVarObjectID = *(uint32*)(member->GetAddr(oe->GetAddr()));
         }
+
+        // -- after the member_entry has all fields filled in, see if we can format
+        // the mValue to be more readable
+        DebuggerWatchFormatValue(&member_entry, member->GetAddr(oe->GetAddr()));
 
         // -- send to the debugger
         DebuggerSendWatchVariable(&member_entry);
