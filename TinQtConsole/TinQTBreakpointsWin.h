@@ -94,6 +94,10 @@ class CDebugBreakpointsWin : public QListWidget
         // -- set/modify/disable a tracepoint32 on the currently selected break
         void SetTraceExpression(const char* expression, bool8 trace_enabled, bool8 trace_on_condition);
 
+        // -- if we're setting the break condition and/or trace expression from the dialog, we only
+        // want to notify the target once
+        void UpdateBreakpointOnTarget();
+
         // -- get the break condition for the currently selected break
         const char* GetBreakCondition(bool8& enabled);
 

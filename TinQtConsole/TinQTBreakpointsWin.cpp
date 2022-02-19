@@ -431,29 +431,41 @@ void CDebugBreakpointsWin::SetBreakCondition(const char* expression, bool8 cond_
         // -- update the check box
         cur_entry->SetCheckedState(cur_entry->mChecked, cur_entry->mConditionEnabled);
 
-        // -- if this is a file/line breakpoint...
-        if (cur_entry->mWatchRequestID == 0)
-        {
-            // -- toggle the breakpoint (which sends the message to the target)
-            ToggleBreakpoint(cur_entry->mCodeblockHash, cur_entry->mLineNumber, true);
-        }
-        // -- otherwise, send the toggle message directly
-        else
-        {
-            // -- fill in the condition and trace lables
-            bool condition_enabled = cur_entry->mConditionEnabled && cur_entry->mCondition[0];
-            bool trace_enabled = cur_entry->mTraceEnabled && cur_entry->mTracePoint[0];
-            bool trace_on_condition = condition_enabled && trace_enabled && cur_entry->mTraceOnCondition;
+        // note:  we still need to send the notification to the debug target
+    }
+}
 
-            // -- note:  If the trace is enabled, then we don't *break* on the variable being written, but we do
-            // -- execute the trace expression
-            SocketManager::SendCommandf("DebuggerToggleVarWatch(%d, %d, %d, %s, '%s', '%s', %s);",
-                                        cur_entry->mWatchRequestID, cur_entry->mWatchVarObjectID,
-                                        cur_entry->mWatchVarNameHash, cur_entry->mChecked ? "true" : "false",
-                                        condition_enabled ? cur_entry->mCondition : "",
-                                        trace_enabled ? cur_entry->mTracePoint : "",
-                                        trace_on_condition ? "true" : "false");
-        }
+// ====================================================================================================================
+// UpdateBreakpointOnTarget():  the breakpoint entry has all the info - now send to the debug target
+// ====================================================================================================================
+void CDebugBreakpointsWin::UpdateBreakpointOnTarget()
+{
+    CBreakpointEntry* cur_entry = static_cast<CBreakpointEntry*>(currentItem());
+    if (cur_entry == nullptr)
+        return;
+
+    // -- if this is a file/line breakpoint...
+    if (cur_entry->mWatchRequestID == 0)
+    {
+        // -- toggle the breakpoint (which sends the message to the target)
+        ToggleBreakpoint(cur_entry->mCodeblockHash, cur_entry->mLineNumber, true);
+    }
+    // -- otherwise, send the toggle message directly
+    else
+    {
+        // -- fill in the condition and trace labels
+        bool condition_enabled = cur_entry->mConditionEnabled && cur_entry->mCondition[0];
+        bool trace_enabled = cur_entry->mTraceEnabled && cur_entry->mTracePoint[0];
+        bool trace_on_condition = condition_enabled && trace_enabled && cur_entry->mTraceOnCondition;
+
+        // -- note:  If the trace is enabled, then we don't *break* on the variable being written, but we do
+        // -- execute the trace expression
+        SocketManager::SendCommandf("DebuggerToggleVarWatch(%d, %d, %d, %s, '%s', '%s', %s);",
+            cur_entry->mWatchRequestID, cur_entry->mWatchVarObjectID,
+            cur_entry->mWatchVarNameHash, cur_entry->mChecked ? "true" : "false",
+            condition_enabled ? cur_entry->mCondition : "",
+            trace_enabled ? cur_entry->mTracePoint : "",
+            trace_on_condition ? "true" : "false");
     }
 }
 
@@ -497,29 +509,7 @@ void CDebugBreakpointsWin::SetTraceExpression(const char* expression, bool8 trac
                                    cur_entry->mWatchVarNameHash);
         }
 
-        // -- if this is a file/line breakpoint...
-        if (cur_entry->mWatchRequestID == 0)
-        {
-            // -- toggle the breakpoint (which sends the message to the target)
-            ToggleBreakpoint(cur_entry->mCodeblockHash, cur_entry->mLineNumber, true);
-        }
-        // -- otherwise, send the toggle message directly
-        else
-        {
-            // -- fill in the condition and trace lables
-            bool condition_enabled = cur_entry->mConditionEnabled && cur_entry->mCondition[0];
-            bool trace_enabled = cur_entry->mTraceEnabled && cur_entry->mTracePoint[0];
-            bool trace_on_condition = condition_enabled && trace_enabled && cur_entry->mTraceOnCondition;
-
-            // -- note:  If the trace is enabled, then we don't *break* on the variable being written, but we do
-            // -- execute the trace expression
-            SocketManager::SendCommandf("DebuggerToggleVarWatch(%d, %d, %d, %s, '%s', '%s', %s);",
-                                        cur_entry->mWatchRequestID, cur_entry->mWatchVarObjectID,
-                                        cur_entry->mWatchVarNameHash, cur_entry->mChecked ? "true" : "false",
-                                        condition_enabled ? cur_entry->mCondition : "",
-                                        trace_enabled ? cur_entry->mTracePoint : "",
-                                        trace_on_condition ? "true" : "false");
-        }
+        // note:  we still need to send the notification to the debug target
     }
 }
 

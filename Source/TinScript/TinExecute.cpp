@@ -129,17 +129,20 @@ CFunctionCallStack::tFunctionCallEntry::tFunctionCallEntry(CFunctionEntry* _func
 // ====================================================================================================================
 _declspec(thread) CFunctionCallStack* g_ExecutionHead = nullptr;
 
+_declspec(thread) bool8 g_DebuggerBreakStep = false;
+
+_declspec(thread) CFunctionCallStack* g_DebuggerBreakLastCallstack = nullptr;
+_declspec(thread) int32 g_DebuggerBreakLastLineNumber = -1;
+_declspec(thread) int32 g_DebuggerBreakLastStackDepth = -1;
+
 CFunctionCallStack::CFunctionCallStack()
 {
 	m_functionEntryStack = (tFunctionCallEntry*)m_functionStackStorage;
 	m_size = kExecFuncCallDepth;
 	m_stacktop = 0;
 
-	// -- debugger members
-	mDebuggerBreakStep = false;
-	mDebuggerLastBreak = -1;
+	// -- we need to know if the function currently being stepped through has been reloaded
 	mDebuggerFunctionReload = 0;
-	mDebuggerBreakOnStackDepth = -1;
 
 	// -- add this to the execution linked list
 	// lets limit this to the main thread (we don't want, the IDE's execution on a separate thread clouding things)
@@ -174,11 +177,39 @@ CFunctionCallStack::~CFunctionCallStack()
 			g_ExecutionHead = found->m_ExecutionNext;
 	}
 
+    // -- see if we still have anything executing...
+    // (watch expressions hang around as long as the breakpoint exists, but aren't actively executing)
+    bool finished_executing = true;
+    CFunctionCallStack* walk = g_ExecutionHead;
+    while (walk != nullptr)
+    {
+        uint32 obj_id = 0;
+        CObjectEntry* dummy_obj = nullptr;
+        int32 dummy_offset = -1;
+        if (walk->GetExecuting(obj_id, dummy_obj, dummy_offset) != nullptr)
+        {
+            finished_executing = false;
+            break;
+        }
+
+        walk = walk->m_ExecutionNext;
+    }
+
     // -- if the execution head is empty - the stack is completely unwound, and this is a good time
     // to remove all unreferenced strings from the string table
-    if (g_ExecutionHead == nullptr && TinScript::GetContext()->GetStringTable())
+    if (finished_executing)
     {
-        TinScript::GetContext()->GetStringTable()->RemoveUnreferencedStrings();
+        if (TinScript::GetContext()->GetStringTable())
+        {
+            TinScript::GetContext()->GetStringTable()->RemoveUnreferencedStrings();
+        }
+
+        // -- as we've also completed the entire execution stack, now is a good time to reset all
+        // debugger variables (especially related to StepOut)
+        g_DebuggerBreakStep = false;
+        g_DebuggerBreakLastCallstack = nullptr;
+        g_DebuggerBreakLastLineNumber = -1;
+        g_DebuggerBreakLastStackDepth = -1;
     }
 }
 
@@ -186,7 +217,7 @@ CFunctionCallStack::~CFunctionCallStack()
 // Push():  pushes a function entry (and obj, if this is a method) onto the call stack - still needs to be 
 // "prepared" (e.g. assign arg values to the function context parameter vars) before BeginExecution()
 // ====================================================================================================================
-void CFunctionCallStack::Push(CFunctionEntry* functionentry, CObjectEntry* objentry, int32 varoffset)
+void CFunctionCallStack::Push(CFunctionEntry* functionentry, CObjectEntry* objentry, int32 varoffset, bool in_is_watch)
 {
 	assert(functionentry != NULL);
 	assert(m_stacktop < m_size);
@@ -201,7 +232,8 @@ void CFunctionCallStack::Push(CFunctionEntry* functionentry, CObjectEntry* objen
 
 	m_functionEntryStack[m_stacktop].stackvaroffset = varoffset;
 	m_functionEntryStack[m_stacktop].isexecuting = false;
-	m_functionEntryStack[m_stacktop].mLocalObjectCount = 0;
+    m_functionEntryStack[m_stacktop].is_watch_expression = in_is_watch;
+    m_functionEntryStack[m_stacktop].mLocalObjectCount = 0;
 	++m_stacktop;
 }
 
@@ -301,7 +333,8 @@ int32 CFunctionCallStack::GetExecutionStackDepth()
 		int32 walk_depth = walk->GetStackDepth();
 		for (int32 walk_index = 0; walk_index < walk_depth; ++walk_index)
 		{
-			if (walk->IsExecutingByIndex(walk_index))
+            bool dummy = false;
+			if (walk->IsExecutingByIndex(walk_index, dummy))
 			{
                 ++total_stack_depth;
 			}
@@ -311,6 +344,33 @@ int32 CFunctionCallStack::GetExecutionStackDepth()
 	}
 
 	return total_stack_depth;
+}
+
+// -- find the execution depth of a specific function callstack
+// e.g.  the keyword execute() will spin up its own VM, and we still want to step in/over/out
+// note:  we return the *actual* depth of executing call stacks...
+int32 CFunctionCallStack::GetDepthOfFunctionCallStack(CFunctionCallStack* in_func_callstack)
+{
+    // -- sanity check
+    if (in_func_callstack == nullptr)
+        return -1;
+
+    int32 found_stack_depth = 0;
+    CFunctionCallStack* walk = g_ExecutionHead;
+    while (walk != nullptr)
+    {
+        if (walk == in_func_callstack)
+            return found_stack_depth;
+
+        // -- we count this execution callstack, if the function is actually executing
+        bool dummy = false;
+        if (walk->IsExecutingByIndex(0, dummy))
+            ++found_stack_depth;
+        walk = walk->m_ExecutionNext;
+    }
+
+    // -- not found
+    return -1;
 }
 
 // ====================================================================================================================
@@ -826,8 +886,11 @@ const char* CFunctionCallStack::GetExecutingFunctionCallString(bool& isScriptFun
 // ====================================================================================================================
 // IsExecutingByIndex():  return bool if the index is a valid executing function call
 // ====================================================================================================================
-bool CFunctionCallStack::IsExecutingByIndex(int32 stack_top_offset)
+bool CFunctionCallStack::IsExecutingByIndex(int32 stack_top_offset, bool& is_watch_expression)
 {
+    // -- init the return value
+    is_watch_expression = false;
+
     // note:  we count from the top down
     int32 stack_top_index = m_stacktop - 1;
     if (stack_top_offset > stack_top_index)
@@ -836,6 +899,9 @@ bool CFunctionCallStack::IsExecutingByIndex(int32 stack_top_offset)
     int32 stack_index = stack_top_index - stack_top_offset;
     if (!m_functionEntryStack[stack_index].isexecuting)
         return false;
+
+    // -- set the output param value
+    is_watch_expression = m_functionEntryStack[stack_index].is_watch_expression;
 
     // -- valid index for an executing function
     return true;
@@ -848,7 +914,8 @@ bool CFunctionCallStack::GetExecutingByIndex(uint32& oe_id, CObjectEntry*& objen
                                              CFunctionEntry*& funcentry, uint32& _ns_hash,
 											 uint32& _cb_hash, int32& _linenumber, int32 stack_top_offset)
 {
-    if (!IsExecutingByIndex(stack_top_offset))
+    bool dummy;
+    if (!IsExecutingByIndex(stack_top_offset, dummy))
         return (false);
 
 	// note:  we count from the top down
@@ -1317,8 +1384,10 @@ bool8 DebuggerBreakLoop(CCodeBlock* cb, const uint32* instrptr, CExecStack& exec
 	script_context->mDebuggerBreakFuncCallStack = &funccallstack;
 	script_context->mDebuggerBreakExecStack = &execstack;
 
-    // -- set the current line we're broken on
-    funccallstack.mDebuggerLastBreak = cur_line;
+    // -- set the current callstack we're breaking in
+    g_DebuggerBreakLastCallstack = &funccallstack;
+    g_DebuggerBreakLastStackDepth = funccallstack.GetStackDepth();
+    g_DebuggerBreakLastLineNumber = cur_line;
 
     // -- we're also going to plug the current line into the top entry of the funccallstack, which
     // is normally unused/unset
@@ -1373,7 +1442,6 @@ bool8 DebuggerBreakLoop(CCodeBlock* cb, const uint32* instrptr, CExecStack& exec
     // -- wait for the debugger to either continue to step or run
     script_context->SetBreakActionStep(false);
     script_context->SetBreakActionRun(false);
-    funccallstack.mDebuggerBreakOnStackDepth = -1;
     while (true)
     {
         // -- disable breaking on any asserts while we're waiting for the original loop to exit
@@ -1391,19 +1459,7 @@ bool8 DebuggerBreakLoop(CCodeBlock* cb, const uint32* instrptr, CExecStack& exec
         {
             // -- set the bool to continue to break, based on which action is true
             // -- (unless it's an assert)
-            funccallstack.mDebuggerBreakStep = !is_assert && script_context->mDebuggerActionStep;
-
-            // -- if the break step action is either step over, or step out, we need to track the stack
-            if (script_context->mDebuggerActionStepOver)
-            {
-                // -- only break at the same depth (or lower) - e.g.  don't step *into* functions
-                funccallstack.mDebuggerBreakOnStackDepth = funccallstack.GetStackDepth();
-            }
-            else if (script_context->mDebuggerActionStepOut)
-            {
-                // -- only break at below the current depth
-                funccallstack.mDebuggerBreakOnStackDepth = funccallstack.GetStackDepth() - 1;
-            }
+            g_DebuggerBreakStep = !is_assert && script_context->mDebuggerActionStep;
             break;
         }
 
@@ -1487,35 +1543,78 @@ bool8 CCodeBlock::Execute(uint32 offset, CExecStack& execstack, CFunctionCallSta
         // -- debugger connection might not have happened yet...
         CScriptContext* script_context = GetScriptContext();
         if (script_context->mDebuggerActionForceBreak ||
-            script_context->mDebuggerConnected && (funccallstack.mDebuggerBreakStep || HasBreakpoints()))
+            script_context->mDebuggerConnected && (g_DebuggerBreakStep || HasBreakpoints()))
         {
             // -- get the current line number - see if we should break
             int32 cur_line = CalcLineNumber(instrptr);
-            bool isNewLine = mLineNumberCurrent != cur_line;
+
+            // -- see if we're still on the line we last broke
+            // (if we're returning from a function call, it's a "new line", but will match
+            // the last break line when we stepped in)
+            // -- get our current callstack depth
+            int32 cur_stack_depth = funccallstack.GetStackDepth();
+
+            // -- see if our last function callstack is still being executed
+            bool found_last_callstack = false;
+            int32 found_last_depth =
+                CFunctionCallStack::GetDepthOfFunctionCallStack(g_DebuggerBreakLastCallstack);
+
+            bool is_last_break_line = (g_DebuggerBreakLastCallstack == &funccallstack &&
+                                       cur_stack_depth == g_DebuggerBreakLastStackDepth &&
+                                       cur_line == g_DebuggerBreakLastLineNumber);
+
+            // -- by definition, this is a new line, if we're in a different VM
+            // (different funccallstack that *isn't* a watch expression)
+            bool is_executing_watch = false;
+            bool is_executing = funccallstack.IsExecutingByIndex(0, is_executing_watch);
+            bool is_new_line = is_executing && !is_executing_watch &&
+                               (mLineNumberCurrent != cur_line ||
+                                (g_DebuggerBreakLastCallstack && g_DebuggerBreakLastCallstack != &funccallstack));
             mLineNumberCurrent = cur_line;
 
-            // -- break if we're stepping, and on a new line
-            // -- if we're stepping out or over, then there's a stack depth we want to be at or below
-            int32 cur_stack_depth = funccallstack.GetStackDepth();
-            bool break_at_stack_depth = (funccallstack.mDebuggerBreakOnStackDepth < 0 ||
-                                         cur_stack_depth <= funccallstack.mDebuggerBreakOnStackDepth);
-
-            // -- if we're forcing a debugger break
-            // -- if we're stepping, and we're on a different line, or if
-            // -- we're not stepping, and on a different line, and this new line has a breakpoint
-            CDebuggerWatchExpression* break_condition = mBreakpoints->FindItem(cur_line);
-            bool force_break = script_context->mDebuggerActionForceBreak;
-            bool step_new_line = funccallstack.mDebuggerBreakStep && funccallstack.mDebuggerLastBreak != cur_line &&
-                                 break_at_stack_depth;
-            bool found_break = (!funccallstack.mDebuggerBreakStep &&
-                               (isNewLine || cur_line != funccallstack.mDebuggerLastBreak) && break_condition);
-
-            // -- if we aren't forcing a break, and not stepping to a new line, and we found a break,
-            // -- then evaluate the break conditional
-            if (!force_break && !step_new_line && found_break)
+            // -- unless we're forcing a break, see if we should break via stepping (in, over, out)
+            bool should_break = script_context->mDebuggerActionForceBreak;
+            if (!should_break && is_new_line && g_DebuggerBreakStep)
             {
-                // -- when looking to see if we have a breakpoint on this line,
-                // -- we may have a condition and/or a trace expression
+                // -- if we're stepping in, then we break if this is a new line, wherever it is...
+                if (!script_context->mDebuggerActionStepOver && !script_context->mDebuggerActionStepOut)
+                {
+                    should_break = true;
+                }
+
+                else
+                {
+                    // -- if we step out, then either we're in the same callstack, at a lower depth,
+                    // or our last callstack is no longer being executed
+                    if (script_context->mDebuggerActionStepOut)
+                    {
+                        if (found_last_depth == -1 ||
+                            (found_last_depth == 0 && cur_stack_depth < g_DebuggerBreakLastStackDepth))
+                        {
+                            should_break = true;
+                        }
+                    }
+
+                    // -- else we're stepping over - break, if we're no longer executing the same function callstack
+                    // (e.g.  an execute() statement, which uses its own VM, has completed)
+                    else if (found_last_depth == -1 ||
+                             (found_last_depth == 0 &&
+                             (cur_stack_depth < g_DebuggerBreakLastStackDepth ||
+                              (cur_stack_depth == g_DebuggerBreakLastStackDepth && !is_last_break_line))))
+                    {
+                        should_break = true;
+                    }
+                }
+            }
+
+            // -- whether we break or not, we need to determine if we have a breakpoint
+            // that might have a trace point (which might be executed independent of actually breaking)
+            CDebuggerWatchExpression* break_condition = (!is_last_break_line && is_new_line)
+                                                        ? mBreakpoints->FindItem(cur_line)
+                                                        : nullptr;
+            if (break_condition != nullptr)
+            {
+                // -- evaluate the conditional for the line - it's also used if to see if we execute the trace point
                 bool condition_result = true;
 
                 // -- note:  if we do have an expression, that can't be evaluated, assume true
@@ -1537,8 +1636,8 @@ bool8 CCodeBlock::Execute(uint32 offset, CExecStack& execstack, CFunctionCallSta
                     }
                 }
 
-                // -- regardless of whether we break, we execute the trace expression, but only at the start of the line
-                if (isNewLine && break_condition && script_context->HasTraceExpression(*break_condition))
+                // -- see if we should execute the trace expression
+                if (script_context->HasTraceExpression(*break_condition))
                 {
                     if (!break_condition->mTraceOnCondition || condition_result)
                     {
@@ -1550,12 +1649,16 @@ bool8 CCodeBlock::Execute(uint32 offset, CExecStack& execstack, CFunctionCallSta
                     }
                 }
 
-                // -- we want to break only if the break is enabled, and the condition is true
-                found_break = break_condition->mIsEnabled && condition_result;
+                // -- at this point, we check to see if we should break because of a breakpoint
+                // (including a successful conditional)
+                if (!should_break)
+                {
+                    should_break = break_condition->mIsEnabled && condition_result;
+                }
             }
 
-            // -- now see if we should break
-            if (force_break || step_new_line || found_break)
+            // -- now actually break
+            if (should_break)
             {
                 DebuggerBreakLoop(this, instrptr, execstack, funccallstack);
             }

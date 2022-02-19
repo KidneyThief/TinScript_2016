@@ -1592,7 +1592,7 @@ void CScriptContext::SetBreakActionStep(bool8 torf, bool8 step_over, bool8 step_
     mDebuggerActionStepOver = torf ? step_over : false;
     mDebuggerActionStepOut = torf ? step_out : false;
 
-	// -- clear the var watch requst ID - it'll be set on the next write if necessary
+	// -- clear the var watch request ID - it'll be set on the next write if necessary
 	mDebuggerVarWatchRequestID = 0;
 }
 
@@ -2049,7 +2049,7 @@ bool8 CScriptContext::InitWatchExpression(CDebuggerWatchExpression& debugger_wat
     temp_context->InitStackVarOffsets(fe);
 
     // -- push the temporary function entry onto the temp code block, so we can compile our watch function
-    codeblock->smFuncDefinitionStack->Push(fe, cur_object, 0);
+    codeblock->smFuncDefinitionStack->Push(fe, cur_object, 0, true);
 
     // -- add a funcdecl node, and set its left child to be the statement block
     // -- for fun, use the watch_id as the line number - to find it while debugging
@@ -2147,7 +2147,7 @@ bool8 CScriptContext::EvalWatchExpression(CDebuggerWatchExpression& debugger_wat
     CFunctionCallStack funccallstack;
 
     // -- push the function entry onto the call stack
-    funccallstack.Push(watch_function, cur_object, 0);
+    funccallstack.Push(watch_function, cur_object, 0, true);
 
     // -- create space on the execstack for the local variables
     int32 localvarcount = watch_function->GetContext()->CalculateLocalVarStackSize();
@@ -2290,7 +2290,7 @@ bool8 CScriptContext::EvaluateWatchExpression(const char* expression)
                 CFunctionCallStack funccallstack;
 
                 // -- push the function entry onto the call stack
-                funccallstack.Push(fe, NULL, 0);
+                funccallstack.Push(fe, NULL, 0, true);
 
                 // -- create space on the execstack, if this is a script function
                 int32 localvarcount = fe->GetContext()->CalculateLocalVarStackSize();
@@ -2310,7 +2310,7 @@ bool8 CScriptContext::EvaluateWatchExpression(const char* expression)
                 funccallstack.BeginExecution();
                 bool8 result = CodeBlockCallFunction(fe, NULL, execstack, funccallstack, false);
 
-                // -- if we executed succesfully...
+                // -- if we executed successfully...
                 if (result)
                 {
                     eVarType returnType;

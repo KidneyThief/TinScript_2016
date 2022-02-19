@@ -4450,12 +4450,11 @@ bool8 TryParseInclude(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNo
         return (false);
     }
 
-        // -- read the statement semicolon
-    peektoken = string_token;
+    // -- read the statement semicolon
     if (!GetToken(peektoken) || peektoken.type != TOKEN_SEMICOLON)
     {
         ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
-                      "Error - include() statement, expecting ')'\n");
+                      "Error - include() statement, expecting ';'\n");
         return (false);
     }
 

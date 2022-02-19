@@ -563,6 +563,10 @@ void MainWindow::menuSetBreakCondition()
     trace_on_expr = dialog.IsTraceOnCondition();
     CConsoleWindow::GetInstance()->GetDebugBreakpointsWin()->SetTraceExpression(dialog.GetTraceExpression().toUtf8(),
                                                                                 trace_enabled, trace_on_expr);
+
+    // -- now that both the break and trace expressions have been executed,
+    // notify the debug target
+    CConsoleWindow::GetInstance()->GetDebugBreakpointsWin()->UpdateBreakpointOnTarget();
 }
 
 void MainWindow::menuGoToLine()

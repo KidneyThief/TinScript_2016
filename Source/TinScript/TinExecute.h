@@ -273,7 +273,7 @@ class CFunctionCallStack
 		CFunctionCallStack();
 		virtual ~CFunctionCallStack();
 
-		void Push(CFunctionEntry* functionentry, CObjectEntry* objentry, int32 varoffset);
+		void Push(CFunctionEntry* functionentry, CObjectEntry* objentry, int32 varoffset, bool is_watch = false);
 		CFunctionEntry* Pop(CObjectEntry*& objentry, int32& var_offset);
 
 		void NotifyLocalObjectID(uint32 local_object_id)
@@ -335,7 +335,7 @@ class CFunctionCallStack
         void BeginExecution();
 
         CFunctionEntry* GetExecuting(uint32& obj_id, CObjectEntry*& objentry, int32& varoffset);
-        bool IsExecutingByIndex(int32 stack_top_offset);
+        bool IsExecutingByIndex(int32 stack_top_offset, bool& is_watch_expression);
 		bool GetExecutingByIndex(uint32& oe_id, CObjectEntry*& objentry, uint32& fe_hash, CFunctionEntry*& funcentry,
                                  uint32& _ns_hash, uint32& _cb_hash, int32& _linenumber, int32 stack_top_offset);
    		CFunctionEntry* GetTopMethod(CObjectEntry*& objentry);
@@ -358,24 +358,21 @@ class CFunctionCallStack
             int32 stackvaroffset = 0;
             uint32 linenumberfunccall = 0;
             bool8 isexecuting = false;
+            bool is_watch_expression = false;
             int32 mLocalObjectCount = 0;
             uint32 mLocalObjectIDList[kExecFuncCallMaxLocalObjects];
         };
 
-        // -- because we can have multiple virtual machines running,
-        // -- the debugger (break, line) members must be stored per execution stack
-        bool8 mDebuggerBreakStep;
-        int32 mDebuggerLastBreak;
+        // $$$TZA this may affect the current function we're stepping through - for now, it's the one debugger
+        // member that is not a global (thread) var
         uint32 mDebuggerFunctionReload;
-
-        // -- to manage stepping over/out, we might need to track which stack depth is appropriate to break on
-        int32 mDebuggerBreakOnStackDepth;
 
 		// -- for the crash reporter, we may need to get the complete script callstack being executed
 		static int32 GetCompleteExecutionStack(CObjectEntry** _objentry_list, CFunctionEntry** _funcentry_list,
 											   uint32* _ns_hash_list, uint32* _cb_hash_list,
 											   int32* _linenumber_list, int32 max_count);
         static int32 GetExecutionStackDepth();
+        static int32 GetDepthOfFunctionCallStack(CFunctionCallStack* in_func_callstack);
         static void NotifyFunctionDeleted(CFunctionEntry* deleted_fe);
 
 	private:
