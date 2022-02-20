@@ -26,6 +26,8 @@
 #ifndef __TINSCHEDULER_H
 #define __TINSCHEDULER_H
 
+#include "integration.h"
+
 // == namespace TinScript =============================================================================================
 
 namespace TinScript
@@ -61,9 +63,10 @@ class CScheduler
             public:
                 CCommand(CScriptContext* script_context, int32 _reqid, uint32 _objectid = 0,
                          uint32 _dispatchtime = 0, uint32 _repeat_time = 0, const char* _command = NULL,
-                         bool8 immediate = false);
+                         bool8 immediate = false, const char* call_origin = nullptr);
                 CCommand(CScriptContext* script_context, int32 _reqid, uint32 _objectid,
-                         uint32 _dispatchtime, uint32 _repeat_time, uint32 _funchash, bool8 immediate = false);
+                         uint32 _dispatchtime, uint32 _repeat_time, uint32 _funchash, bool8 immediate = false,
+                         const char* call_origin = nullptr);
 
                 virtual ~CCommand();
 
@@ -81,6 +84,10 @@ class CScheduler
 
                 uint32 mFuncHash;
                 CFunctionContext* mFuncContext;
+
+#if MEMORY_TRACKER_ENABLE
+                char mCommandOrigin[kMaxNameLength];
+#endif
         };
 
         int32 Schedule(uint32 objectid, int32 delay, bool8 repeat, const char* commandstring);
@@ -95,7 +102,8 @@ class CScheduler
         void DebuggerRemoveSchedule(int32 request_id);
 
         void InsertCommand(CCommand* curcommand);
-        CCommand* ScheduleCreate(uint32 objectid, int32 delay, uint32 funchash, bool8 immediate, bool8 repeat);
+        CCommand* ScheduleCreate(uint32 objectid, int32 delay, uint32 funchash, bool8 immediate, bool8 repeat,
+                                 const char* call_origin = nullptr);
         CScheduler::CCommand* mCurrentSchedule;
 
         // -- an optimized way of allowing a remote connection to execute a function locally, without having to

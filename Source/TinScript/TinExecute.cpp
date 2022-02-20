@@ -1071,8 +1071,7 @@ bool8 ExecuteScheduledFunction(CScriptContext* script_context, uint32 objectid, 
     // -- sanity check
     if (funchash == 0 && parameters == NULL)
     {
-        ScriptAssert_(script_context, 0, "<internal>", -1,
-                      "Error - invalid funchash/parameters\n");
+        TinPrint(script_context, "Error - ExecuteScheduledFunction(): invalid funchash/parameters\n");
         return false;
     }
 
@@ -1085,8 +1084,7 @@ bool8 ExecuteScheduledFunction(CScriptContext* script_context, uint32 objectid, 
         oe = script_context->FindObjectEntry(objectid);
         if (!oe)
         {
-            ScriptAssert_(script_context, 0, "<internal>", -1,
-                          "Error - unable to find object: %d\n", objectid);
+            TinPrint(script_context, "Error - ExecuteScheduledFunction(): unable to find object: %d\n", objectid);
             return false;
         }
 
@@ -1101,8 +1099,7 @@ bool8 ExecuteScheduledFunction(CScriptContext* script_context, uint32 objectid, 
     // -- ensure we found our function
     if (!fe)
     {
-        ScriptAssert_(script_context, 0, "<internal>", -1,
-                      "Error - unable to find function: %s\n", UnHash(funchash));
+        TinPrint(script_context, "Error - ExecuteScheduledFunction(): unable to find function: %s\n", UnHash(funchash));
         return false;
     }
 
@@ -1122,9 +1119,9 @@ bool8 ExecuteScheduledFunction(CScriptContext* script_context, uint32 objectid, 
         CVariableEntry* dst = fe->GetContext()->GetParameter(i);
         if (!dst)
         {
-            ScriptAssert_(script_context, 0, "<internal>", -1,
-                          "Error - unable to assign parameter %d, calling function %s()\n",
-                          i, UnHash(funchash));
+            TinPrint(script_context,
+                     "Error - ExecuteScheduledFunction(): unable to assign parameter %d, calling function %s()\n",
+                     i, UnHash(funchash));
             return false;
         }
 
@@ -1139,9 +1136,9 @@ bool8 ExecuteScheduledFunction(CScriptContext* script_context, uint32 objectid, 
         // -- if we were unable to convert, we're  done
         if (srcaddr == nullptr)
         {
-            ScriptAssert_(script_context, 0, "<internal>", -1,
-                          "Error - unable to assign parameter %d, calling function %s()\n",
-                          i, UnHash(funchash));
+            TinPrint(script_context,
+                     "Error - ExecuteScheduledFunction(): unable to assign parameter %d, calling function %s()\n",
+                     i, UnHash(funchash));
             return false;
         }
 
@@ -1178,9 +1175,9 @@ bool8 ExecuteScheduledFunction(CScriptContext* script_context, uint32 objectid, 
         // -- we only assert if the failure was not because the function was reloaded
         if (funccallstack.mDebuggerFunctionReload == 0)
         {
-            ScriptAssert_(script_context, 0, "<internal>", -1,
-                          "Error - Unable to call function: %s()\n",
-                          UnHash(fe->GetHash()));
+            TinPrint(script_context,
+                     "Error - ExecuteScheduledFunction(): Unable to call function: %s()\n",
+                     UnHash(fe->GetHash()));
         }
 
         // -- at this point, our execution stack is fully "unwound", we can reset asserts
@@ -1195,9 +1192,8 @@ bool8 ExecuteScheduledFunction(CScriptContext* script_context, uint32 objectid, 
     void* contentptr = execstack.Pop(contenttype);
     if (!contentptr)
     {
-        ScriptAssert_(script_context, 0, "<internal>", -1,
-                                         "Error - no return value for scheduled func: %s()\n",
-                                          UnHash(fe->GetHash()));
+        TinPrint(script_context, "Error - ExecuteScheduledFunction(): no return value for scheduled func: %s()\n",
+                                  UnHash(fe->GetHash()));
 
         // -- at this point, our execution stack is fully "unwound", we can reset asserts
         script_context->ResetAssertStack();
@@ -1209,9 +1205,9 @@ bool8 ExecuteScheduledFunction(CScriptContext* script_context, uint32 objectid, 
     CVariableEntry* return_ve = parameters->GetParameter(0);
     if (!return_ve && return_ve->GetType() != TYPE_void)
     {
-        ScriptAssert_(script_context, 0, "<internal>", -1,
-                     "Error - invalid return parameter for scheduled func: %s()\n",
-                     UnHash(fe->GetHash()));
+        TinPrint(script_context,
+                 "Error - ExecuteScheduledFunction(): invalid return parameter for scheduled func: %s()\n",
+                 UnHash(fe->GetHash()));
 
         // -- at this point, our execution stack is fully "unwound", we can reset asserts
         script_context->ResetAssertStack();
@@ -1225,8 +1221,8 @@ bool8 ExecuteScheduledFunction(CScriptContext* script_context, uint32 objectid, 
         void* converted_addr = TypeConvert(script_context, contenttype, contentptr, return_ve->GetType());
         if (!converted_addr)
         {
-            ScriptAssert_(script_context, 0, "<internal>", -1,
-                          "Error - invalid return parameter for func: %s()\n", UnHash(fe->GetHash()));
+            TinPrint(script_context,
+                      "Error - ExecuteScheduledFunction(): invalid return parameter for func: %s()\n", UnHash(fe->GetHash()));
 
             // -- at this point, our execution stack is fully "unwound", we can reset asserts
             script_context->ResetAssertStack();

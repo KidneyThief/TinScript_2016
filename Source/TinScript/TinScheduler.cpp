@@ -91,8 +91,24 @@ void CScheduler::Update(uint32 curtime)
         // -- dispatch the command - see if it's a direct function call, or a command buf
         if (curcommand->mFuncHash != 0)
         {
-            ExecuteScheduledFunction(GetScriptContext(), curcommand->mObjectID, 0, curcommand->mFuncHash,
-                                        curcommand->mFuncContext);
+            if (!ExecuteScheduledFunction(GetScriptContext(), curcommand->mObjectID, 0, curcommand->mFuncHash,
+                                          curcommand->mFuncContext))
+            {
+                const char* command_origin = "";
+#if MEMORY_TRACKER_ENABLE
+                command_origin = curcommand->mCommandOrigin;
+#endif
+                if (command_origin[0] != '\0')
+                {
+                    ScriptAssert_(GetScriptContext(), 0, "<internal>", -1,
+                                  "Error - schedule() failed\norigin: %s\n", command_origin);
+
+                }
+                else
+                {
+                    ScriptAssert_(GetScriptContext(), 0, "<internal>", -1, "Error - schedule() failed\n");
+                }
+            }
         }
         else
         {
@@ -288,7 +304,8 @@ void CScheduler::DebuggerRemoveSchedule(int32 req_id)
 // Constructor: Schedule a raw text statement, to be parsed and executed.
 // ====================================================================================================================
 CScheduler::CCommand::CCommand(CScriptContext* script_context, int32 _reqid, uint32 _objectid,
-                               uint32 _dispatchtime, uint32 _repeat_time, const char* _command, bool8 immediate)
+                               uint32 _dispatchtime, uint32 _repeat_time, const char* _command, bool8 immediate,
+                               const char* call_origin)
 {
     // -- set the context
     mContextOwner = script_context;
@@ -304,13 +321,18 @@ CScheduler::CCommand::CCommand(CScriptContext* script_context, int32 _reqid, uin
     // -- command string, null out the direct function call members
     mFuncHash = 0;
     mFuncContext = NULL;
+
+#if MEMORY_TRACKER_ENABLE
+    SafeStrcpy(mCommandOrigin, sizeof(mCommandOrigin), call_origin);
+#endif
 }
 
 // ====================================================================================================================
 // Constructor:  Schedule a specific function/method call - much more efficient than raw text.
 // ====================================================================================================================
 CScheduler::CCommand::CCommand(CScriptContext* script_context, int32 _reqid, uint32 _objectid,
-                               uint32 _dispatchtime, uint32 _repeat_time, uint32 _funchash, bool8 immediate)
+                               uint32 _dispatchtime, uint32 _repeat_time, uint32 _funchash, bool8 immediate,
+                               const char* call_origin)
 {
     // -- set the context
     mContextOwner = script_context;
@@ -326,6 +348,10 @@ CScheduler::CCommand::CCommand(CScriptContext* script_context, int32 _reqid, uin
     // -- command string, null out the direct function call members
     mFuncHash = _funchash;
     mFuncContext = TinAlloc(ALLOC_FuncContext, CFunctionContext);
+
+#if MEMORY_TRACKER_ENABLE
+    SafeStrcpy(mCommandOrigin, sizeof(mCommandOrigin), call_origin);
+#endif
 }
 
 // ====================================================================================================================
@@ -406,7 +432,7 @@ void CScheduler::InsertCommand(CCommand* newcommand)
 // ScheduleCreate():  Create a schedule request.
 // ====================================================================================================================
 CScheduler::CCommand* CScheduler::ScheduleCreate(uint32 objectid, int32 delay, uint32 funchash, bool8 immediate,
-                                                 bool8 repeat)
+                                                 bool8 repeat, const char* call_origin)
 {
     ++gScheduleID;
 
@@ -415,9 +441,9 @@ CScheduler::CCommand* CScheduler::ScheduleCreate(uint32 objectid, int32 delay, u
     uint32 dispatchtime = mCurrentSimTime + delay_time;
     uint32 repeat_time = repeat ? delay_time : 0;
 
-    // -- create the new commmand
+    // -- create the new command
     CCommand* newcommand = TinAlloc(ALLOC_SchedCmd, CCommand, GetScriptContext(), gScheduleID,
-                                    objectid, dispatchtime, repeat_time, funchash, immediate);
+                                    objectid, dispatchtime, repeat_time, funchash, immediate, call_origin);
 
     // -- add space to store a return value
     newcommand->mFuncContext->AddParameter("__return", Hash("__return"), TYPE__resolve, 1, 0);
@@ -428,7 +454,7 @@ CScheduler::CCommand* CScheduler::ScheduleCreate(uint32 objectid, int32 delay, u
     // -- notify the debugger
     DebuggerAddSchedule(*newcommand);
 
-    // -- return the actual commmand object, since we'll be updating the parameter values
+    // -- return the actual command object, since we'll be updating the parameter values
     return newcommand;
 }
 

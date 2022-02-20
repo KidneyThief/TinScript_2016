@@ -3640,11 +3640,22 @@ bool8 OpExecScheduleBegin(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, C
     }
     bool8 repeat = *(bool8*)(contentptr);
 
+    // -- if we're tracking memory, find the call origin, so *if* there's a problem executing the schedule,
+    // we can know where that call came from
+    const char* schedule_origin = nullptr;
+#if MEMORY_TRACKER_ENABLE
+    uint32 codeblock_hash = cb->GetFilenameHash();
+    int32 cur_line = cb->CalcLineNumber(instrptr - 12);
+    char call_origin[kMaxNameLength];
+    sprintf_s(call_origin, sizeof(call_origin), "%s @ %d", UnHash(codeblock_hash), cur_line + 1);
+    schedule_origin = call_origin;
+#endif
+
     // -- create the schedule 
     cb->GetScriptContext()->GetScheduler()->mCurrentSchedule =
         cb->GetScriptContext()->GetScheduler()->ScheduleCreate(objectid, delaytime, funchash,
                                                                immediate_execution != 0 ? true : false,
-                                                               repeat);
+                                                               repeat, schedule_origin);
 
     if (objectid > 0)
         DebugTrace(op, "Obj Id [%d] Function: %s", objectid, UnHash(funchash));
