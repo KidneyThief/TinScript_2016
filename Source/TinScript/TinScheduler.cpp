@@ -190,14 +190,20 @@ void CScheduler::Cancel(uint32 objectid, int32 reqid)
     CCommand* curcommand = mHead;
     while (curcommand)
     {
-        if (curcommand->mObjectID == objectid || curcommand->mReqID == reqid)
+        if ((objectid > 0 && curcommand->mObjectID == objectid) || curcommand->mReqID == reqid)
         {
             // -- notify the debugger
             DebuggerRemoveSchedule(curcommand->mReqID);
 
             *prevcommand = curcommand->mNext;
+            if (*prevcommand)
+                (*prevcommand)->mPrev = curcommand->mPrev;
             TinFree(curcommand);
             curcommand = *prevcommand;
+
+            // -- we're done, if we have no objectid
+            if (objectid == 0)
+                break;
         }
         else
         {
@@ -317,6 +323,8 @@ CScheduler::CCommand::CCommand(CScriptContext* script_context, int32 _reqid, uin
     mRepeatTime = _repeat_time;
     mImmediateExec = immediate;
     SafeStrcpy(mCommandBuf, sizeof(mCommandBuf), _command, kMaxTokenLength);
+    mNext = nullptr;
+    mPrev = nullptr;
 
     // -- command string, null out the direct function call members
     mFuncHash = 0;
@@ -344,6 +352,8 @@ CScheduler::CCommand::CCommand(CScriptContext* script_context, int32 _reqid, uin
     mRepeatTime = _repeat_time;
     mImmediateExec = immediate;
     mCommandBuf[0] = '\0';
+    mNext = nullptr;
+    mPrev = nullptr;
 
     // -- command string, null out the direct function call members
     mFuncHash = _funchash;
@@ -381,7 +391,7 @@ int32 CScheduler::Schedule(uint32 objectid, int32 delay, bool8 repeat, const cha
     uint32 dispatchtime = mCurrentSimTime + delay_time;
     uint32 repeat_time = repeat ? delay_time : 0;
 
-    // -- create the new commmand
+    // -- create the new command
     CCommand* newcommand = TinAlloc(ALLOC_SchedCmd, CCommand, GetScriptContext(), gScheduleID,
                                     objectid, dispatchtime, repeat_time, commandstring);
 

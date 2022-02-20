@@ -3672,7 +3672,8 @@ bool8 OpExecScheduleParam(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, C
                           CFunctionCallStack& funccallstack)
 {
     // -- ensure we are in the middle of a schedule construction
-    if (cb->GetScriptContext()->GetScheduler()->mCurrentSchedule == NULL) {
+    if (cb->GetScriptContext()->GetScheduler()->mCurrentSchedule == nullptr)
+    {
         DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
                         "Error - There is no schedule() being processed\n");
         return false;
@@ -3687,7 +3688,11 @@ bool8 OpExecScheduleParam(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, C
 	eVarType stack_valtype;
 	void* stack_valaddr = execstack.Pop(stack_valtype);
     if (!GetStackValue(cb->GetScriptContext(), execstack, funccallstack, stack_valaddr, stack_valtype, stack_ve, stack_oe))
+    {
+        // -- clear the current schedule
+        cb->GetScriptContext()->GetScheduler()->mCurrentSchedule = nullptr;
         return (false);
+    }
 
     // -- add the parameter to the function context, inheriting the type from whatever
     // -- was pushed
@@ -3715,7 +3720,7 @@ bool8 OpExecScheduleEnd(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CEx
                         CFunctionCallStack& funccallstack)
 {
     // -- ensure we are in the middle of a schedule construction
-    if (cb->GetScriptContext()->GetScheduler()->mCurrentSchedule == NULL)
+    if (cb->GetScriptContext()->GetScheduler()->mCurrentSchedule == nullptr)
     {
         DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
                         "Error - There is no schedule() being processed\n");
@@ -3725,10 +3730,20 @@ bool8 OpExecScheduleEnd(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CEx
     // -- now that the schedule has been completely constructed, we need to determine
     // -- if it's scheduled for immediate execution
     CScheduler::CCommand* curcommand = cb->GetScriptContext()->GetScheduler()->mCurrentSchedule;
+
+    // -- we can now clear the current schedule, since we're no longer using it (e.g. to assign params, etc...)
+    cb->GetScriptContext()->GetScheduler()->mCurrentSchedule = nullptr;
+
     if (curcommand->mImmediateExec)
     {
-        ExecuteScheduledFunction(cb->GetScriptContext(), curcommand->mObjectID, 0, curcommand->mFuncHash,
-                                 curcommand->mFuncContext);
+        if (!ExecuteScheduledFunction(cb->GetScriptContext(), curcommand->mObjectID, 0, curcommand->mFuncHash,
+                                      curcommand->mFuncContext))
+        {
+            DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
+                            "Error - ExecuteScheduledFunction() failed\n");
+
+            return false;
+        }
 
         // -- see if we have a return result
         CVariableEntry* return_ve = curcommand->mFuncContext->GetParameter(0);
@@ -3736,25 +3751,24 @@ bool8 OpExecScheduleEnd(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CEx
         {
             DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
                             "Error - There is no return value available from schedule()\n");
+
             return false;
         }
 
         // -- Push the contents of the return_ve onto *this* execstack
         execstack.Push(return_ve->GetAddr(NULL), return_ve->GetType());
 
-        // -- now remove the current command from the scheduler
+        // -- if we're executing it immediately, we want to remove it from the update queue
         cb->GetScriptContext()->GetScheduler()->CancelRequest(curcommand->mReqID);
     }
 
     // -- not immediate execution - therefore, push the schedule request ID instead
     else
     {
-        int32 reqid =  cb->GetScriptContext()->GetScheduler()->mCurrentSchedule->mReqID;
+        int32 reqid = curcommand->mReqID;
         execstack.Push(&reqid, TYPE_int);
     }
 
-    // -- clear the current schedule
-    cb->GetScriptContext()->GetScheduler()->mCurrentSchedule = NULL;
     DebugTrace(op, "");
 
     return (true);
