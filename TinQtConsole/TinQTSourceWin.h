@@ -37,7 +37,7 @@
 class CSourceLine : public QListWidgetItem
 {
     public:
-        CSourceLine(QByteArray& text, int line_number);
+        CSourceLine(const char* source_text, int line_number);
         int mLineNumber;
         bool mBreakpointSet;
 };

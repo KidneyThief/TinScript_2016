@@ -85,9 +85,48 @@ char* ReadFileAllocBuf(const char* filename) {
 }
 
 // ------------------------------------------------------------------------------------------------
-CSourceLine::CSourceLine(QByteArray& text, int line_number) : QListWidgetItem()
+CSourceLine::CSourceLine(const char* source_text, int line_number) : QListWidgetItem()
 {
-    setText(text);
+
+    QFont font;
+    font.setFamily("Consolas");
+    font.setFixedPitch(true);
+    setFont(font);
+
+    if (source_text == nullptr)
+        source_text = "";
+
+    // -- leave room for a 5x digit line number
+    char clean_buf[256];
+    sprintf_s(clean_buf, "%5d", line_number + 1);
+    char* clean_ptr = &clean_buf[strlen(clean_buf)];
+
+    // -- Handle the breakpoint icon as "B  " (3 chars) , and the PC as a "--> " (4 chars)
+    for (int i = 0; i < 7; ++i)
+        *clean_ptr++ = ' ';
+
+    // -- lets see if we can clean up the preceding spaces/tabs, hardcoding all tabs to 4x spaces
+    const char* text_ptr = source_text;
+    while (*text_ptr == ' ' || *text_ptr == '\t')
+    {
+        if (*text_ptr == ' ')
+        {
+            *clean_ptr++ = ' ';
+        }
+        else
+        {
+            for (int i = 0; i < 4; ++i)
+                *clean_ptr++ = ' ';
+        }
+        ++text_ptr;
+    }
+    *clean_ptr = '\0';
+
+    // -- the actual text we want then, begins with the clean_buf, and appends the rest
+    QString line_text(clean_buf);
+    line_text.append(text_ptr);
+
+    setText(line_text);
     mLineNumber = line_number;
     mBreakpointSet = false;
 }
@@ -95,10 +134,16 @@ CSourceLine::CSourceLine(QByteArray& text, int line_number) : QListWidgetItem()
 // ------------------------------------------------------------------------------------------------
 CDebugSourceWin::CDebugSourceWin(QWidget* parent) : QListWidget(parent)
 {
+    QFont font;
+    font.setFamily("Consolas");
+    font.setFixedPitch(true);
+    font.setBold(false);
+    setFont(font);
+
     mCurrentCodeblockHash = 0;
     mCurrentLineNumber = -1;
 
-    // -- initalize the debugger directory
+    // -- initialize the debugger directory
     mDebuggerDir[0] = '\0';
 
     mViewLineNumber = 0;
@@ -194,22 +239,22 @@ bool CDebugSourceWin::OpenFullPathFile(const char* full_path, bool reload)
         while(eol)
         {
             *eol = '\0';
+            line_number++;
 
-            // -- Handle the breakpoint icon as "B  " (3 chars) , and the PC as a "--> " (4 chars)
-            char line_buf[8];
-            sprintf_s(line_buf, "%5d", line_number++);
-            QString newline(line_buf);
-            newline.append("       ");
-            newline.append(filebufptr);
-
-            CSourceLine* list_item = new CSourceLine(newline.toUtf8(), mSourceText.size());
+            CSourceLine* list_item = new CSourceLine(filebufptr, mSourceText.size());
             addItem(list_item);
             mSourceText.append(list_item);
 
             filebufptr = eol + 1;
             eol = strchr(filebufptr, '\n');
         }
-        addItem(filebufptr);
+
+        if (filebufptr[0] != '\n')
+        {
+            CSourceLine* list_item = new CSourceLine(filebufptr, mSourceText.size());
+            addItem(list_item);
+            mSourceText.append(list_item);
+        }
 
         // -- delete the buffer
         delete [] filebuf;
@@ -282,6 +327,10 @@ void CDebugSourceWin::SetCurrentPC(uint32 codeblock_hash, int32 line_number) {
                 source_text[8] = ' ';
                 source_text[9] = ' ';
                 source_line->setText(source_text);
+
+                QFont font;
+                font.setBold(false);
+                source_line->setFont(font);
             }
 
             // -- now set the new current line
@@ -294,6 +343,10 @@ void CDebugSourceWin::SetCurrentPC(uint32 codeblock_hash, int32 line_number) {
                 source_text[8] = '-';
                 source_text[9] = '>';
                 source_line->setText(source_text);
+
+                QFont font;
+                font.setBold(true);
+                source_line->setFont(font);
 
                 // -- set the selected line
                 SetSourceView(codeblock_hash, line_number);
