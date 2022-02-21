@@ -1561,8 +1561,11 @@ bool8 CCodeBlock::Execute(uint32 offset, CExecStack& execstack, CFunctionCallSta
 
             // -- by definition, this is a new line, if we're in a different VM
             // (different funccallstack that *isn't* a watch expression)
+            // -- note:  if the funccallstack has a 0 stack depth, we're executing
+            // "immediate" code within a code block (not in a function)
             bool is_executing_watch = false;
-            bool is_executing = funccallstack.IsExecutingByIndex(0, is_executing_watch);
+            bool is_executing = funccallstack.GetStackDepth() == 0 ||
+                                funccallstack.IsExecutingByIndex(0, is_executing_watch);
             bool is_new_line = is_executing && !is_executing_watch &&
                                (mLineNumberCurrent != cur_line ||
                                 (g_DebuggerBreakLastCallstack && g_DebuggerBreakLastCallstack != &funccallstack));

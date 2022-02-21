@@ -318,13 +318,14 @@ class CDebuggerWatchVarEntry
 class CDebuggerWatchExpression
 {
     public:
-        CDebuggerWatchExpression(bool8 isConditional, bool break_enabled, const char* expression, const char* trace,
-                                 bool8 trace_on_condition);
+        CDebuggerWatchExpression(int32 line_number, bool8 isConditional, bool break_enabled, const char* expression,
+                                 const char* trace, bool8 trace_on_condition);
         ~CDebuggerWatchExpression();
 
         void SetAttributes(bool8 break_enabled, const char* conditional, const char* trace, bool8 trace_on_condition);
 
         static int gWatchExpressionID;
+        int32 mLineNumber;
         bool8 mIsEnabled;
         bool8 mIsConditional;
         char mConditional[kMaxNameLength];
@@ -489,8 +490,9 @@ class CScriptContext
         void SetDebuggerConnected(bool8 connected);
         bool IsDebuggerConnected(int32& debugger_session);
         void DebuggerNotifyAssert();
-        void AddBreakpoint(const char* filename, int32 line_number, bool8 break_enabled, const char* conditional,
+        bool AddBreakpoint(const char* filename, int32 line_number, bool8 break_enabled, const char* conditional,
                            const char* trace, bool8 trace_on_condition);
+        void AddDeferredBreakpoints(CCodeBlock& code_block);
         void RemoveBreakpoint(const char* filename, int32 line_number);
         void RemoveAllBreakpoints(const char* filename);
         void SetForceBreak(int32 watch_var_request_id);
@@ -634,6 +636,9 @@ class CScriptContext
 
         // -- context codeblock list
         CHashTable<CCodeBlock>* mCodeBlockList;
+
+        // -- breakpoints to apply when a codeblock is loaded, but before it is executed
+        CHashTable<CDebuggerWatchExpression> mDeferredBreakpointsList;
 
         // -- context namespace dictionaries
         CHashTable<CNamespace>* mNamespaceDictionary;

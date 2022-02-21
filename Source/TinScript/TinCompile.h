@@ -1203,7 +1203,7 @@ class CCodeBlock
 
         int32 IsInUse()
         {
-            return (mIsParsing || !mFunctionList->IsEmpty());
+            return (mIsParsing || !mFunctionList->IsEmpty() || !mBreakpoints->IsEmpty());
         }
 
         void SetFinishedParsing() { mIsParsing = false; }

@@ -371,6 +371,34 @@ class CHashTable
 		return (NULL);
 	}
 
+    // -- if we have multiple items with the same hash, and we're looking for a specific item
+    // (identifiable internally, beyond the hash), we want a way to iterate through everything in the bucket
+    T* FindNextItem(const T* _current, uint32 _hash) const
+    {
+        // -- no current item specified - simply return the normal result
+        if (_current == nullptr)
+            return FindItem(_hash);
+
+        bool found = false;
+        int32 bucket = _hash % size;
+        CHashTableEntry* hte = table[bucket];
+        while (hte)
+        {
+            if (hte->hash == _hash)
+            {
+                if (!found)
+                    found = (hte->item == _current);
+                else
+                    return hte->item;
+            }
+
+            hte = hte->nextbucket;
+        }
+        
+        // -- not found
+        return (nullptr);
+    }
+
     T* FindItemByIndex(int32 _index) const
     {
         if (_index < 0 || _index >= used)

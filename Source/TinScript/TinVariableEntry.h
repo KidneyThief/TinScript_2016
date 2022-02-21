@@ -158,7 +158,7 @@ public:
 
         else if (!mBreakOnWrite)
         {
-            mBreakOnWrite = TinAlloc(ALLOC_Debugger, CDebuggerWatchExpression, true, break_on_write, condition,
+            mBreakOnWrite = TinAlloc(ALLOC_Debugger, CDebuggerWatchExpression, -1, true, break_on_write, condition,
                                      trace, trace_on_cond);
         }
         else

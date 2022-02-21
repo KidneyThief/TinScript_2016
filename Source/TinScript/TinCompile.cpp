@@ -4118,12 +4118,12 @@ int32 CCodeBlock::AddBreakpoint(int32 line_number, bool8 break_enabled, const ch
     CDebuggerWatchExpression* watch = mBreakpoints->FindItem(adjusted_line_number);
     if (!watch)
     {
-        CDebuggerWatchExpression *new_break = TinAlloc(ALLOC_Debugger, CDebuggerWatchExpression, true, break_enabled,
-                                                       conditional, trace, trace_on_condition);
+        CDebuggerWatchExpression *new_break = TinAlloc(ALLOC_Debugger, CDebuggerWatchExpression, adjusted_line_number,
+                                                       true, break_enabled, conditional, trace, trace_on_condition);
         mBreakpoints->AddItem(*new_break, adjusted_line_number);
     }
 
-    // -- othwerwise, just set the expression
+    // -- otherwise, just set the expression
     else
         watch->SetAttributes(break_enabled, conditional, trace, trace_on_condition);
 

@@ -267,6 +267,7 @@ void CScriptContext::Destroy()
 
     // -- cleanup all related codeblocks
     // -- by deleting the namespace dictionaries, all codeblocks should now be unused
+    gThreadContext->mDeferredBreakpointsList.DestroyAll();
     CCodeBlock::DestroyUnusedCodeBlocks(gThreadContext->mCodeBlockList);
     assert(gThreadContext->mCodeBlockList->IsEmpty());
     TinFree(gThreadContext->mCodeBlockList);
@@ -1262,11 +1263,18 @@ bool8 CScriptContext::ExecScript(const char* filename, bool8 must_exist, bool8 r
         }
     }
 
+    // -- at this point, our codeblock is loaded - apply any breakpoints, as needed
+    if (codeblock)
+    {
+        AddDeferredBreakpoints(*codeblock);
+    }
+
     // -- notify the debugger, if one is connected
     if (codeblock && mDebuggerConnected)
     {
         DebuggerCodeblockLoaded(codeblock->GetFilenameHash());
     }
+
 
     // -- execute the codeblock
     bool8 result = true;
@@ -1489,26 +1497,50 @@ bool CScriptContext::IsDebuggerConnected(int32& cur_debugger_session)
 // ====================================================================================================================
 // AddBreakpoint():  Method to find a codeblock, and set a line to notify the debugger, if executed
 // ====================================================================================================================
-void CScriptContext::AddBreakpoint(const char* filename, int32 line_number, bool8 break_enabled,
+bool CScriptContext::AddBreakpoint(const char* filename, int32 line_number, bool8 break_enabled,
                                    const char* conditional, const char* trace, bool8 trace_on_condition)
 {
     // -- sanity check
     if (!filename || !filename[0])
-        return;
+        return false;
 
     // -- we use the full path for code block hashes
     char full_path[kMaxNameLength * 2];
     if (!GetFullPath(filename, full_path, kMaxNameLength * 2))
     {
         TinPrint(this, "Error AddBreakpoint(): %s @ %d", filename, line_number);
-        return;
+        return false;
     }
 
     // -- find the code block within the thread
     uint32 filename_hash = Hash(full_path);
     CCodeBlock* code_block = GetCodeBlockList()->FindItem(filename_hash);
-    if (! code_block)
-        return;
+    if (!code_block)
+    {
+        // -- ensure the breakpoint isn't already in the list
+        bool already_exists = false;
+        CDebuggerWatchExpression* breakpoint = mDeferredBreakpointsList.FindItem(filename_hash);
+        while (breakpoint != nullptr)
+        {
+            if (breakpoint->mLineNumber == line_number)
+            {
+                already_exists = true;
+                break;
+            }
+            breakpoint = mDeferredBreakpointsList.FindNextItem(breakpoint, filename_hash);
+        }
+
+        // -- if we didn't already have this breakpoint, add it to the deferred list
+        if (!already_exists)
+        {
+            // -- we're going to store this breakpoint and apply it if/when the codeblock is actually loaded
+            CDebuggerWatchExpression* new_break = TinAlloc(ALLOC_Debugger, CDebuggerWatchExpression, line_number,
+                                                           true, break_enabled, conditional, trace, trace_on_condition);
+            mDeferredBreakpointsList.AddItem(*new_break, filename_hash);
+        }
+
+        return false;
+    }
 
     // -- add the breakpoint
     int32 actual_line = code_block->AddBreakpoint(line_number, break_enabled, conditional, trace, trace_on_condition);
@@ -1517,6 +1549,30 @@ void CScriptContext::AddBreakpoint(const char* filename, int32 line_number, bool
     if (actual_line != line_number)
     {
         DebuggerBreakpointConfirm(filename_hash, line_number, actual_line);
+    }
+
+    // -- success
+    return true;
+}
+
+// ====================================================================================================================
+// AddDeferredBreakpoints():  For breakpoints added before the file was actually executed - we add them in on load
+// ====================================================================================================================
+void CScriptContext::AddDeferredBreakpoints(CCodeBlock& code_block)
+{
+    CDebuggerWatchExpression* new_breakpoint = mDeferredBreakpointsList.FindItem(code_block.GetFilenameHash());
+    while (new_breakpoint)
+    {
+        mDeferredBreakpointsList.RemoveItem(code_block.GetFilenameHash());
+
+        // -- we're going to add the breakpoint through the API, as the line number might be adjusted
+        code_block.AddBreakpoint(new_breakpoint->mLineNumber,
+                                 new_breakpoint->mIsEnabled, new_breakpoint->mConditional,
+                                 new_breakpoint->mTrace, new_breakpoint->mTraceOnCondition);
+
+        // -- free, and get the next one
+        TinFree(new_breakpoint);
+        new_breakpoint = mDeferredBreakpointsList.FindItem(code_block.GetFilenameHash());
     }
 }
 
@@ -1529,11 +1585,32 @@ void CScriptContext::RemoveBreakpoint(const char* filename, int32 line_number)
     if (!filename || !filename[0])
         return;
 
-    // -- find the code block within the thread
-    uint32 filename_hash = Hash(filename);
-    CCodeBlock* code_block = GetCodeBlockList()->FindItem(filename_hash);
-    if (! code_block)
+    // -- we use the full path for code block hashes
+    char full_path[kMaxNameLength * 2];
+    if (!GetFullPath(filename, full_path, kMaxNameLength * 2))
+    {
+        TinPrint(this, "Error RemoveBreakpoint(): %s @ %d", filename, line_number);
         return;
+    }
+
+    // -- find the code block within the thread
+    uint32 filename_hash = Hash(full_path);
+    CCodeBlock* code_block = GetCodeBlockList()->FindItem(filename_hash);
+    if (code_block == nullptr)
+    {
+        CDebuggerWatchExpression* breakpoint = mDeferredBreakpointsList.FindItem(filename_hash);
+        while (breakpoint != nullptr)
+        {
+            if (breakpoint->mLineNumber == line_number)
+            {
+                mDeferredBreakpointsList.RemoveItem(breakpoint, filename_hash);
+                TinFree(breakpoint);
+                break;
+            }
+            breakpoint = mDeferredBreakpointsList.FindNextItem(breakpoint, filename_hash);
+        }
+        return;
+    }
 
     // -- remove the breakpoint
     int32 actual_line = code_block->RemoveBreakpoint(line_number);
@@ -1901,7 +1978,7 @@ void CScriptContext::AddVariableWatch(int32 request_id, const char* variable_wat
 		return;
 
     // -- watch expressions can handle a the complete syntax, but are unable to set a break on a variable entry
-    CDebuggerWatchExpression watch_expression(false, false, variable_watch, NULL, false);
+    CDebuggerWatchExpression watch_expression(-1, false, false, variable_watch, NULL, false);
     bool result = InitWatchExpression(watch_expression, false, *mDebuggerBreakFuncCallStack);
 
     // -- if we were successful initializing the expression (e.g. a codeblock and function were created
@@ -4510,7 +4587,7 @@ void CScriptContext::ProcessThreadCommands()
         bool handled = false;
         if (mDebuggerBreakFuncCallStack != nullptr)
         {
-            CDebuggerWatchExpression watch_expression(false, false, nullptr, local_exec_buffer, false);
+            CDebuggerWatchExpression watch_expression(-1, false, false, nullptr, local_exec_buffer, false);
             handled = InitWatchExpression(watch_expression, true, *mDebuggerBreakFuncCallStack);
             if (handled)
             {
@@ -5051,9 +5128,10 @@ int CDebuggerWatchExpression::gWatchExpressionID = 1;
 // ====================================================================================================================
 // Constructor
 // ====================================================================================================================
-CDebuggerWatchExpression::CDebuggerWatchExpression(bool8 isConditional, bool8 break_enabled, const char* condition,
-                                                   const char* trace, bool8 trace_on_condition)
+CDebuggerWatchExpression::CDebuggerWatchExpression(int32 line_number, bool8 isConditional, bool8 break_enabled,
+                                                   const char* condition, const char* trace, bool8 trace_on_condition)
 {
+    mLineNumber = line_number;
     mIsEnabled = break_enabled;
     mIsConditional = isConditional;
     SafeStrcpy(mConditional, sizeof(mConditional), condition, kMaxNameLength);
