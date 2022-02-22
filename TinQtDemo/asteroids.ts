@@ -96,7 +96,7 @@ void Asteroid::OnCollision()
         object asteroid_set = FindObject("AsteroidSet");
         if (IsObject(asteroid_set) && asteroid_set.Used() == 0)
         {
-            DrawText(self, '320 240 0', "Y O U   W I N", gCOLOR_RED);
+            DrawText(0, '320 240 0', "Y O U   W I N", gCOLOR_RED);
             
             SimPause();
             Print("Type StartAsteroids(); to continue...");
@@ -283,7 +283,6 @@ void Ship::OnCollision()
     self.lives -= 1;
     
     // -- if we're dead, simply restart the entire game
-    
     if (self.lives <= 0)
     {
         // -- game over, at the center of the screen
