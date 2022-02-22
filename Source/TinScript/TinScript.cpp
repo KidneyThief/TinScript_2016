@@ -1663,14 +1663,24 @@ void CScriptContext::SetForceBreak(int32 watch_var_request_id)
 // ====================================================================================================================
 void CScriptContext::SetBreakActionStep(bool8 torf, bool8 step_over, bool8 step_out)
 {
-    // -- this is usually set to false when a breakpoint is hit, and then remotely set to true by the debugger
-    mDebuggerActionForceBreak = false;
-    mDebuggerActionStep = torf;
-    mDebuggerActionStepOver = torf ? step_over : false;
-    mDebuggerActionStepOut = torf ? step_out : false;
+    // -- if we're already at a breakpoint, then this is a normal "step" action
+    if (mDebuggerBreakLoopGuard)
+    {
+        // -- this is usually set to false when a breakpoint is hit, and then remotely set to true by the debugger
+        mDebuggerActionForceBreak = false;
+        mDebuggerActionStep = torf;
+        mDebuggerActionStepOver = torf ? step_over : false;
+        mDebuggerActionStepOut = torf ? step_out : false;
 
-	// -- clear the var watch request ID - it'll be set on the next write if necessary
-	mDebuggerVarWatchRequestID = 0;
+        // -- clear the var watch request ID - it'll be set on the next write if necessary
+        mDebuggerVarWatchRequestID = 0;
+    }
+
+    // -- otherwise, we're forcing a break
+    else
+    {
+        mDebuggerActionForceBreak = true;
+    }
 }
 
 // ====================================================================================================================

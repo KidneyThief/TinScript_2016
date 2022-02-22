@@ -1538,7 +1538,17 @@ bool8 CCodeBlock::Execute(uint32 offset, CExecStack& execstack, CFunctionCallSta
         // -- followed by forcing a break.  The break comes in on the socket thread, so processing the
         // -- debugger connection might not have happened yet...
         CScriptContext* script_context = GetScriptContext();
-        if (script_context->mDebuggerActionForceBreak ||
+
+        // -- get our current callstack depth
+        int32 cur_stack_depth = funccallstack.GetStackDepth();
+
+        // -- we only "force break" from executing a statement within a function....
+        // -- by definition, "immediate execution" code can't be "broken" (use a breakpoint...!)
+        // -- and we don't want to "force break" on the actual call to DebuggerActionStep(), but on the
+        // current schedule/loop/w/e....
+        bool force_break = script_context->mDebuggerActionForceBreak && cur_stack_depth > 0;
+
+        if (force_break ||
             script_context->mDebuggerConnected && (g_DebuggerBreakStep || HasBreakpoints()))
         {
             // -- get the current line number - see if we should break
@@ -1547,8 +1557,6 @@ bool8 CCodeBlock::Execute(uint32 offset, CExecStack& execstack, CFunctionCallSta
             // -- see if we're still on the line we last broke
             // (if we're returning from a function call, it's a "new line", but will match
             // the last break line when we stepped in)
-            // -- get our current callstack depth
-            int32 cur_stack_depth = funccallstack.GetStackDepth();
 
             // -- see if our last function callstack is still being executed
             bool found_last_callstack = false;
@@ -1572,7 +1580,7 @@ bool8 CCodeBlock::Execute(uint32 offset, CExecStack& execstack, CFunctionCallSta
             mLineNumberCurrent = cur_line;
 
             // -- unless we're forcing a break, see if we should break via stepping (in, over, out)
-            bool should_break = script_context->mDebuggerActionForceBreak;
+            bool should_break = force_break;
             if (!should_break && is_new_line && g_DebuggerBreakStep)
             {
                 // -- if we're stepping in, then we break if this is a new line, wherever it is...

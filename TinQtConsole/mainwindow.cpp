@@ -752,7 +752,7 @@ void MainWindow::setupMenuBar()
     action = debug_menu->addAction(tr("Step Over  [F10]"));
     connect(action, SIGNAL(triggered()), this, SLOT(menuDebugStepOver()));
 
-    action = debug_menu->addAction(tr("Step In  [F11]"));
+    action = debug_menu->addAction(tr("Step In / Pause  [F11]"));
     connect(action, SIGNAL(triggered()), this, SLOT(menuDebugStepIn()));
 
     action = debug_menu->addAction(tr("Step Out  [Shift + F11]"));

@@ -151,7 +151,7 @@ CConsoleWindow::CConsoleWindow()
     mButtonRun->setText("Run");
     mButtonRun->setGeometry(0, 0, 24, CConsoleWindow::FontHeight()); 
     mButtonStepIn = new QPushButton();
-    mButtonStepIn->setText("Step In");
+    mButtonStepIn->setText("Pause");
     mButtonStepIn->setGeometry(0, 0, 24, CConsoleWindow::FontHeight());
     mButtonStep = new QPushButton();
     mButtonStep->setText("Step");
@@ -308,7 +308,7 @@ CConsoleWindow::CConsoleWindow()
     QShortcut* shortcut_Run = new QShortcut(QKeySequence("F5"), mButtonRun);
     QObject::connect(shortcut_Run, SIGNAL(activated()), mConsoleInput, SLOT(OnButtonRunPressed()));
 
-    // F11 - Step In
+    // F11 - Step In / Pause
     QShortcut* shortcut_StepIn = new QShortcut(QKeySequence("F11"), mButtonStepIn);
     QObject::connect(shortcut_StepIn, SIGNAL(activated()), mConsoleInput, SLOT(OnButtonStepInPressed()));
 
@@ -645,6 +645,9 @@ void CConsoleWindow::HandleBreakpointHit(const char* breakpoint_msg)
 	myPalette.setColor(QPalette::Button, Qt::red);	
 	mButtonRun->setPalette(myPalette);
 
+    // -- the "step In" button duals as a pause button, when we're running
+    mButtonStepIn->setText("Step In");
+
     // -- set the status message
     if (mBreakpointWatchRequestID > 0)
         SetStatusMessage("Break on watch");
@@ -681,6 +684,9 @@ void CConsoleWindow::HandleBreakpointHit(const char* breakpoint_msg)
     // -- back to normal color
 	myPalette.setColor(QPalette::Button, Qt::transparent);	
 	mButtonRun->setPalette(myPalette);
+
+    // -- the "step In" button duals as a pause button, when we're running
+    mButtonStepIn->setText("Pause");
 
     // -- clear the callstack and the watch window
     GetDebugCallstackWin()->ClearCallstack();
@@ -1867,6 +1873,15 @@ void CConsoleOutput::Update()
     if (hasBreakpoint)
     {
         DebuggerBreakpointHit(codeblock_hash, line_number);
+    }
+    else
+    {
+        // -- otherwise if we're not at a breakpoint, see if we simply want to "pause" the game
+        if (CConsoleWindow::GetInstance()->mBreakpointStepIn)
+        {
+            SocketManager::SendCommand("DebuggerBreakStep(true, false);");
+            CConsoleWindow::GetInstance()->mBreakpointStepIn = false;
+        }
     }
 
     // -- we'll use GetTickCount(), to try to use a more accurate representation of time
