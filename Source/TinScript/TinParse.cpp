@@ -3645,6 +3645,27 @@ bool8 TryParseFuncDefinition(CCodeBlock* codeblock, tReadToken& filebuf, CCompil
     // -- if we're replacing the function definition, delete the old
     if (curfunction != nullptr)
     {
+        // -- if it was just defined, we don't want duplicate implementations - or it's impossible
+        // to tell which is the latest/correct implementation
+        if (codeblock->GetScriptContext()->IsDefiningFunction(funchash, nshash))
+        {
+            if (nshash != 0)
+            {
+                ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
+                    filebuf.linenumber, "Error - trying to define multiple implementations of %s::%s()\n",
+                    TokenPrint(nsnametoken), TokenPrint(idtoken));
+            }
+            else
+            {
+                ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
+                    filebuf.linenumber, "Error - trying to define multiple implementations of %s()\n",
+                    TokenPrint(idtoken));
+            }
+
+            return false;
+        }
+
+        // -- otherwise, we're free to replace the existing function definition
         functable->RemoveItem(funchash);
         TinFree(curfunction)
         curfunction = nullptr;
@@ -3666,6 +3687,11 @@ bool8 TryParseFuncDefinition(CCodeBlock* codeblock, tReadToken& filebuf, CCompil
     // note:  we are no longer (but could?) warn if the signature has changed
     curfunction = FuncDeclaration(codeblock->GetScriptContext(), nshash, TokenPrint(idtoken),
                                                   Hash(TokenPrint(idtoken)), eFuncTypeScript);
+
+    // -- notify the context of the new function definition
+    codeblock->GetScriptContext()->NotifyFunctionDefinition(curfunction);
+
+    // -- push the function onto the definition stack
     codeblock->smFuncDefinitionStack->Push(curfunction, NULL, 0);
 
     // get the function context

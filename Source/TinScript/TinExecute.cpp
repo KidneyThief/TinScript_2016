@@ -199,6 +199,10 @@ CFunctionCallStack::~CFunctionCallStack()
     // to remove all unreferenced strings from the string table
     if (finished_executing)
     {
+        // -- clean the function defining list, as we've completed defining our functions
+        TinScript::GetContext()->ClearDefiningFunctionsList();
+        
+        // -- clean the string table of unused strings
         if (TinScript::GetContext()->GetStringTable())
         {
             TinScript::GetContext()->GetStringTable()->RemoveUnreferencedStrings();

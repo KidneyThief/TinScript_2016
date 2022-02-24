@@ -272,6 +272,9 @@ void CScriptContext::Destroy()
     assert(gThreadContext->mCodeBlockList->IsEmpty());
     TinFree(gThreadContext->mCodeBlockList);
 
+    gThreadContext->mDefiningFunctionsList->RemoveAll();
+    TinFree(gThreadContext->mDefiningFunctionsList);
+
     // -- clean up the scheduler
     TinFree(gThreadContext->mScheduler);
 
@@ -385,6 +388,7 @@ CScriptContext::CScriptContext(TinPrintHandler printfunction, TinAssertHandler a
 
     // -- initialize the code block hash table
     mCodeBlockList = TinAlloc(ALLOC_HashTable, CHashTable<CCodeBlock>, kGlobalFuncTableSize);
+    mDefiningFunctionsList = TinAlloc(ALLOC_HashTable, CHashTable<CFunctionEntry>, kGlobalFuncTableSize);
 
     // -- initialize the scratch buffer index
     mScratchBufferIndex = 0;

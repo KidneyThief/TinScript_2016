@@ -437,6 +437,10 @@ class CScriptContext
         bool8 FunctionExists(uint32 function_hash, uint32 ns_hash);
         bool8 FunctionExists(const char* function_name, const char* ns_name);
 
+        bool IsDefiningFunction(uint32 function_hash, uint32 ns_hash);
+        void NotifyFunctionDefinition(CFunctionEntry* new_fe);
+        void ClearDefiningFunctionsList() { mDefiningFunctionsList->RemoveAll(); }
+
         uint32 GetNextObjectID();
         uint32 CreateObject(uint32 classhash, uint32 objnamehash, const CFunctionCallStack* funccallstack = nullptr);
         uint32 RegisterObject(void* objaddr, const char* classname, const char* objectname);
@@ -636,6 +640,7 @@ class CScriptContext
 
         // -- context codeblock list
         CHashTable<CCodeBlock>* mCodeBlockList;
+        CHashTable<CFunctionEntry>* mDefiningFunctionsList;
 
         // -- breakpoints to apply when a codeblock is loaded, but before it is executed
         CHashTable<CDebuggerWatchExpression> mDeferredBreakpointsList;

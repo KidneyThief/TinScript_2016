@@ -599,6 +599,49 @@ bool8 CScriptContext::FunctionExists(const char* function_name, const char* ns_n
 }
 
 // ====================================================================================================================
+// IsDefiningFunction():  returns true if during *this* execution stack, we've already defined the function
+// ====================================================================================================================
+bool CScriptContext::IsDefiningFunction(uint32 function_hash, uint32 ns_hash)
+{
+    // -- sanity check
+    if (function_hash == 0 || mDefiningFunctionsList == nullptr)
+        return false;
+
+    // -- if the ns_hash given is 0, it's in the global namespace
+    if (ns_hash == 0)
+        ns_hash = GetGlobalNamespace()->GetHash();
+
+    CFunctionEntry* fe = mDefiningFunctionsList->FindItem(function_hash);
+    while (fe != nullptr)
+    {
+        if (fe->GetNamespaceHash() == ns_hash)
+        {
+            // -- found a duplicate function definition
+            return true;
+        }
+
+        // -- check the next
+        fe = mDefiningFunctionsList->FindNextItem(fe, function_hash);
+    }
+
+    // -- not found
+    return false;
+}
+
+// ====================================================================================================================
+// NotifyFunctionDefinition():  adds the function we *just* defined to the list, to avoid duplication implementations
+// ====================================================================================================================
+void CScriptContext::NotifyFunctionDefinition(CFunctionEntry* new_fe)
+{
+    // -- sanity check
+    if (new_fe == nullptr || mDefiningFunctionsList == nullptr)
+        return;
+
+    // -- we haven't started defining this function - add it to the list
+    mDefiningFunctionsList->AddItem(*new_fe, new_fe->GetHash());
+}
+
+// ====================================================================================================================
 // GetNextObjectID():  Generate the object ID for the next object registered.
 // ====================================================================================================================
 uint32 CScriptContext::GetNextObjectID()
