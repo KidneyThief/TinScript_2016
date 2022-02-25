@@ -198,6 +198,9 @@ class CConsoleWindow
         void NotifyDestroyObject(uint32 object_id);
         void NotifyWatchVarEntry(TinScript::CDebuggerWatchVarEntry* watch_var_entry);
 
+        // -- add a method to unhash a string value - and if it doesn't exist, request it
+        const char* UnhashOrRequest(uint32 hash_value);
+
         // -- breakpoint members
         bool mBreakpointHit;
         int32 mBreakpointWatchRequestID;

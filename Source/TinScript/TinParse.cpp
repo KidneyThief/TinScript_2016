@@ -1105,7 +1105,7 @@ void FormatVarEntry(CScriptContext* script_context, CVariableEntry* ve, void* va
         {
             int32 string_hash = *(uint32*)val_addr;
             const char* hashed_string = script_context->GetStringTable()->FindString(string_hash);
-            if (hashed_string != nullptr && hashed_string[0] != '0')
+            if (hashed_string != nullptr && hashed_string[0] != '\0')
             {
                 int32 bytes_written = sprintf_s(buffer, size, "%d  [0x%x `%s`]", string_hash, string_hash, hashed_string);
 

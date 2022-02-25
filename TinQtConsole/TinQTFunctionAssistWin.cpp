@@ -686,7 +686,8 @@ void CDebugFunctionAssistWin::NotifyAssistEntryDoubleClicked(TinScript::CDebugge
     else if (list_entry->mEntryType == TinScript::eFunctionEntryType::Namespace)
     {
         // -- update the label
-        mObjectIndentifier->setText(QString("Namespace: ").append(TinScript::UnHash(list_entry->mNamespaceHash)));
+        mObjectIndentifier->setText(QString("Namespace: ").append(
+            CConsoleWindow::GetInstance()->UnhashOrRequest(list_entry->mNamespaceHash)));
 
         // -- if the entry we clicked is a namespace, not a specific function or object
         // we want to request the functions registered to that hierarchy
@@ -1017,7 +1018,7 @@ CFunctionListEntry::CFunctionListEntry(TinScript::CDebuggerFunctionAssistEntry* 
     {
         // -- set the namespace
         if (_entry->mNamespaceHash != 0)
-            setText(0, TinScript::UnHash(_entry->mNamespaceHash));
+            setText(0, CConsoleWindow::GetInstance()->UnhashOrRequest(_entry->mNamespaceHash));
         else
             setText(0, "");
 
@@ -1031,7 +1032,7 @@ CFunctionListEntry::CFunctionListEntry(TinScript::CDebuggerFunctionAssistEntry* 
         }
         else
         {
-            const char* full_path = TinScript::UnHash(_entry->mCodeBlockHash);
+            const char* full_path = CConsoleWindow::GetInstance()->UnhashOrRequest(_entry->mCodeBlockHash);
             const char* file_name = CConsoleWindow::GetInstance()->GetDebugSourceWin()->GetFileName(full_path);
             if (file_name != nullptr)
             {
@@ -1043,7 +1044,7 @@ CFunctionListEntry::CFunctionListEntry(TinScript::CDebuggerFunctionAssistEntry* 
     {
         // -- set the namespace
         if (_entry->mNamespaceHash != 0)
-            setText(0,TinScript::UnHash(_entry->mNamespaceHash));
+            setText(0, CConsoleWindow::GetInstance()->UnhashOrRequest(_entry->mNamespaceHash));
         else
             setText(0,"");
 
@@ -1431,7 +1432,7 @@ void CFunctionParameterList::PopulateWithSignature(TinScript::CDebuggerFunctionA
     {
         TinScript::eVarType var_type = assist_entry->mType[i];
         bool is_array = assist_entry->mIsArray[i];
-        const char* var_name = TinScript::UnHash(assist_entry->mNameHash[i]);
+        const char* var_name = CConsoleWindow::GetInstance()->UnhashOrRequest(assist_entry->mNameHash[i]);
         // note:  parameter 0 is the return value, and cannot have a default value
         uint32* default_value = i > 0 && assist_entry->mHasDefaultValues ? assist_entry->mDefaultValue[i] : nullptr;
         CFunctionParameterEntry* new_parameter = new CFunctionParameterEntry(var_type, is_array, var_name,
@@ -1458,7 +1459,7 @@ void CFunctionParameterList::PopulateWithOrigin(int32 stack_size,const uint32* f
 
     for (int i = 0; i < stack_size; ++i)
     {
-        const char* full_path = TinScript::UnHash(file_hash_array[i]);
+        const char* full_path = CConsoleWindow::GetInstance()->UnhashOrRequest(file_hash_array[i]);
         const char* file_name = CConsoleWindow::GetInstance()->GetDebugSourceWin()->GetFileName(full_path);
         CFunctionParameterEntry* new_parameter =
             new CFunctionParameterEntry(file_name, file_hash_array[i], line_array[i], this);

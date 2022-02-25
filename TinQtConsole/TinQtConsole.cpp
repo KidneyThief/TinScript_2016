@@ -1012,6 +1012,31 @@ void CConsoleWindow::NotifyWatchVarEntry(TinScript::CDebuggerWatchVarEntry* watc
     }
 }
 
+// ====================================================================================================================
+// UnhashOrRequest():  returns the string value for the given hash - if not found, requests it from the target
+// ====================================================================================================================
+const char* CConsoleWindow::UnhashOrRequest(uint32 hash_value)
+{
+    const char* string_value = TinScript::GetContext()->GetStringTable()->FindString(hash_value);
+    if (string_value == nullptr || string_value[0] == '\0')
+    {
+        if (IsConnected())
+        {
+            // -- request the string unhash from the target
+            char hash_as_string[16];
+            sprintf_s(hash_as_string, "%d", hash_value);
+            SocketManager::SendExec(TinScript::Hash("DebuggerRequestStringUnhash"), hash_as_string, nullptr, nullptr,
+                                    nullptr, nullptr, nullptr, nullptr);
+        }
+
+        return TinScript::UnHash(hash_value);
+    }
+    else
+    {
+        return string_value;
+    }
+}
+
 // == Global Interface ================================================================================================
 
 // ====================================================================================================================
@@ -1706,7 +1731,7 @@ void CConsoleInput::OnUnhashEditReturnPressed()
     else
     {
 
-        // -- request the string unhash from the taqrget
+        // -- request the string unhash from the target
         char hash_as_string[16];
         sprintf_s(hash_as_string, "%d", string_hash);
         SocketManager::SendExec(TinScript::Hash("DebuggerRequestStringUnhash"), hash_as_string, nullptr, nullptr,
