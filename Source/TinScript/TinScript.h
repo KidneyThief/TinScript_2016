@@ -396,7 +396,7 @@ class CScriptContext
         const char* GetDirectory() const { return mCurrentWorkingDirectory; }
         bool8 GetFullPath(const char* in_file_name,char* out_full_path,int32 in_max_length);
 
-        void NotifySourceModified(const char* filename);
+        void NotifySourceStatus(const char* filename, bool is_modified, bool has_error);
         CCodeBlock* CompileScript(const char* filename);
         bool8 ExecScript(const char* filename, bool8 must_exist, bool8 re_exec);
 
@@ -644,6 +644,9 @@ class CScriptContext
         // -- context codeblock list
         CHashTable<CCodeBlock>* mCodeBlockList;
         CHashTable<CFunctionEntry>* mDefiningFunctionsList;
+
+        int32 mCompileErrorFileCount = 0;
+        uint32 mCompileErrorFileList[kDebuggerCallstackSize];
 
         // -- breakpoints to apply when a codeblock is loaded, but before it is executed
         CHashTable<CDebuggerWatchExpression> mDeferredBreakpointsList;

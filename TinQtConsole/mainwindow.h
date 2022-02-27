@@ -141,6 +141,9 @@ public:
     ~MainWindow();
 
     void AddScriptOpenAction(const char* fullPath);
+    void AddScriptCompileAction(const char* fullPath, bool has_error);
+    void RemoveScriptCompileAction(const char* fullPath);
+
     void CreateVariableWatch(int32 request_id, const char* watch_string, const char* cur_value);
 
 protected:
@@ -164,6 +167,7 @@ public slots:
 
     void menuOpenScript();
     void menuOpenScriptAction(QAction*);
+    void menuCompileScriptAction(QAction*);
 
 	void menuCreateVariableWatch();
 	void menuUpdateVarWatchValue();
@@ -184,6 +188,9 @@ private:
 
     QMenu* mScriptsMenu;
     QList<CScriptOpenAction*> mScriptOpenActionList;
+
+    QMenu* mCompileMenu;
+    QList<CScriptOpenAction*> mScriptCompileActionList;
 };
 
 // ====================================================================================================================
@@ -201,10 +208,17 @@ class CScriptOpenWidget : public QWidget
         {
         }
 
+        QAction* GetAction() const { return mAction; }
+
     public slots:
         void menuOpenScriptAction()
         {
             mOwner->menuOpenScriptAction(mAction);
+        }
+
+        void menuCompileScriptAction()
+        {
+            mOwner->menuCompileScriptAction(mAction);
         }
 
     public:
@@ -218,21 +232,34 @@ class CScriptOpenWidget : public QWidget
 class CScriptOpenAction
 {
 public:
-    CScriptOpenAction(const char* fullPath, uint32 fileHash, CScriptOpenWidget* action)
+    CScriptOpenAction(const char* fullPath, CScriptOpenWidget* action_widget, bool has_error = false)
+        : mCompileError(has_error)
     {
         if (!fullPath)
             fullPath = "";
         TinScript::SafeStrcpy(mFullPath, sizeof(mFullPath), fullPath, TinScript::kMaxNameLength);
-        mFileHash = fileHash;
-        mActionWidget = action;
+        mFileHash = TinScript::Hash(mFullPath);
+        mActionWidget = action_widget;
     }
+
     ~CScriptOpenAction()
     {
         delete mActionWidget;
     }
 
+    QAction* GetAction() const
+    {
+        return mActionWidget != nullptr ? mActionWidget->GetAction() : nullptr;
+    }
+    CScriptOpenWidget* GetActionWidget() const { return mActionWidget; }
+
+    const char* GetFullPath() const { return mFullPath; }
+    uint32 GetFileHash() const { return mFileHash; }
+
+private:
     char mFullPath[TinScript::kMaxNameLength];
     uint32 mFileHash;
+    bool mCompileError = false;
     CScriptOpenWidget* mActionWidget;
 };
 

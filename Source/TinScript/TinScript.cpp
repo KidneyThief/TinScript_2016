@@ -1066,20 +1066,63 @@ bool8 GetSourceCFileName(const char* filename, char* source_C_name, int32 maxnam
 }
 
 // ====================================================================================================================
-// NotifySourceModified():  Print a message and notify the debugger, that a file needs to be recompiled
+// NotifySourceStatus():  Print a message and notify the debugger, that a file needs to be recompiled
 // ====================================================================================================================
-void CScriptContext::NotifySourceModified(const char* filename)
+void CScriptContext::NotifySourceStatus(const char* full_path, bool is_modified, bool has_error)
 {
     // sanity check
-    if (filename == nullptr || filename[0] == '\0')
+    if (full_path == nullptr || full_path[0] == '\0')
         return;
 
-    TinPrint(this, "Source Modified: %s\n", filename);
+    TinPrint(this, "Source %s: %s\n", has_error ? "error" : "modified", full_path);
 
     int32 session = 0;
     if (IsDebuggerConnected(session))
     {
-        SocketManager::SendCommandf("DebuggerNotifySourceModified(`%s`);", filename);
+        // -- we only send the message, if the file has been modified (e.g. not yet compiled)
+        // or if a compile failed
+        if (is_modified || has_error)
+        {
+            SocketManager::SendCommandf("DebuggerNotifySourceStatus(`%s`, %s);",
+                                        full_path, has_error ? "true" : "false");
+        }
+    }
+    else
+    {
+#if NOTIFY_SCRIPTS_MODIFIED
+        // -- if not found, add this file to the list
+        uint32 file_hash = Hash(full_path);
+
+        if (has_error)
+        {
+            if (mCompileErrorFileCount < kDebuggerCallstackSize)
+            {
+                for (int i = 0; i < mCompileErrorFileCount; ++i)
+                {
+                    if (mCompileErrorFileList[i] == file_hash)
+                        return;
+                }
+                mCompileErrorFileList[mCompileErrorFileCount++] = file_hash;
+            }
+        }
+
+        // -- else either there's no error, or it's been modified (and *might* not have an error)
+        else
+        {
+            for (int i = 0; i < mCompileErrorFileCount; ++i)
+            {
+                if (mCompileErrorFileList[i] == file_hash)
+                {
+                    if (i < mCompileErrorFileCount - 1)
+                    {
+                        mCompileErrorFileList[i] = mCompileErrorFileList[mCompileErrorFileCount - 1];
+                    }
+                    --mCompileErrorFileCount;
+                    return;
+                }
+            }
+        }
+#endif
     }
 }
 
@@ -1108,8 +1151,17 @@ CCodeBlock* CScriptContext::CompileScript(const char* filename)
     CCodeBlock* codeblock = ParseFile(this, full_path);
     if (codeblock == NULL)
     {
+        // track or notify the debugger that this file (now) contains an error
+        NotifySourceStatus(full_path, false, true);
+
+        // -- assert, and return null
         ScriptAssert_(this, 0, "<internal>", -1, "Error - unable to parse file: %s\n", full_path);
-        return NULL;
+        return nullptr;
+    }
+    else
+    {
+        // clear the notification for any error this file might have had
+        NotifySourceStatus(full_path, false, false);
     }
 
     // -- write the binary
@@ -1328,7 +1380,6 @@ bool8 CScriptContext::ExecScript(const char* filename, bool8 must_exist, bool8 r
         DebuggerCodeblockLoaded(codeblock->GetFilenameHash());
     }
 
-
     // -- execute the codeblock
     bool8 result = true;
     if (codeblock)
@@ -1524,6 +1575,15 @@ void CScriptContext::SetDebuggerConnected(bool connected)
                 DebuggerCodeblockLoaded(code_block->GetFilenameHash());
             code_block = GetCodeBlockList()->Next();
         }
+
+        // -- we also send a list of all the files that were attempted to be executed, and contained
+        // compile errors
+        for (int i = 0; i < mCompileErrorFileCount; ++i)
+        {
+            const char* full_path = UnHash(mCompileErrorFileList[i]);
+            SocketManager::SendCommandf("DebuggerNotifySourceStatus(`%s`, true);", full_path);
+        }
+        mCompileErrorFileCount = 0;
     }
 
     // -- if we're not connected, we need to delete all breakpoints - they'll be re-added upon reconnection

@@ -1258,7 +1258,7 @@ class CCodeBlock
 					if (source_hash_changed)
 					{
 						codeblock->SetSourceHasChanged();
-						codeblock->GetScriptContext()->NotifySourceModified(codeblock->GetFileName());
+						codeblock->GetScriptContext()->NotifySourceStatus(codeblock->GetFileName(), true, false);
 					}
 				}
 #endif

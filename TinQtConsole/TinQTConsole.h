@@ -305,7 +305,7 @@ class CConsoleInput : public QLineEdit
 
         void NotifyStringUnhash(uint32 string_hash, const char* string_result);
 
-        void NotifySourceModified(const char* script_full_path);
+        void NotifySourceStatus(const char* script_full_path, bool has_error);
 
         typedef struct { char text[TinScript::kMaxTokenLength]; } tHistoryEntry;
         void GetHistory(QStringList& history) const;

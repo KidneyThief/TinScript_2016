@@ -611,20 +611,23 @@ MainWindow::~MainWindow()
     mScriptOpenActionList.clear();
 }
 
+// ====================================================================================================================
+// AddScriptOpenAction():  Adds an action to the top menu bar, to show a script in the source view
+// ====================================================================================================================
 void MainWindow::AddScriptOpenAction(const char* fullPath)
 {
     if (!fullPath || !fullPath[0])
         return;
 
     const char* fileName = CDebugSourceWin::GetFileName(fullPath);
-    uint32 fileHash = TinScript::Hash(fileName);
+    uint32 fileHash = TinScript::Hash(fullPath);
 
     // -- ensure we haven't already added this action
     bool found = false;
     for (int i = 0; i < mScriptOpenActionList.size(); ++i)
     {
         CScriptOpenAction* scriptOpenAction = mScriptOpenActionList[i];
-        if (scriptOpenAction->mFileHash == fileHash)
+        if (scriptOpenAction->GetFileHash() == fileHash)
         {
             found = true;
             break;
@@ -638,9 +641,112 @@ void MainWindow::AddScriptOpenAction(const char* fullPath)
     // -- create the script action
     QAction* action = mScriptsMenu->addAction(tr(fileName));
     CScriptOpenWidget *actionWidget = new CScriptOpenWidget(action, this);
-    CScriptOpenAction* scriptOpenAction = new CScriptOpenAction(fullPath, fileHash, actionWidget);
+    CScriptOpenAction* scriptOpenAction = new CScriptOpenAction(fullPath, actionWidget);
     mScriptOpenActionList.push_back(scriptOpenAction);
     connect(action, SIGNAL(triggered()), actionWidget, SLOT(menuOpenScriptAction()));
+}
+
+// ====================================================================================================================
+// AddScriptCompileAction():  Adds an action to the top menu bar, to request a script be recompiled
+// ====================================================================================================================
+void MainWindow::AddScriptCompileAction(const char* fullPath, bool has_error)
+{
+    if (!fullPath || !fullPath[0])
+        return;
+
+    const char* fileName = CDebugSourceWin::GetFileName(fullPath);
+    uint32 fileHash = TinScript::Hash(fullPath);
+
+    // -- ensure we haven't already added this action
+    bool found = false;
+    for (int i = 0; i < mScriptCompileActionList.size(); ++i)
+    {
+        CScriptOpenAction* scriptOpenAction = mScriptCompileActionList[i];
+        if (scriptOpenAction->GetFileHash() == fileHash)
+        {
+            found = true;
+            break;
+        }
+    }
+
+    // -- if this entry already exists, we're done
+    if (found)
+        return;
+
+    // -- update the compile menu title
+    mCompileMenu->setTitle("*** COMPILE ***");
+
+    // -- create the script action - note, it's added to the compile list, not the open list
+    // (and bound to a compile action, not an open action)
+    QAction* action = mCompileMenu->addAction(tr(fileName));
+    CScriptOpenWidget* actionWidget = new CScriptOpenWidget(action, this);
+    CScriptOpenAction* scriptOpenAction =
+        new CScriptOpenAction(fullPath, actionWidget, has_error);
+    mScriptCompileActionList.push_back(scriptOpenAction);
+    connect(action, SIGNAL(triggered()), actionWidget, SLOT(menuCompileScriptAction()));
+
+    char msg_buf[TinScript::kMaxTokenLength];
+    sprintf_s(msg_buf, sizeof(msg_buf), "Source %s: %s", has_error ? "error" : "modified", fullPath);
+    CConsoleWindow::GetInstance()->SetStatusMessage(msg_buf, Qt::red);
+}
+
+// ====================================================================================================================
+// RemoveScriptCompileAction():  On a successful compile, we no longer need to track this out of date script
+// ====================================================================================================================
+void MainWindow::RemoveScriptCompileAction(const char* fullPath)
+{
+    if (!fullPath || !fullPath[0])
+        return;
+
+    const char* fileName = CDebugSourceWin::GetFileName(fullPath);
+    uint32 fileHash = TinScript::Hash(fullPath);
+
+    // -- ensure we haven't already added this action
+    CScriptOpenAction* found = nullptr;
+    int found_index = -1;
+    for (int i = 0; i < mScriptCompileActionList.size(); ++i)
+    {
+        CScriptOpenAction* scriptOpenAction = mScriptCompileActionList[i];
+        if (scriptOpenAction->GetFileHash() == fileHash)
+        {
+            found = scriptOpenAction;
+            found_index = i;
+            break;
+        }
+    }
+
+    // -- if this entry doesn't exists, we're done
+    if (found == nullptr)
+        return;
+
+    // -- remove the action from the list
+    mScriptCompileActionList.removeAt(found_index);
+
+    // -- remove the action from the menu and delete
+    QAction* action = found->GetAction();
+    if (action)
+    {
+        mCompileMenu->removeAction(action);
+        delete action;
+    }
+
+    // -- delete the widget
+    CScriptOpenWidget* action_widget = found->GetActionWidget();
+    if (action_widget != nullptr)
+    {
+        delete action_widget;
+    }
+
+    if (mScriptCompileActionList.count() > 0)
+    {
+        mCompileMenu->setTitle("*** &COMPILE ***");
+        CConsoleWindow::GetInstance()->SetStatusMessage("Compile Menu shows out of date sources", Qt::red);
+    }
+    else
+    {
+        mCompileMenu->setTitle("&Compile");
+        CConsoleWindow::GetInstance()->SetStatusMessage("All sources up to date", Qt::green);
+    }
 }
 
 // ====================================================================================================================
@@ -676,7 +782,7 @@ void MainWindow::menuOpenScriptAction(QAction *action)
     for (int i = 0; i < mScriptOpenActionList.size(); ++i)
     {
         CScriptOpenAction* scriptOpenAction = mScriptOpenActionList[i];
-        if (scriptOpenAction->mActionWidget->mAction == action)
+        if (scriptOpenAction->GetAction() == action)
         {
             found = scriptOpenAction;
             break;
@@ -686,7 +792,32 @@ void MainWindow::menuOpenScriptAction(QAction *action)
     // -- if we found our entry, open the file
     if (found)
     {
-        CConsoleWindow::GetInstance()->GetDebugSourceWin()->OpenFullPathFile(found->mFullPath, true);
+        CConsoleWindow::GetInstance()->GetDebugSourceWin()->OpenFullPathFile(found->GetFullPath(), true);
+    }
+}
+
+// ====================================================================================================================
+// menuCompileScriptAction():  Slot called when the menu option is selected for a dynamically added script open action.
+// ====================================================================================================================
+void MainWindow::menuCompileScriptAction(QAction *action)
+{
+    // -- loop through all the actions - find the one matching this action
+    CScriptOpenAction* found = NULL;
+    for (int i = 0; i < mScriptCompileActionList.size(); ++i)
+    {
+        CScriptOpenAction* scriptOpenAction = mScriptCompileActionList[i];
+        if (scriptOpenAction->GetAction() == action)
+        {
+            found = scriptOpenAction;
+            break;
+        }
+    }
+
+    // -- if we found our entry, open the file
+    if (found)
+    {
+        // -- re-execute the script, must exist, and recompile
+        SocketManager::SendCommandf("Exec(`%s`);", found->GetFullPath());
     }
 }
 
@@ -794,6 +925,8 @@ void MainWindow::setupMenuBar()
 
     mScriptsMenu->addSeparator();
 
+    // -- Compile menu
+    mCompileMenu = menuBar()->addMenu(tr("&Compile"));
 }
 
 void MainWindow::setDockOptions()

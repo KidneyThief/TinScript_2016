@@ -2805,11 +2805,11 @@ void DebuggerNotifyStringUnhash(uint32 string_hash, const char* string_result)
 }
 
 // ====================================================================================================================
-// DebuggerNotifySourceModified():  Received from the target, that a source script file has been externally modified
+// DebuggerNotifySourceStatus():  Received from the target, that a source script file has been externally modified
 // ====================================================================================================================
-void DebuggerNotifySourceModified(const char* source_full_path)
+void DebuggerNotifySourceStatus(const char* source_full_path, bool has_error)
 {
-    CConsoleWindow::GetInstance()->GetDebugSourceWin()->NotifySourceModified(source_full_path);
+    CConsoleWindow::GetInstance()->GetDebugSourceWin()->NotifySourceStatus(source_full_path, has_error);
 }
 
 // == ObjectBrowser Registration ======================================================================================
@@ -2835,7 +2835,7 @@ REGISTER_FUNCTION_P3(DebuggerNotifyTabComplete, DebuggerNotifyTabComplete, void,
 // == StringUnhash Registration =======================================================================================
 REGISTER_FUNCTION_P2(DebuggerNotifyStringUnhash, DebuggerNotifyStringUnhash, void, uint32, const char*);
 
-REGISTER_FUNCTION_P1(DebuggerNotifySourceModified, DebuggerNotifySourceModified, void, const char*);
+REGISTER_FUNCTION_P2(DebuggerNotifySourceStatus, DebuggerNotifySourceStatus, void, const char*, bool);
 
 // --------------------------------------------------------------------------------------------------------------------
 int _tmain(int argc, _TCHAR* argv[])

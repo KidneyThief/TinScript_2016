@@ -473,6 +473,9 @@ void CDebugSourceWin::NotifyCodeblockLoaded(uint32 codeblock_hash)
 
     // -- add an entry to the Scripts menu
     CConsoleWindow::GetInstance()->GetMainWindow()->AddScriptOpenAction(fullPath);
+
+    // -- remove the entry from the Compile menu
+    CConsoleWindow::GetInstance()->GetMainWindow()->RemoveScriptCompileAction(fullPath);
 }
 
 void CDebugSourceWin::NotifyCodeblockLoaded(const char* full_path)
@@ -494,15 +497,15 @@ void CDebugSourceWin::NotifyCodeblockLoaded(const char* full_path)
 
     // -- add an entry to the Scripts menu
     CConsoleWindow::GetInstance()->GetMainWindow()->AddScriptOpenAction(full_path);
+    CConsoleWindow::GetInstance()->GetMainWindow()->RemoveScriptCompileAction(full_path);
 }
 
-void CDebugSourceWin::NotifySourceModified(const char* source_full_path)
+void CDebugSourceWin::NotifySourceStatus(const char* source_full_path, bool has_error)
 {
     if (source_full_path == nullptr || source_full_path[0] == '\0')
         return;
-    char msg_buf[TinScript::kMaxTokenLength];
-    sprintf_s(msg_buf, sizeof(msg_buf), "Source Modified: %s", source_full_path);
-    CConsoleWindow::GetInstance()->SetStatusMessage(msg_buf, Qt::red);
+    // -- we're also going to update the compile menu
+    CConsoleWindow::GetInstance()->GetMainWindow()->AddScriptCompileAction(source_full_path, has_error);
 }
 
 // --------------------------------------------------------------------------------------------------------------------
