@@ -229,6 +229,8 @@ const char* GetStringTableName();
 void SaveStringTable();
 void LoadStringTable(const char* from_dir = NULL);
 
+bool CheckSourceNeedToCompile(const char* filename);
+
 // ====================================================================================================================
 // struct tIdentifierString:  helper to retrieve arrays of strings
 // ====================================================================================================================
@@ -394,6 +396,7 @@ class CScriptContext
         const char* GetDirectory() const { return mCurrentWorkingDirectory; }
         bool8 GetFullPath(const char* in_file_name,char* out_full_path,int32 in_max_length);
 
+        void NotifySourceModified(const char* filename);
         CCodeBlock* CompileScript(const char* filename);
         bool8 ExecScript(const char* filename, bool8 must_exist, bool8 re_exec);
 

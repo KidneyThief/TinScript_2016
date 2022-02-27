@@ -526,12 +526,12 @@ void CConsoleWindow::NotifyOnConnect()
     // -- set the connect button color and text
     mButtonConnect->setAutoFillBackground(true);
 	QPalette myPalette = mButtonConnect->palette();
-	myPalette.setColor(QPalette::Button, Qt::green);	
+	myPalette.setColor(QPalette::Button, Qt::darkGreen);	
 	mButtonConnect->setPalette(myPalette);
     mButtonConnect->setText("Disconnect");
 
     // -- set the status message
-    SetStatusMessage("Connected");
+    SetStatusMessage("Connected", Qt::darkGreen);
     SetTargetInfoMessage("");
 
     // -- send the text command to identify this connection as for a debugger
@@ -650,9 +650,9 @@ void CConsoleWindow::HandleBreakpointHit(const char* breakpoint_msg)
 
     // -- set the status message
     if (mBreakpointWatchRequestID > 0)
-        SetStatusMessage("Break on watch");
+        SetStatusMessage("Break on watch", Qt::red);
     else
-        SetStatusMessage("Breakpoint");
+        SetStatusMessage("Breakpoint", Qt::red);
 
     // -- set the currently selected breakpoint
     if (mBreakpointWatchRequestID == 0)
@@ -674,7 +674,7 @@ void CConsoleWindow::HandleBreakpointHit(const char* breakpoint_msg)
 
     // -- set the status message
     if (SocketManager::IsConnected())
-        SetStatusMessage("Connected");
+        SetStatusMessage("Connected", Qt::darkGreen);
     else
     {
         SetStatusMessage("Not Connected");
@@ -1253,14 +1253,19 @@ void CConsoleWindow::AddText(int severity, uint32 msg_id, char* msg)
 // ====================================================================================================================
 // SetStatusMessage():  Sets the messsage in the status bar, at the bottom of the application window.
 // ====================================================================================================================
-void CConsoleWindow::SetStatusMessage(const char* message)
+void CConsoleWindow::SetStatusMessage(const char* message, Qt::GlobalColor msg_color)
 {
     // -- ensure we have a message
     if (!message)
         message = "";
 
     if (mStatusLabel)
+    {
         mStatusLabel->setText(QString(message));
+        QPalette status_palette = mStatusLabel->palette();
+        status_palette.setColor(QPalette::WindowText, msg_color);
+        mStatusLabel->setPalette(status_palette);
+    }
 }
 
 // ====================================================================================================================
@@ -2799,6 +2804,14 @@ void DebuggerNotifyStringUnhash(uint32 string_hash, const char* string_result)
     CConsoleWindow::GetInstance()->GetInput()->NotifyStringUnhash(string_hash, string_result);
 }
 
+// ====================================================================================================================
+// DebuggerNotifySourceModified():  Received from the target, that a source script file has been externally modified
+// ====================================================================================================================
+void DebuggerNotifySourceModified(const char* source_full_path)
+{
+    CConsoleWindow::GetInstance()->GetDebugSourceWin()->NotifySourceModified(source_full_path);
+}
+
 // == ObjectBrowser Registration ======================================================================================
 
 REGISTER_FUNCTION(DebuggerClearObjectBrowser, DebuggerClearObjectBrowser);
@@ -2821,6 +2834,8 @@ REGISTER_FUNCTION_P3(DebuggerNotifyTabComplete, DebuggerNotifyTabComplete, void,
 
 // == StringUnhash Registration =======================================================================================
 REGISTER_FUNCTION_P2(DebuggerNotifyStringUnhash, DebuggerNotifyStringUnhash, void, uint32, const char*);
+
+REGISTER_FUNCTION_P1(DebuggerNotifySourceModified, DebuggerNotifySourceModified, void, const char*);
 
 // --------------------------------------------------------------------------------------------------------------------
 int _tmain(int argc, _TCHAR* argv[])

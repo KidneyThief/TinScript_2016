@@ -66,6 +66,7 @@ class CDebugSourceWin : public QListWidget
         void ToggleBreakpoint(uint32 codeblock_hash, int32 line_number, bool add, bool enable);
         void NotifyCodeblockLoaded(uint32 codeblock_hash);
         void NotifyCodeblockLoaded(const char* filename);
+        void NotifySourceModified(const char* source_full_path);
 
         // -- get the full path, given a file name, and vice versa
         // note:  tolerate when the full path or file name only is already given

@@ -111,7 +111,7 @@ class CConsoleWindow
 
         QLabel* CreateTitleLabel(const QString& in_title_txt, QWidget* in_parent = nullptr) const;
 
-        void SetStatusMessage(const char* message);
+        void SetStatusMessage(const char* message, Qt::GlobalColor msg_color = Qt::black);
         void SetTargetInfoMessage(const char* message);
 
         // -- Qt components
@@ -304,6 +304,8 @@ class CConsoleInput : public QLineEdit
         void NotifyTabComplete(int32 request_id, const char* tab_completed_string, int32 tab_complete_index);
 
         void NotifyStringUnhash(uint32 string_hash, const char* string_result);
+
+        void NotifySourceModified(const char* script_full_path);
 
         typedef struct { char text[TinScript::kMaxTokenLength]; } tHistoryEntry;
         void GetHistory(QStringList& history) const;

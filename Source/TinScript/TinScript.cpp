@@ -969,14 +969,19 @@ bool8 GetBinaryFileName(const char* filename, char* binfilename, int32 maxnamele
 // ====================================================================================================================
 // NeedToCompile():  Returns 'true' if the source file needs to be compiled.
 // ====================================================================================================================
-bool8 NeedToCompile(const char* full_path_name, const char* binfilename)
+bool8 NeedToCompile(const char* full_path_name, const char* binfilename, bool check_only)
 {
     // -- get the filetime for the original script
     // -- if fail, then we have nothing to compile
+    // note:  if we're checking for a file that's been modified externally, it may take a
+    // frame or two before Windows will allow us access to the last write time
     FILETIME scriptft;
     if (!GetLastWriteTime(full_path_name, scriptft))
     {
-		TinPrint(TinScript::GetContext(), "Error - Compile() - file not found: %s\n", full_path_name);
+        if (!check_only)
+        {
+            TinPrint(TinScript::GetContext(), "Error - Compile() - file not found: %s\n", full_path_name);
+        }
         return (false);
     }
 
@@ -984,11 +989,15 @@ bool8 NeedToCompile(const char* full_path_name, const char* binfilename)
     // -- if fail, we need to compile
     FILETIME binft;
     if (!GetLastWriteTime(binfilename, binft))
-        return true;
+    {
+        return !check_only ? true : false;
+    }
 
     // -- if the binft is more recent, then we don't need to compile
     if (CompareFileTime(&binft, &scriptft) < 0)
+    {
         return true;
+    }
     else
     {
         // convert the binft to a time_t, for comparison with the debug force compile time
@@ -1013,6 +1022,29 @@ bool8 NeedToCompile(const char* full_path_name, const char* binfilename)
 }
 
 // ====================================================================================================================
+// CheckSourceNeedToCompile():  Given just the source name, see if it needs to be (re)compiled
+// ====================================================================================================================
+bool CheckSourceNeedToCompile(const char* full_path)
+{
+    // -- sanity check
+    CScriptContext* script_context = TinScript::GetContext();
+    if (script_context == nullptr || full_path == nullptr || full_path[0] == '\0')
+    {
+        return (false);
+    }
+
+    char binfilename[kMaxNameLength * 2];
+    if (!GetBinaryFileName(full_path, binfilename, kMaxNameLength * 2))
+    {
+        return false;
+    }
+
+    // -- check used only to compare file modification timestamps, if a source
+    // file has been changed externally... should not generate errors
+    return NeedToCompile(full_path, binfilename, true);
+}
+
+// ====================================================================================================================
 // GetSourceCFileName():  Given a source filename, return the file to write the source 'C'.
 // ====================================================================================================================
 bool8 GetSourceCFileName(const char* filename, char* source_C_name, int32 maxnamelength)
@@ -1033,6 +1065,23 @@ bool8 GetSourceCFileName(const char* filename, char* source_C_name, int32 maxnam
     return true;
 }
 
+// ====================================================================================================================
+// NotifySourceModified():  Print a message and notify the debugger, that a file needs to be recompiled
+// ====================================================================================================================
+void CScriptContext::NotifySourceModified(const char* filename)
+{
+    // sanity check
+    if (filename == nullptr || filename[0] == '\0')
+        return;
+
+    TinPrint(this, "Source Modified: %s\n", filename);
+
+    int32 session = 0;
+    if (IsDebuggerConnected(session))
+    {
+        SocketManager::SendCommandf("DebuggerNotifySourceModified(`%s`);", filename);
+    }
+}
 
 // ====================================================================================================================
 // CompileScript():  Compile a source script.
@@ -1232,7 +1281,7 @@ bool8 CScriptContext::ExecScript(const char* filename, bool8 must_exist, bool8 r
     CCodeBlock* codeblock = NULL;
 
     // -- note:  Compile() also prepends the CWD, so we use filename to call CompileScript()
-    bool8 needtocompile = NeedToCompile(full_path, binfilename);
+    bool8 needtocompile = NeedToCompile(full_path, binfilename, false);
     if (needtocompile)
     {
         codeblock = CompileScript(filename);

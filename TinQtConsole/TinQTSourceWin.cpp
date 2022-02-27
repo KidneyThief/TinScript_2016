@@ -496,6 +496,15 @@ void CDebugSourceWin::NotifyCodeblockLoaded(const char* full_path)
     CConsoleWindow::GetInstance()->GetMainWindow()->AddScriptOpenAction(full_path);
 }
 
+void CDebugSourceWin::NotifySourceModified(const char* source_full_path)
+{
+    if (source_full_path == nullptr || source_full_path[0] == '\0')
+        return;
+    char msg_buf[TinScript::kMaxTokenLength];
+    sprintf_s(msg_buf, sizeof(msg_buf), "Source Modified: %s", source_full_path);
+    CConsoleWindow::GetInstance()->SetStatusMessage(msg_buf, Qt::red);
+}
+
 // --------------------------------------------------------------------------------------------------------------------
 // GetFullPath():  Return the complete full path, prepending the directory to the file name (if necessary)
 // --------------------------------------------------------------------------------------------------------------------

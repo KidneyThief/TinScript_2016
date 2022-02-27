@@ -29,6 +29,7 @@
 // -- includes
 #include "assert.h"
 
+#include "integration.h"
 #include "TinTypes.h"
 #include "TinParse.h"
 #include "TinRegistration.h"
@@ -1208,6 +1209,11 @@ class CCodeBlock
 
         void SetFinishedParsing() { mIsParsing = false; }
 
+		// -- conveniently, any time a script is compiled, it's a brand new codeblock,
+		// so there's never a need to set this back to false;
+		bool GetSourceHasChanged() { return mSourceHasChanged; }
+		void SetSourceHasChanged() { mSourceHasChanged = true; }
+
         CFunctionCallStack* smFuncDefinitionStack;
         tVarTable* smCurrentGlobalVarTable;
 
@@ -1244,6 +1250,18 @@ class CCodeBlock
                     code_block_list->RemoveItem(codeblock, codeblock->mFileNameHash);
                     TinFree(codeblock);
                 }
+#if NOTIFY_SCRIPTS_MODIFIED
+				// -- otherwise, see if the source for the codeblock has been modified
+				if (!codeblock->GetSourceHasChanged())
+				{
+					bool source_hash_changed = CheckSourceNeedToCompile(codeblock->GetFileName());
+					if (source_hash_changed)
+					{
+						codeblock->SetSourceHasChanged();
+						codeblock->GetScriptContext()->NotifySourceModified(codeblock->GetFileName());
+					}
+				}
+#endif
                 codeblock = code_block_list->Next();
             }
         }
@@ -1252,6 +1270,7 @@ class CCodeBlock
         CScriptContext* mContextOwner;
 
         bool8 mIsParsing;
+		bool mSourceHasChanged = false;
 
         char mFileName[kMaxNameLength];
         uint32 mFileNameHash;

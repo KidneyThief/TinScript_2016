@@ -65,6 +65,9 @@
 // -- enable the use of string pools, for smaller string, for less fragmentation
 #define STRING_TABLE_USE_POOLS 1
 
+// -- we can check whether a script has been modified, and notify when it needs to be recompiled
+#define NOTIFY_SCRIPTS_MODIFIED 1
+
 // ------------------------------------------------------------------------------------------------
 // -- TYPES
 // ------------------------------------------------------------------------------------------------

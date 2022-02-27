@@ -3945,6 +3945,7 @@ CCodeBlock::CCodeBlock(CScriptContext* script_context, const char* _filename)
     mContextOwner = script_context;
 
     mIsParsing = true;
+    mSourceHasChanged = false;
 
     mInstrBlock = NULL;
     mInstrCount = 0;
