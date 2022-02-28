@@ -1087,7 +1087,11 @@ void CScriptContext::NotifySourceStatus(const char* full_path, bool is_modified,
                                         full_path, has_error ? "true" : "false");
         }
     }
-    else
+
+    // -- is modified only checks the file timestamp...
+    // -- to track whether an error should be sent to the debugger on connect
+    // should only be the result of an actual compile
+    else if (!is_modified)
     {
 #if NOTIFY_SCRIPTS_MODIFIED
         // -- if not found, add this file to the list
