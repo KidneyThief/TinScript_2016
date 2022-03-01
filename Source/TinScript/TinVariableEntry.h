@@ -69,6 +69,22 @@ public:
         return mType;
     }
 
+    void SetResolveType(eVarType resolve_type)
+    {
+        // -- we're *not* permitted to set the variable type of anything except a Type__resolve
+        // (used for schedules, since the return type isn't known, until the schedule is executed)
+        if (mType == TYPE__resolve)
+        {
+            // -- we're only permitted to set the resolve type to something "non-array" (non-hashtable)
+            // $$$TZA Test returning arrays from schedules()...
+            if (resolve_type >= FIRST_VALID_TYPE && resolve_type <= LAST_VALID_TYPE &&
+                resolve_type != TYPE_hashtable)
+            {
+                mType = resolve_type;
+            }
+        }
+    }
+
     uint32 GetHash() const
     {
         return mHash;

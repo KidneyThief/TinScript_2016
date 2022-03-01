@@ -1220,9 +1220,11 @@ bool8 ExecuteScheduledFunction(CScriptContext* script_context, uint32 objectid, 
     }
 
     // -- if we do have a return value, try to convert the stack content to the right value
-    if (return_ve && return_ve->GetType() >= FIRST_VALID_TYPE)
+    if (return_ve && (return_ve->GetType() >= FIRST_VALID_TYPE || return_ve->GetType() == TYPE__resolve))
     {
-        void* converted_addr = TypeConvert(script_context, contenttype, contentptr, return_ve->GetType());
+        // -- if the return type is "resolve", it could be anything - so don't change it from what we have
+        eVarType result_type = return_ve->GetType() != TYPE__resolve ? return_ve->GetType() : contenttype;
+        void* converted_addr = TypeConvert(script_context, contenttype, contentptr, result_type);
         if (!converted_addr)
         {
             TinPrint(script_context,
@@ -1233,6 +1235,10 @@ bool8 ExecuteScheduledFunction(CScriptContext* script_context, uint32 objectid, 
 
             return (false);
         }
+
+		// -- this only works because execute() is executed immediately, the schedule is immediately
+		// cancelled, so the command functioncontext containing this return_ve is temporary...
+        return_ve->SetResolveType(result_type);
         return_ve->SetValue(oe ? oe->GetAddr() : NULL, converted_addr, NULL, NULL);
     }
 
