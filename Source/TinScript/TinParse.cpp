@@ -4788,8 +4788,8 @@ bool8 TryParseHashtableHasKey(CCodeBlock* codeblock, tReadToken& filebuf, CCompi
 		return (false);
 	}
 
-    // -- increment the paren depth
-    ++gGlobalExprParenDepth;
+    // -- decrement the paren depth
+    --gGlobalExprParenDepth;
 
 	// -- update the file buf
 	filebuf = peektoken;
