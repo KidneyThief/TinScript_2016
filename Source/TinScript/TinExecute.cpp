@@ -1236,10 +1236,15 @@ bool8 ExecuteScheduledFunction(CScriptContext* script_context, uint32 objectid, 
             return (false);
         }
 
-		// -- this only works because execute() is executed immediately, the schedule is immediately
-		// cancelled, so the command functioncontext containing this return_ve is temporary...
-        return_ve->SetResolveType(result_type);
-        return_ve->SetValue(oe ? oe->GetAddr() : NULL, converted_addr, NULL, NULL);
+        // -- if the return type is "resolve", then set the variable type to whatever was being assigned
+        // $$$TZA note:  this doesn't support hashtables or arrays, limited to sizeof(Type__resolve), 16 bytes
+        if (return_ve->GetType() == TYPE__resolve)
+        {
+            return_ve->SetResolveType(result_type);
+        }
+
+        // -- set the value - note:  a return value is a function context param, and never an object member
+        return_ve->SetValue(nullptr, converted_addr, NULL, NULL);
     }
 
     // -- also copy them into the script context's return value
