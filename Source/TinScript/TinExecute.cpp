@@ -1404,20 +1404,17 @@ bool8 DebuggerBreakLoop(CCodeBlock* cb, const uint32* instrptr, CExecStack& exec
     // is normally unused/unset
     funccallstack.DebuggerUpdateStackTopCurrentLine(codeblock_hash, cur_line);
 
-    // -- build the callstack arrays, in preparation to send them to the debugger
-    uint32 codeblock_array[kDebuggerCallstackSize];
-    uint32 objid_array[kDebuggerCallstackSize];
-    uint32 namespace_array[kDebuggerCallstackSize];
-    uint32 func_array[kDebuggerCallstackSize];
-    int32 linenumber_array[kDebuggerCallstackSize];
-    int32 stack_size =
-        funccallstack.DebuggerGetCallstack(codeblock_array, objid_array,
-                                            namespace_array, func_array,
-                                            linenumber_array, kDebuggerCallstackSize);
+    // -- grab the complete execution stack, and send it to the debugger
+    CObjectEntry* oeList[kDebuggerCallstackSize];
+    CFunctionEntry* feList[kDebuggerCallstackSize];
+    uint32 nsHashList[kDebuggerCallstackSize];
+    uint32 cbHashList[kDebuggerCallstackSize];
+    int32 lineNumberList[kDebuggerCallstackSize];
+    int32 stack_depth = CFunctionCallStack::GetCompleteExecutionStack(oeList, feList, nsHashList, cbHashList,
+        lineNumberList, kDebuggerCallstackSize);
+    CFunctionCallStack::GetCompleteExecutionStack(oeList, feList, nsHashList, cbHashList, lineNumberList, kDebuggerCallstackSize);
+    script_context->DebuggerSendCallstack(oeList, feList, nsHashList, cbHashList, lineNumberList, stack_depth, 0);
 
-    script_context->DebuggerSendCallstack(codeblock_array, objid_array,
-                                            namespace_array, func_array,
-                                            linenumber_array, stack_size, 0);
 
     // -- get the entire list of variables, at every level for the current call stack
     CDebuggerWatchVarEntry watch_var_stack[kDebuggerWatchWindowSize];

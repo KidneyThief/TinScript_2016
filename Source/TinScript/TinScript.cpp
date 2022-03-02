@@ -2586,16 +2586,13 @@ int32 CScriptContext::GetExecutionCallStack(tIdentifierString* _obj_identifier_l
 		return 0;
 	}
 
-	// -- arbitrary max depth of, say, 32
-	constexpr int32 kMaxDepth = 32;
-	CObjectEntry* oeList[kMaxDepth];
-	CFunctionEntry* feList[kMaxDepth];
-	uint32 nsHashList[kMaxDepth];
-	uint32 cbHashList[kMaxDepth];
-	int32 lineNumberList[kMaxDepth];
-
+	CObjectEntry* oeList[kDebuggerCallstackSize];
+	CFunctionEntry* feList[kDebuggerCallstackSize];
+	uint32 nsHashList[kDebuggerCallstackSize];
+	uint32 cbHashList[kDebuggerCallstackSize];
+	int32 lineNumberList[kDebuggerCallstackSize];
 	int32 stack_depth = CFunctionCallStack::GetCompleteExecutionStack(oeList, feList, nsHashList, cbHashList,
-																	  lineNumberList, kMaxDepth);
+																	  lineNumberList, kDebuggerCallstackSize);
 
 	// -- return the callstack as readable strings
 	int32 stack_index = 0;
@@ -2638,15 +2635,13 @@ int32 CScriptContext::GetExecutionCallStack(tIdentifierString* _obj_identifier_l
 // ====================================================================================================================
 void CScriptContext::DumpExecutionCallStack(int32 depth)
 {
-    // -- arbitrary max depth of, say, 32
-    constexpr int32 kMaxDepth = 32;
-    CObjectEntry* oeList[kMaxDepth];
-    CFunctionEntry* feList[kMaxDepth];
-    uint32 nsHashList[kMaxDepth];
-    uint32 cbHashList[kMaxDepth];
-    int32 lineNumberList[kMaxDepth];
+    CObjectEntry* oeList[kDebuggerCallstackSize];
+    CFunctionEntry* feList[kDebuggerCallstackSize];
+    uint32 nsHashList[kDebuggerCallstackSize];
+    uint32 cbHashList[kDebuggerCallstackSize];
+    int32 lineNumberList[kDebuggerCallstackSize];
 
-    int dump_depth = depth > 0 && depth < kMaxDepth ? depth : kMaxDepth;
+    int dump_depth = depth > 0 && depth < kDebuggerCallstackSize ? depth : kDebuggerCallstackSize;
     int32 actual_depth = CFunctionCallStack::GetExecutionStackDepth();
     int32 stack_depth = CFunctionCallStack::GetCompleteExecutionStack(oeList, feList, nsHashList, cbHashList,
                                                                       lineNumberList, dump_depth);

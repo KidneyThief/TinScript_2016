@@ -296,8 +296,12 @@ void CDebugSchedulesWin::SortSchedules()
     int index = 0;
     for (int i = 0; i < keys.size(); ++i)
     {
+        // $$$TZA How his entry nullptr??
         CScheduleEntry* entry = mEntryMap[keys[i]];
-        sorted_list[index++] = entry;
+        if (entry != nullptr)
+        {
+            sorted_list[index++] = entry;
+        }
     }
 
     // -- sort the entries

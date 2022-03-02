@@ -142,7 +142,7 @@ void CBreakpointEntry::UpdateLabel(uint32 codeblock_hash, int32 line_number)
         tracepoint_buf[0] = '\0';
 
     // -- note:  all line numbers are stored accurately (0 based), but displayed +1, to match text editors
-    const char* full_path = TinScript::UnHash(codeblock_hash);
+    const char* full_path = CConsoleWindow::GetInstance()->UnhashOrRequest(codeblock_hash);
     const char* file_name_ptr = CConsoleWindow::GetInstance()->GetDebugSourceWin()->GetFileName(full_path);
     sprintf_s(linebuf, 256, "%s : %s%d    %s    %s", file_name_ptr, spaces, line_number + 1,
               condition_buf, tracepoint_buf);
@@ -174,10 +174,12 @@ void CBreakpointEntry::UpdateLabel(int32 watch_request_id, uint32 var_object_id,
     // -- set the text in the QWidget
     char label_buf[TinScript::kMaxNameLength];
     if (mWatchVarObjectID > 0)
-        sprintf_s(label_buf, 256, "_watch:  %d.%s    %s    %s", mWatchVarObjectID, TinScript::UnHash(mWatchVarNameHash),
+        sprintf_s(label_buf, 256, "_watch:  %d.%s    %s    %s", mWatchVarObjectID,
+                  CConsoleWindow::GetInstance()->UnhashOrRequest(mWatchVarNameHash),
                   condition_buf, tracepoint_buf);
     else
-        sprintf_s(label_buf, 256, "_watch:  %s   %s    %s", TinScript::UnHash(mWatchVarNameHash), condition_buf,
+        sprintf_s(label_buf, 256, "_watch:  %s   %s    %s",
+                  CConsoleWindow::GetInstance()->UnhashOrRequest(mWatchVarNameHash), condition_buf,
                   tracepoint_buf);
 
     // -- set the text in the QWidget
@@ -317,7 +319,7 @@ void CDebugBreakpointsWin::ToggleBreakpoint(uint32 codeblock_hash, int32 line_nu
     }
 
     // -- if we found it, but we're supposed to delete it...
-    const char* filename = TinScript::UnHash(codeblock_hash);
+    const char* filename = CConsoleWindow::GetInstance()->UnhashOrRequest(codeblock_hash);
     if (!addOrRemove && breakpoint)
     {
         mBreakpoints.removeAt(found_index);
@@ -531,7 +533,7 @@ const char* CDebugBreakpointsWin::GetTraceExpression(bool8& trace_enabled, bool8
 void CDebugBreakpointsWin::NotifyCodeblockLoaded(uint32 codeblock_hash)
 {
     // -- get the file name
-    const char* filename = TinScript::UnHash(codeblock_hash);
+    const char* filename = CConsoleWindow::GetInstance()->UnhashOrRequest(codeblock_hash);
 
     // -- loop through all the existing breakpoints, and set the breakpoints
     for (int32 i = 0; i < mBreakpoints.size(); ++i)
@@ -691,7 +693,7 @@ void CDebugBreakpointsWin::NotifyOnConnect()
         bool trace_on_condition = condition_enabled && trace_enabled && breakpoint->mTraceOnCondition;
         if ((breakpoint_enabled || trace_enabled) && breakpoint->mWatchRequestID == 0)
         {
-            const char* filename = TinScript::UnHash(breakpoint->mCodeblockHash);
+            const char* filename = CConsoleWindow::GetInstance()->UnhashOrRequest(breakpoint->mCodeblockHash);
             SocketManager::SendCommandf("DebuggerAddBreakpoint('%s', %d, '%s', '%s', '%s', '%s');", filename,
                                         breakpoint->mLineNumber,
                                         breakpoint->mChecked ? "true" : "false",
@@ -721,13 +723,15 @@ CCallstackEntry::CCallstackEntry(uint32 codeblock_hash, int32 line_number, uint3
     mFunctionHash = function_hash;
 
     char buf[2048];
-    const char* full_path = TinScript::UnHash(codeblock_hash);
+    const char* full_path = CConsoleWindow::GetInstance()->UnhashOrRequest(codeblock_hash);
     const char* file_name_ptr = codeblock_hash > 0 ? CConsoleWindow::GetInstance()->GetDebugSourceWin()->GetFileName(full_path)
                                                    : "[C++]";
 
     // note:  line numbers need to be displayed, counting from 1, to match the editor
-    sprintf_s(buf, 2048, "[ %d ] %s::%s   %s @ %d", object_id, TinScript::UnHash(namespace_hash),
-              TinScript::UnHash(function_hash), file_name_ptr, codeblock_hash > 0 ? line_number + 1 : -1);
+    sprintf_s(buf, 2048, "[ %d ] %s::%s   %s @ %d", object_id,
+              CConsoleWindow::GetInstance()->UnhashOrRequest(namespace_hash),
+              CConsoleWindow::GetInstance()->UnhashOrRequest(function_hash),
+              file_name_ptr, codeblock_hash > 0 ? line_number + 1 : -1);
     setText(buf);
 };
 
