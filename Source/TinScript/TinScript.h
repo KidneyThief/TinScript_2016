@@ -695,6 +695,19 @@ class CScriptContext
 
 }  // TinScript
 
+// ====================================================================================================================
+// class CScriptObject:  Default registered object, to provide a base class for scripting.
+// ====================================================================================================================
+// -- generic object - has absolutely no functionality except to serve as something to
+// -- instantiate, that you can name, and then implement methods on the namespace
+
+class CScriptObject
+{
+public:
+    CScriptObject() { }
+    virtual ~CScriptObject() {}
+};
+
 #endif // __TINSCRIPT_H
 
 // ====================================================================================================================

@@ -5351,22 +5351,6 @@ void CDebuggerWatchExpression::SetAttributes(bool break_enabled, const char* new
 
 } // TinScript
 
-// ====================================================================================================================
-// class CScriptObject:  Default registered object, to provide a base class for scripting.
-// ====================================================================================================================
-// -- generic object - has absolutely no functionality except to serve as something to
-// -- instantiate, that you can name, and then implement methods on the namespace
-
-class CScriptObject
-{
-    public:
-        CScriptObject() { dummy = 0; }
-        virtual ~CScriptObject() {}
-
-    private:
-        int64 dummy;
-};
-
 REGISTER_SCRIPT_CLASS_BEGIN(CScriptObject, VOID)
 REGISTER_SCRIPT_CLASS_END()
 

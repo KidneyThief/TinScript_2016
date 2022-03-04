@@ -884,6 +884,21 @@ protected:
 };
 
 // ====================================================================================================================
+// class CHashtableCopyNode:  Parse tree node, copies the left hashtable var to the right hashtable or CHashtable
+// ====================================================================================================================
+class CHashtableCopyNode : public CCompileTreeNode
+{
+public:
+	CHashtableCopyNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber);
+	virtual int32 Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
+
+	virtual bool8 CompileToC(int32 indent, char*& out_buffer, int32& max_size, bool root_node) const;
+
+protected:
+	CHashtableCopyNode() { }
+};
+
+// ====================================================================================================================
 // class CHashtableIter:  Parse tree node, pushes the string of the first/next hashtable key.
 // ====================================================================================================================
 class CHashtableIter : public CCompileTreeNode

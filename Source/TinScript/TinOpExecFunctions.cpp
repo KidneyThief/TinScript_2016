@@ -36,6 +36,7 @@
 #include "TinNamespace.h"
 #include "TinScheduler.h"
 #include "TinExecute.h"
+#include "TinHashtable.h"
 #include "TinOpExecFunctions.h"
 
 // == namespace TinScript =============================================================================================
@@ -2655,10 +2656,19 @@ bool8 OpExecArrayHash(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExec
             return false;
         }
 
-        // -- calculate the updated hash
+        // -- calculate the updated hash (note:  we only append a '_' between hash string elements)
+        // -- this allows us to view a hashtable key of an unappended string, the same as hash(string)
+        const char* val1String = UnHash(*(uint32*)val1addr);
         uint32 hash = *(uint32*)contentptr;
-        hash = HashAppend(hash, "_");
-        hash = HashAppend(hash, (const char*)val1addr);
+        if (hash != 0)
+        {
+            hash = HashAppend(hash, "_");
+            hash = HashAppend(hash, val1String);
+        }
+        else
+        {
+            hash = Hash(val1String, -1, false);
+        }
 
         // -- push the result
         execstack.Push((void*)&hash, TYPE_int);
@@ -3163,7 +3173,7 @@ bool8 OpExecHashtableHasKey(CCodeBlock* cb, eOpCode op, const uint32*& instrptr,
 bool8 OpExecHashtableContains(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExecStack& execstack,
 	CFunctionCallStack& funccallstack)
 {
-	// -- pull the array variable off the stack
+	// -- pull the hashtable variable off the stack
 	CVariableEntry* ve_1 = NULL;
 	CObjectEntry* oe_1 = NULL;
 	eVarType valtype_1;
@@ -3175,7 +3185,7 @@ bool8 OpExecHashtableContains(CCodeBlock* cb, eOpCode op, const uint32*& instrpt
 		return false;
 	}
 
-    // -- pull the array variable off the stack
+    // -- pull the hashtable "index value" off the stack
     CVariableEntry* ve_0 = NULL;
     CObjectEntry* oe_0 = NULL;
     eVarType valtype_0;
@@ -3348,12 +3358,90 @@ bool8 OpExecHashtableIter(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, C
 }
 
 // ====================================================================================================================
-// OpExecHashtableCopy():  implement me!
+// OpExecHashtableCopy():  copies the given ht to either another hashtable, or a CHashtableObject (accessible from C++)
 // ====================================================================================================================
 bool8 OpExecHashtableCopy(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExecStack& execstack,
 	CFunctionCallStack& funccallstack)
 {
-    return false;
+    CScriptContext* script_context = cb->GetScriptContext();
+
+    // -- pull the hashtable variable off the stack
+	CVariableEntry* ve_1 = NULL;
+	CObjectEntry* oe_1 = NULL;
+	eVarType valtype_1;
+	void* val_1 = execstack.Pop(valtype_1);
+	if (!GetStackValue(script_context, execstack, funccallstack, val_1, valtype_1, ve_1, oe_1))
+	{
+		DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
+					    "Error - ExecStack should contain a hashtable or CHashtable object value\n");
+		return false;
+	}
+
+    CObjectEntry* target_ht_oe = nullptr;
+    if (valtype_1 != TYPE_hashtable)
+    {
+        void* object_id = TypeConvert(script_context, valtype_1, val_1, TYPE_object);
+        target_ht_oe = object_id != nullptr ? script_context->FindObjectEntry(*(uint32*)object_id)
+                                            : nullptr;
+        
+        // -- see if we found an object entry to copy to
+        if (target_ht_oe != nullptr)
+        {
+            // -- this is unusual to have the VM reference a registered class directly, however,
+            // it is a built-in TinScript class that we use as a way to pass hashtables to registered functions
+            static uint32 has_CHashtable = Hash("CHashtable");
+            if (!target_ht_oe->HasNamespace(has_CHashtable))
+            {
+                target_ht_oe = nullptr;
+            }
+        }
+    }
+
+    // -- if we didn't find an appropriate target to copy the hashtable to, we're done
+    if (valtype_1 != TYPE_hashtable && target_ht_oe == nullptr)
+    {
+        DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
+					    "Error - ExecStack should contain a hashtable or CHashtable object value\n");
+		return false;
+    }
+
+    // -- pull the hashtable variable off the stack
+	CVariableEntry* ve_0 = NULL;
+	CObjectEntry* oe_0 = NULL;
+	eVarType valtype_0;
+	void* val_0 = execstack.Pop(valtype_0);
+	if (!GetStackValue(cb->GetScriptContext(), execstack, funccallstack, val_0, valtype_0, ve_0, oe_0))
+	{
+		DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
+					    "Error - ExecStack should contain a hashtable value\n");
+		return false;
+	}
+
+    // -- now perform the copy
+    if (target_ht_oe != nullptr)
+    {
+        // $$$TZA test/support C++ members that are of type CHashtable*...
+        CHashtable* cpp_ht = (CHashtable*)(target_ht_oe->GetAddr());
+        if (!cpp_ht->CopyFromHashtableVE(ve_0))
+        {
+            DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
+                            "Error - Failed to copy hashtable to CHashTable object\n");
+            return false;
+        }
+    }
+    else
+    {
+        // -- we're going to copy from ve_0 to ve_1
+        if (!CHashtable::CopyHashtableVEToVe(ve_0, ve_1))
+        {
+            DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
+                            "Error - Failed to copy hashtable to hashtable variable\n");
+            return false;
+        }
+    }
+
+    // -- success
+    return true;
 }
 
 // ====================================================================================================================

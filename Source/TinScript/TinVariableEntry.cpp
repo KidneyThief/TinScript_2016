@@ -654,6 +654,32 @@ void CVariableEntry::SetValueAddr(void* objaddr, void* value, int32 array_index)
         ((const char**)(valueaddr))[array_index] = string_value;
     } 
 }
+ 
+ // ====================================================================================================================
+// Clone():  used for, e.g., copying an entire hashtable
+// ====================================================================================================================
+ CVariableEntry* CVariableEntry::Clone() const
+ {
+     // -- ensure we're not trying to copy an array
+    // $$$TZA paramemters?  if the offest != 0?  we only want to copy direct VE values atm
+    // $$$TZA support arrays!
+     if (IsArray())
+     {
+         TinPrint(TinScript::GetContext(), "Error - CVariableEntry::Clone(): arrays not yet supported\n");
+         return nullptr;
+     }
+
+     uint32 ve_hash = GetHash();
+     const char* ve_name = UnHash(ve_hash);
+     CVariableEntry* copy_ve = TinAlloc(ALLOC_VarEntry, CVariableEntry, TinScript::GetContext(),
+                                        ve_name, ve_hash, GetType(), 1, false, 0, true);
+
+     // -- perform the assignment
+     copy_ve->SetValueAddr(false, GetValueAddr(nullptr));
+
+     // -- return the dup
+     return copy_ve;
+ }
 
 } // namespace TinScript
 

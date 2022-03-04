@@ -186,6 +186,8 @@ public:
 		mDebuggerSession = debugger_session;
 	}
 
+    CVariableEntry* Clone() const;
+
     void NotifyWrite(CScriptContext* script_context, CExecStack* execstack, CFunctionCallStack* funccallstack)
     {
 	    if (mBreakOnWrite)

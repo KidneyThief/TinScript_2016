@@ -83,6 +83,7 @@ int32 _tmain(int32 argc, _TCHAR* argv[])
     REGISTER_FILE(unittest_cpp);
     REGISTER_FILE(mathutil_cpp);
     REGISTER_FILE(socket_cpp);
+    REGISTER_FILE(tinhashtable_cpp);
 
     // -- initialize
     TinScript::CreateContext(CmdShellPrintf, CmdShellAssertHandler, true);

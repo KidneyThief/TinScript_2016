@@ -1121,6 +1121,12 @@ void FormatVarEntry(CScriptContext* script_context, CVariableEntry* ve, void* va
         }
         break;
 
+        case TYPE_string:
+        {
+            sprintf_s(buffer, size, "%s", (const char*)val_addr);
+        }
+        break;
+
         default:
         {
             // -- copy the value, as a string (to a max length)
@@ -2411,6 +2417,10 @@ bool8 TryParseExpression(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTre
 
     // -- a hashtable_contains() completes an expression
     if (TryParseHashtableContains(codeblock, filebuf, exprlink))
+        return (true);
+
+    // -- a hashtable_copy() completes an expression
+    if (TryParseHashtableCopy(codeblock, filebuf, exprlink))
         return (true);
 
     // -- a hashtable_first/next() completes an expression
@@ -4840,7 +4850,7 @@ bool8 TryParseHashtableContains(CCodeBlock* codeblock, tReadToken& filebuf, CCom
     if (!GetToken(peektoken) || peektoken.type != TOKEN_COMMA)
     {
         ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
-            "Error - array_contains() requires 2nd parameter index expression\n");
+                      "Error - hashtable_contains() requires 2nd parameter index expression\n");
         return (false);
     }
 
@@ -4862,6 +4872,83 @@ bool8 TryParseHashtableContains(CCodeBlock* codeblock, tReadToken& filebuf, CCom
 	{
 		ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
 			          "Error - hashtable_contains() expression, expecting ')'\n");
+		return (false);
+	}
+
+    // -- decrement the paren depth
+    --gGlobalExprParenDepth;
+
+    // -- update the file buf
+	filebuf = peektoken;
+
+	// -- success
+	return (true);
+}
+
+// ====================================================================================================================
+// TryParseHashtableCopy():  copies the contents of a hashtable to another (including a C++ friendly CHashtable)
+// ====================================================================================================================
+bool8 TryParseHashtableCopy(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link)
+{
+	// -- ensure the next token is the 'hash' keyword
+	tReadToken peektoken(filebuf);
+	if (!GetToken(peektoken) || peektoken.type != TOKEN_KEYWORD)
+		return (false);
+
+	int32 reservedwordtype = GetReservedKeywordType(peektoken.tokenptr, peektoken.length);
+	if (reservedwordtype != KEYWORD_hashtable_copy)
+		return (false);
+
+	// -- read the opening parenthesis
+	if (!GetToken(peektoken) || peektoken.type != TOKEN_PAREN_OPEN)
+		return (false);
+
+	// -- we're committed to an array count expression
+	filebuf = peektoken;
+
+    // -- increment the paren depth
+    ++gGlobalExprParenDepth;
+
+	// -- create the ArrayVarNode, leftchild is the array var
+	CHashtableCopyNode* ht_copy_node = TinAlloc(ALLOC_TreeNode, CHashtableCopyNode, codeblock, link,
+											    filebuf.linenumber);
+
+	// -- ensure we have an expression to fill the left child
+	bool8 result = TryParseExpression(codeblock, filebuf, ht_copy_node->leftchild);
+	if (!result || !ht_copy_node->leftchild)
+	{
+		ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
+			          "Error - hashtable_copy() requires a hashtable variable expression\n");
+		return (false);
+	}
+
+    // -- the next token must be a comma
+    peektoken = filebuf;
+    if (!GetToken(peektoken) || peektoken.type != TOKEN_COMMA)
+    {
+        ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
+                      "Error - hashtable_copy() requires 2nd parameter hashtable or CHashtable object\n");
+        return (false);
+    }
+
+    // -- update the file buf
+    filebuf = peektoken;
+
+    // -- ensure we have an expression to fill the right child
+    result = TryParseExpression(codeblock, filebuf, ht_copy_node->rightchild);
+    if (!result || !ht_copy_node->rightchild)
+    {
+        ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
+                      "Error - hashtable_copy() requires a hashtable or CHashtable object expression\n");
+        return (false);
+    }
+
+	// -- read the closing parenthesis
+	peektoken = filebuf;
+	if (!GetToken(peektoken) || peektoken.type != TOKEN_PAREN_CLOSE)
+	{
+		ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), filebuf.linenumber,
+			          "Error - hashtable_copy() expression, expecting ')'\n");
 		return (false);
 	}
 

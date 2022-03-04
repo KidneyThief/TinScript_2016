@@ -41,6 +41,7 @@
 
 // -- includes required by any system wanting access to TinScript
 #include "TinHash.h"
+#include "TinHashtable.h"
 #include "TinScript.h"
 #include "TinRegistration.h"
 #include "registrationexecs.h"
@@ -1310,6 +1311,70 @@ REGISTER_SCRIPT_CLASS_END()
 
 REGISTER_METHOD(TestFoo, TestDefaults, TestDefaults);
 REGISTER_METHOD_DEFAULT_ARGS_P3(TestFoo, TestDefaults, "return", "in_float", 67.0f, "in_int", 49, "in_str", "foobar", "This is the help string for my function!");
+
+void TestCppHashTable(TinScript::CHashtable* ht_param)
+{
+    TinPrint(TinScript::GetContext(), "### ht_param:\n");
+    ht_param->Dump();
+
+    // -- see if we can pull out a string_arg
+    const char* string_arg = "";
+    if (ht_param->GetValue<const char*>("string_arg", string_arg))
+    {
+        TinPrint(TinScript::GetContext(), "### ht_param['string_arg']: %s\n", string_arg);
+    }
+    else
+    {
+        TinPrint(TinScript::GetContext(), "### ht_param['string_arg'] not found\n");
+    }
+
+    // -- see if we can pull out a float_arg
+    float float_arg = 0.0f;
+    if (ht_param->GetValue<float>("float_arg", float_arg))
+    {
+        TinPrint(TinScript::GetContext(), "### ht_param['float_arg']: %.2f\n", float_arg);
+    }
+    else
+    {
+        TinPrint(TinScript::GetContext(), "### ht_param['float_arg'] not found\n");
+    }
+    // -- see if we can pull out a vector3f arg
+    CVector3f location_arg = 0.0f;
+    if (ht_param->GetValue<CVector3f>("vector3f_arg", location_arg))
+    {
+        TinPrint(TinScript::GetContext(), "### ht_param['vector3f_arg']: (%.2f, %.2f, %.2f)\n", location_arg.x, location_arg.y, location_arg.z);
+    }
+    else
+    {
+        TinPrint(TinScript::GetContext(), "### ht_param['vector3f_arg'] not found\n");
+    }
+
+    // -- see if we can pull out a vector3f arg
+    bool object_found = false;
+    CBase* object_arg;
+    if (ht_param->GetValue<CBase*>("object_arg", object_arg))
+    {
+        object_found = true;
+        TinPrint(TinScript::GetContext(), "### ht_param['object_arg']: floatvalue %.2f\n", object_arg->GetFloatValue());
+
+        // -- call a method on the object passed via a hashtable:
+        if (TinScript::ObjHasMethod(object_arg, TinScript::Hash("TestMethod")))
+        {
+            float result = 0.0f;
+            TinScript::ObjExecMethod(object_arg, result, TinScript::Hash("TestMethod"));
+            TinPrint(TinScript::GetContext(), "### ht_param['object_arg'].TestMethod(): %.2f\n", result);
+        }
+    }
+
+    if (!object_found)
+    {
+        TinPrint(TinScript::GetContext(), "### ht_param['vector3f_arg'] not found\n");
+    }
+
+}
+
+REGISTER_FUNCTION(TestCppHashTable, TestCppHashTable);
+
 
 // ------------------------------------------------------------------------------------------------
 // eof

@@ -463,6 +463,71 @@ void TestEnsureInterface::TestMethod0(int required_int) { Print("### DEBUG: ", r
 void TestEnsureInterface::TestMethod1(object required_obj) { Print("### DEBUG: ", required_obj); }
 ensure_interface("TestEnsureInterface", "TestInterface");
 
+// -- this section is to test passing hashtables containing values to C++
+
+// -- see if this object can be part of a hashtable, passed to C++,
+// -- retrieve a member value...
+// -- have a method executed, and retrieve the result
+void TestObjectArg::OnCreate() : CBase
+{
+    int self.testMember = 98;
+}
+
+float TestObjectArg::TestMethod()
+{
+    return 6.28f;
+}
+
+hashtable global_ht;
+string global_ht["foobar"] = "cat";
+string global_ht["string_arg"] = "cat";
+float global_ht["float_arg"] = 3.141f;
+object global_ht["object_arg"] = create CBase("TestObjectArg");
+vector3f global_ht["vector3f_arg"] = "1 2 3";
+
+hashtable GetHashtable()
+{
+    return global_ht;
+}
+
+// -- call this with global_ht
+void TestHT(hashtable foo)
+{
+    Print(foo["foobar"]);
+}
+
+void TestCppHT()
+{
+    // -- in order to pass a TinScript hashtable (in internal type) as an arg to a registered
+    // C++ function, we need to "wrap" it in a C++ CHashtable class
+    // -- this CHashtable class maintains a copy, not a reference...!
+    object cpp_ht = create CHashtable("MyCppHT");
+    hashtable_copy(global_ht, cpp_ht);
+
+    // -- pass the C++ hashtable as a para to our registered test function, and exercise it
+    TestCppHashTable(cpp_ht);
+
+    // -- cleanup our copy
+    destroy cpp_ht;
+}
+
+void TestCppHT2()
+{
+    // -- same thing, but we're going to first duplicate the hashtable variable to a stack variable
+    hashtable local_ht;
+    hashtable_copy(global_ht, local_ht);
+
+    // -- now copy the copy to a C++ hashtable
+    object cpp_ht = create CHashtable("MyCppHT");
+    hashtable_copy(local_ht, cpp_ht);
+
+    // -- pass the C++ hashtable as a para to our registered test function, and exercise it
+    TestCppHashTable(cpp_ht);
+
+    // -- cleanup our copy
+    destroy cpp_ht;
+}
+
 // ------------------------------------------------------------------------------------------------
 // eof
 // ------------------------------------------------------------------------------------------------

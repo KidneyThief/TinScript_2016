@@ -3302,6 +3302,13 @@ int32 CHashtableContainsNode::Eval(uint32*& instrptr, eVarType pushresult, bool 
 		return (-1);
 	}
 
+	if (!rightchild)
+	{
+		ScriptAssert_(codeblock->GetScriptContext(), rightchild != NULL, codeblock->GetFileName(),
+			linenumber, "Error - CHashtableContainsNode::Eval() - missing rightchild\n");
+		return (-1);
+	}
+
 	// -- left child will have pushed the hashtable variable
 	int32 tree_size = leftchild->Eval(instrptr, TYPE_hashtable, countonly);
 	if (tree_size < 0)
@@ -3326,7 +3333,68 @@ int32 CHashtableContainsNode::Eval(uint32*& instrptr, eVarType pushresult, bool 
 // ====================================================================================================================
 bool8 CHashtableContainsNode::CompileToC(int32 indent, char*& out_buffer, int32& max_size, bool root_node) const
 {
-    TinPrint(TinScript::GetContext(), "CArrayContainsNode::CompileToC() not implemented.\n");
+    TinPrint(TinScript::GetContext(), "CHashtableContainsNode::CompileToC() not implemented.\n");
+    return (true);
+}
+
+// == class CHashtableCopyNode ========================================================================================
+
+// ====================================================================================================================
+// Constructor
+// ====================================================================================================================
+CHashtableCopyNode::CHashtableCopyNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber)
+	 : CCompileTreeNode(_codeblock, _link, eHashtableCopy, _linenumber)
+{
+}
+
+// ====================================================================================================================
+// Eval():  Generates the byte code instruction compiled from this node.
+// ====================================================================================================================
+int32 CHashtableCopyNode::Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const
+{
+	DebugEvaluateNode(*this, countonly, instrptr);
+	int32 size = 0;
+
+	if (!leftchild)
+	{
+		ScriptAssert_(codeblock->GetScriptContext(), leftchild != NULL, codeblock->GetFileName(),
+			          linenumber, "Error - CHashtableCopyNode::Eval() - missing leftchild\n");
+		return (-1);
+	}
+
+	if (!rightchild)
+	{
+		ScriptAssert_(codeblock->GetScriptContext(), rightchild != NULL, codeblock->GetFileName(),
+			          linenumber, "Error - CHashtableCopyNode::Eval() - missing rightchild\n");
+		return (-1);
+	}
+
+	// -- left child will have pushed the hashtable variable
+	int32 tree_size = leftchild->Eval(instrptr, TYPE_hashtable, countonly);
+	if (tree_size < 0)
+		return (-1);
+	size += tree_size;
+
+    // -- right child will have pushed either an internal hashtable, or a CHashtable object,
+    // which we can use to pass to C++
+	tree_size = rightchild->Eval(instrptr, TYPE__resolve, countonly);
+	if (tree_size < 0)
+		return (-1);
+	size += tree_size;
+
+	// -- push the instruction to read the and push true if the value is found within the hashtable
+	size += PushInstruction(countonly, instrptr, OP_HashtableCopy, DBG_instr);
+
+	// -- success
+	return (size);
+}
+
+// ====================================================================================================================
+// CompileToC(): Convert the parse tree to valid C, to compile directly to the executable. 
+// ====================================================================================================================
+bool8 CHashtableCopyNode::CompileToC(int32 indent, char*& out_buffer, int32& max_size, bool root_node) const
+{
+    TinPrint(TinScript::GetContext(), "CHashtableContainsNode::CompileToC() not implemented.\n");
     return (true);
 }
 
