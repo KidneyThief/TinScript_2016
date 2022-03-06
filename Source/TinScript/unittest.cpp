@@ -1371,6 +1371,10 @@ void TestCppHashTable(TinScript::CHashtable* ht_param)
         TinPrint(TinScript::GetContext(), "### ht_param['vector3f_arg'] not found\n");
     }
 
+    // -- see if we can add a value from C++
+    ht_param->AddEntry("float_fromCpp", 6.78f);
+    ht_param->AddEntry("string_fromCpp", "dogmaticallaciousness");
+
 }
 
 REGISTER_FUNCTION(TestCppHashTable, TestCppHashTable);

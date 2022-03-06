@@ -524,6 +524,9 @@ void TestCppHT2()
     // -- pass the C++ hashtable as a para to our registered test function, and exercise it
     TestCppHashTable(cpp_ht);
 
+    // -- dump the cpp_ht - see if we added our two new variables
+    cpp_ht.Dump();
+
     // -- cleanup our copy
     destroy cpp_ht;
 }

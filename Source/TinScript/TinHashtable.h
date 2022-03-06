@@ -140,13 +140,11 @@ class CHashtable
 
         static bool CopyHashtableVEToVe(const CVariableEntry* src_ve, CVariableEntry* dest_ve);
 
-    private:
-        /*
         // this is correct(ish), but do we need it??  The current use case for this class is
         // to receive a variable number of args from TinScript to C++ which only needs r/o access
         // --  Do we have a use case to pass a CHashtable from C++ back to TinScript
         template<typename T>
-        bool AddEntry(const char* key, T& value)
+        bool AddEntry(const char* key, T value)
         {
             // -- sanity check
             if (key == nullptr || key[0] == '\0')
@@ -168,7 +166,7 @@ class CHashtable
             CVariableEntry* hte = hashtable->FindItem(key_hash);
 
             // -- if the entry already exists, ensure it's the same type
-            if (hte && hte->GetType() != vartype)
+            if (hte && hte->GetType() != type)
             {
                 TinPrint(TinScript::GetContext(), "Error - CHashtable::AddEntry(): entry %s of type %s already exists\n",
                                                   key, GetRegisteredTypeName(hte->GetType()));
@@ -179,18 +177,29 @@ class CHashtable
             // -- note:  by definition, hash table entries are dynamic
             else if (!hte)
             {
-                hte = TinAlloc(ALLOC_VarEntry, CVariableEntry, cb->GetScriptContext(), key, key_hash, vartype, 1, false, 0, true);
+                hte = TinAlloc(ALLOC_VarEntry, CVariableEntry, TinScript::GetContext(), key, key_hash, type, 1, false, 0, true);
                 hashtable->AddItem(*hte, key_hash);
             }
 
+            // -- get the address to copy from - note, strings are special, since they're already a pointer
+            void* value_addr = &value;
+            if (type == TYPE_string)
+            {
+                const char** value_str = (const char**)&value;
+                value_addr = (void*)*value_str;
+            }
+
             // -- perform the assignment
-            hte->SetValueAddr(false, &value);
+            hte->SetValueAddr(false, value_addr);
+
+            // -- success
+            return true;
         }
-        */
 
         static bool CopyHashtableEntry(uint32 key_hash, const CVariableEntry* src_value, CVariableEntry* dest_hashtable);
         static bool CopyHashtableEntry(const char* key, const CVariableEntry* src_value, CVariableEntry* dest_hashtable);
 
+    private:
         CVariableEntry* mHashtableVE = nullptr;
 };
 
