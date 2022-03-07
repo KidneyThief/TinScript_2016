@@ -32,6 +32,7 @@
 #include "TinScript.h"
 #include "TinCompile.h"
 #include "TinRegistration.h"
+#include "TinHashtable.h"
 #include "TinOpExecFunctions.h"
 
 // == namespace TinScript =============================================================================================
@@ -193,6 +194,12 @@ CVariableEntry::~CVariableEntry()
     {
         // -- keep the string table up to date
         GetScriptContext()->GetStringTable()->RefCountDecrement(mStringValueHash);
+    }
+
+    // -- we want to ensure any CHashtable instances that are "wrapping" this variable become "unwrapped"
+    else if (mType == TYPE_hashtable)
+    {
+        CHashtable::NotifyHashtableDestroyed(this);
     }
 
 	if (mScriptVar)

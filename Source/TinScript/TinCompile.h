@@ -889,13 +889,14 @@ protected:
 class CHashtableCopyNode : public CCompileTreeNode
 {
 public:
-	CHashtableCopyNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber);
+	CHashtableCopyNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber, bool is_wrap);
 	virtual int32 Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
 
 	virtual bool8 CompileToC(int32 indent, char*& out_buffer, int32& max_size, bool root_node) const;
 
 protected:
 	CHashtableCopyNode() { }
+	bool mIsWrap = false;
 };
 
 // ====================================================================================================================

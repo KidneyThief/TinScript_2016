@@ -42,6 +42,7 @@
 #include "integration.h"
 
 #include "TinHash.h"
+#include "TinHashtable.h"
 #include "TinParse.h"
 #include "TinCompile.h"
 #include "TinExecute.h"
@@ -283,6 +284,9 @@ void CScriptContext::Destroy()
 
     // -- clean up the string table
     TinFree(gThreadContext->mStringTable);
+
+    // -- clean up the CHashtable class
+    CHashtable::Shutdown();
 
     // -- if this is the MainThread context, shutdown types
     if (gThreadContext->mIsMainThread)

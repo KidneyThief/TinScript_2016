@@ -3365,6 +3365,9 @@ bool8 OpExecHashtableCopy(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, C
 {
     CScriptContext* script_context = cb->GetScriptContext();
 
+    // -- pop the bool, if we're making a complete copy, or just wrapping the hashtable
+    bool is_wrap = (*instrptr++) != 0 ? true : false;
+
     // -- pull the hashtable variable off the stack
 	CVariableEntry* ve_1 = NULL;
 	CObjectEntry* oe_1 = NULL;
@@ -3397,6 +3400,14 @@ bool8 OpExecHashtableCopy(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, C
         }
     }
 
+    // -- ensure we don't try to "wrap" a script hashtable with another
+    else if (valtype_1 == TYPE_hashtable && is_wrap)
+    {
+        DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
+                        "Error - hashtable_wrap() 2nd param must be a CHashtable object, not a hashtable var\n");
+        return false;
+    }
+
     // -- if we didn't find an appropriate target to copy the hashtable to, we're done
     if (valtype_1 != TYPE_hashtable && target_ht_oe == nullptr)
     {
@@ -3422,7 +3433,12 @@ bool8 OpExecHashtableCopy(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, C
     {
         // $$$TZA test/support C++ members that are of type CHashtable*...
         CHashtable* cpp_ht = (CHashtable*)(target_ht_oe->GetAddr());
-        if (!cpp_ht->CopyFromHashtableVE(ve_0))
+        if (is_wrap)
+        {
+            cpp_ht->Wrap(ve_0);
+        }
+
+        else if (!cpp_ht->CopyFromHashtableVE(ve_0))
         {
             DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
                             "Error - Failed to copy hashtable to CHashTable object\n");
@@ -3432,6 +3448,7 @@ bool8 OpExecHashtableCopy(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, C
     else
     {
         // -- we're going to copy from ve_0 to ve_1
+        // (we've already checked for is_wrap to a non-object hashtable variable
         if (!CHashtable::CopyHashtableVEToVe(ve_0, ve_1))
         {
             DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,

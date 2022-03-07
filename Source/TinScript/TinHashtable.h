@@ -42,6 +42,9 @@ class CHashtable
         CHashtable();
         virtual ~CHashtable();
 
+        void Wrap(CVariableEntry* ve);
+        void CreateInternalHashtable();
+
         bool CopyFromHashtableVE(const CVariableEntry* ve);
         void Dump();
 
@@ -140,9 +143,7 @@ class CHashtable
 
         static bool CopyHashtableVEToVe(const CVariableEntry* src_ve, CVariableEntry* dest_ve);
 
-        // this is correct(ish), but do we need it??  The current use case for this class is
-        // to receive a variable number of args from TinScript to C++ which only needs r/o access
-        // --  Do we have a use case to pass a CHashtable from C++ back to TinScript
+        // -- add an entry to a CHashtable from C++
         template<typename T>
         bool AddEntry(const char* key, T value)
         {
@@ -199,8 +200,14 @@ class CHashtable
         static bool CopyHashtableEntry(uint32 key_hash, const CVariableEntry* src_value, CVariableEntry* dest_hashtable);
         static bool CopyHashtableEntry(const char* key, const CVariableEntry* src_value, CVariableEntry* dest_hashtable);
 
+        static void NotifyHashtableWrapped(CVariableEntry* ve, CHashtable* wrapper);
+        static void NotifyHashtableUnwrapped(CVariableEntry* ve, CHashtable* wrapper);
+        static void NotifyHashtableDestroyed(CVariableEntry* ve);
+        static void Shutdown();
+
     private:
         CVariableEntry* mHashtableVE = nullptr;
+        bool mHashtableIsInternal = true;
 };
 
 }

@@ -245,6 +245,7 @@ enum eMathBinaryFunctionType
 	ReservedKeywordEntry(hashtable_haskey)      \
 	ReservedKeywordEntry(hashtable_contains)    \
 	ReservedKeywordEntry(hashtable_copy)        \
+	ReservedKeywordEntry(hashtable_wrap)        \
 	ReservedKeywordEntry(hashtable_first)       \
 	ReservedKeywordEntry(hashtable_next)        \
 	ReservedKeywordEntry(hashtable_end)         \

@@ -3342,8 +3342,9 @@ bool8 CHashtableContainsNode::CompileToC(int32 indent, char*& out_buffer, int32&
 // ====================================================================================================================
 // Constructor
 // ====================================================================================================================
-CHashtableCopyNode::CHashtableCopyNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber)
+CHashtableCopyNode::CHashtableCopyNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber, bool is_wrap)
 	 : CCompileTreeNode(_codeblock, _link, eHashtableCopy, _linenumber)
+    , mIsWrap(is_wrap)
 {
 }
 
@@ -3377,13 +3378,16 @@ int32 CHashtableCopyNode::Eval(uint32*& instrptr, eVarType pushresult, bool coun
 
     // -- right child will have pushed either an internal hashtable, or a CHashtable object,
     // which we can use to pass to C++
-	tree_size = rightchild->Eval(instrptr, TYPE__resolve, countonly);
-	if (tree_size < 0)
+    tree_size = rightchild->Eval(instrptr, TYPE_hashtable, countonly);
+    if (tree_size < 0)
 		return (-1);
 	size += tree_size;
 
-	// -- push the instruction to read the and push true if the value is found within the hashtable
+	// -- push the instruction to copy the source hashtable to the dest (either as a copy, or as a wrap)
 	size += PushInstruction(countonly, instrptr, OP_HashtableCopy, DBG_instr);
+
+    int32 copy_as_wrap = mIsWrap ? 1 : 0;
+    size += PushInstruction(countonly, instrptr, copy_as_wrap, DBG_value);
 
 	// -- success
 	return (size);
@@ -3394,7 +3398,7 @@ int32 CHashtableCopyNode::Eval(uint32*& instrptr, eVarType pushresult, bool coun
 // ====================================================================================================================
 bool8 CHashtableCopyNode::CompileToC(int32 indent, char*& out_buffer, int32& max_size, bool root_node) const
 {
-    TinPrint(TinScript::GetContext(), "CHashtableContainsNode::CompileToC() not implemented.\n");
+    TinPrint(TinScript::GetContext(), "CHashtableCopyNode::CompileToC() not implemented.\n");
     return (true);
 }
 

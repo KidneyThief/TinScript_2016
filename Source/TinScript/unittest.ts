@@ -478,6 +478,7 @@ float TestObjectArg::TestMethod()
     return 6.28f;
 }
 
+// -- create a hashtable with an entry of each type
 hashtable global_ht;
 string global_ht["foobar"] = "cat";
 string global_ht["string_arg"] = "cat";
@@ -485,18 +486,25 @@ float global_ht["float_arg"] = 3.141f;
 object global_ht["object_arg"] = create CBase("TestObjectArg");
 vector3f global_ht["vector3f_arg"] = "1 2 3";
 
+// -- ensure we can return a hashtable (by reference of course)
 hashtable GetHashtable()
 {
     return global_ht;
 }
 
 // -- call this with global_ht
+// -- also call this with GetHashtable()
 void TestHT(hashtable foo)
 {
     Print(foo["foobar"]);
 }
 
-void TestCppHT()
+// -- this creates a Cpp CHashtable object, copies the contents from global_ht, and
+// passes it to TestCppHashTable():
+// -- retrieves the entries from the cpp side
+// -- adds a few of its own
+// -- dumps the Cpp object's copy, including the added entries
+void TestCppHTCopyGlobal()
 {
     // -- in order to pass a TinScript hashtable (in internal type) as an arg to a registered
     // C++ function, we need to "wrap" it in a C++ CHashtable class
@@ -507,11 +515,17 @@ void TestCppHT()
     // -- pass the C++ hashtable as a para to our registered test function, and exercise it
     TestCppHashTable(cpp_ht);
 
+    // -- dump the cpp_ht - see if we added our two new variables
+    cpp_ht.Dump();
+
     // -- cleanup our copy
     destroy cpp_ht;
 }
 
-void TestCppHT2()
+// -- same as above, except it copies the global_ht to a local_ht stack var, *then* creates
+// a Cpp CHashtable object, and copies the contents of the local_ht...
+// -- output should be the same as TestCppHTCopyGLobal()
+void TestCppHTCopyLocal()
 {
     // -- same thing, but we're going to first duplicate the hashtable variable to a stack variable
     hashtable local_ht;
@@ -529,6 +543,102 @@ void TestCppHT2()
 
     // -- cleanup our copy
     destroy cpp_ht;
+}
+
+// -- instead of copying the contents, we use a Cpp CHashtable to wrap a script variable,
+// which will still have the same functionality - including adding new entries
+// *except now* the script variable (because this is essentially a reference) will have
+// those new entries
+void TestCppHTWrap()
+{
+    // -- now copy the copy to a C++ hashtable
+    object cpp_ht = create CHashtable("MyCppHT");
+    hashtable_wrap(global_ht, cpp_ht);
+
+    // -- pass the C++ hashtable as a para to our registered test function, and exercise it
+    TestCppHashTable(cpp_ht);
+
+    // -- dump the cpp_ht - see if we added our two new variables
+    cpp_ht.Dump();
+
+    // -- cleanup our copy
+    destroy cpp_ht;
+
+    // -- we should be able to print the value of the new entries
+    Print("### Cpp added: float_fromCpp: ", global_ht["float_fromCpp"]);
+    Print("### Cpp added: string_fromCpp: ", global_ht["string_fromCpp"]);
+}
+
+object gTestCppHashtable = FindObject("CppHashtableTest");
+if (!IsObject(gTestCppHashtable))
+    gTestCppHashtable = create CHashtable("CppHashtableTest");
+
+void TestCppHTWrapLocal()
+{
+    // -- create a local copy of the global ht
+    hashtable local_ht;
+    hashtable_copy(global_ht, local_ht);
+
+    // -- wrap the local ht with the CHashtable global Cpp object
+    hashtable_wrap(local_ht, gTestCppHashtable);
+
+    // -- run our test cpp, which dumps, and adds a few extra entries
+    TestCppHashTable(gTestCppHashtable);
+
+    // -- dump the contents
+    gTestCppHashtable.Dump();
+
+    // -- schedule for the next frame, another dump...
+    // -- because local_ht will have gone out of scope, it'll "be deleted, so"
+    // gTestCppHashtable will no longer have anything to wrap - we want to be sure
+    // it is now containing an internal empty hashtable variable (no dangling wrappers!)
+    schedule(gTestCppHashtable, 1, hash("Dump"));
+}
+
+void TestCppHTWrapObject()
+{
+    // -- create a test object, with a hashtable member, and copy the contents of global_ht
+    object test_obj = create CScriptObject();
+    hashtable test_obj.test_ht;
+
+    // -- copy the global ht to a hashtable member of an object
+    hashtable_copy(global_ht, test_obj.test_ht);
+
+    // -- wrap with our Cpp CHashtable test object
+    hashtable_wrap(test_obj.test_ht, gTestCppHashtable);
+
+    // -- run our test cpp, which dumps, and adds a few extra entries
+    TestCppHashTable(gTestCppHashtable);
+
+    // -- dump the contents
+    gTestCppHashtable.Dump();
+
+    // -- now destroy the test object, which includes deleted the test hashtable member
+    destroy test_obj;
+
+    // -- and dump the Cpp wrapper again - should be an empty internal
+    gTestCppHashtable.Dump();
+}
+
+void TestCppHTAll()
+{
+    // -- print "cat" twice
+    TestHT(global_ht);
+    TestHT(GetHashtable());
+
+    // -- dumps the global_ht, look for ["foobar"] to print "cat"
+    // look for new entries:  ["float_fromCpp"] and ["string_fromCpp"]
+    // identical outputs for the following:
+    TestCppHTCopyGlobal();
+    TestCppHTCopyLocal();
+
+    TestCppHTWrap();
+
+    // -- note:  the last two dumps are empty, because the hashtable being wrapped
+    // was destroyed (as an object member, or out of scopy local)
+    // so we're ensuring the global Cpp HashTable that wrapped them is now wrapping an empty internal ht
+    TestCppHTWrapObject();
+    TestCppHTWrapLocal();
 }
 
 // ------------------------------------------------------------------------------------------------

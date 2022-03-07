@@ -37,19 +37,85 @@ DECLARE_FILE(tinhashtable_cpp);
 namespace TinScript
 {
 
+// -- we need to keep track of the association between CHashtable instances, and the CVariableEntry hashtables
+// being wrapped
+_declspec(thread) CHashTable<CHashtable>* gWrappedHashtablesMap = nullptr;
+
+void CHashtable::NotifyHashtableWrapped(CVariableEntry* ve, CHashtable* wrapper)
+{
+    // -- sanity check
+    if (ve == nullptr || wrapper == nullptr)
+        return;
+
+    // -- if we don't have a wrapped Hashtables map, create one (as needed)
+    if (gWrappedHashtablesMap == nullptr)
+    {
+        gWrappedHashtablesMap = TinAlloc(ALLOC_HashTable, CHashTable<CHashtable>, kLocalVarTableSize);
+    }
+
+    gWrappedHashtablesMap->AddItem(*wrapper, (uint32)ve);
+}
+
+void CHashtable::NotifyHashtableUnwrapped(CVariableEntry* ve, CHashtable* wrapper)
+{
+    // -- sanity check
+    if (ve == nullptr || wrapper == nullptr || gWrappedHashtablesMap == nullptr)
+        return;
+
+    uint32 ve_hash = (uint32)ve;
+    CHashtable* found = gWrappedHashtablesMap->FindItem(ve_hash);
+    while (found != nullptr)
+    {
+        if (found == wrapper)
+        {
+            gWrappedHashtablesMap->RemoveItem(wrapper, ve_hash);
+            break;
+        }
+        found = gWrappedHashtablesMap->FindNextItem(found, ve_hash);
+    }
+}
+
+void CHashtable::NotifyHashtableDestroyed(CVariableEntry* ve)
+{
+    // -- sanity check
+    if (ve == nullptr || gWrappedHashtablesMap == nullptr)
+        return;
+
+    // -- if we have any (multiple?) CHashtable's currently wrapping the ve,
+    // we need to "reset" the CHashtable wrappers to internal VEs, so they're not holding on to
+    // dangling VE members
+    uint32 ve_hash = (uint32)ve;
+    CHashtable* found = gWrappedHashtablesMap->FindItem(ve_hash);
+    while (found != nullptr)
+    {
+        CHashtable* next = gWrappedHashtablesMap->FindNextItem(found, ve_hash);
+        found->CreateInternalHashtable();
+        gWrappedHashtablesMap->RemoveItem(found, ve_hash);
+        found = next;
+    }
+}
+
+void CHashtable::Shutdown()
+{
+    // -- just to be super tidy, lets ensure we don't leave an allocated wrapped ht map between context creations
+    if (gWrappedHashtablesMap != nullptr)
+    {
+        gWrappedHashtablesMap->RemoveAll();
+        TinFree(gWrappedHashtablesMap);
+        gWrappedHashtablesMap = nullptr;
+    }
+}
+
 // -- class CHashtable ------------------------------------------------------------------------------------------------
 // 
 // ====================================================================================================================
 // destructor
 // ====================================================================================================================
-    CHashtable::CHashtable()
+CHashtable::CHashtable()
 {
     // -- on construction, we want to create an internal hashtable instance
     // -- it's an internal variable entry
-    static const char* ve_name = "<internal>";
-    static uint32 ve_hash = Hash(ve_name);
-    mHashtableVE = TinAlloc(ALLOC_VarEntry, CVariableEntry, TinScript::GetContext(), ve_name, ve_hash,
-                            TYPE_hashtable, 1, false, 0, false, false);
+    CreateInternalHashtable();
 }
 
 // ====================================================================================================================
@@ -57,10 +123,61 @@ namespace TinScript
 // ====================================================================================================================
 CHashtable::~CHashtable()
 {
-    if (mHashtableVE)
+    // -- we only destroy the hashtable, if it's an internal (e.g. copy), not a wrapper to a VE
+    if (mHashtableIsInternal)
     {
         TinFree(mHashtableVE);
     }
+
+    // -- otherwise, we're wrapping a hashtable VE - we need to remove ourself from the map
+    else
+    {
+        NotifyHashtableUnwrapped(mHashtableVE, this);
+    }
+}
+
+// ====================================================================================================================
+// Wrap():  assign the script hashtable VE to the internal Cpp class, using it as a wrapper instead of a copy
+// ====================================================================================================================
+void CHashtable::Wrap(CVariableEntry* ve)
+{
+    // -- sanity check
+    if (ve == nullptr || ve == mHashtableVE)
+        return;
+
+    // -- if we're wrapping a script hashtable (not copying to an internal),
+    // we want the VE to point exactly to the script VE...  destroy the internal if it exists
+    if (mHashtableIsInternal)
+    {
+        TinFree(mHashtableVE);
+        mHashtableVE = nullptr;
+    }
+
+    // -- not internal - and not the same ve
+    else
+    {
+        NotifyHashtableUnwrapped(mHashtableVE, this);
+    }
+
+    // -- assign the new VE
+    mHashtableVE = ve;
+    mHashtableIsInternal = false;
+
+    // -- we also need to notify the global map of this association - in case the ve is destroyed
+    // which would leave this "wrapper" with a dangling pointer
+    NotifyHashtableWrapped(ve, this);
+}
+
+// ====================================================================================================================
+// CreateInternalHashtable():  creates an internal hashtable VE, not wrapped/shared with a scripted VE
+// ====================================================================================================================
+void CHashtable::CreateInternalHashtable()
+{
+    static const char* ve_name = "<internal>";
+    static uint32 ve_hash = Hash(ve_name);
+    mHashtableVE = TinAlloc(ALLOC_VarEntry, CVariableEntry, TinScript::GetContext(), ve_name, ve_hash,
+                            TYPE_hashtable, 1, false, 0, false, false);
+    mHashtableIsInternal = true;
 }
 
 // ====================================================================================================================
@@ -69,6 +186,14 @@ CHashtable::~CHashtable()
 void CHashtable::Dump()
 {
     // $$$TZA support CHashtable's as members of registered classes
+    if (mHashtableIsInternal)
+    {
+        TinPrint(TinScript::GetContext(), "### CHashtable::Dump() internal:\n");
+    }
+    else
+    {
+        TinPrint(TinScript::GetContext(), "### CHashtable::Dump() wrapped %s:\n", mHashtableVE->GetName());
+    }
     tVarTable* var_table = (tVarTable*)mHashtableVE->GetAddr(nullptr);
     TinScript::DumpVarTable(TinScript::GetContext(), nullptr, var_table);
 }
@@ -120,7 +245,7 @@ bool CHashtable::CopyHashtableVEToVe(const CVariableEntry* src_ve, CVariableEntr
 }
 
 // ====================================================================================================================
-// CopyFromHashtableVE():  Copies the contents of the given hashtable ve, to the internal hashtable
+// CopyFromHashtableVE():  Copies the contents of the given hashtable ve, to our CHashtable ve, ensuring its internal
 // ====================================================================================================================
 bool CHashtable::CopyFromHashtableVE(const CVariableEntry* ve)
 {
@@ -132,6 +257,17 @@ bool CHashtable::CopyFromHashtableVE(const CVariableEntry* ve)
     tVarTable* source_vartable = (tVarTable*)ve->GetAddr(NULL);
     if (source_vartable == nullptr)
         return false;
+
+    // -- if we have a ve, that is *not* internal, we need to create an internal one
+    // or this action will be stomping an existing script hashtable variable
+    if (!mHashtableIsInternal)
+    {
+        // -- "unwrap" the current
+        NotifyHashtableUnwrapped(mHashtableVE, this);
+
+        // -- create an internal VE, so we have something (clean) to copy to
+        CreateInternalHashtable();
+    }
 
     // -- clear out our internal hashtable
     // -- get the internal hashtable (the *actual* hashtable that this class wraps)

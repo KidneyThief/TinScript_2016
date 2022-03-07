@@ -1314,6 +1314,9 @@ REGISTER_METHOD_DEFAULT_ARGS_P3(TestFoo, TestDefaults, "return", "in_float", 67.
 
 void TestCppHashTable(TinScript::CHashtable* ht_param)
 {
+    if (ht_param == nullptr)
+        return;
+
     TinPrint(TinScript::GetContext(), "### ht_param:\n");
     ht_param->Dump();
 

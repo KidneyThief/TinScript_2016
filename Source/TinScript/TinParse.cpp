@@ -2420,6 +2420,7 @@ bool8 TryParseExpression(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTre
         return (true);
 
     // -- a hashtable_copy() completes an expression
+    // -- as does a hashtable_wrap() - we'll use the copy with a flag for wrap
     if (TryParseHashtableCopy(codeblock, filebuf, exprlink))
         return (true);
 
@@ -4896,8 +4897,10 @@ bool8 TryParseHashtableCopy(CCodeBlock* codeblock, tReadToken& filebuf, CCompile
 		return (false);
 
 	int32 reservedwordtype = GetReservedKeywordType(peektoken.tokenptr, peektoken.length);
-	if (reservedwordtype != KEYWORD_hashtable_copy)
+	if (reservedwordtype != KEYWORD_hashtable_copy && reservedwordtype != KEYWORD_hashtable_wrap)
 		return (false);
+
+    bool is_wrap = reservedwordtype == KEYWORD_hashtable_wrap;
 
 	// -- read the opening parenthesis
 	if (!GetToken(peektoken) || peektoken.type != TOKEN_PAREN_OPEN)
@@ -4911,7 +4914,7 @@ bool8 TryParseHashtableCopy(CCodeBlock* codeblock, tReadToken& filebuf, CCompile
 
 	// -- create the ArrayVarNode, leftchild is the array var
 	CHashtableCopyNode* ht_copy_node = TinAlloc(ALLOC_TreeNode, CHashtableCopyNode, codeblock, link,
-											    filebuf.linenumber);
+											    filebuf.linenumber, is_wrap);
 
 	// -- ensure we have an expression to fill the left child
 	bool8 result = TryParseExpression(codeblock, filebuf, ht_copy_node->leftchild);
