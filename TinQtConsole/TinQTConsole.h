@@ -393,7 +393,8 @@ class CConsoleOutput : public QListWidget
             console_input->ExpandToParentSize();
         }
 
-        static const unsigned int kUpdateTime = 33;
+        static const int32 kMaxMessageCount = 1000;
+        static const unsigned int kUpdateTime = 10;
         int32 GetSimTime() { return (mCurrentTime); }
 
         // -- these methods queue and process data packets, received from the socket
@@ -413,6 +414,10 @@ class CConsoleOutput : public QListWidget
         void HandlePacketPrintMsg(int32* dataPtr);
         void HandlePacketFunctionAssist(int32* dataPtr);
         void HandlePacketObjectCreated(int32* dataPtr);
+
+        // -- helper function to see if a PrintMsg packet has a severity > 0 (warning, error...)
+        // -- this method must be updated if the format for a PrintMsg packet changes
+        bool PacketPrintMsgHasSeverity(int32* dataPtr);
 
         // -- called while handling a breakpoint, to ensure we still get to update our own context
         void DebuggerUpdate();

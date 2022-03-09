@@ -86,6 +86,7 @@ typedef void (*ProcessRecvDataCallback)(tDataPacket* packet);
 void RegisterProcessRecvDataCallback(ProcessRecvDataCallback recvCallback);
 tDataPacket* CreateDataPacket(tPacketHeader* header, void* data); 
 bool SendDataPacket(tDataPacket* dataPacket);
+bool SendPrintDataPacket(tDataPacket* dataPacket);
 
 // ====================================================================================================================
 // struct tPacketHeader:  struct to organize the data being queued for send/recv
@@ -190,6 +191,8 @@ class DataQueue
         // -- clear the entire queue
         void Clear();
 
+        size_t Size() const { return mQueue.size(); }
+
     protected:
         std::vector<tDataPacket*> mQueue;
 };
@@ -247,6 +250,7 @@ class CSocket
 
         // -- send a pre-constructed data packet
         bool SendDataPacket(tDataPacket* packet);
+        bool SendPrintDataPacket(tDataPacket* packet);
 
         // -- update, to send/recv data
         bool Update();
@@ -282,6 +286,7 @@ class CSocket
 
         // -- we need both send and a recv packet queues
         DataQueue mSendQueue;
+        DataQueue mSendPrintQueue;
         DataQueue mRecvQueue;
 
         // -- timers to track last packet sent/received

@@ -3524,12 +3524,21 @@ void CScriptContext::DebuggerSendPrint(int32 severity, const char* fmt, ...)
     SafeStrcpy((char*)dataPtr, msgLength, msg_buf, msgLength);
     dataPtr += (msgLength / 4);
 
-    // -- send the packet
-    SocketManager::SendDataPacket(newPacket);
+    // -- if the severity is 0, send as a print data packet -
+    // in the case of extreme spam it might be sent out of order and/or ignored
+    if (severity == 0)
+    {
+
+        // -- send the packet
+        SocketManager::SendPrintDataPacket(newPacket);
+    }
 
     // -- for now, only attach a callstack to warnings/errors etc...
-    if (severity > 0)
+    else
     {
+        // -- send the packet
+        SocketManager::SendDataPacket(newPacket);
+
         // -- use the integration tunable, since this limits how much data we're sending to the debugger
         CObjectEntry* oeList[kExecAssertStackDepth];
         CFunctionEntry* feList[kExecAssertStackDepth];

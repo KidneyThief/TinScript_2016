@@ -1247,6 +1247,15 @@ void CConsoleWindow::AddText(int severity, uint32 msg_id, char* msg)
 
     // -- scroll to the bottom of the window
     int count = mConsoleOutput->count();
+
+    // -- max number of messages
+    if (count >= CConsoleOutput::kMaxMessageCount)
+    {
+        CConsoleTextEntry* first = static_cast<CConsoleTextEntry*>(mConsoleOutput->item(0));
+        mConsoleOutput->removeItemWidget(first);
+        delete first;
+        --count;
+    }
     mConsoleOutput->setCurrentRow(count - 1);
 }
 
@@ -2041,6 +2050,9 @@ void CConsoleOutput::ProcessDataPackets()
     // -- unlock the thread
     mThreadLock.Unlock();
 
+    // -- until we've processed all packets, disable the resizing event of the console output
+    int32 max_print_count = kSocketPacketProcessMax;
+    int32 missed_print_count = 0;
     while (process_packets.size() > 0)
     {
         // -- dequeue the packet
@@ -2089,7 +2101,14 @@ void CConsoleOutput::ProcessDataPackets()
                 break;
 
             case k_DebuggerPrintMsgPacketID:
-                HandlePacketPrintMsg(dataPtr);
+                if (PacketPrintMsgHasSeverity(dataPtr) || --max_print_count >= 0)
+                {
+                    HandlePacketPrintMsg(dataPtr);
+                }
+                else
+                {
+                    missed_print_count++;
+                }
                 break;
 
             case k_DebuggerFunctionAssistPacketID:
@@ -2107,7 +2126,13 @@ void CConsoleOutput::ProcessDataPackets()
         // -- the callback is required to manage the packet memory itself
         delete packet;
     }
+
+    if (missed_print_count > 0)
+    {
+        ConsolePrint(1, "*** Too much spam - %d messages were ignored\n", missed_print_count);
+    }
 }
+
 // ====================================================================================================================
 // HandlePacketNotifyDirectories():  A callback handler for a packet of type "current working directory"
 // ====================================================================================================================
@@ -2361,6 +2386,19 @@ void CConsoleOutput::HandlePacketAssertMsg(int32* dataPtr)
             entry->SetMessageID(print_msg_id);
         }
     }
+}
+
+// ====================================================================================================================
+// HandlePacketPrintMsg():  peek into the PrintMsg packet, see if it has a >0 severity
+// ====================================================================================================================
+bool CConsoleOutput::PacketPrintMsgHasSeverity(int32* dataPtr)
+{
+    // -- sanity check
+    if (dataPtr == nullptr)
+        return false;
+
+    // -- the current format is, packet ID, msg ID, then severity...
+    return (dataPtr[2] > 0);
 }
 
 // ====================================================================================================================

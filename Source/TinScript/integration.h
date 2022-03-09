@@ -171,6 +171,12 @@ const int32 kThreadExecBufferSize = 32 * 1024;
 // we update the counts array here, to match
 const int32 kStringPoolSizesCount[4] = { 8192, 4096, 1024, 512 };
 
+// -- the print packet queue count needs to be less than the process max, or we'll still be
+// flooding the packet queue with prints, not leaving room for functional packets
+const int32 kSocketPrintPacketQueueCount = 8;
+const int32 kSocketPrintPacketQueueMax = 32;
+const int32 kSocketPacketProcessMax = 16;
+
 // ------------------------------------------------------------------------------------------------
 // -- MEMORY
 // ------------------------------------------------------------------------------------------------

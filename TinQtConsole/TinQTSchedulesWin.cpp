@@ -246,6 +246,9 @@ void CDebugSchedulesWin::AddSchedule(uint32 sched_id, bool repeat, int32 time_re
 // ====================================================================================================================
 void CDebugSchedulesWin::RemoveSchedule(uint32 sched_id)
 {
+    if (!mEntryMap.contains(sched_id))
+        return;
+
     CScheduleEntry* entry = mEntryMap[sched_id];
     if (entry)
     {

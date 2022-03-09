@@ -499,6 +499,26 @@ bool SendDataPacket(tDataPacket* dataPacket)
     return (result);
 }
 
+// ====================================================================================================================
+// SendPrintDataPacket():  Send a pre-constructed data packet through the socket, for print data packets
+// ====================================================================================================================
+bool SendPrintDataPacket(tDataPacket* dataPacket)
+{
+    // -- initialize the result
+    bool result = false;
+
+    // -- ensure we've initialized and connected the socket
+    if (!mThreadSocket || !mThreadSocket->IsConnected())
+    {
+        return (NULL);
+    }
+
+    result = mThreadSocket->SendPrintDataPacket(dataPacket);
+
+    // -- return the result
+    return (result);
+}
+
 // == class DataQueue =================================================================================================
 
 // ====================================================================================================================
@@ -594,6 +614,7 @@ CSocket::~CSocket()
 {
     // -- clear the queues
     mSendQueue.Clear();
+    mSendPrintQueue.Clear();
     mRecvQueue.Clear();
     if (mRecvPacket != NULL)
     {
@@ -837,6 +858,7 @@ void CSocket::Disconnect()
 
     // -- clear the queues
     mSendQueue.Clear();
+    mSendPrintQueue.Clear();
     mRecvQueue.Clear();
 
     // -- unlock
@@ -867,40 +889,47 @@ bool CSocket::ProcessSendPackets()
     }
 
     // -- send the messages we've queued, and check for an error
+    int packets_sent_count = 0;
     bool errorDisconnect = false;
     int error = 0;
-    tDataPacket* packetToSend = NULL;
-    while (mSendQueue.Dequeue(packetToSend, true))
+    tDataPacket* send_packet = nullptr;
+    tDataPacket* packetToSend = nullptr;
+    tDataPacket* printToSend = nullptr;
+    if (mSendQueue.Dequeue(packetToSend, true))
+        send_packet = packetToSend;
+    else if (mSendPrintQueue.Dequeue(printToSend, true))
+        send_packet = printToSend;
+    else
+        send_packet = nullptr;
+    while (send_packet != nullptr)
     {
         // -- as long as we're attempting to send, reset the heartbeat timer
         mSendHeartbeatTimer = k_HeartbeatTimeMS;
 
         // -- see if we have to send the header
-        bool sendingHeader = !packetToSend->mHeader.mHeaderSent;
+        bool sendingHeader = !send_packet->mHeader.mHeaderSent;
         int bytesToSend = 0;
         if (sendingHeader)
         {
             // -- ensure we've initialized the send ptr
-            if (packetToSend->mHeader.mSendPtr == NULL)
+            if (send_packet->mHeader.mSendPtr == NULL)
             {
-                packetToSend->mHeader.mSendPtr = (const char*)&packetToSend->mHeader;
+                send_packet->mHeader.mSendPtr = (const char*)&send_packet->mHeader;
             }
 
-			// $$$TZA TEST ME!
-            void* header_ptr = &packetToSend->mHeader;
-            bytesToSend = tPacketHeader::HeaderSize - kPointerDiffUInt32(packetToSend->mHeader.mSendPtr, header_ptr);
+            void* header_ptr = &send_packet->mHeader;
+            bytesToSend = tPacketHeader::HeaderSize - kPointerDiffUInt32(send_packet->mHeader.mSendPtr, header_ptr);
         }
         else
         {
-			// $$$TZA TEST ME!
-            bytesToSend = packetToSend->mHeader.mSize - kPointerDiffUInt32(packetToSend->mHeader.mSendPtr, packetToSend->mData);
+            bytesToSend = send_packet->mHeader.mSize - kPointerDiffUInt32(send_packet->mHeader.mSendPtr, send_packet->mData);
         }
 
         // -- send (skip this, if we the packet has no data
         int bytesSent = 0;
         if (bytesToSend > 0)
         {
-            bytesSent = send((SOCKET)mConnectSocket, packetToSend->mHeader.mSendPtr, bytesToSend, 0);
+            bytesSent = send((SOCKET)mConnectSocket, send_packet->mHeader.mSendPtr, bytesToSend, 0);
         }
 
         // -- if we received an error, we'll have to disconnect
@@ -917,20 +946,27 @@ bool CSocket::ProcessSendPackets()
         {
             // -- update our pointers, etc... based on what we were able to send
             bytesToSend -= bytesSent;
-            packetToSend->mHeader.mSendPtr += bytesSent;
+            send_packet->mHeader.mSendPtr += bytesSent;
 
             // -- see if we're done
             if (bytesToSend <= 0)
             {
                 if (sendingHeader)
                 {
-                    packetToSend->mHeader.mHeaderSent = true;
-                    packetToSend->mHeader.mSendPtr = (const char*)packetToSend->mData;
+                    send_packet->mHeader.mHeaderSent = true;
+                    send_packet->mHeader.mSendPtr = (const char*)send_packet->mData;
                 }
                 else
                 {
-                    mSendQueue.Dequeue(packetToSend);
-                    delete packetToSend;
+                    // -- make sure we dequeue from the correct queue
+                    if (send_packet == packetToSend)
+                        mSendQueue.Dequeue(send_packet);
+                    else
+                        mSendPrintQueue.Dequeue(send_packet);
+                    delete send_packet;
+
+                    // -- clear pointers for the next loop
+                    send_packet = nullptr;
 
                 }
             }
@@ -939,6 +975,14 @@ bool CSocket::ProcessSendPackets()
             else
                 break;
         }
+
+        // -- get the next packet to send, but limit if we're sending excessive prints
+        if (mSendQueue.Dequeue(packetToSend, true))
+            send_packet = packetToSend;
+        else if (++packets_sent_count < kSocketPacketProcessMax && mSendPrintQueue.Dequeue(printToSend, true))
+            send_packet = printToSend;
+        else
+            send_packet = nullptr;
     }
 
     // -- if we encountered a socket error sending, disconnect
@@ -1049,9 +1093,11 @@ bool CSocket::ProcessRecvPackets()
     }
 
     // -- process our recv queue
+    int packet_receive_count = 0;
     bool receivedDisconnect = false;
     bool deletePacket = false;
     tDataPacket* recvPacket = NULL;
+    //while (++packet_receive_count < kSocketPacketProcessMax && mRecvQueue.Dequeue(recvPacket))
     while (mRecvQueue.Dequeue(recvPacket))
     {
         // -- set the bool to delete the packet
@@ -1204,7 +1250,7 @@ bool CSocket::SendData(void* data, int dataSize)
 }
 
 // ====================================================================================================================
-// SendDataPacket():  Send a pre=constructed packet through the socket
+// SendDataPacket():  Send a pre-constructed packet through the socket
 // ====================================================================================================================
 bool CSocket::SendDataPacket(tDataPacket* dataPacket)
 {
@@ -1219,6 +1265,43 @@ bool CSocket::SendDataPacket(tDataPacket* dataPacket)
 
     // -- enqueue the packet
     bool result = mSendQueue.Enqueue(dataPacket);
+
+    // -- unlock the thread
+    mThreadLock.Unlock();
+
+    // -- return the result
+    // -- note:  if this returns false, the packet will not have been enqueued,
+    // -- so the requester must either try again, or delete the memory
+    return (result);
+}
+
+// ====================================================================================================================
+// SendPrintDataPacket():  Send a pre-constructed packet through the socket, for print messages
+// ====================================================================================================================
+bool CSocket::SendPrintDataPacket(tDataPacket* dataPacket)
+{
+    // -- ensure we're connected, and have something to send
+    if (!dataPacket)
+    {
+        return (false);
+    }
+
+    // -- lock the thread before modifying the queues
+    mThreadLock.Lock();
+
+    // -- enqueue the packet - if the regular send queue is less than "full", simply enqueue it on the normal queue
+    // else enqueue it on the print queue, if there's room...
+    // $$$TZA surface that the print queue is "full"??
+    bool result = false;
+    if (mSendQueue.Size() < kSocketPrintPacketQueueCount && mSendPrintQueue.Size() == 0)
+        result = mSendQueue.Enqueue(dataPacket);
+    else if (mSendPrintQueue.Size() < kSocketPrintPacketQueueMax)
+        result = mSendQueue.Enqueue(dataPacket);
+    else
+    {
+        printf("### DEBUG print overflow\n");
+    }
+    //bool result = mSendQueue.Enqueue(dataPacket);
 
     // -- unlock the thread
     mThreadLock.Unlock();
