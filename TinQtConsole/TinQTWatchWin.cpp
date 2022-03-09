@@ -266,7 +266,7 @@ void CDebugWatchWin::AddTopLevelEntry(const TinScript::CDebuggerWatchVarEntry& w
                                                            GetTopStackEntry(top_func_ns_hash, top_func_hash,
                                                                             top_func_object_id);
 
-    if (!found_callstack_entry && watch_var_entry.mStackLevel == top_stack_index && !update_only)
+    if (!found_callstack_entry && !update_only)
     {
         // -- see if this is for the 
         CWatchEntry* new_entry = new CWatchEntry(watch_var_entry);
