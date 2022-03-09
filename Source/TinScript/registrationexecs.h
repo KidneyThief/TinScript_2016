@@ -33,7 +33,7 @@ namespace TinScript
 {
 
 // -- the object must exist
-inline bool8 ObjHasMethod(void* obj_addr, int32 method_hash)
+inline bool8 ObjHasMethod(void* obj_addr, int32 method_hash, int32& out_param_count)
 {
     CScriptContext* script_context = TinScript::GetContext();
     if (script_context == nullptr)
@@ -50,11 +50,12 @@ inline bool8 ObjHasMethod(void* obj_addr, int32 method_hash)
     }
 
     CFunctionEntry* fe = oe->GetFunctionEntry(0, method_hash);
+    out_param_count = fe && fe->GetContext() ? fe->GetContext()->GetParameterCount() : 0;
     return (fe != nullptr);
 }
 
 // -- the object must exist
-inline bool8 ObjHasMethod(uint32 obj_id, int32 method_hash)
+inline bool8 ObjHasMethod(uint32 obj_id, int32 method_hash, int32& out_param_count)
 {
     CScriptContext* script_context = TinScript::GetContext();
     if (script_context == nullptr)
@@ -71,6 +72,7 @@ inline bool8 ObjHasMethod(uint32 obj_id, int32 method_hash)
     }
 
     CFunctionEntry* fe = oe->GetFunctionEntry(0, method_hash);
+    out_param_count = fe && fe->GetContext() ? fe->GetContext()->GetParameterCount() : 0;
     return (fe != nullptr);
 }
 
@@ -177,13 +179,6 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     {
         ScriptAssert_(script_context, 0, "<internal>", -1, "Error - invalid return type (use an int32 if void)\n");
         return false;
-    }
-
-    // -- fill in the parameters
-    if (fe->GetContext()->GetParameterCount() < 0)
-    {
-        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
-        return (false);
     }
 
     // -- execute the function
@@ -301,14 +296,13 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    // -- fill in the parameters
-    if (fe->GetContext()->GetParameterCount() < 1)
+    CVariableEntry* ve_p1 = fe->GetContext()->GetParameter(1);
+    if (ve_p1 == nullptr)
     {
-        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
         return (false);
     }
 
-    CVariableEntry* ve_p1 = fe->GetContext()->GetParameter(1);
     void* p1_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T1>()) == TYPE_string)
     {
@@ -442,14 +436,13 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    // -- fill in the parameters
-    if (fe->GetContext()->GetParameterCount() < 2)
+    CVariableEntry* ve_p1 = fe->GetContext()->GetParameter(1);
+    if (ve_p1 == nullptr)
     {
-        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
         return (false);
     }
 
-    CVariableEntry* ve_p1 = fe->GetContext()->GetParameter(1);
     void* p1_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T1>()) == TYPE_string)
     {
@@ -469,6 +462,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     ve_p1->SetValueAddr(NULL, p1_convert_addr);
 
     CVariableEntry* ve_p2 = fe->GetContext()->GetParameter(2);
+    if (ve_p2 == nullptr)
+    {
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        return (false);
+    }
+
     void* p2_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T2>()) == TYPE_string)
     {
@@ -602,14 +601,13 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    // -- fill in the parameters
-    if (fe->GetContext()->GetParameterCount() < 3)
+    CVariableEntry* ve_p1 = fe->GetContext()->GetParameter(1);
+    if (ve_p1 == nullptr)
     {
-        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
         return (false);
     }
 
-    CVariableEntry* ve_p1 = fe->GetContext()->GetParameter(1);
     void* p1_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T1>()) == TYPE_string)
     {
@@ -629,6 +627,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     ve_p1->SetValueAddr(NULL, p1_convert_addr);
 
     CVariableEntry* ve_p2 = fe->GetContext()->GetParameter(2);
+    if (ve_p2 == nullptr)
+    {
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        return (false);
+    }
+
     void* p2_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T2>()) == TYPE_string)
     {
@@ -648,6 +652,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     ve_p2->SetValueAddr(NULL, p2_convert_addr);
 
     CVariableEntry* ve_p3 = fe->GetContext()->GetParameter(3);
+    if (ve_p3 == nullptr)
+    {
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        return (false);
+    }
+
     void* p3_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T3>()) == TYPE_string)
     {
@@ -781,14 +791,13 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    // -- fill in the parameters
-    if (fe->GetContext()->GetParameterCount() < 4)
+    CVariableEntry* ve_p1 = fe->GetContext()->GetParameter(1);
+    if (ve_p1 == nullptr)
     {
-        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
         return (false);
     }
 
-    CVariableEntry* ve_p1 = fe->GetContext()->GetParameter(1);
     void* p1_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T1>()) == TYPE_string)
     {
@@ -808,6 +817,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     ve_p1->SetValueAddr(NULL, p1_convert_addr);
 
     CVariableEntry* ve_p2 = fe->GetContext()->GetParameter(2);
+    if (ve_p2 == nullptr)
+    {
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        return (false);
+    }
+
     void* p2_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T2>()) == TYPE_string)
     {
@@ -827,6 +842,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     ve_p2->SetValueAddr(NULL, p2_convert_addr);
 
     CVariableEntry* ve_p3 = fe->GetContext()->GetParameter(3);
+    if (ve_p3 == nullptr)
+    {
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        return (false);
+    }
+
     void* p3_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T3>()) == TYPE_string)
     {
@@ -846,6 +867,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     ve_p3->SetValueAddr(NULL, p3_convert_addr);
 
     CVariableEntry* ve_p4 = fe->GetContext()->GetParameter(4);
+    if (ve_p4 == nullptr)
+    {
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        return (false);
+    }
+
     void* p4_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T4>()) == TYPE_string)
     {
@@ -979,14 +1006,13 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    // -- fill in the parameters
-    if (fe->GetContext()->GetParameterCount() < 5)
+    CVariableEntry* ve_p1 = fe->GetContext()->GetParameter(1);
+    if (ve_p1 == nullptr)
     {
-        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
         return (false);
     }
 
-    CVariableEntry* ve_p1 = fe->GetContext()->GetParameter(1);
     void* p1_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T1>()) == TYPE_string)
     {
@@ -1006,6 +1032,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     ve_p1->SetValueAddr(NULL, p1_convert_addr);
 
     CVariableEntry* ve_p2 = fe->GetContext()->GetParameter(2);
+    if (ve_p2 == nullptr)
+    {
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        return (false);
+    }
+
     void* p2_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T2>()) == TYPE_string)
     {
@@ -1025,6 +1057,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     ve_p2->SetValueAddr(NULL, p2_convert_addr);
 
     CVariableEntry* ve_p3 = fe->GetContext()->GetParameter(3);
+    if (ve_p3 == nullptr)
+    {
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        return (false);
+    }
+
     void* p3_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T3>()) == TYPE_string)
     {
@@ -1044,6 +1082,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     ve_p3->SetValueAddr(NULL, p3_convert_addr);
 
     CVariableEntry* ve_p4 = fe->GetContext()->GetParameter(4);
+    if (ve_p4 == nullptr)
+    {
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        return (false);
+    }
+
     void* p4_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T4>()) == TYPE_string)
     {
@@ -1063,6 +1107,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     ve_p4->SetValueAddr(NULL, p4_convert_addr);
 
     CVariableEntry* ve_p5 = fe->GetContext()->GetParameter(5);
+    if (ve_p5 == nullptr)
+    {
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        return (false);
+    }
+
     void* p5_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T5>()) == TYPE_string)
     {
@@ -1196,14 +1246,13 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    // -- fill in the parameters
-    if (fe->GetContext()->GetParameterCount() < 6)
+    CVariableEntry* ve_p1 = fe->GetContext()->GetParameter(1);
+    if (ve_p1 == nullptr)
     {
-        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
         return (false);
     }
 
-    CVariableEntry* ve_p1 = fe->GetContext()->GetParameter(1);
     void* p1_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T1>()) == TYPE_string)
     {
@@ -1223,6 +1272,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     ve_p1->SetValueAddr(NULL, p1_convert_addr);
 
     CVariableEntry* ve_p2 = fe->GetContext()->GetParameter(2);
+    if (ve_p2 == nullptr)
+    {
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        return (false);
+    }
+
     void* p2_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T2>()) == TYPE_string)
     {
@@ -1242,6 +1297,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     ve_p2->SetValueAddr(NULL, p2_convert_addr);
 
     CVariableEntry* ve_p3 = fe->GetContext()->GetParameter(3);
+    if (ve_p3 == nullptr)
+    {
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        return (false);
+    }
+
     void* p3_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T3>()) == TYPE_string)
     {
@@ -1261,6 +1322,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     ve_p3->SetValueAddr(NULL, p3_convert_addr);
 
     CVariableEntry* ve_p4 = fe->GetContext()->GetParameter(4);
+    if (ve_p4 == nullptr)
+    {
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        return (false);
+    }
+
     void* p4_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T4>()) == TYPE_string)
     {
@@ -1280,6 +1347,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     ve_p4->SetValueAddr(NULL, p4_convert_addr);
 
     CVariableEntry* ve_p5 = fe->GetContext()->GetParameter(5);
+    if (ve_p5 == nullptr)
+    {
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        return (false);
+    }
+
     void* p5_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T5>()) == TYPE_string)
     {
@@ -1299,6 +1372,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     ve_p5->SetValueAddr(NULL, p5_convert_addr);
 
     CVariableEntry* ve_p6 = fe->GetContext()->GetParameter(6);
+    if (ve_p6 == nullptr)
+    {
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        return (false);
+    }
+
     void* p6_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T6>()) == TYPE_string)
     {
@@ -1432,14 +1511,13 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    // -- fill in the parameters
-    if (fe->GetContext()->GetParameterCount() < 7)
+    CVariableEntry* ve_p1 = fe->GetContext()->GetParameter(1);
+    if (ve_p1 == nullptr)
     {
-        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
         return (false);
     }
 
-    CVariableEntry* ve_p1 = fe->GetContext()->GetParameter(1);
     void* p1_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T1>()) == TYPE_string)
     {
@@ -1459,6 +1537,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     ve_p1->SetValueAddr(NULL, p1_convert_addr);
 
     CVariableEntry* ve_p2 = fe->GetContext()->GetParameter(2);
+    if (ve_p2 == nullptr)
+    {
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        return (false);
+    }
+
     void* p2_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T2>()) == TYPE_string)
     {
@@ -1478,6 +1562,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     ve_p2->SetValueAddr(NULL, p2_convert_addr);
 
     CVariableEntry* ve_p3 = fe->GetContext()->GetParameter(3);
+    if (ve_p3 == nullptr)
+    {
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        return (false);
+    }
+
     void* p3_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T3>()) == TYPE_string)
     {
@@ -1497,6 +1587,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     ve_p3->SetValueAddr(NULL, p3_convert_addr);
 
     CVariableEntry* ve_p4 = fe->GetContext()->GetParameter(4);
+    if (ve_p4 == nullptr)
+    {
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        return (false);
+    }
+
     void* p4_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T4>()) == TYPE_string)
     {
@@ -1516,6 +1612,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     ve_p4->SetValueAddr(NULL, p4_convert_addr);
 
     CVariableEntry* ve_p5 = fe->GetContext()->GetParameter(5);
+    if (ve_p5 == nullptr)
+    {
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        return (false);
+    }
+
     void* p5_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T5>()) == TYPE_string)
     {
@@ -1535,6 +1637,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     ve_p5->SetValueAddr(NULL, p5_convert_addr);
 
     CVariableEntry* ve_p6 = fe->GetContext()->GetParameter(6);
+    if (ve_p6 == nullptr)
+    {
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        return (false);
+    }
+
     void* p6_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T6>()) == TYPE_string)
     {
@@ -1554,6 +1662,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     ve_p6->SetValueAddr(NULL, p6_convert_addr);
 
     CVariableEntry* ve_p7 = fe->GetContext()->GetParameter(7);
+    if (ve_p7 == nullptr)
+    {
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        return (false);
+    }
+
     void* p7_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T7>()) == TYPE_string)
     {
@@ -1687,14 +1801,13 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    // -- fill in the parameters
-    if (fe->GetContext()->GetParameterCount() < 8)
+    CVariableEntry* ve_p1 = fe->GetContext()->GetParameter(1);
+    if (ve_p1 == nullptr)
     {
-        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
         return (false);
     }
 
-    CVariableEntry* ve_p1 = fe->GetContext()->GetParameter(1);
     void* p1_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T1>()) == TYPE_string)
     {
@@ -1714,6 +1827,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     ve_p1->SetValueAddr(NULL, p1_convert_addr);
 
     CVariableEntry* ve_p2 = fe->GetContext()->GetParameter(2);
+    if (ve_p2 == nullptr)
+    {
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        return (false);
+    }
+
     void* p2_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T2>()) == TYPE_string)
     {
@@ -1733,6 +1852,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     ve_p2->SetValueAddr(NULL, p2_convert_addr);
 
     CVariableEntry* ve_p3 = fe->GetContext()->GetParameter(3);
+    if (ve_p3 == nullptr)
+    {
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        return (false);
+    }
+
     void* p3_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T3>()) == TYPE_string)
     {
@@ -1752,6 +1877,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     ve_p3->SetValueAddr(NULL, p3_convert_addr);
 
     CVariableEntry* ve_p4 = fe->GetContext()->GetParameter(4);
+    if (ve_p4 == nullptr)
+    {
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        return (false);
+    }
+
     void* p4_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T4>()) == TYPE_string)
     {
@@ -1771,6 +1902,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     ve_p4->SetValueAddr(NULL, p4_convert_addr);
 
     CVariableEntry* ve_p5 = fe->GetContext()->GetParameter(5);
+    if (ve_p5 == nullptr)
+    {
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        return (false);
+    }
+
     void* p5_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T5>()) == TYPE_string)
     {
@@ -1790,6 +1927,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     ve_p5->SetValueAddr(NULL, p5_convert_addr);
 
     CVariableEntry* ve_p6 = fe->GetContext()->GetParameter(6);
+    if (ve_p6 == nullptr)
+    {
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        return (false);
+    }
+
     void* p6_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T6>()) == TYPE_string)
     {
@@ -1809,6 +1952,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     ve_p6->SetValueAddr(NULL, p6_convert_addr);
 
     CVariableEntry* ve_p7 = fe->GetContext()->GetParameter(7);
+    if (ve_p7 == nullptr)
+    {
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        return (false);
+    }
+
     void* p7_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T7>()) == TYPE_string)
     {
@@ -1828,6 +1977,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     ve_p7->SetValueAddr(NULL, p7_convert_addr);
 
     CVariableEntry* ve_p8 = fe->GetContext()->GetParameter(8);
+    if (ve_p8 == nullptr)
+    {
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        return (false);
+    }
+
     void* p8_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T8>()) == TYPE_string)
     {
@@ -1961,14 +2116,13 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    // -- fill in the parameters
-    if (fe->GetContext()->GetParameterCount() < 9)
+    CVariableEntry* ve_p1 = fe->GetContext()->GetParameter(1);
+    if (ve_p1 == nullptr)
     {
-        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
         return (false);
     }
 
-    CVariableEntry* ve_p1 = fe->GetContext()->GetParameter(1);
     void* p1_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T1>()) == TYPE_string)
     {
@@ -1988,6 +2142,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     ve_p1->SetValueAddr(NULL, p1_convert_addr);
 
     CVariableEntry* ve_p2 = fe->GetContext()->GetParameter(2);
+    if (ve_p2 == nullptr)
+    {
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        return (false);
+    }
+
     void* p2_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T2>()) == TYPE_string)
     {
@@ -2007,6 +2167,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     ve_p2->SetValueAddr(NULL, p2_convert_addr);
 
     CVariableEntry* ve_p3 = fe->GetContext()->GetParameter(3);
+    if (ve_p3 == nullptr)
+    {
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        return (false);
+    }
+
     void* p3_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T3>()) == TYPE_string)
     {
@@ -2026,6 +2192,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     ve_p3->SetValueAddr(NULL, p3_convert_addr);
 
     CVariableEntry* ve_p4 = fe->GetContext()->GetParameter(4);
+    if (ve_p4 == nullptr)
+    {
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        return (false);
+    }
+
     void* p4_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T4>()) == TYPE_string)
     {
@@ -2045,6 +2217,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     ve_p4->SetValueAddr(NULL, p4_convert_addr);
 
     CVariableEntry* ve_p5 = fe->GetContext()->GetParameter(5);
+    if (ve_p5 == nullptr)
+    {
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        return (false);
+    }
+
     void* p5_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T5>()) == TYPE_string)
     {
@@ -2064,6 +2242,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     ve_p5->SetValueAddr(NULL, p5_convert_addr);
 
     CVariableEntry* ve_p6 = fe->GetContext()->GetParameter(6);
+    if (ve_p6 == nullptr)
+    {
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        return (false);
+    }
+
     void* p6_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T6>()) == TYPE_string)
     {
@@ -2083,6 +2267,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     ve_p6->SetValueAddr(NULL, p6_convert_addr);
 
     CVariableEntry* ve_p7 = fe->GetContext()->GetParameter(7);
+    if (ve_p7 == nullptr)
+    {
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        return (false);
+    }
+
     void* p7_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T7>()) == TYPE_string)
     {
@@ -2102,6 +2292,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     ve_p7->SetValueAddr(NULL, p7_convert_addr);
 
     CVariableEntry* ve_p8 = fe->GetContext()->GetParameter(8);
+    if (ve_p8 == nullptr)
+    {
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        return (false);
+    }
+
     void* p8_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T8>()) == TYPE_string)
     {
@@ -2121,6 +2317,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     ve_p8->SetValueAddr(NULL, p8_convert_addr);
 
     CVariableEntry* ve_p9 = fe->GetContext()->GetParameter(9);
+    if (ve_p9 == nullptr)
+    {
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        return (false);
+    }
+
     void* p9_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T9>()) == TYPE_string)
     {
@@ -2254,14 +2456,13 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    // -- fill in the parameters
-    if (fe->GetContext()->GetParameterCount() < 10)
+    CVariableEntry* ve_p1 = fe->GetContext()->GetParameter(1);
+    if (ve_p1 == nullptr)
     {
-        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
         return (false);
     }
 
-    CVariableEntry* ve_p1 = fe->GetContext()->GetParameter(1);
     void* p1_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T1>()) == TYPE_string)
     {
@@ -2281,6 +2482,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     ve_p1->SetValueAddr(NULL, p1_convert_addr);
 
     CVariableEntry* ve_p2 = fe->GetContext()->GetParameter(2);
+    if (ve_p2 == nullptr)
+    {
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        return (false);
+    }
+
     void* p2_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T2>()) == TYPE_string)
     {
@@ -2300,6 +2507,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     ve_p2->SetValueAddr(NULL, p2_convert_addr);
 
     CVariableEntry* ve_p3 = fe->GetContext()->GetParameter(3);
+    if (ve_p3 == nullptr)
+    {
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        return (false);
+    }
+
     void* p3_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T3>()) == TYPE_string)
     {
@@ -2319,6 +2532,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     ve_p3->SetValueAddr(NULL, p3_convert_addr);
 
     CVariableEntry* ve_p4 = fe->GetContext()->GetParameter(4);
+    if (ve_p4 == nullptr)
+    {
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        return (false);
+    }
+
     void* p4_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T4>()) == TYPE_string)
     {
@@ -2338,6 +2557,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     ve_p4->SetValueAddr(NULL, p4_convert_addr);
 
     CVariableEntry* ve_p5 = fe->GetContext()->GetParameter(5);
+    if (ve_p5 == nullptr)
+    {
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        return (false);
+    }
+
     void* p5_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T5>()) == TYPE_string)
     {
@@ -2357,6 +2582,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     ve_p5->SetValueAddr(NULL, p5_convert_addr);
 
     CVariableEntry* ve_p6 = fe->GetContext()->GetParameter(6);
+    if (ve_p6 == nullptr)
+    {
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        return (false);
+    }
+
     void* p6_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T6>()) == TYPE_string)
     {
@@ -2376,6 +2607,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     ve_p6->SetValueAddr(NULL, p6_convert_addr);
 
     CVariableEntry* ve_p7 = fe->GetContext()->GetParameter(7);
+    if (ve_p7 == nullptr)
+    {
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        return (false);
+    }
+
     void* p7_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T7>()) == TYPE_string)
     {
@@ -2395,6 +2632,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     ve_p7->SetValueAddr(NULL, p7_convert_addr);
 
     CVariableEntry* ve_p8 = fe->GetContext()->GetParameter(8);
+    if (ve_p8 == nullptr)
+    {
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        return (false);
+    }
+
     void* p8_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T8>()) == TYPE_string)
     {
@@ -2414,6 +2657,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     ve_p8->SetValueAddr(NULL, p8_convert_addr);
 
     CVariableEntry* ve_p9 = fe->GetContext()->GetParameter(9);
+    if (ve_p9 == nullptr)
+    {
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        return (false);
+    }
+
     void* p9_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T9>()) == TYPE_string)
     {
@@ -2433,6 +2682,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     ve_p9->SetValueAddr(NULL, p9_convert_addr);
 
     CVariableEntry* ve_p10 = fe->GetContext()->GetParameter(10);
+    if (ve_p10 == nullptr)
+    {
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        return (false);
+    }
+
     void* p10_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T10>()) == TYPE_string)
     {
@@ -2566,14 +2821,13 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    // -- fill in the parameters
-    if (fe->GetContext()->GetParameterCount() < 11)
+    CVariableEntry* ve_p1 = fe->GetContext()->GetParameter(1);
+    if (ve_p1 == nullptr)
     {
-        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
         return (false);
     }
 
-    CVariableEntry* ve_p1 = fe->GetContext()->GetParameter(1);
     void* p1_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T1>()) == TYPE_string)
     {
@@ -2593,6 +2847,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     ve_p1->SetValueAddr(NULL, p1_convert_addr);
 
     CVariableEntry* ve_p2 = fe->GetContext()->GetParameter(2);
+    if (ve_p2 == nullptr)
+    {
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        return (false);
+    }
+
     void* p2_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T2>()) == TYPE_string)
     {
@@ -2612,6 +2872,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     ve_p2->SetValueAddr(NULL, p2_convert_addr);
 
     CVariableEntry* ve_p3 = fe->GetContext()->GetParameter(3);
+    if (ve_p3 == nullptr)
+    {
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        return (false);
+    }
+
     void* p3_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T3>()) == TYPE_string)
     {
@@ -2631,6 +2897,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     ve_p3->SetValueAddr(NULL, p3_convert_addr);
 
     CVariableEntry* ve_p4 = fe->GetContext()->GetParameter(4);
+    if (ve_p4 == nullptr)
+    {
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        return (false);
+    }
+
     void* p4_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T4>()) == TYPE_string)
     {
@@ -2650,6 +2922,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     ve_p4->SetValueAddr(NULL, p4_convert_addr);
 
     CVariableEntry* ve_p5 = fe->GetContext()->GetParameter(5);
+    if (ve_p5 == nullptr)
+    {
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        return (false);
+    }
+
     void* p5_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T5>()) == TYPE_string)
     {
@@ -2669,6 +2947,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     ve_p5->SetValueAddr(NULL, p5_convert_addr);
 
     CVariableEntry* ve_p6 = fe->GetContext()->GetParameter(6);
+    if (ve_p6 == nullptr)
+    {
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        return (false);
+    }
+
     void* p6_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T6>()) == TYPE_string)
     {
@@ -2688,6 +2972,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     ve_p6->SetValueAddr(NULL, p6_convert_addr);
 
     CVariableEntry* ve_p7 = fe->GetContext()->GetParameter(7);
+    if (ve_p7 == nullptr)
+    {
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        return (false);
+    }
+
     void* p7_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T7>()) == TYPE_string)
     {
@@ -2707,6 +2997,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     ve_p7->SetValueAddr(NULL, p7_convert_addr);
 
     CVariableEntry* ve_p8 = fe->GetContext()->GetParameter(8);
+    if (ve_p8 == nullptr)
+    {
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        return (false);
+    }
+
     void* p8_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T8>()) == TYPE_string)
     {
@@ -2726,6 +3022,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     ve_p8->SetValueAddr(NULL, p8_convert_addr);
 
     CVariableEntry* ve_p9 = fe->GetContext()->GetParameter(9);
+    if (ve_p9 == nullptr)
+    {
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        return (false);
+    }
+
     void* p9_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T9>()) == TYPE_string)
     {
@@ -2745,6 +3047,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     ve_p9->SetValueAddr(NULL, p9_convert_addr);
 
     CVariableEntry* ve_p10 = fe->GetContext()->GetParameter(10);
+    if (ve_p10 == nullptr)
+    {
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        return (false);
+    }
+
     void* p10_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T10>()) == TYPE_string)
     {
@@ -2764,6 +3072,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     ve_p10->SetValueAddr(NULL, p10_convert_addr);
 
     CVariableEntry* ve_p11 = fe->GetContext()->GetParameter(11);
+    if (ve_p11 == nullptr)
+    {
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        return (false);
+    }
+
     void* p11_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T11>()) == TYPE_string)
     {
@@ -2897,14 +3211,13 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
         return false;
     }
 
-    // -- fill in the parameters
-    if (fe->GetContext()->GetParameterCount() < 12)
+    CVariableEntry* ve_p1 = fe->GetContext()->GetParameter(1);
+    if (ve_p1 == nullptr)
     {
-        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
         return (false);
     }
 
-    CVariableEntry* ve_p1 = fe->GetContext()->GetParameter(1);
     void* p1_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T1>()) == TYPE_string)
     {
@@ -2924,6 +3237,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     ve_p1->SetValueAddr(NULL, p1_convert_addr);
 
     CVariableEntry* ve_p2 = fe->GetContext()->GetParameter(2);
+    if (ve_p2 == nullptr)
+    {
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        return (false);
+    }
+
     void* p2_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T2>()) == TYPE_string)
     {
@@ -2943,6 +3262,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     ve_p2->SetValueAddr(NULL, p2_convert_addr);
 
     CVariableEntry* ve_p3 = fe->GetContext()->GetParameter(3);
+    if (ve_p3 == nullptr)
+    {
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        return (false);
+    }
+
     void* p3_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T3>()) == TYPE_string)
     {
@@ -2962,6 +3287,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     ve_p3->SetValueAddr(NULL, p3_convert_addr);
 
     CVariableEntry* ve_p4 = fe->GetContext()->GetParameter(4);
+    if (ve_p4 == nullptr)
+    {
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        return (false);
+    }
+
     void* p4_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T4>()) == TYPE_string)
     {
@@ -2981,6 +3312,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     ve_p4->SetValueAddr(NULL, p4_convert_addr);
 
     CVariableEntry* ve_p5 = fe->GetContext()->GetParameter(5);
+    if (ve_p5 == nullptr)
+    {
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        return (false);
+    }
+
     void* p5_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T5>()) == TYPE_string)
     {
@@ -3000,6 +3337,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     ve_p5->SetValueAddr(NULL, p5_convert_addr);
 
     CVariableEntry* ve_p6 = fe->GetContext()->GetParameter(6);
+    if (ve_p6 == nullptr)
+    {
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        return (false);
+    }
+
     void* p6_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T6>()) == TYPE_string)
     {
@@ -3019,6 +3362,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     ve_p6->SetValueAddr(NULL, p6_convert_addr);
 
     CVariableEntry* ve_p7 = fe->GetContext()->GetParameter(7);
+    if (ve_p7 == nullptr)
+    {
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        return (false);
+    }
+
     void* p7_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T7>()) == TYPE_string)
     {
@@ -3038,6 +3387,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     ve_p7->SetValueAddr(NULL, p7_convert_addr);
 
     CVariableEntry* ve_p8 = fe->GetContext()->GetParameter(8);
+    if (ve_p8 == nullptr)
+    {
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        return (false);
+    }
+
     void* p8_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T8>()) == TYPE_string)
     {
@@ -3057,6 +3412,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     ve_p8->SetValueAddr(NULL, p8_convert_addr);
 
     CVariableEntry* ve_p9 = fe->GetContext()->GetParameter(9);
+    if (ve_p9 == nullptr)
+    {
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        return (false);
+    }
+
     void* p9_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T9>()) == TYPE_string)
     {
@@ -3076,6 +3437,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     ve_p9->SetValueAddr(NULL, p9_convert_addr);
 
     CVariableEntry* ve_p10 = fe->GetContext()->GetParameter(10);
+    if (ve_p10 == nullptr)
+    {
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        return (false);
+    }
+
     void* p10_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T10>()) == TYPE_string)
     {
@@ -3095,6 +3462,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     ve_p10->SetValueAddr(NULL, p10_convert_addr);
 
     CVariableEntry* ve_p11 = fe->GetContext()->GetParameter(11);
+    if (ve_p11 == nullptr)
+    {
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        return (false);
+    }
+
     void* p11_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T11>()) == TYPE_string)
     {
@@ -3114,6 +3487,12 @@ inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash,
     ve_p11->SetValueAddr(NULL, p11_convert_addr);
 
     CVariableEntry* ve_p12 = fe->GetContext()->GetParameter(12);
+    if (ve_p12 == nullptr)
+    {
+        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());
+        return (false);
+    }
+
     void* p12_convert_addr = NULL;
     if (GetRegisteredType(GetTypeID<T12>()) == TYPE_string)
     {

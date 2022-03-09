@@ -1296,7 +1296,7 @@ def GenerateExecs(maxparamcount, outputfilename):
     outputfile.write("{\n\n");
 
     outputfile.write("// -- the object must exist\n");
-    outputfile.write("inline bool8 ObjHasMethod(void* obj_addr, int32 method_hash)\n");
+    outputfile.write("inline bool8 ObjHasMethod(void* obj_addr, int32 method_hash, int32& out_param_count)\n");
     outputfile.write("{\n");
     outputfile.write("    CScriptContext* script_context = TinScript::GetContext();\n");
     outputfile.write("    if (script_context == nullptr)\n");
@@ -1313,11 +1313,12 @@ def GenerateExecs(maxparamcount, outputfilename):
     outputfile.write("    }\n\n");
 
     outputfile.write("    CFunctionEntry* fe = oe->GetFunctionEntry(0, method_hash);\n");
+    outputfile.write("    out_param_count = fe && fe->GetContext() ? fe->GetContext()->GetParameterCount() : 0;\n");
     outputfile.write("    return (fe != nullptr);\n");
     outputfile.write("}\n\n");
 
     outputfile.write("// -- the object must exist\n");
-    outputfile.write("inline bool8 ObjHasMethod(uint32 obj_id, int32 method_hash)\n");
+    outputfile.write("inline bool8 ObjHasMethod(uint32 obj_id, int32 method_hash, int32& out_param_count)\n");
     outputfile.write("{\n");
     outputfile.write("    CScriptContext* script_context = TinScript::GetContext();\n");
     outputfile.write("    if (script_context == nullptr)\n");
@@ -1334,6 +1335,7 @@ def GenerateExecs(maxparamcount, outputfilename):
     outputfile.write("    }\n\n");
 
     outputfile.write("    CFunctionEntry* fe = oe->GetFunctionEntry(0, method_hash);\n");
+    outputfile.write("    out_param_count = fe && fe->GetContext() ? fe->GetContext()->GetParameterCount() : 0;\n");
     outputfile.write("    return (fe != nullptr);\n");
     outputfile.write("}\n\n");
 
@@ -1572,17 +1574,14 @@ def GenerateExecs(maxparamcount, outputfilename):
         outputfile.write("        return false;\n");
         outputfile.write("    }\n\n");
 
-
-        outputfile.write("    // -- fill in the parameters\n");
-        outputfile.write("    if (fe->GetContext()->GetParameterCount() < %d)\n" % paramcount);
-        outputfile.write("    {\n");
-        outputfile.write('        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects %d parameters\\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());\n');
-        outputfile.write("        return (false);\n");
-        outputfile.write("    }\n\n");
-
         i = 1;
         while (i <= paramcount):
             outputfile.write("    CVariableEntry* ve_p%d = fe->GetContext()->GetParameter(%d);\n" % (i, i));
+            outputfile.write("    if (ve_p%d == nullptr)\n" % i);
+            outputfile.write("    {\n");
+            outputfile.write('        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());\n');
+            outputfile.write("        return (false);\n");
+            outputfile.write("    }\n\n");
             outputfile.write("    void* p%d_convert_addr = NULL;\n" % i);
             outputfile.write("    if (GetRegisteredType(GetTypeID<T%d>()) == TYPE_string)\n" % i);
             outputfile.write("    {\n");

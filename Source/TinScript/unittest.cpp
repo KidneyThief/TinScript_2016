@@ -1361,7 +1361,8 @@ void TestCppHashTable(TinScript::CHashtable* ht_param)
         TinPrint(TinScript::GetContext(), "### ht_param['object_arg']: floatvalue %.2f\n", object_arg->GetFloatValue());
 
         // -- call a method on the object passed via a hashtable:
-        if (TinScript::ObjHasMethod(object_arg, TinScript::Hash("TestMethod")))
+        int32 param_count = 0;
+        if (TinScript::ObjHasMethod(object_arg, TinScript::Hash("TestMethod"), param_count))
         {
             float result = 0.0f;
             TinScript::ObjExecMethod(object_arg, result, TinScript::Hash("TestMethod"));
