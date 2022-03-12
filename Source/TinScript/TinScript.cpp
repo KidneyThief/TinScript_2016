@@ -409,9 +409,10 @@ CScriptContext::CScriptContext(TinPrintHandler printfunction, TinAssertHandler a
     mDebuggerActionRun = true;
 
 	mDebuggerBreakLoopGuard = false;
-	mDebuggerBreakFuncCallStack = NULL;
-	mDebuggerBreakExecStack = NULL;
+	mDebuggerBreakFuncCallStack = nullptr;
+	mDebuggerBreakExecStack = nullptr;
 	mDebuggerVarWatchRequestID = 0;
+    mDebuggerWatchStackOffset = 0;
 
     // -- initialize the thread command
     mThreadBufPtr = NULL;
@@ -1869,6 +1870,83 @@ void CScriptContext::InitWatchEntryFromVarEntry(CVariableEntry& ve, CObjectEntry
 }
 
 // ====================================================================================================================
+// AddVariableWatchExpression():  If we're not modifying or breaking on a watch, then we evaluate the expression
+// at our current stack depth
+// ====================================================================================================================
+void CScriptContext::AddVariableWatchExpression(int32 request_id, const char* variable_watch)
+{
+    // -- sanity check
+    if (variable_watch == nullptr || variable_watch[0] == '\0' || request_id <= 0)
+        return;
+
+    // -- we require a callstack to evaluate a variable watch as a complete expression
+    if (!mDebuggerBreakFuncCallStack || !mDebuggerBreakExecStack)
+        return;
+    
+    // -- watch expressions can handle a the complete syntax, but are unable to set a break on a variable entry
+    CDebuggerWatchExpression watch_expression(-1, false, false, variable_watch, NULL, false);
+    bool result = InitWatchExpression(watch_expression, false, *mDebuggerBreakFuncCallStack, mDebuggerWatchStackOffset);
+
+    // -- if we were successful initializing the expression (e.g. a codeblock and function were created
+    if (result)
+    {
+        // -- if evaluating the watch was successful
+        result = EvalWatchExpression(watch_expression, false, *mDebuggerBreakFuncCallStack, *mDebuggerBreakExecStack,
+                                     mDebuggerWatchStackOffset);
+        if (result)
+        {
+            // -- if we're able to retrieve the return value
+            eVarType returnType = TYPE_void;
+            void* returnValue = NULL;
+            if (GetFunctionReturnValue(returnValue, returnType))
+            {
+    	        CDebuggerWatchVarEntry watch_result;
+
+		        watch_result.mWatchRequestID = request_id;
+                watch_result.mStackLevel = -1;
+
+		        // -- fill in the watch entry
+		        watch_result.mFuncNamespaceHash = 0;
+		        watch_result.mFunctionHash = 0;
+		        watch_result.mFunctionObjectID = 0;
+		        watch_result.mObjectID = 0;
+		        watch_result.mNamespaceHash = 0;
+
+		        // -- type, name, and value string, and array size
+		        watch_result.mType = returnType;
+		        SafeStrcpy(watch_result.mVarName, sizeof(watch_result.mVarName), variable_watch, kMaxNameLength);
+                watch_result.mArraySize = 1;
+
+		        watch_result.mVarHash = Hash(variable_watch);
+		        watch_result.mVarObjectID = 0;
+
+                // -- if the type is an object, see if it actually exists
+                if (returnType == TYPE_object)
+                {
+                    // -- ensure the object actually exists
+                    CObjectEntry* oe_0 = FindObjectEntry(*(uint32*)returnValue);
+                    if (oe_0)
+                        watch_result.mVarObjectID = oe_0->GetID();
+                }
+
+                // -- after the member_entry has all fields filled in, see if we can format
+                // the mValue to be more readable
+                DebuggerWatchFormatValue(&watch_result, returnValue);
+
+			    // -- send the response
+			    DebuggerSendWatchVariable(&watch_result);
+
+			    // -- if the result is an object, then send the complete object
+			    if (watch_result.mType == TYPE_object && watch_result.mVarObjectID > 0)
+			    {
+				    DebuggerSendObjectMembers(&watch_result, watch_result.mVarObjectID);
+			    }
+            }
+        }
+    }
+}
+
+// ====================================================================================================================
 // AddVariableWatch():  Method to find a a variable entry, return or update it's value, and mark it as a data break.
 // ====================================================================================================================
 void CScriptContext::AddVariableWatch(int32 request_id, const char* variable_watch, bool breakOnWrite,
@@ -1903,7 +1981,7 @@ void CScriptContext::AddVariableWatch(int32 request_id, const char* variable_wat
 		uint32 var_hash = Hash(token.tokenptr, token.length);
 
 		// -- if this isn't a stack variable, see if it's a global variable
-		if (DebuggerFindStackTopVar(this, var_hash, found_variable, ve))
+		if (DebuggerFindStackVar(this, var_hash, found_variable, ve))
 		{
 			// -- if this refers to an object, find the object entry
 			if (found_variable.mType == TYPE_object)
@@ -2103,70 +2181,9 @@ void CScriptContext::AddVariableWatch(int32 request_id, const char* variable_wat
     // -- this will correctly evaluate any valid syntax, bot doesn't give us a variable on which to break
     // -- for that, we'd probably have to flag certain operations in the VM to find out which variable it
     // -- found, etc...
-
-    // -- we require a callstack to evaluate a variable watch as a complete expression
-	if (!mDebuggerBreakFuncCallStack || !mDebuggerBreakExecStack)
-		return;
-
-    // -- watch expressions can handle a the complete syntax, but are unable to set a break on a variable entry
-    CDebuggerWatchExpression watch_expression(-1, false, false, variable_watch, NULL, false);
-    bool result = InitWatchExpression(watch_expression, false, *mDebuggerBreakFuncCallStack);
-
-    // -- if we were successful initializing the expression (e.g. a codeblock and function were created
-    if (result)
+    if (!update_value && !breakOnWrite)
     {
-        // -- if evaluating the watch was successful
-        result = EvalWatchExpression(watch_expression, false, *mDebuggerBreakFuncCallStack, *mDebuggerBreakExecStack);
-        if (result)
-        {
-            // -- if we're able to retrieve the return value
-            eVarType returnType = TYPE_void;
-            void* returnValue = NULL;
-            if (GetFunctionReturnValue(returnValue, returnType))
-            {
-    	        CDebuggerWatchVarEntry watch_result;
-
-		        watch_result.mWatchRequestID = request_id;
-                watch_result.mStackLevel = -1;
-
-		        // -- fill in the watch entry
-		        watch_result.mFuncNamespaceHash = 0;
-		        watch_result.mFunctionHash = 0;
-		        watch_result.mFunctionObjectID = 0;
-		        watch_result.mObjectID = 0;
-		        watch_result.mNamespaceHash = 0;
-
-		        // -- type, name, and value string, and array size
-		        watch_result.mType = returnType;
-		        SafeStrcpy(watch_result.mVarName, sizeof(watch_result.mVarName), variable_watch, kMaxNameLength);
-                watch_result.mArraySize = 1;
-
-		        watch_result.mVarHash = Hash(variable_watch);
-		        watch_result.mVarObjectID = 0;
-
-                // -- if the type is an object, see if it actually exists
-                if (returnType == TYPE_object)
-                {
-                    // -- ensure the object actually exists
-                    CObjectEntry* oe_0 = FindObjectEntry(*(uint32*)returnValue);
-                    if (oe_0)
-                        watch_result.mVarObjectID = oe_0->GetID();
-                }
-
-                // -- after the member_entry has all fields filled in, see if we can format
-                // the mValue to be more readable
-                DebuggerWatchFormatValue(&watch_result, returnValue);
-
-			    // -- send the response
-			    DebuggerSendWatchVariable(&watch_result);
-
-			    // -- if the result is an object, then send the complete object
-			    if (watch_result.mType == TYPE_object && watch_result.mVarObjectID > 0)
-			    {
-				    DebuggerSendObjectMembers(&watch_result, watch_result.mVarObjectID);
-			    }
-            }
-        }
+        AddVariableWatchExpression(request_id, variable_watch);
     }
 }
 
@@ -2190,7 +2207,7 @@ bool8 CScriptContext::HasTraceExpression(CDebuggerWatchExpression& debugger_watc
 // InitWatchExpression():  Given a watch structure, create and compile a codeblock that can be stored and evaluated.
 // ====================================================================================================================
 bool8 CScriptContext::InitWatchExpression(CDebuggerWatchExpression& debugger_watch, bool use_trace,
-                                          CFunctionCallStack& call_stack)
+                                          CFunctionCallStack& call_stack, int32 stack_offset)
 {
     // -- depending on whether we're initializing the trace expression or the conditional, set the local vars
     const char* expression = use_trace ? debugger_watch.mTrace : debugger_watch.mConditional;
@@ -2204,12 +2221,17 @@ bool8 CScriptContext::InitWatchExpression(CDebuggerWatchExpression& debugger_wat
     // -- every time a watch is initialized, we bump the ID to ensure a 100% unique name
     int32 watch_id = CDebuggerWatchExpression::gWatchExpressionID++;
 
-    // -- find the function we're currently executing
+    // -- find the function we're executing at the given stack offset
     int32 stacktop = 0;
-    CFunctionEntry* cur_function = NULL;
-    CObjectEntry* cur_object = NULL;
     uint32 cur_oe_id = 0;
-    cur_function = call_stack.GetExecuting(cur_oe_id, cur_object, stacktop);
+    CObjectEntry* cur_object = NULL;
+    uint32 fe_hash = 0;
+    CFunctionEntry* cur_function = NULL;
+    uint32 ns_hash = 0;
+    uint32 cb_hash = 0;
+    int32 line_number = 1;
+    call_stack.GetExecutingByIndex(cur_oe_id, cur_object, fe_hash, cur_function, ns_hash,
+                                   cb_hash, line_number, stack_offset);
 
     // -- make sure we've got a valid function
     if (!cur_function)
@@ -2324,7 +2346,8 @@ bool8 CScriptContext::InitWatchExpression(CDebuggerWatchExpression& debugger_wat
 // EvaluateWatchExpression():  Used by the debugger for watches and breakpoints conditionals.
 // ====================================================================================================================
 bool8 CScriptContext::EvalWatchExpression(CDebuggerWatchExpression& debugger_watch, bool use_trace,
-                                          CFunctionCallStack& cur_call_stack, CExecStack& cur_exec_stack)
+                                          CFunctionCallStack& cur_call_stack, CExecStack& cur_exec_stack,
+                                          int32 stack_offset)
 {
     // -- depending on whether we're initializing the trace expression or the conditional, set the local vars
     const char* expression = use_trace ? debugger_watch.mTrace : debugger_watch.mConditional;
@@ -2339,12 +2362,17 @@ bool8 CScriptContext::EvalWatchExpression(CDebuggerWatchExpression& debugger_wat
     if (!watch_function)
         return (false);
 
-    // -- find the function we're currently executing
+    // -- find the function we're executing at the given stack offset
     int32 stacktop = 0;
-    CFunctionEntry* cur_function = NULL;
-    CObjectEntry* cur_object = NULL;
     uint32 cur_oe_id = 0;
-    cur_function = cur_call_stack.GetExecuting(cur_oe_id, cur_object, stacktop);
+    CObjectEntry* cur_object = NULL;
+    uint32 fe_hash = 0;
+    CFunctionEntry* cur_function = NULL;
+    uint32 ns_hash = 0;
+    uint32 cb_hash = 0;
+    int32 line_number = 1;
+    cur_call_stack.GetExecutingByIndex(cur_oe_id, cur_object, fe_hash, cur_function, ns_hash,
+                                       cb_hash, line_number, stack_offset);
 
     // -- make sure we've got a valid function
     if (!cur_function)
@@ -2563,7 +2591,7 @@ void CScriptContext::ToggleVarWatch(int32 watch_request_id, uint32 object_id, ui
 	{
 		// -- first see if the variable is a local variable on the stack
 		CDebuggerWatchVarEntry found_variable;
-		if (!DebuggerFindStackTopVar(this, var_name_hash, found_variable, ve))
+		if (!DebuggerFindStackVar(this, var_name_hash, found_variable, ve))
 		{
 			// -- not a stack variable - the only remaining option is a global
 			ve = GetGlobalNamespace()->GetVarTable()->FindItem(var_name_hash);
@@ -3073,7 +3101,7 @@ void CScriptContext::DebuggerWatchFormatValue(CDebuggerWatchVarEntry* watch_var_
         {
             int32 string_hash = *(uint32*)val_addr;
             const char* hashed_string = GetStringTable()->FindString(string_hash);
-            if (hashed_string != nullptr && hashed_string[0] != '0')
+            if (hashed_string != nullptr && hashed_string[0] != '\0')
             {
                 uint32 bytes_written = sprintf_s(watch_var_entry->mValue, sizeof(watch_var_entry->mValue),
                                                  "%d  [0x%x `%s`]", string_hash, string_hash, hashed_string);
@@ -4723,11 +4751,11 @@ void CScriptContext::ProcessThreadCommands()
         if (mDebuggerBreakFuncCallStack != nullptr)
         {
             CDebuggerWatchExpression watch_expression(-1, false, false, nullptr, local_exec_buffer, false);
-            handled = InitWatchExpression(watch_expression, true, *mDebuggerBreakFuncCallStack);
+            handled = InitWatchExpression(watch_expression, true, *mDebuggerBreakFuncCallStack, mDebuggerWatchStackOffset);
             if (handled)
             {
                 handled = EvalWatchExpression(watch_expression, true, *mDebuggerBreakFuncCallStack,
-                                             *mDebuggerBreakExecStack);
+                                             *mDebuggerBreakExecStack, mDebuggerWatchStackOffset);
             }
         }
 
@@ -4974,6 +5002,19 @@ void DebuggerBreakRun()
 }
 
 // --------------------------------------------------------------------------------------------------------------------
+// DebuggerSetWatchStackOffset():  Sets the selected callstack level for evaluating watch expressions (0 == top)
+// --------------------------------------------------------------------------------------------------------------------
+void DebuggerSetWatchStackOffset(int32 stack_offset)
+{
+    // -- ensure we have a script context
+    CScriptContext* script_context = GetContext();
+    if (!script_context)
+        return;
+
+    script_context->mDebuggerWatchStackOffset = stack_offset;
+}
+
+// --------------------------------------------------------------------------------------------------------------------
 // DebuggerAddVariableWatch():  Add a variable watch - requires an ID, and an expression.
 // --------------------------------------------------------------------------------------------------------------------
 void DebuggerAddVariableWatch(int32 request_id, const char* variable_watch, bool breakOnWrite)
@@ -5210,6 +5251,7 @@ REGISTER_FUNCTION(DebuggerBreakRun, DebuggerBreakRun);
 REGISTER_FUNCTION(DebuggerAddVariableWatch, DebuggerAddVariableWatch);
 REGISTER_FUNCTION(DebuggerToggleVarWatch, DebuggerToggleVarWatch);
 REGISTER_FUNCTION(DebuggerModifyVariableWatch, DebuggerModifyVariableWatch);
+REGISTER_FUNCTION(DebuggerSetWatchStackOffset, DebuggerSetWatchStackOffset);
 
 REGISTER_FUNCTION(DebuggerRequestStringUnhash, DebuggerRequestStringUnhash);
 

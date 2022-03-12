@@ -508,14 +508,16 @@ class CScriptContext
 
 		void InitWatchEntryFromVarEntry(CVariableEntry& ve, CObjectEntry* parent_oe,
                                         CDebuggerWatchVarEntry& watch_entry, CObjectEntry*& oe);
-		void AddVariableWatch(int32 request_id, const char* expression, bool breakOnWrite, const char* new_value);
+        void AddVariableWatchExpression(int32 request_id, const char* expression);
+        void AddVariableWatch(int32 request_id, const char* expression, bool breakOnWrite, const char* new_value);
 
         bool8 HasWatchExpression(CDebuggerWatchExpression& debugger_watch);
         bool8 HasTraceExpression(CDebuggerWatchExpression& debugger_watch);
         bool8 InitWatchExpression(CDebuggerWatchExpression& debugger_watch, bool use_trace,
-                                  CFunctionCallStack& call_stack);
+                                  CFunctionCallStack& call_stack, int32 stack_offset = 0);
         bool8 EvalWatchExpression(CDebuggerWatchExpression& debugger_watch, bool use_trace,
-                                  CFunctionCallStack& cur_call_stack, CExecStack& cur_exec_stack);
+                                  CFunctionCallStack& cur_call_stack, CExecStack& cur_exec_stack,
+                                  int32 stack_offset = 0);
 
         bool8 EvaluateWatchExpression(const char* expression);
 		void ToggleVarWatch(int32 watch_request_id, uint32 object_id, uint32 var_name_hash, bool breakOnWrite,
@@ -539,6 +541,7 @@ class CScriptContext
 		CFunctionCallStack* mDebuggerBreakFuncCallStack;
 		CExecStack* mDebuggerBreakExecStack;
         int32 mDebuggerVarWatchRequestID;
+        int32 mDebuggerWatchStackOffset;
 
 		int32 GetExecutionCallStack(tIdentifierString* _obj_identifier_list, tIdentifierString* _funcname_list,
 									tIdentifierString* _ns_list, tIdentifierString* _filename_list,

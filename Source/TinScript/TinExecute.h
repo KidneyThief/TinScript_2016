@@ -328,8 +328,8 @@ class CFunctionCallStack
         int32 DebuggerGetStackVarEntries(CScriptContext* script_context, CExecStack& execstack,
                                          CDebuggerWatchVarEntry* entry_array, int32 max_array_size);
 
-		bool DebuggerFindStackTopVar(CScriptContext* script_context, CExecStack& execstack, uint32 var_hash,
-								     CDebuggerWatchVarEntry& watch_entry, CVariableEntry*& ve);
+		bool DebuggerFindStackVar(CScriptContext* script_context, CExecStack& execstack, uint32 var_hash,
+								     CDebuggerWatchVarEntry& watch_entry, CVariableEntry*& ve, int32 stack_offset = 0);
 
         void BeginExecution(const uint32* instrptr);
         void BeginExecution();
@@ -408,8 +408,8 @@ bool8 DebuggerBreakLoop(CCodeBlock* cb, const uint32* instrptr, CExecStack& exec
 bool8 DebuggerAssertLoop(const char* condition, CCodeBlock* cb, const uint32* instrptr, CExecStack& execstack,
                          CFunctionCallStack& funccallstack, const char* fmt, ...);
 
-bool8 DebuggerFindStackTopVar(CScriptContext* script_context, uint32 var_hash, CDebuggerWatchVarEntry& watcn_entry,
-							  CVariableEntry*& ve);
+bool8 DebuggerFindStackVar(CScriptContext* script_context, uint32 var_hash, CDebuggerWatchVarEntry& watch_entry,
+						   CVariableEntry*& ve);
 
 // --  a debugger assert is special, in that it happens while we have a callstack and use a remote
 // -- debugger to provide insight into the issue (callstack variables can be examined for a bad value/object/etc...)

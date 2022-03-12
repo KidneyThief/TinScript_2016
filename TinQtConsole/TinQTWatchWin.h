@@ -78,12 +78,14 @@ class CDebugWatchWin : public QTreeWidget {
         CWatchEntry* FindWatchEntry(uint32 funcHash, uint32 objectID, uint32 nsHash, uint32 memberHash, bool isMember);
 
         void UpdateReturnValueEntry(const TinScript::CDebuggerWatchVarEntry& watch_var_entry);
+        bool IsTopLevelEntry(const CWatchEntry& watch_var_entry);
         void AddTopLevelEntry(const TinScript::CDebuggerWatchVarEntry& watch_var_entry, bool update_only);
         void AddObjectMemberEntry(const TinScript::CDebuggerWatchVarEntry& watch_var_entry, bool update_only);
 
         CWatchEntry* FindTopLevelWatchEntry(const char* variableWatch);
 		void AddVariableWatch(const char* variableWatch, bool breakOnWrite = false);
         void ResendVariableWatch(CWatchEntry* watch_entry);
+        void ResendAllUserWatches();
         bool GetSelectedWatchExpression(int32& out_use_watch_id, char* out_watch_string, int32 max_expr_length, char* out_value,
                                         int32 max_value_length);
 

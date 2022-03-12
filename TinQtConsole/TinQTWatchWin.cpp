@@ -186,6 +186,12 @@ void CDebugWatchWin::UpdateReturnValueEntry(const TinScript::CDebuggerWatchVarEn
     mWatchList.insert(0, new_entry);
 }
 
+bool CDebugWatchWin::IsTopLevelEntry(const CWatchEntry& watch_var_entry)
+{
+    // -- ensure this is a top level watch
+    return  (watch_var_entry.mDebuggerEntry.mObjectID == 0);
+}
+
 void CDebugWatchWin::AddTopLevelEntry(const TinScript::CDebuggerWatchVarEntry& watch_var_entry, bool update_only)
 {
     // -- find out what function call is currently selected on the stack
@@ -407,6 +413,7 @@ void CDebugWatchWin::AddObjectMemberEntry(const TinScript::CDebuggerWatchVarEntr
 }
 
 // ====================================================================================================================
+// FindTopLevelWatchEntry():  Finds a watch entry for the given expression that is *not* a child of another entry
 // ====================================================================================================================
 CWatchEntry* CDebugWatchWin::FindTopLevelWatchEntry(const char* watch_expr)
 {
@@ -456,6 +463,7 @@ void CDebugWatchWin::AddVariableWatch(const char* variableWatch, bool breakOnWri
     {
         found->mBreakOnWrite = breakOnWrite;
         ResendVariableWatch(found);
+        setCurrentItem(found);
         return;
     }
 
@@ -499,10 +507,9 @@ void CDebugWatchWin::AddVariableWatch(const char* variableWatch, bool breakOnWri
     // -- send the request to the target
     // note:  complex (e.g. function call) expressions can't be evaluated unless at a breakpoint
     ResendVariableWatch(new_entry);
-    SocketManager::SendCommandf("DebuggerAddVariableWatch(%d, `%s`, %s);",
-                                new_watch.mWatchRequestID, variableWatch,
-                                breakOnWrite ? "true" : "false");
-    new_entry->mRequestSent = true;
+
+    // -- as this is a new (or duplicated) watch, we want to see it in the window
+    setCurrentItem(new_entry);
 }
 
 // ====================================================================================================================
@@ -515,14 +522,11 @@ void CDebugWatchWin::ResendVariableWatch(CWatchEntry* watch_entry)
         return;
 
     // -- send the request to the target, if we're currently in a break point
-    SocketManager::SendCommandf("DebuggerAddVariableWatch(%d, `%s`, %s);",
+    SocketManager::SendCommandf("DebuggerAddVariableWatch(%d, `%s`, `%s`);",
                                 watch_entry->mDebuggerEntry.mWatchRequestID,
                                 watch_entry->mDebuggerEntry.mVarName,
                                 watch_entry->mBreakOnWrite ? "true" : "false");
     watch_entry->mRequestSent = true;
-
-    // -- as this is a new (or duplicated) watch, we want to see it in the window
-    setCurrentItem(watch_entry);
 }
 
 // ====================================================================================================================
@@ -781,28 +785,38 @@ void CDebugWatchWin::NotifyVarWatchMember(int32 parent_entry_index, TinScript::C
 }
 
 // ====================================================================================================================
-// NotifyBreakpointHit():  Notification that the callstack has been updated, all watch entries are complete
+// ResendAllUserWatches():  resend all variable watches that were added by the user
 // ====================================================================================================================
-void CDebugWatchWin::NotifyBreakpointHit()
+void CDebugWatchWin::ResendAllUserWatches()
 {
-	// -- loop through any dynamic watches, and re-request the value
+    // -- loop through any dynamic watches, and re-request the value
     int entry_index = 0;
     while (entry_index < mWatchList.size())
     {
         CWatchEntry* entry = mWatchList.at(entry_index);
-		if (entry->mDebuggerEntry.mWatchRequestID > 0)
-		{
-			// -- send the request to the target
-            // -- note:  we don't flag it for break unless the request hasn't yet been sent
-			SocketManager::SendCommandf("DebuggerAddVariableWatch(%d, `%s`, %s);",
-                                        entry->mDebuggerEntry.mWatchRequestID, entry->mDebuggerEntry.mVarName,
-                                        !entry->mRequestSent && entry->mBreakOnWrite ? "true" : "false");
-            entry->mRequestSent = true;
-		}
+        if (entry->mDebuggerEntry.mWatchRequestID > 0)
+        {
+            // -- send the request to the target
+            // -- note:  we only send top level watches, as their children will be populated as expected
+            if (IsTopLevelEntry(*entry))
+            {
+                ResendVariableWatch(entry);
+            }
+        }
 
-		// -- next entry
-		++entry_index;
-	}
+        // -- next entry
+        ++entry_index;
+    }
+}
+
+// ====================================================================================================================
+// NotifyBreakpointHit():  Notification that the callstack has been updated, all watch entries are complete
+// ====================================================================================================================
+void CDebugWatchWin::NotifyBreakpointHit()
+{
+    // -- when a breakpoint is hit, we want to re-query all the manual watch values
+    // the rest (locals, etc...) are sent automatically
+    ResendAllUserWatches();
 }
 
 // ====================================================================================================================
@@ -913,7 +927,7 @@ void CDebugWatchWin::keyPressEvent(QKeyEvent* event)
         CWatchEntry* cur_item = static_cast<CWatchEntry*>(currentItem());
         if (cur_item)
         {
-            // -- we're only allowed to delete top level entries (no children), and only from dyanic watches
+            // -- we're only allowed to delete top level entries (no children), and only from dynamic watches
             if (cur_item->mDebuggerEntry.mWatchRequestID > 0 && cur_item->mDebuggerEntry.mObjectID == 0)
             {
                 // -- find the index for the entry

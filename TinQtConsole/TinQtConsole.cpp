@@ -2340,10 +2340,24 @@ void CConsoleOutput::HandlePacketWatchVarEntry(int32* dataPtr)
     // -- cached var object ID
     watch_var_entry.mVarObjectID = *dataPtr++;
 
-    // -- notify the debugger - see if we can find matching entries, and update them all, both autos and watches
-	CConsoleWindow::GetInstance()->GetDebugWatchesWin()->NotifyVarWatchResponse(&watch_var_entry);
-	CConsoleWindow::GetInstance()->GetDebugWatchesWin()->NotifyWatchVarEntry(&watch_var_entry, true);
-	CConsoleWindow::GetInstance()->GetDebugAutosWin()->NotifyWatchVarEntry(&watch_var_entry, false);
+    // -- this packet is received both for updating autos and watch entries...
+    // -- if there's a watch requestID, then it's a response to a user entered watch expression
+    bool is_response = watch_var_entry.mWatchRequestID > 0;
+    if (!is_response)
+    {
+        // -- if it's not a response, we can "update only" in the watch window, but we add to the autos window
+        CConsoleWindow::GetInstance()->GetDebugWatchesWin()->NotifyWatchVarEntry(&watch_var_entry, true);
+        CConsoleWindow::GetInstance()->GetDebugAutosWin()->NotifyWatchVarEntry(&watch_var_entry, false);
+    }
+    else
+    {
+        // -- otherwise, as a response, we update only in the autos, but we want to ensure the
+        // entry exists in the watches window
+        CConsoleWindow::GetInstance()->GetDebugAutosWin()->NotifyWatchVarEntry(&watch_var_entry, true);
+        CConsoleWindow::GetInstance()->GetDebugWatchesWin()->NotifyVarWatchResponse(&watch_var_entry);
+    }
+
+    // -- also, this entry may update the value in an object inspector window
     CConsoleWindow::GetInstance()->NotifyWatchVarEntry(&watch_var_entry);
 }
 

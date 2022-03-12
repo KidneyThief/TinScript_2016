@@ -784,6 +784,14 @@ void CDebugCallstackWin::OnDoubleClicked(QListWidgetItem* item)
         if (mCallstack.at(i) == stack_entry)
         {
             CConsoleWindow::GetInstance()->GetDebugAutosWin()->NotifyUpdateCallstack(false);
+
+            // -- notify the the target which stack offset we should be evaluating expressions
+            SocketManager::SendCommandf("DebuggerSetWatchStackOffset(%d);", i);
+
+            // -- we also want to re-query all user variable watches, since they'll
+            // have different values at a different stack level
+            CConsoleWindow::GetInstance()->GetDebugWatchesWin()->ResendAllUserWatches();
+
             break;
         }
     }

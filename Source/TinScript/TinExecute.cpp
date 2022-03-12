@@ -646,21 +646,66 @@ int32 CFunctionCallStack::DebuggerGetStackVarEntries(CScriptContext* script_cont
 }
 
 // ====================================================================================================================
-// DebuggerFindStackTopVar():  Find the variable entry by hash, existing in the top stack frame.
+// DebuggerFindStackVar():  Find the variable entry by hash, existing in the top stack frame.
 // ====================================================================================================================
-bool CFunctionCallStack::DebuggerFindStackTopVar(CScriptContext* script_context, CExecStack& execstack,
+bool CFunctionCallStack::DebuggerFindStackVar(CScriptContext* script_context, CExecStack& execstack,
                                                  uint32 var_hash, CDebuggerWatchVarEntry& watch_entry,
-												 CVariableEntry*& found_ve)
+												 CVariableEntry*& found_ve, int stack_offset)
 {
+    // -- get the stack offset requested - ensure it's on the execution stack
 	found_ve = NULL;
-    int32 stack_index = m_stacktop - 1;
-    while (stack_index >= 0)
+    int32 stack_index = m_stacktop - 1 - stack_offset;
+    if (stack_index < 0)
+        return false;
+
+    // -- ensure it's actually executing
+    if (!m_functionEntryStack[stack_index].isexecuting)
+        return false;
+
+
+    // -- if this function call is a method, and we're requesting the "self" variable
+    if (m_functionEntryStack[stack_index].objentry != NULL && var_hash == Hash("self"))
     {
-        if (m_functionEntryStack[stack_index].isexecuting)
-        {
-            // -- if this function call is a method, and we're requesting the "self" variable
-            if (m_functionEntryStack[stack_index].objentry != NULL && var_hash == Hash("self"))
-            {
+		// -- clear the dynamic watch request ID
+		watch_entry.mWatchRequestID = 0;
+
+        // -- set the stack level
+        watch_entry.mStackLevel = stack_index;
+
+		// -- copy the calling function info
+		watch_entry.mFuncNamespaceHash = m_functionEntryStack[stack_index].fe_ns_hash;
+		watch_entry.mFunctionHash = m_functionEntryStack[stack_index].fe_hash;
+		watch_entry.mFunctionObjectID = m_functionEntryStack[stack_index].oe_id;
+
+		// -- this isn't a member of an object
+		watch_entry.mObjectID = 0;
+		watch_entry.mNamespaceHash = 0;
+
+		// -- copy the var type, name and value
+		watch_entry.mType = TYPE_object;
+		strcpy_s(watch_entry.mVarName, "self");
+		sprintf_s(watch_entry.mValue, "%d", m_functionEntryStack[stack_index].oe_id);
+
+		// -- copy the var type
+		watch_entry.mVarHash = var_hash;
+		watch_entry.mVarObjectID = m_functionEntryStack[stack_index].oe_id;
+
+		return (true);
+	}
+
+	// -- else see if it's a valid stack var
+	else
+	{
+		// -- get the variable table
+		tVarTable* func_vt = m_functionEntryStack[stack_index].funcentry->GetLocalVarTable();
+		CVariableEntry* ve = func_vt->First();
+		while (ve)
+		{
+			if (ve->GetHash() == var_hash)
+			{
+				// -- set the ve result
+				found_ve = ve;
+
 				// -- clear the dynamic watch request ID
 				watch_entry.mWatchRequestID = 0;
 
@@ -676,93 +721,42 @@ bool CFunctionCallStack::DebuggerFindStackTopVar(CScriptContext* script_context,
 				watch_entry.mObjectID = 0;
 				watch_entry.mNamespaceHash = 0;
 
-				// -- copy the var type, name and value
-				watch_entry.mType = TYPE_object;
-				strcpy_s(watch_entry.mVarName, "self");
-				sprintf_s(watch_entry.mValue, "%d", m_functionEntryStack[stack_index].oe_id);
-
 				// -- copy the var type
-				watch_entry.mVarHash = var_hash;
-				watch_entry.mVarObjectID = m_functionEntryStack[stack_index].oe_id;
+				watch_entry.mType = ve->GetType();
 
+				// -- copy the var name
+				SafeStrcpy(watch_entry.mVarName, sizeof(watch_entry.mVarName), UnHash(ve->GetHash()), kMaxNameLength);
+
+				// -- get the address on the stack, where this local var is stored
+				int32 func_stacktop = m_functionEntryStack[stack_index].stackvaroffset;
+				int32 var_stackoffset = ve->GetStackOffset();
+				void* stack_var_addr = execstack.GetStackVarAddr(func_stacktop, var_stackoffset);
+
+				// -- copy the value, as a string (to a max length)
+              	gRegisteredTypeToString[ve->GetType()](script_context, stack_var_addr, watch_entry.mValue, kMaxNameLength);
+
+				// -- fill in the hash of the var name, and if applicable, the var object ID
+				watch_entry.mVarHash = ve->GetHash();
+				watch_entry.mVarObjectID = 0;
+				if (ve->GetType() == TYPE_object)
+				{
+					watch_entry.mVarObjectID = stack_var_addr ? *(uint32*)stack_var_addr : 0;
+
+					// -- ensure the object actually exists
+					if (script_context->FindObjectEntry(watch_entry.mVarObjectID) == NULL)
+					{
+						watch_entry.mVarObjectID = 0;
+						watch_entry.mValue[0] = '\0';
+					}
+				}
+
+				// -- success
 				return (true);
 			}
 
-			// -- else see if it's a valid stack var
-			else
-			{
-				// -- get the variable table
-				tVarTable* func_vt = m_functionEntryStack[stack_index].funcentry->GetLocalVarTable();
-				CVariableEntry* ve = func_vt->First();
-				while (ve)
-				{
-					if (ve->GetHash() == var_hash)
-					{
-						// -- set the ve result
-						found_ve = ve;
-
-						// -- clear the dynamic watch request ID
-						watch_entry.mWatchRequestID = 0;
-
-                        // -- set the stack level
-                        watch_entry.mStackLevel = stack_index;
-
-						// -- copy the calling function info
-						watch_entry.mFuncNamespaceHash = m_functionEntryStack[stack_index].fe_ns_hash;
-						watch_entry.mFunctionHash = m_functionEntryStack[stack_index].fe_hash;
-						watch_entry.mFunctionObjectID = m_functionEntryStack[stack_index].oe_id;
-
-						// -- this isn't a member of an object
-						watch_entry.mObjectID = 0;
-						watch_entry.mNamespaceHash = 0;
-
-						// -- copy the var type
-						watch_entry.mType = ve->GetType();
-
-						// -- copy the var name
-						SafeStrcpy(watch_entry.mVarName, sizeof(watch_entry.mVarName), UnHash(ve->GetHash()), kMaxNameLength);
-
-						// -- get the address on the stack, where this local var is stored
-						int32 func_stacktop = m_functionEntryStack[stack_index].stackvaroffset;
-						int32 var_stackoffset = ve->GetStackOffset();
-						void* stack_var_addr = execstack.GetStackVarAddr(func_stacktop, var_stackoffset);
-
-						// -- copy the value, as a string (to a max length)
-              			gRegisteredTypeToString[ve->GetType()](script_context, stack_var_addr, watch_entry.mValue, kMaxNameLength);
-
-						// -- fill in the hash of the var name, and if applicable, the var object ID
-						watch_entry.mVarHash = ve->GetHash();
-						watch_entry.mVarObjectID = 0;
-						if (ve->GetType() == TYPE_object)
-						{
-							watch_entry.mVarObjectID = stack_var_addr ? *(uint32*)stack_var_addr : 0;
-
-							// -- ensure the object actually exists
-							if (script_context->FindObjectEntry(watch_entry.mVarObjectID) == NULL)
-							{
-								watch_entry.mVarObjectID = 0;
-								watch_entry.mValue[0] = '\0';
-							}
-						}
-
-						// -- success
-						return (true);
-					}
-
-					// -- try the next var
-					ve = func_vt->Next();
-				}
-
-				// -- not found - we're done
-				return (false);
-			}
-
-			// -- we stop at the the first executing stack entry
-			break;
+			// -- try the next var
+			ve = func_vt->Next();
 		}
-
-		// -- next layer
-		--stack_index;
 	}
 
 	// -- not found
@@ -1394,6 +1388,7 @@ bool8 DebuggerBreakLoop(CCodeBlock* cb, const uint32* instrptr, CExecStack& exec
     script_context->mDebuggerBreakLoopGuard = true;
 	script_context->mDebuggerBreakFuncCallStack = &funccallstack;
 	script_context->mDebuggerBreakExecStack = &execstack;
+    script_context->mDebuggerWatchStackOffset = 0;
 
     // -- set the current callstack we're breaking in
     g_DebuggerBreakLastCallstack = &funccallstack;
@@ -1489,30 +1484,32 @@ bool8 DebuggerBreakLoop(CCodeBlock* cb, const uint32* instrptr, CExecStack& exec
 
     // -- release the guard
     script_context->mDebuggerBreakLoopGuard = false;
-	script_context->mDebuggerBreakFuncCallStack = NULL;
-	script_context->mDebuggerBreakExecStack = NULL;
+	script_context->mDebuggerBreakFuncCallStack = nullptr;
+	script_context->mDebuggerBreakExecStack = nullptr;
+    script_context->mDebuggerWatchStackOffset = 0;
 
     // -- we successfully handled the breakpoint with the loop
     return (true);
 }
 
 // ====================================================================================================================
-// DebuggerFindStackTopVar():  Interface to retrieve the variable entry for a currently executing function.
+// DebuggerFindStackVar():  Interface to retrieve the variable entry for a currently executing function.
 // ====================================================================================================================
-bool8 DebuggerFindStackTopVar(CScriptContext* script_context, uint32 var_hash, CDebuggerWatchVarEntry& watch_entry,
+bool8 DebuggerFindStackVar(CScriptContext* script_context, uint32 var_hash, CDebuggerWatchVarEntry& watch_entry,
 							  CVariableEntry*& ve)
 {
 	// -- this is only valid while we're broken in the debugger
 	if (!script_context || !script_context->mDebuggerConnected || !script_context->mDebuggerBreakLoopGuard)
 		return (false);
 
-	// -- ensure we have a function call stac, and an exec stack
+	// -- ensure we have a function call stack, and an exec stack
 	if (!script_context->mDebuggerBreakFuncCallStack || !script_context->mDebuggerBreakExecStack)
 		return (false);
 
 	return (script_context->mDebuggerBreakFuncCallStack->
-							DebuggerFindStackTopVar(script_context, *script_context->mDebuggerBreakExecStack,
-													var_hash, watch_entry, ve));
+							DebuggerFindStackVar(script_context, *script_context->mDebuggerBreakExecStack,
+											     var_hash, watch_entry, ve,
+                                                 script_context->mDebuggerWatchStackOffset));
 }
 
 // ====================================================================================================================
