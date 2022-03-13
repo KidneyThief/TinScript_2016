@@ -288,29 +288,29 @@ class CDebuggerWatchVarEntry
 		// -- watches that are dynamic user requests are "iffy", and
 		// -- we'll use a request ID, if we're able to match a watch expression
 		// -- with a type and value
-		uint32 mWatchRequestID;
-        int32 mStackLevel;
+		uint32 mWatchRequestID = 0;
+        int32 mStackLevel = -1;
 
         // -- three members identifying the calling function
-        uint32 mFuncNamespaceHash;
-        uint32 mFunctionHash;
-        uint32 mFunctionObjectID;
+        uint32 mFuncNamespaceHash = 0;
+        uint32 mFunctionHash = 0;
+        uint32 mFunctionObjectID = 0;
 
         // -- two members if this variable is an object member
-        uint32 mObjectID;
-        uint32 mNamespaceHash;
+        uint32 mObjectID = 0;
+        uint32 mNamespaceHash = 0;
 
         // -- type, name, and value of variable/member
         // -- if the mType is void, and we have an objectID and namespace hash,
         // -- then we have a namespace label
-        eVarType mType;
-        int mArraySize;
+        eVarType mType = eVarType::TYPE_void;
+        int mArraySize = 0;
         char mVarName[kMaxNameLength];
         char mValue[kMaxNameLength];
 
         // -- cached values for the hash of the VarName, and the var objectID (for TYPE_object vars)
-        uint32 mVarHash;
-        uint32 mVarObjectID;
+        uint32 mVarHash = 0;
+        uint32 mVarObjectID = 0;
 };
 
 // ====================================================================================================================
@@ -514,10 +514,10 @@ class CScriptContext
         bool8 HasWatchExpression(CDebuggerWatchExpression& debugger_watch);
         bool8 HasTraceExpression(CDebuggerWatchExpression& debugger_watch);
         bool8 InitWatchExpression(CDebuggerWatchExpression& debugger_watch, bool use_trace,
-                                  CFunctionCallStack& call_stack, int32 stack_offset = 0);
+                                  CFunctionCallStack& call_stack, int32 execution_offset = 0);
         bool8 EvalWatchExpression(CDebuggerWatchExpression& debugger_watch, bool use_trace,
                                   CFunctionCallStack& cur_call_stack, CExecStack& cur_exec_stack,
-                                  int32 stack_offset = 0);
+                                  int32 execution_offset = 0);
 
         bool8 EvaluateWatchExpression(const char* expression);
 		void ToggleVarWatch(int32 watch_request_id, uint32 object_id, uint32 var_name_hash, bool breakOnWrite,

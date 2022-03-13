@@ -135,8 +135,9 @@ _declspec(thread) CFunctionCallStack* g_DebuggerBreakLastCallstack = nullptr;
 _declspec(thread) int32 g_DebuggerBreakLastLineNumber = -1;
 _declspec(thread) int32 g_DebuggerBreakLastStackDepth = -1;
 
-CFunctionCallStack::CFunctionCallStack()
+CFunctionCallStack::CFunctionCallStack(CExecStack* var_execstack)
 {
+    m_varExecStack = var_execstack;
 	m_functionEntryStack = (tFunctionCallEntry*)m_functionStackStorage;
 	m_size = kExecFuncCallDepth;
 	m_stacktop = 0;
@@ -283,6 +284,45 @@ CFunctionEntry* CFunctionCallStack::Pop(CObjectEntry*& objentry, int32& var_offs
 	}
 
 	return (m_functionEntryStack[--m_stacktop].funcentry);
+}
+
+// ====================================================================================================================
+// GetBreakExecutionFunctionCallEntry():  Get the function call entry from callstack, at the internal stack offset
+// ====================================================================================================================
+const CFunctionCallStack* CFunctionCallStack::GetBreakExecutionFunctionCallEntry(int32 execution_depth, int32& stack_depth)
+{
+    // -- sanity check
+    if (execution_depth < 0)
+        return false;
+
+    int32 current_stack_index = 0;
+    CFunctionCallStack* walk = this;
+    while (walk != nullptr)
+    {
+        int32 walk_depth = walk->GetStackDepth();
+        for (int32 walk_index = 0; walk_index < walk_depth; ++walk_index)
+        {
+            uint32 oe_id = 0;
+            uint32 fe_hash = 0;
+            const tFunctionCallEntry* func_call_entry = walk->GetExecutingCallByIndex(walk_index);
+            if (func_call_entry != nullptr)
+            {
+                // -- if we've found an executing fe, see if we've counted up to the requested execution depth
+                if (current_stack_index++ == execution_depth)
+                {
+                    // -- the output is the index into the function callstack,
+                    // and the actual function callstack that contains the execution function at the global depth
+                    stack_depth = walk_index;
+                    return walk;
+                }
+            }
+        }
+
+        walk = walk->m_ExecutionNext;
+    }
+
+    // -- we've run out of executing functions, and have not reached our execution depth
+    return nullptr;
 }
 
 // ====================================================================================================================
@@ -646,36 +686,48 @@ int32 CFunctionCallStack::DebuggerGetStackVarEntries(CScriptContext* script_cont
 }
 
 // ====================================================================================================================
-// DebuggerFindStackVar():  Find the variable entry by hash, existing in the top stack frame.
+// FindExecutionStackVar():  Find the variable entry by hash, at the execution stack offset
 // ====================================================================================================================
-bool CFunctionCallStack::DebuggerFindStackVar(CScriptContext* script_context, CExecStack& execstack,
-                                                 uint32 var_hash, CDebuggerWatchVarEntry& watch_entry,
-												 CVariableEntry*& found_ve, int stack_offset)
+bool CFunctionCallStack::FindExecutionStackVar(uint32 var_hash, CDebuggerWatchVarEntry& watch_entry,
+											   CVariableEntry*& found_ve)
 {
-    // -- get the stack offset requested - ensure it's on the execution stack
-	found_ve = NULL;
-    int32 stack_index = m_stacktop - 1 - stack_offset;
-    if (stack_index < 0)
+    // -- initialize the output param
+    found_ve = NULL;
+
+    CScriptContext* script_context = TinScript::GetContext();
+    if (script_context == nullptr || script_context->mDebuggerBreakFuncCallStack == nullptr)
         return false;
 
-    // -- ensure it's actually executing
-    if (!m_functionEntryStack[stack_index].isexecuting)
+    // -- looking for a stack variable, we need to consider the entire execution stack, not just the current VMs
+    // -- the depth we're looking for is the debugger execution stack offset
+    int32 execution_offset = TinScript::GetContext()->mDebuggerWatchStackOffset;
+    int32 stack_offset = -1;
+    const CFunctionCallStack* debug_callstack =
+        script_context->mDebuggerBreakFuncCallStack->GetBreakExecutionFunctionCallEntry(execution_offset, stack_offset);
+    if (debug_callstack == nullptr)
         return false;
 
+    // -- all function call stacks are associated with their storage for local variables...
+    CExecStack* execstack = debug_callstack->GetVariableExecStack();
+
+    // -- this isn't safe - do not cache/use this address beyond the above function call...!!
+    const tFunctionCallEntry* func_call_entry = debug_callstack->GetExecutingCallByIndex(stack_offset);
+    if (func_call_entry == nullptr || execstack == nullptr)
+        return false;
 
     // -- if this function call is a method, and we're requesting the "self" variable
-    if (m_functionEntryStack[stack_index].objentry != NULL && var_hash == Hash("self"))
+    if (func_call_entry->objentry != NULL && var_hash == Hash("self"))
     {
 		// -- clear the dynamic watch request ID
 		watch_entry.mWatchRequestID = 0;
 
         // -- set the stack level
-        watch_entry.mStackLevel = stack_index;
+        watch_entry.mStackLevel = stack_offset;
 
 		// -- copy the calling function info
-		watch_entry.mFuncNamespaceHash = m_functionEntryStack[stack_index].fe_ns_hash;
-		watch_entry.mFunctionHash = m_functionEntryStack[stack_index].fe_hash;
-		watch_entry.mFunctionObjectID = m_functionEntryStack[stack_index].oe_id;
+		watch_entry.mFuncNamespaceHash = func_call_entry->fe_ns_hash;
+		watch_entry.mFunctionHash = func_call_entry->fe_hash;
+		watch_entry.mFunctionObjectID = func_call_entry->oe_id;
 
 		// -- this isn't a member of an object
 		watch_entry.mObjectID = 0;
@@ -684,11 +736,11 @@ bool CFunctionCallStack::DebuggerFindStackVar(CScriptContext* script_context, CE
 		// -- copy the var type, name and value
 		watch_entry.mType = TYPE_object;
 		strcpy_s(watch_entry.mVarName, "self");
-		sprintf_s(watch_entry.mValue, "%d", m_functionEntryStack[stack_index].oe_id);
+		sprintf_s(watch_entry.mValue, "%d", func_call_entry->oe_id);
 
 		// -- copy the var type
 		watch_entry.mVarHash = var_hash;
-		watch_entry.mVarObjectID = m_functionEntryStack[stack_index].oe_id;
+		watch_entry.mVarObjectID = func_call_entry->oe_id;
 
 		return (true);
 	}
@@ -697,7 +749,7 @@ bool CFunctionCallStack::DebuggerFindStackVar(CScriptContext* script_context, CE
 	else
 	{
 		// -- get the variable table
-		tVarTable* func_vt = m_functionEntryStack[stack_index].funcentry->GetLocalVarTable();
+		tVarTable* func_vt = func_call_entry->funcentry->GetLocalVarTable();
 		CVariableEntry* ve = func_vt->First();
 		while (ve)
 		{
@@ -710,12 +762,12 @@ bool CFunctionCallStack::DebuggerFindStackVar(CScriptContext* script_context, CE
 				watch_entry.mWatchRequestID = 0;
 
                 // -- set the stack level
-                watch_entry.mStackLevel = stack_index;
+                watch_entry.mStackLevel = stack_offset;
 
 				// -- copy the calling function info
-				watch_entry.mFuncNamespaceHash = m_functionEntryStack[stack_index].fe_ns_hash;
-				watch_entry.mFunctionHash = m_functionEntryStack[stack_index].fe_hash;
-				watch_entry.mFunctionObjectID = m_functionEntryStack[stack_index].oe_id;
+				watch_entry.mFuncNamespaceHash = func_call_entry->fe_ns_hash;
+				watch_entry.mFunctionHash = func_call_entry->fe_hash;
+				watch_entry.mFunctionObjectID = func_call_entry->oe_id;
 
 				// -- this isn't a member of an object
 				watch_entry.mObjectID = 0;
@@ -728,12 +780,12 @@ bool CFunctionCallStack::DebuggerFindStackVar(CScriptContext* script_context, CE
 				SafeStrcpy(watch_entry.mVarName, sizeof(watch_entry.mVarName), UnHash(ve->GetHash()), kMaxNameLength);
 
 				// -- get the address on the stack, where this local var is stored
-				int32 func_stacktop = m_functionEntryStack[stack_index].stackvaroffset;
+				int32 func_stacktop = func_call_entry->stackvaroffset;
 				int32 var_stackoffset = ve->GetStackOffset();
-				void* stack_var_addr = execstack.GetStackVarAddr(func_stacktop, var_stackoffset);
+				void* stack_var_addr = execstack->GetStackVarAddr(func_stacktop, var_stackoffset);
 
 				// -- copy the value, as a string (to a max length)
-              	gRegisteredTypeToString[ve->GetType()](script_context, stack_var_addr, watch_entry.mValue, kMaxNameLength);
+              	gRegisteredTypeToString[ve->GetType()](TinScript::GetContext(), stack_var_addr, watch_entry.mValue, kMaxNameLength);
 
 				// -- fill in the hash of the var name, and if applicable, the var object ID
 				watch_entry.mVarHash = ve->GetHash();
@@ -743,7 +795,7 @@ bool CFunctionCallStack::DebuggerFindStackVar(CScriptContext* script_context, CE
 					watch_entry.mVarObjectID = stack_var_addr ? *(uint32*)stack_var_addr : 0;
 
 					// -- ensure the object actually exists
-					if (script_context->FindObjectEntry(watch_entry.mVarObjectID) == NULL)
+					if (TinScript::GetContext()->FindObjectEntry(watch_entry.mVarObjectID) == NULL)
 					{
 						watch_entry.mVarObjectID = 0;
 						watch_entry.mValue[0] = '\0';
@@ -884,7 +936,7 @@ const char* CFunctionCallStack::GetExecutingFunctionCallString(bool& isScriptFun
 // ====================================================================================================================
 // IsExecutingByIndex():  return bool if the index is a valid executing function call
 // ====================================================================================================================
-bool CFunctionCallStack::IsExecutingByIndex(int32 stack_top_offset, bool& is_watch_expression)
+bool CFunctionCallStack::IsExecutingByIndex(int32 stack_top_offset, bool& is_watch_expression) const
 {
     // -- init the return value
     is_watch_expression = false;
@@ -903,6 +955,29 @@ bool CFunctionCallStack::IsExecutingByIndex(int32 stack_top_offset, bool& is_wat
 
     // -- valid index for an executing function
     return true;
+}
+
+// ====================================================================================================================
+// GetExecutingCallByIndex():  Get the function entry call at the stack index (from the top), if executing
+// ====================================================================================================================
+const CFunctionCallStack::tFunctionCallEntry* CFunctionCallStack::GetExecutingCallByIndex(int32 stack_top_offset) const
+{
+    bool dummy;
+    if (!IsExecutingByIndex(stack_top_offset, dummy))
+        return (false);
+
+	// note:  we count from the top down
+    // note: this is unsafe!!  returning an internal stack pointer - it had better not be cached or used beyond
+    // the scope of the calling function!
+	int32 stack_top_index = m_stacktop - 1;
+	int32 stack_index = stack_top_index - stack_top_offset;
+    if (m_functionEntryStack[stack_index].isexecuting)
+    {
+        return &m_functionEntryStack[stack_index];
+    }
+
+    // -- not executing
+    return nullptr;
 }
 
 // ====================================================================================================================
@@ -1055,7 +1130,7 @@ bool8 ExecuteCodeBlock(CCodeBlock& codeblock)
 {
 	// -- create the stack to use for the execution
 	CExecStack execstack;
-    CFunctionCallStack funccallstack;
+    CFunctionCallStack funccallstack(&execstack);
 
     return (codeblock.Execute(0, execstack, funccallstack));
 }
@@ -1103,7 +1178,7 @@ bool8 ExecuteScheduledFunction(CScriptContext* script_context, uint32 objectid, 
 
 	// -- create the stack to use for the execution
 	CExecStack execstack;
-    CFunctionCallStack funccallstack;
+    CFunctionCallStack funccallstack(&execstack);
 
     // -- nullvalue used to clear parameter values
     char nullvalue[MAX_TYPE_SIZE];
@@ -1506,10 +1581,9 @@ bool8 DebuggerFindStackVar(CScriptContext* script_context, uint32 var_hash, CDeb
 	if (!script_context->mDebuggerBreakFuncCallStack || !script_context->mDebuggerBreakExecStack)
 		return (false);
 
-	return (script_context->mDebuggerBreakFuncCallStack->
-							DebuggerFindStackVar(script_context, *script_context->mDebuggerBreakExecStack,
-											     var_hash, watch_entry, ve,
-                                                 script_context->mDebuggerWatchStackOffset));
+    // -- find the stack variable - it'll use the mDebuggerWatchStackOffset, so we can find
+    // locals from functions not at the stack top
+	return (CFunctionCallStack::FindExecutionStackVar(var_hash, watch_entry, ve));
 }
 
 // ====================================================================================================================

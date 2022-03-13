@@ -270,8 +270,10 @@ class CFunctionCallStack
 {
 	public:
         struct tFunctionCallEntry;
-		CFunctionCallStack();
+		CFunctionCallStack(CExecStack* var_execstack = nullptr);
 		virtual ~CFunctionCallStack();
+
+        CExecStack* GetVariableExecStack() const { return m_varExecStack; }
 
 		void Push(CFunctionEntry* functionentry, CObjectEntry* objentry, int32 varoffset, bool is_watch = false);
 		CFunctionEntry* Pop(CObjectEntry*& objentry, int32& var_offset);
@@ -328,16 +330,14 @@ class CFunctionCallStack
         int32 DebuggerGetStackVarEntries(CScriptContext* script_context, CExecStack& execstack,
                                          CDebuggerWatchVarEntry* entry_array, int32 max_array_size);
 
-		bool DebuggerFindStackVar(CScriptContext* script_context, CExecStack& execstack, uint32 var_hash,
-								     CDebuggerWatchVarEntry& watch_entry, CVariableEntry*& ve, int32 stack_offset = 0);
-
         void BeginExecution(const uint32* instrptr);
         void BeginExecution();
 
         CFunctionEntry* GetExecuting(uint32& obj_id, CObjectEntry*& objentry, int32& varoffset);
-        bool IsExecutingByIndex(int32 stack_top_offset, bool& is_watch_expression);
+        bool IsExecutingByIndex(int32 stack_top_offset, bool& is_watch_expression) const;
 		bool GetExecutingByIndex(uint32& oe_id, CObjectEntry*& objentry, uint32& fe_hash, CFunctionEntry*& funcentry,
                                  uint32& _ns_hash, uint32& _cb_hash, int32& _linenumber, int32 stack_top_offset);
+        const tFunctionCallEntry* GetExecutingCallByIndex(int32 stack_top_offset) const;
    		CFunctionEntry* GetTopMethod(CObjectEntry*& objentry);
         static void FormatFunctionCallString(char* bufferptr, int32 buffer_len, CObjectEntry* fc_oe,
                                                           CFunctionEntry* fc_fe, uint32 fc_ns, uint32 fc_fn,
@@ -367,6 +367,11 @@ class CFunctionCallStack
         // member that is not a global (thread) var
         uint32 mDebuggerFunctionReload;
 
+        static bool FindExecutionStackVar(uint32 var_hash, CDebuggerWatchVarEntry& watch_entry, CVariableEntry*& ve);
+
+        // -- we're looking for the function call at the internal mDebuggerWatchStackOffset, from the break callstack
+        const CFunctionCallStack* GetBreakExecutionFunctionCallEntry(int32 execution_depth, int32& stack_offset);
+
 		// -- for the crash reporter, we may need to get the complete script callstack being executed
 		static int32 GetCompleteExecutionStack(CObjectEntry** _objentry_list, CFunctionEntry** _funcentry_list,
 											   uint32* _ns_hash_list, uint32* _cb_hash_list,
@@ -376,6 +381,7 @@ class CFunctionCallStack
         static void NotifyFunctionDeleted(CFunctionEntry* deleted_fe);
 
 	private:
+        CExecStack* m_varExecStack = nullptr;
         char m_functionStackStorage[sizeof(tFunctionCallEntry) * kExecFuncCallDepth];
         tFunctionCallEntry* m_functionEntryStack;
 		int32 m_size;

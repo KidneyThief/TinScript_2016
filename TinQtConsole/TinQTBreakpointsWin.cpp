@@ -786,7 +786,12 @@ void CDebugCallstackWin::OnDoubleClicked(QListWidgetItem* item)
             CConsoleWindow::GetInstance()->GetDebugAutosWin()->NotifyUpdateCallstack(false);
 
             // -- notify the the target which stack offset we should be evaluating expressions
-            SocketManager::SendCommandf("DebuggerSetWatchStackOffset(%d);", i);
+            // note:  this must be sent as a SendExec(), so it arrives first, and independent of
+            // the queued commands to update watch values
+            static uint32 func_hash = TinScript::Hash("DebuggerSetWatchStackOffset");
+            char buf[8];
+            sprintf_s(buf, 8, "%d", i);
+            SocketManager::SendExec(func_hash, buf);
 
             // -- we also want to re-query all user variable watches, since they'll
             // have different values at a different stack level

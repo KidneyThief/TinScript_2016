@@ -1884,10 +1884,13 @@ void CScriptContext::AddVariableWatchExpression(int32 request_id, const char* va
         return;
     
     // -- watch expressions can handle a the complete syntax, but are unable to set a break on a variable entry
+    // note:  they're evaluated as trace expressions, but we want a result out of them, so init/execute
+    // as a conditional which will wrap them with:  return (expr);
     CDebuggerWatchExpression watch_expression(-1, false, false, variable_watch, NULL, false);
     bool result = InitWatchExpression(watch_expression, false, *mDebuggerBreakFuncCallStack, mDebuggerWatchStackOffset);
 
     // -- if we were successful initializing the expression (e.g. a codeblock and function were created
+    bool valid_response = false;
     if (result)
     {
         // -- if evaluating the watch was successful
@@ -1934,6 +1937,7 @@ void CScriptContext::AddVariableWatchExpression(int32 request_id, const char* va
                 DebuggerWatchFormatValue(&watch_result, returnValue);
 
 			    // -- send the response
+                valid_response = true;
 			    DebuggerSendWatchVariable(&watch_result);
 
 			    // -- if the result is an object, then send the complete object
@@ -1943,6 +1947,18 @@ void CScriptContext::AddVariableWatchExpression(int32 request_id, const char* va
 			    }
             }
         }
+    }
+
+    // -- if we couldn't initialize the watch expression (e.g. it's not a parse-able block of code)
+    // or the pre-existing watch function isn't valid at this execution stack offset, 
+    // and since it wasn't a found variable, send a "--" value result
+    if (!valid_response && request_id > 0)
+    {
+        CDebuggerWatchVarEntry null_response;
+        null_response.mWatchRequestID = request_id;
+        SafeStrcpy(null_response.mVarName, sizeof(null_response.mVarName), variable_watch);
+        SafeStrcpy(null_response.mValue, sizeof(null_response.mValue), "--");
+        DebuggerSendWatchVariable(&null_response);
     }
 }
 
@@ -2207,7 +2223,7 @@ bool8 CScriptContext::HasTraceExpression(CDebuggerWatchExpression& debugger_watc
 // InitWatchExpression():  Given a watch structure, create and compile a codeblock that can be stored and evaluated.
 // ====================================================================================================================
 bool8 CScriptContext::InitWatchExpression(CDebuggerWatchExpression& debugger_watch, bool use_trace,
-                                          CFunctionCallStack& call_stack, int32 stack_offset)
+                                          CFunctionCallStack& cur_call_stack, int32 execution_offset)
 {
     // -- depending on whether we're initializing the trace expression or the conditional, set the local vars
     const char* expression = use_trace ? debugger_watch.mTrace : debugger_watch.mConditional;
@@ -2221,21 +2237,24 @@ bool8 CScriptContext::InitWatchExpression(CDebuggerWatchExpression& debugger_wat
     // -- every time a watch is initialized, we bump the ID to ensure a 100% unique name
     int32 watch_id = CDebuggerWatchExpression::gWatchExpressionID++;
 
-    // -- find the function we're executing at the given stack offset
-    int32 stacktop = 0;
-    uint32 cur_oe_id = 0;
-    CObjectEntry* cur_object = NULL;
-    uint32 fe_hash = 0;
-    CFunctionEntry* cur_function = NULL;
-    uint32 ns_hash = 0;
-    uint32 cb_hash = 0;
-    int32 line_number = 1;
-    call_stack.GetExecutingByIndex(cur_oe_id, cur_object, fe_hash, cur_function, ns_hash,
-                                   cb_hash, line_number, stack_offset);
+    int32 stack_offset = -1;
+    const CFunctionCallStack* debug_callstack =
+        cur_call_stack.GetBreakExecutionFunctionCallEntry(execution_offset, stack_offset);
+    CExecStack* debug_execstack = debug_callstack != nullptr ? debug_callstack->GetVariableExecStack() : nullptr;
+    if (debug_callstack == nullptr || debug_execstack == nullptr)
+        return false;
 
-    // -- make sure we've got a valid function
-    if (!cur_function)
-        return (false);
+    // -- this isn't safe - do not cache/use this address beyond the above function call...!!
+    const CFunctionCallStack::tFunctionCallEntry* func_call_entry =
+        debug_callstack->GetExecutingCallByIndex(stack_offset);
+    if (func_call_entry == nullptr)
+        return false;
+
+    // -- get the object and function entry (function has to exist)
+    CObjectEntry* cur_object = func_call_entry->objentry;
+    CFunctionEntry* cur_function = func_call_entry->funcentry;
+    if (cur_function == nullptr)
+        return false;
 
     // -- create the name to uniquely identify both the codeblock and the associated function
     char watch_name[kMaxNameLength];
@@ -2295,13 +2314,10 @@ bool8 CScriptContext::InitWatchExpression(CDebuggerWatchExpression& debugger_wat
     else
         sprintf_s(expr_result, "return (%s);", expression);
 
-    // -- several steps to go through - any failures will require us to clean up and return false
-    bool8 success = true;
-
     // -- now we've got a temporary function with exactly the same set of local variables
     // -- see if we can parse the expression
 	tReadToken parsetoken(expr_result, 0);
-    success == !success || !ParseStatementBlock(codeblock, funcdeclnode->leftchild, parsetoken, false);
+    bool success = ParseStatementBlock(codeblock, funcdeclnode->leftchild, parsetoken, false);
 
     // -- if we successfully created the tree, calculate the size needed by running through the tree
     int32 size = 0;
@@ -2347,7 +2363,7 @@ bool8 CScriptContext::InitWatchExpression(CDebuggerWatchExpression& debugger_wat
 // ====================================================================================================================
 bool8 CScriptContext::EvalWatchExpression(CDebuggerWatchExpression& debugger_watch, bool use_trace,
                                           CFunctionCallStack& cur_call_stack, CExecStack& cur_exec_stack,
-                                          int32 stack_offset)
+                                          int32 execution_offset)
 {
     // -- depending on whether we're initializing the trace expression or the conditional, set the local vars
     const char* expression = use_trace ? debugger_watch.mTrace : debugger_watch.mConditional;
@@ -2362,25 +2378,29 @@ bool8 CScriptContext::EvalWatchExpression(CDebuggerWatchExpression& debugger_wat
     if (!watch_function)
         return (false);
 
-    // -- find the function we're executing at the given stack offset
-    int32 stacktop = 0;
-    uint32 cur_oe_id = 0;
-    CObjectEntry* cur_object = NULL;
-    uint32 fe_hash = 0;
-    CFunctionEntry* cur_function = NULL;
-    uint32 ns_hash = 0;
-    uint32 cb_hash = 0;
-    int32 line_number = 1;
-    cur_call_stack.GetExecutingByIndex(cur_oe_id, cur_object, fe_hash, cur_function, ns_hash,
-                                       cb_hash, line_number, stack_offset);
+    int32 stack_offset = -1;
+    const CFunctionCallStack* debug_callstack =
+        cur_call_stack.GetBreakExecutionFunctionCallEntry(execution_offset, stack_offset);
+    CExecStack* debug_execstack = debug_callstack != nullptr ? debug_callstack->GetVariableExecStack() : nullptr;
+    if (debug_callstack == nullptr || debug_execstack == nullptr)
+        return false;
 
-    // -- make sure we've got a valid function
-    if (!cur_function)
-        return (false);
+    // -- this isn't safe - do not cache/use this address beyond the above function call...!!
+    const CFunctionCallStack::tFunctionCallEntry* func_call_entry =
+        debug_callstack->GetExecutingCallByIndex(stack_offset);
+    if (func_call_entry == nullptr)
+        return false;
+
+    // -- get the object and function entry (function has to exist)
+    CObjectEntry* cur_object = func_call_entry->objentry;
+    CFunctionEntry* cur_function = func_call_entry->funcentry;
+    if (cur_function == nullptr)
+        return false;
+    int32 debug_stacktop = func_call_entry->stackvaroffset;
 
     // -- create the stack used to execute the function
 	CExecStack execstack;
-    CFunctionCallStack funccallstack;
+    CFunctionCallStack funccallstack(&execstack);
 
     // -- push the function entry onto the call stack
     funccallstack.Push(watch_function, cur_object, 0, true);
@@ -2394,7 +2414,7 @@ bool8 CScriptContext::EvalWatchExpression(CDebuggerWatchExpression& debugger_wat
     while (cur_ve)
     {
         void* dest_stack_addr = execstack.GetStackVarAddr(0, cur_ve->GetStackOffset());
-        void* cur_stack_addr = cur_exec_stack.GetStackVarAddr(stacktop, cur_ve->GetStackOffset());
+        void* cur_stack_addr = debug_execstack->GetStackVarAddr(debug_stacktop, cur_ve->GetStackOffset());
 
         memcpy(dest_stack_addr, cur_stack_addr, kMaxTypeSize);
         cur_ve = cur_function->GetLocalVarTable()->Next();
@@ -2404,7 +2424,7 @@ bool8 CScriptContext::EvalWatchExpression(CDebuggerWatchExpression& debugger_wat
     funccallstack.BeginExecution();
     bool8 result = CodeBlockCallFunction(watch_function, NULL, execstack, funccallstack, false);
 
-    // -- if we executed succesfully...
+    // -- if we executed successfully...
     if (result)
     {
         // -- if we can retrieve the return value
@@ -2523,7 +2543,7 @@ bool8 CScriptContext::EvaluateWatchExpression(const char* expression)
                 //bool8 result = ExecuteCodeBlock(*codeblock);
 	            // -- create the stack to use for the execution
 	            CExecStack execstack;
-                CFunctionCallStack funccallstack;
+                CFunctionCallStack funccallstack(&execstack);
 
                 // -- push the function entry onto the call stack
                 funccallstack.Push(fe, NULL, 0, true);
@@ -4736,7 +4756,20 @@ void CScriptContext::ProcessThreadCommands()
         CScheduler::CCommand* socket_command = m_socketCommandList;
         m_socketCommandList = socket_command->mNext;
 
-        GetScheduler()->InsertCommand(socket_command);
+        // -- if the dispatch time is 0, execute the socket_command immediately
+        if (socket_command->mDispatchTime == 0)
+        {
+            ExecuteScheduledFunction(this, socket_command->mObjectID, 0, socket_command->mFuncHash,
+                                     socket_command->mFuncContext);
+
+            // -- delete the command
+            // $$$TZA if the execution fails - since this is from a socket, not sure we want to assert...
+            TinFree(socket_command);
+        }
+        else
+        {
+            GetScheduler()->InsertCommand(socket_command);
+        }
     }
 
     // -- unlock the thread
