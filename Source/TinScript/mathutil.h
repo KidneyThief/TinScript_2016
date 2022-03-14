@@ -29,10 +29,6 @@
 #include "TinScript.h"
 #include "TinRegistration.h"
 
-#if PLATFORM_UE4
-	struct FVector;
-#endif
-
 // ====================================================================================================================
 // class CVector3f
 // Simple implementation of a 3D float class
@@ -48,9 +44,9 @@ public:
 
 
 #if PLATFORM_UE4
-	// -- if we're using an Unreal FVector type (which could be doubles for x, y, z), we need a conversion operator
-	CVector3f operator=(const FVector& inValue);
-	explicit operator FVector();
+	// -- if we're using an Unreal FVector type (which could be doubles for x, y, z), we need a converstion operator
+	CVector3f operator=(const FVector& inValue) { return CVector3f(inValue.X, inValue.Y, inValue.Z); }
+	explicit operator FVector() { return FVector(x, y, z); }
 #endif
 
     CVector3f& operator=(const CVector3f& rhs)

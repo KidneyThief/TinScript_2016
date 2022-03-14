@@ -39,21 +39,6 @@ DECLARE_FILE(mathutil_cpp);
 const CVector3f CVector3f::zero(0.0f, 0.0f, 0.0f);
 const CVector3f CVector3f::realmax(1e8f, 1e8f, 1e8f);
 
-#if PLATFORM_UE4
-// ====================================================================================================================
-// operator=()  conversions from FVector
-// ====================================================================================================================
-CVector3f CVector3f::operator=(const FVector& inValue)
-{
-    return CVector3f(inValue.X, inValue.Y, inValue.Z);
-}
-
-CVector3f::operator FVector()
-{
-    return FVector(x, y, z);
-}
-#endif
-
 // ====================================================================================================================
 // Set():  Sets the x,y,z values
 // ====================================================================================================================

@@ -53,7 +53,7 @@ void CHashtable::NotifyHashtableWrapped(CVariableEntry* ve, CHashtable* wrapper)
         gWrappedHashtablesMap = TinAlloc(ALLOC_HashTable, CHashTable<CHashtable>, kLocalVarTableSize);
     }
 
-    gWrappedHashtablesMap->AddItem(*wrapper, (uint32)ve);
+    gWrappedHashtablesMap->AddItem(*wrapper, (uint32)(uint64_t(ve) & 0xffffffff));
 }
 
 void CHashtable::NotifyHashtableUnwrapped(CVariableEntry* ve, CHashtable* wrapper)
@@ -62,7 +62,7 @@ void CHashtable::NotifyHashtableUnwrapped(CVariableEntry* ve, CHashtable* wrappe
     if (ve == nullptr || wrapper == nullptr || gWrappedHashtablesMap == nullptr)
         return;
 
-    uint32 ve_hash = (uint32)ve;
+    uint32 ve_hash = (uint32)(uint64_t(ve) & 0xffffffff);
     CHashtable* found = gWrappedHashtablesMap->FindItem(ve_hash);
     while (found != nullptr)
     {
@@ -84,7 +84,7 @@ void CHashtable::NotifyHashtableDestroyed(CVariableEntry* ve)
     // -- if we have any (multiple?) CHashtable's currently wrapping the ve,
     // we need to "reset" the CHashtable wrappers to internal VEs, so they're not holding on to
     // dangling VE members
-    uint32 ve_hash = (uint32)ve;
+    uint32 ve_hash = (uint32)(uint64_t(ve) & 0xffffffff);
     CHashtable* found = gWrappedHashtablesMap->FindItem(ve_hash);
     while (found != nullptr)
     {

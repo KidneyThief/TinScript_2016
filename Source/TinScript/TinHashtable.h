@@ -102,7 +102,6 @@ class CHashtable
                 }
                 else
                 {
-                    out_value = {};
                     return false;
                 }
             }
