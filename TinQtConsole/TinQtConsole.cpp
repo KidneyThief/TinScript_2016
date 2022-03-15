@@ -1856,7 +1856,7 @@ CConsoleOutput::CConsoleOutput(QWidget* parent) : QListWidget(parent)
 
     mTimer = new QTimer(this);
     connect(mTimer, SIGNAL(timeout()), this, SLOT(Update()));
-    mTimer->start(kUpdateTime);
+    mTimer->start(k_ThreadUpdateTimeMS);
 
     // -- initialize the connection status (sets the color)
     NotifyConnectionStatus(false);
@@ -2050,8 +2050,9 @@ void CConsoleOutput::ProcessDataPackets()
     // -- unlock the thread
     mThreadLock.Unlock();
 
-    // -- until we've processed all packets, disable the resizing event of the console output
-    int32 max_print_count = kSocketPacketProcessMax;
+    // -- we're going to be lenient to processing print packets, as much as possible -
+	// but still capped, so the debugger doesn't become unresponsive...
+    int32 max_print_count = kSocketPacketProcessMax * 2;
     int32 missed_print_count = 0;
     while (process_packets.size() > 0)
     {

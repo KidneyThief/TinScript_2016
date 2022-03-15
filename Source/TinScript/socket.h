@@ -36,7 +36,7 @@ const int32 k_MaxPacketSize = 1024;
 const int32 k_DefaultPort = 27069;
 const int32 k_MaxBufferSize = 8 * 1024;
 
-const int32 k_ThreadUpdateTimeMS = 5;
+const int32 k_ThreadUpdateTimeMS = 1;
 const int32 k_HeartbeatTimeMS = 10000;
 const int32 k_HeartbeatTimeoutMS = 300000;
 
@@ -286,7 +286,6 @@ class CSocket
 
         // -- we need both send and a recv packet queues
         DataQueue mSendQueue;
-        DataQueue mSendPrintQueue;
         DataQueue mRecvQueue;
 
         // -- timers to track last packet sent/received

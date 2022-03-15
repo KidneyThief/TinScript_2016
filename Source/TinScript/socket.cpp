@@ -614,7 +614,6 @@ CSocket::~CSocket()
 {
     // -- clear the queues
     mSendQueue.Clear();
-    mSendPrintQueue.Clear();
     mRecvQueue.Clear();
     if (mRecvPacket != NULL)
     {
@@ -858,7 +857,6 @@ void CSocket::Disconnect()
 
     // -- clear the queues
     mSendQueue.Clear();
-    mSendPrintQueue.Clear();
     mRecvQueue.Clear();
 
     // -- unlock
@@ -889,19 +887,11 @@ bool CSocket::ProcessSendPackets()
     }
 
     // -- send the messages we've queued, and check for an error
-    int packets_sent_count = 0;
+    int packets_sent_count = kSocketPacketProcessMax;
     bool errorDisconnect = false;
     int error = 0;
     tDataPacket* send_packet = nullptr;
-    tDataPacket* packetToSend = nullptr;
-    tDataPacket* printToSend = nullptr;
-    if (mSendQueue.Dequeue(packetToSend, true))
-        send_packet = packetToSend;
-    else if (mSendPrintQueue.Dequeue(printToSend, true))
-        send_packet = printToSend;
-    else
-        send_packet = nullptr;
-    while (send_packet != nullptr)
+    while (--packets_sent_count >= 0 && mSendQueue.Dequeue(send_packet, true))
     {
         // -- as long as we're attempting to send, reset the heartbeat timer
         mSendHeartbeatTimer = k_HeartbeatTimeMS;
@@ -958,11 +948,7 @@ bool CSocket::ProcessSendPackets()
                 }
                 else
                 {
-                    // -- make sure we dequeue from the correct queue
-                    if (send_packet == packetToSend)
-                        mSendQueue.Dequeue(send_packet);
-                    else
-                        mSendPrintQueue.Dequeue(send_packet);
+                    mSendQueue.Dequeue(send_packet);
                     delete send_packet;
 
                     // -- clear pointers for the next loop
@@ -975,14 +961,6 @@ bool CSocket::ProcessSendPackets()
             else
                 break;
         }
-
-        // -- get the next packet to send, but limit if we're sending excessive prints
-        if (mSendQueue.Dequeue(packetToSend, true))
-            send_packet = packetToSend;
-        else if (++packets_sent_count < kSocketPacketProcessMax && mSendPrintQueue.Dequeue(printToSend, true))
-            send_packet = printToSend;
-        else
-            send_packet = nullptr;
     }
 
     // -- if we encountered a socket error sending, disconnect
@@ -1289,19 +1267,9 @@ bool CSocket::SendPrintDataPacket(tDataPacket* dataPacket)
     // -- lock the thread before modifying the queues
     mThreadLock.Lock();
 
-    // -- enqueue the packet - if the regular send queue is less than "full", simply enqueue it on the normal queue
-    // else enqueue it on the print queue, if there's room...
-    // $$$TZA surface that the print queue is "full"??
-    bool result = false;
-    if (mSendQueue.Size() < kSocketPrintPacketQueueCount && mSendPrintQueue.Size() == 0)
-        result = mSendQueue.Enqueue(dataPacket);
-    else if (mSendPrintQueue.Size() < kSocketPrintPacketQueueMax)
-        result = mSendQueue.Enqueue(dataPacket);
-    else
-    {
-        printf("### DEBUG print overflow\n");
-    }
-    //bool result = mSendQueue.Enqueue(dataPacket);
+    // -- enqueue the packet - 
+    // for now, queue everything, and let the debugger decide to ignore prints if it receives more than it can handle
+    bool result = mSendQueue.Enqueue(dataPacket);
 
     // -- unlock the thread
     mThreadLock.Unlock();

@@ -171,17 +171,9 @@ const int32 kThreadExecBufferSize = 32 * 1024;
 // we update the counts array here, to match
 const int32 kStringPoolSizesCount[4] = { 8192, 4096, 1024, 512 };
 
-// -- the print packet queue count needs to be less than the process max, or we'll still be
-// flooding the packet queue with prints, not leaving room for functional packets
-// note:  set these to very large numbers, to effectively disable
-/*
-const int32 kSocketPrintPacketQueueCount = 8;
-const int32 kSocketPrintPacketQueueMax = 32;
-const int32 kSocketPacketProcessMax = 16;
-*/
-const int32 kSocketPrintPacketQueueCount = 1000;
-const int32 kSocketPrintPacketQueueMax = 1000;
-const int32 kSocketPacketProcessMax = 1000;
+// -- we need to throttle the socket send/recv packet count, or the debugger
+// will become unresponsive if flooded
+const int32 kSocketPacketProcessMax = 64;
 
 // ------------------------------------------------------------------------------------------------
 // -- MEMORY

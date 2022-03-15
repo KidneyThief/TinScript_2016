@@ -393,8 +393,9 @@ class CConsoleOutput : public QListWidget
             console_input->ExpandToParentSize();
         }
 
-        static const int32 kMaxMessageCount = 1000;
-        static const unsigned int kUpdateTime = 10;
+        // -- note:  the socket thread only sleep for 10msec
+        // -- we want our update time to be faster than that, to keep up!
+        static const int32 kMaxMessageCount = 200;
         int32 GetSimTime() { return (mCurrentTime); }
 
         // -- these methods queue and process data packets, received from the socket
