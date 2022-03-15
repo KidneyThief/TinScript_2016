@@ -41,8 +41,7 @@ class CConsoleWindow;
 // ------------------------------------------------------------------------------------------------
 class CWatchEntry : public QTreeWidgetItem {
     public:
-        CWatchEntry(const TinScript::CDebuggerWatchVarEntry& debugger_entry, bool isObject = false,
-                    bool breakOnWrite = false);
+        CWatchEntry(const TinScript::CDebuggerWatchVarEntry& debugger_entry, bool breakOnWrite = false);
 
         virtual ~CWatchEntry();
 
@@ -84,7 +83,7 @@ class CDebugWatchWin : public QTreeWidget {
 
         CWatchEntry* FindTopLevelWatchEntry(const char* variableWatch);
 		void AddVariableWatch(const char* variableWatch, bool breakOnWrite = false);
-        void ResendVariableWatch(CWatchEntry* watch_entry);
+        void ResendVariableWatch(CWatchEntry* watch_entry, bool allow_break_on_write = false);
         void ResendAllUserWatches();
         bool GetSelectedWatchExpression(int32& out_use_watch_id, char* out_watch_string, int32 max_expr_length, char* out_value,
                                         int32 max_value_length);

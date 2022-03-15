@@ -1827,7 +1827,7 @@ void CScriptContext::InitWatchEntryFromVarEntry(CVariableEntry& ve, CObjectEntry
 	watch_entry.mWatchRequestID = 0;
 
     // -- set the stack level
-    watch_entry.mStackLevel = -1;
+    watch_entry.mStackOffsetFromBottom = -1;
 
     CFunctionEntry* fe = ve.GetFunctionEntry();
 
@@ -1906,7 +1906,7 @@ void CScriptContext::AddVariableWatchExpression(int32 request_id, const char* va
     	        CDebuggerWatchVarEntry watch_result;
 
 		        watch_result.mWatchRequestID = request_id;
-                watch_result.mStackLevel = -1;
+                watch_result.mStackOffsetFromBottom = -1;
 
 		        // -- fill in the watch entry
 		        watch_result.mFuncNamespaceHash = 0;
@@ -2029,7 +2029,7 @@ void CScriptContext::AddVariableWatch(int32 request_id, const char* variable_wat
 		{
 			// -- we'll initialize the request ID later, if applicable
 			found_variable.mWatchRequestID = 0;
-            found_variable.mStackLevel = -1;
+            found_variable.mStackOffsetFromBottom = -1;
 
 			// -- fill in the watch entry
 			found_variable.mFuncNamespaceHash = 0;
@@ -2118,7 +2118,7 @@ void CScriptContext::AddVariableWatch(int32 request_id, const char* variable_wat
             {
 			    // -- set the request ID back in the result
 			    found_variable.mWatchRequestID = request_id;
-                found_variable.mStackLevel = -1;
+                found_variable.mStackOffsetFromBottom = -1;
 
 			    // -- send the response
 			    DebuggerSendWatchVariable(&found_variable);
@@ -2174,7 +2174,7 @@ void CScriptContext::AddVariableWatch(int32 request_id, const char* variable_wat
 
 			        // -- send the response
                     found_variable.mWatchRequestID = request_id;
-                    found_variable.mStackLevel = -1;
+                    found_variable.mStackOffsetFromBottom = -1;
 
 			        DebuggerSendWatchVariable(&found_variable);
 			        if (found_variable.mType == TYPE_object)
@@ -2238,8 +2238,9 @@ bool8 CScriptContext::InitWatchExpression(CDebuggerWatchExpression& debugger_wat
     int32 watch_id = CDebuggerWatchExpression::gWatchExpressionID++;
 
     int32 stack_offset = -1;
+    int32 stack_offset_from_bottom = -1;
     const CFunctionCallStack* debug_callstack =
-        cur_call_stack.GetBreakExecutionFunctionCallEntry(execution_offset, stack_offset);
+        cur_call_stack.GetBreakExecutionFunctionCallEntry(execution_offset, stack_offset, stack_offset_from_bottom);
     CExecStack* debug_execstack = debug_callstack != nullptr ? debug_callstack->GetVariableExecStack() : nullptr;
     if (debug_callstack == nullptr || debug_execstack == nullptr)
         return false;
@@ -2379,8 +2380,9 @@ bool8 CScriptContext::EvalWatchExpression(CDebuggerWatchExpression& debugger_wat
         return (false);
 
     int32 stack_offset = -1;
+    int32 stack_offset_from_bottom = -1;
     const CFunctionCallStack* debug_callstack =
-        cur_call_stack.GetBreakExecutionFunctionCallEntry(execution_offset, stack_offset);
+        cur_call_stack.GetBreakExecutionFunctionCallEntry(execution_offset, stack_offset, stack_offset_from_bottom);
     CExecStack* debug_execstack = debug_callstack != nullptr ? debug_callstack->GetVariableExecStack() : nullptr;
     if (debug_callstack == nullptr || debug_execstack == nullptr)
         return false;
@@ -3228,7 +3230,7 @@ void CScriptContext::DebuggerSendWatchVariable(CDebuggerWatchVarEntry* watch_var
 	*dataPtr++ = watch_var_entry->mWatchRequestID;
 
 	// -- write the stack level
-	*dataPtr++ = watch_var_entry->mStackLevel;
+	*dataPtr++ = watch_var_entry->mStackOffsetFromBottom;
 
     // -- write the function namespace
     *dataPtr++ = watch_var_entry->mFuncNamespaceHash;
@@ -3292,7 +3294,7 @@ void CScriptContext::DebuggerSendObjectMembers(CDebuggerWatchVarEntry* callingFu
 
 		// -- Inherit the calling function request ID
 		watch_entry.mWatchRequestID = callingFunction ? callingFunction->mWatchRequestID : 0;
-        watch_entry.mStackLevel = callingFunction ? callingFunction->mStackLevel : -1;
+        watch_entry.mStackOffsetFromBottom = callingFunction ? callingFunction->mStackOffsetFromBottom : -1;
 
         watch_entry.mFuncNamespaceHash = callingFunction ? callingFunction->mFuncNamespaceHash : 0;
         watch_entry.mFunctionHash = callingFunction ? callingFunction->mFunctionHash : 0;
@@ -3328,7 +3330,7 @@ void CScriptContext::DebuggerSendObjectMembers(CDebuggerWatchVarEntry* callingFu
 
 		// -- Inherit the calling function request ID
 		ns_entry.mWatchRequestID = callingFunction ? callingFunction->mWatchRequestID : 0;;
-        ns_entry.mStackLevel = callingFunction ? callingFunction->mStackLevel : -1;
+        ns_entry.mStackOffsetFromBottom = callingFunction ? callingFunction->mStackOffsetFromBottom : -1;
 
         ns_entry.mFuncNamespaceHash = callingFunction ? callingFunction->mFuncNamespaceHash : 0;
         ns_entry.mFunctionHash = callingFunction ? callingFunction->mFunctionHash : 0;
@@ -3377,7 +3379,7 @@ void CScriptContext::DebuggerSendObjectVarTable(CDebuggerWatchVarEntry* callingF
 
 		// -- Inherit the calling function request ID
 		member_entry.mWatchRequestID = callingFunction ? callingFunction->mWatchRequestID : 0;
-		member_entry.mStackLevel = callingFunction ? callingFunction->mStackLevel : -1;
+		member_entry.mStackOffsetFromBottom = callingFunction ? callingFunction->mStackOffsetFromBottom : -1;
 
         member_entry.mFuncNamespaceHash = callingFunction ? callingFunction->mFuncNamespaceHash : 0;
         member_entry.mFunctionHash = callingFunction ? callingFunction->mFunctionHash : 0;

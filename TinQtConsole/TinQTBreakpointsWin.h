@@ -157,7 +157,7 @@ class CDebugCallstackWin : public QListWidget {
         // -- returns the index of the currently selected stack entry, as well as the calling attributes
         int32 GetSelectedStackEntry(uint32& funcHash, uint32& objectID, uint32& nsHash);
 
-        // -- returns the index of the currently selected stack entry, as well as the calling attributes
+        // -- returns the current function call, the depth of the callstack
         int32 GetTopStackEntry(uint32& funcHash, uint32& objectID, uint32& nsHash);
 
         // -- returns the stack entry matching the given attributes, or -1 if it doesn't exist

@@ -289,7 +289,7 @@ class CDebuggerWatchVarEntry
 		// -- we'll use a request ID, if we're able to match a watch expression
 		// -- with a type and value
 		uint32 mWatchRequestID = 0;
-        int32 mStackLevel = -1;
+        int32 mStackOffsetFromBottom = -1;
 
         // -- three members identifying the calling function
         uint32 mFuncNamespaceHash = 0;

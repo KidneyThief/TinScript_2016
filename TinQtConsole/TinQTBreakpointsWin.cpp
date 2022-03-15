@@ -820,7 +820,7 @@ int32 CDebugCallstackWin::GetSelectedStackEntry(uint32& func_ns_hash, uint32& fu
         func_hash = stack_entry->mFunctionHash;
         func_obj_id = stack_entry->mObjectID;
 
-        return (mCallstack.size() - stack_index - 1);
+        return (stack_index);
     }
 
     // -- fail
@@ -838,7 +838,8 @@ int32 CDebugCallstackWin::GetTopStackEntry(uint32& func_ns_hash, uint32& func_ha
     func_hash = stack_entry->mFunctionHash;
     func_obj_id = stack_entry->mObjectID;
 
-    return (mCallstack.size() - 1);
+	// -- returns the depth of the execution callstack
+    return mCallstack.size();
 }
 
 // ====================================================================================================================
@@ -856,7 +857,7 @@ int32 CDebugCallstackWin::ValidateStackEntry(uint32 func_ns_hash, uint32 func_ha
         if (callstack_entry && callstack_entry->mNamespaceHash == func_ns_hash &&
             callstack_entry->mFunctionHash == func_hash && callstack_entry->mObjectID == func_obj_id)
         {
-            return (mCallstack.size() - stack_index - 1);
+            return (stack_index);
         }
 
         // -- not yet found

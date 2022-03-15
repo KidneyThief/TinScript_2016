@@ -41,7 +41,7 @@ int CDebugWatchWin::gVariableWatchRequestID = 1;  // zero is "not a dynamic var 
 // ------------------------------------------------------------------------------------------------
 // CWatchEntry
 
-CWatchEntry::CWatchEntry(const TinScript::CDebuggerWatchVarEntry& debugger_entry, bool isObject, bool breakOnWrite)
+CWatchEntry::CWatchEntry(const TinScript::CDebuggerWatchVarEntry& debugger_entry, bool breakOnWrite)
     : QTreeWidgetItem()
     , mBreakOnWrite(breakOnWrite)
     , mRequestSent(false)
@@ -206,6 +206,17 @@ void CDebugWatchWin::AddTopLevelEntry(const TinScript::CDebuggerWatchVarEntry& w
         return;
     }
 
+    // -- also get the full execution stack depth, and calculate the selected "depth from the bottom"
+    // all watch entry "stack depths" are from the bottom, not the top
+    uint32 top_func_ns_hash = 0;
+    uint32 top_func_hash = 0;
+    uint32 top_func_object_id = 0;
+    int32 execution_stack_depth = CConsoleWindow::GetInstance()->GetDebugCallstackWin()->
+                                                                 GetTopStackEntry(top_func_ns_hash, top_func_hash,
+                                                                                  top_func_object_id);
+
+    int32 selected_depth_from_bottom = execution_stack_depth - current_stack_index - 1;
+
     // -- "_return" is special, as it's the value returned by th last function call, and not
     // -- part of any individual stack
     static uint32 _return_hash = TinScript::Hash("__return");
@@ -234,7 +245,7 @@ void CDebugWatchWin::AddTopLevelEntry(const TinScript::CDebuggerWatchVarEntry& w
                 entry->mDebuggerEntry.mFunctionObjectID == watch_var_entry.mFunctionObjectID &&
                 entry->mDebuggerEntry.mType == watch_var_entry.mType && 
                 entry->mDebuggerEntry.mVarHash == watch_var_entry.mVarHash &&
-                (entry->mDebuggerEntry.mStackLevel == watch_var_entry.mStackLevel ||
+                (entry->mDebuggerEntry.mStackOffsetFromBottom == watch_var_entry.mStackOffsetFromBottom ||
                  entry->mDebuggerEntry.mWatchRequestID > 0))
             {
                 // -- update the value (if it's not a label)
@@ -264,23 +275,13 @@ void CDebugWatchWin::AddTopLevelEntry(const TinScript::CDebuggerWatchVarEntry& w
         ++entry_index;
     }
 
-    // -- if we did not find the entry for the current callstack...
-    uint32 top_func_ns_hash = 0;
-    uint32 top_func_hash = 0;
-    uint32 top_func_object_id = 0;
-    int32 top_stack_index = CConsoleWindow::GetInstance()->GetDebugCallstackWin()->
-                                                           GetTopStackEntry(top_func_ns_hash, top_func_hash,
-                                                                            top_func_object_id);
-
     if (!found_callstack_entry && !update_only)
     {
-        // -- see if this is for the 
         CWatchEntry* new_entry = new CWatchEntry(watch_var_entry);
         addTopLevelItem(new_entry);
         mWatchList.append(new_entry);
-
-        // -- see if this entry should be hidden
-        bool hidden = (watch_var_entry.mStackLevel != current_stack_index && watch_var_entry.mWatchRequestID == 0);
+        bool hidden = (watch_var_entry.mStackOffsetFromBottom != selected_depth_from_bottom &&
+                       watch_var_entry.mWatchRequestID == 0);
         if (hidden)
         {
             new_entry->setHidden(hidden);
@@ -462,7 +463,7 @@ void CDebugWatchWin::AddVariableWatch(const char* variableWatch, bool breakOnWri
     if (found)
     {
         found->mBreakOnWrite = breakOnWrite;
-        ResendVariableWatch(found);
+        ResendVariableWatch(found, true);
         setCurrentItem(found);
         return;
     }
@@ -477,7 +478,7 @@ void CDebugWatchWin::AddVariableWatch(const char* variableWatch, bool breakOnWri
 	// -- set the request ID, so if/when we receive an update from the target, we'll know what it
 	// -- is in response to
 	new_watch.mWatchRequestID = gVariableWatchRequestID++;
-    new_watch.mStackLevel = -1;
+    new_watch.mStackOffsetFromBottom = -1;
 
 	new_watch.mFuncNamespaceHash = 0;
     new_watch.mFunctionHash = 0;
@@ -506,7 +507,7 @@ void CDebugWatchWin::AddVariableWatch(const char* variableWatch, bool breakOnWri
 
     // -- send the request to the target
     // note:  complex (e.g. function call) expressions can't be evaluated unless at a breakpoint
-    ResendVariableWatch(new_entry);
+    ResendVariableWatch(new_entry, true);
 
     // -- as this is a new (or duplicated) watch, we want to see it in the window
     setCurrentItem(new_entry);
@@ -515,7 +516,7 @@ void CDebugWatchWin::AddVariableWatch(const char* variableWatch, bool breakOnWri
 // ====================================================================================================================
 // ResendVariableWatch():  (Re)send the debugger command for a given watch entry
 // ====================================================================================================================
-void CDebugWatchWin::ResendVariableWatch(CWatchEntry* watch_entry)
+void CDebugWatchWin::ResendVariableWatch(CWatchEntry* watch_entry, bool allow_break_on_write)
 {
     // -- sanity check
     if (watch_entry == nullptr)
@@ -525,7 +526,7 @@ void CDebugWatchWin::ResendVariableWatch(CWatchEntry* watch_entry)
     SocketManager::SendCommandf("DebuggerAddVariableWatch(%d, `%s`, `%s`);",
                                 watch_entry->mDebuggerEntry.mWatchRequestID,
                                 watch_entry->mDebuggerEntry.mVarName,
-                                watch_entry->mBreakOnWrite ? "true" : "false");
+                                allow_break_on_write && watch_entry->mBreakOnWrite ? "true" : "false");
     watch_entry->mRequestSent = true;
 }
 
@@ -839,6 +840,17 @@ void CDebugWatchWin::NotifyUpdateCallstack(bool breakpointHit)
         return;
     }
 
+    // -- also get the full execution stack depth, and calculate the selected "depth from the bottom"
+    // all watch entry "stack depths" are from the bottom, not the top
+    uint32 top_func_ns_hash = 0;
+    uint32 top_func_hash = 0;
+    uint32 top_func_object_id = 0;
+    int32 execution_stack_depth = CConsoleWindow::GetInstance()->GetDebugCallstackWin()->
+        GetTopStackEntry(top_func_ns_hash, top_func_hash,
+            top_func_object_id);
+
+    int32 selected_depth_from_bottom = execution_stack_depth - current_stack_index - 1;
+
     // -- loop through all watches
     int entry_index = 0;
     while (entry_index < mWatchList.size())
@@ -894,7 +906,7 @@ void CDebugWatchWin::NotifyUpdateCallstack(bool breakpointHit)
             // -- otherwise, see if we need to hide the items
             else
             {
-                bool hidden = (entry->mDebuggerEntry.mStackLevel != current_stack_index &&
+                bool hidden = (entry->mDebuggerEntry.mStackOffsetFromBottom != selected_depth_from_bottom &&
                                entry->mDebuggerEntry.mWatchRequestID == 0);
                 entry->setHidden(hidden);
 

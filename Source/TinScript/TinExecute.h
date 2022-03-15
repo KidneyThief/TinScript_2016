@@ -327,8 +327,12 @@ class CFunctionCallStack
                                    uint32* namespace_array, uint32* func_array,
                                    int32* linenumber_array, int32 max_array_size) const;
 
+
+        static int32 GetCompleteExecutionStackVarEntries(CScriptContext* script_context,
+                                                         CDebuggerWatchVarEntry* entry_array, int32 max_array_size);
         int32 DebuggerGetStackVarEntries(CScriptContext* script_context, CExecStack& execstack,
-                                         CDebuggerWatchVarEntry* entry_array, int32 max_array_size);
+                                         CDebuggerWatchVarEntry* entry_array, int32 max_array_size,
+                                         int32& ref_execution_depth);
 
         void BeginExecution(const uint32* instrptr);
         void BeginExecution();
@@ -370,7 +374,8 @@ class CFunctionCallStack
         static bool FindExecutionStackVar(uint32 var_hash, CDebuggerWatchVarEntry& watch_entry, CVariableEntry*& ve);
 
         // -- we're looking for the function call at the internal mDebuggerWatchStackOffset, from the break callstack
-        const CFunctionCallStack* GetBreakExecutionFunctionCallEntry(int32 execution_depth, int32& stack_offset);
+        const CFunctionCallStack* GetBreakExecutionFunctionCallEntry(int32 execution_depth, int32& stack_offset,
+                                                                     int32& stack_offset_from_bottom);
 
 		// -- for the crash reporter, we may need to get the complete script callstack being executed
 		static int32 GetCompleteExecutionStack(CObjectEntry** _objentry_list, CFunctionEntry** _funcentry_list,

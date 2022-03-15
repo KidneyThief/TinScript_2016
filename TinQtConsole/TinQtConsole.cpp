@@ -2298,7 +2298,7 @@ void CConsoleOutput::HandlePacketWatchVarEntry(int32* dataPtr)
 	watch_var_entry.mWatchRequestID = *dataPtr++;
 
 	// -- variable watch request ID (unused for stack dumps)
-	watch_var_entry.mStackLevel = *dataPtr++;
+	watch_var_entry.mStackOffsetFromBottom = *dataPtr++;
 
     // -- function namespace hash
     watch_var_entry.mFuncNamespaceHash = *dataPtr++;

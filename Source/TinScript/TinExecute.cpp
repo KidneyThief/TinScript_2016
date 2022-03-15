@@ -289,13 +289,17 @@ CFunctionEntry* CFunctionCallStack::Pop(CObjectEntry*& objentry, int32& var_offs
 // ====================================================================================================================
 // GetBreakExecutionFunctionCallEntry():  Get the function call entry from callstack, at the internal stack offset
 // ====================================================================================================================
-const CFunctionCallStack* CFunctionCallStack::GetBreakExecutionFunctionCallEntry(int32 execution_depth, int32& stack_depth)
+const CFunctionCallStack*
+    CFunctionCallStack::GetBreakExecutionFunctionCallEntry(int32 execution_depth, int32& stack_offset,
+                                                           int32& stack_offset_from_bottom)
 {
     // -- sanity check
     if (execution_depth < 0)
         return false;
 
+    stack_offset_from_bottom = 0;
     int32 current_stack_index = 0;
+    CFunctionCallStack* found = this;
     CFunctionCallStack* walk = this;
     while (walk != nullptr)
     {
@@ -312,8 +316,13 @@ const CFunctionCallStack* CFunctionCallStack::GetBreakExecutionFunctionCallEntry
                 {
                     // -- the output is the index into the function callstack,
                     // and the actual function callstack that contains the execution function at the global depth
-                    stack_depth = walk_index;
-                    return walk;
+                    stack_offset = walk_index;
+                    found = walk;
+                    stack_offset_from_bottom = 0;
+                }
+                else
+                {
+                    stack_offset_from_bottom++;
                 }
             }
         }
@@ -321,8 +330,9 @@ const CFunctionCallStack* CFunctionCallStack::GetBreakExecutionFunctionCallEntry
         walk = walk->m_ExecutionNext;
     }
 
-    // -- we've run out of executing functions, and have not reached our execution depth
-    return nullptr;
+    // -- return the function call stack at the requested depth
+    // stack_offset and stack_offset_from_bottom will also be valid, if found != nullptr
+    return found;
 }
 
 // ====================================================================================================================
@@ -505,10 +515,46 @@ int32 CFunctionCallStack::DebuggerGetCallstack(uint32* codeblock_array, uint32* 
 }
 
 // ====================================================================================================================
+// GetCompleteExecutionStackVarEntries():  walks the entire execution stack, not just the current function call stack
+// ====================================================================================================================
+int32 CFunctionCallStack::GetCompleteExecutionStackVarEntries(CScriptContext* script_context,
+                                                              CDebuggerWatchVarEntry* entry_array,
+                                                              int32 max_array_size)
+{
+
+    // -- note:  this will have to be re-thought, if we have *active* multi-threading for TinScript
+    // -- at present, the only use cases are from the MainThread... but we could!
+    int32 ref_execution_offset_from_bottom = GetExecutionStackDepth();
+    int32 total_entry_count = 0;
+    int32 array_size_remaining = max_array_size;
+    CFunctionCallStack* walk = g_ExecutionHead;
+    while (walk != nullptr)
+    {
+        CExecStack* cur_exec_stack = walk->GetVariableExecStack();
+        if (cur_exec_stack != nullptr)
+        {
+            // -- we're passing in a ref param - the execution depth, so the watch var entries
+            // have their stack level set based on the overall complete execution stack
+            int32 cur_entry_count = walk->DebuggerGetStackVarEntries(script_context, *cur_exec_stack,
+                                                                     &entry_array[total_entry_count],
+                                                                     array_size_remaining, ref_execution_offset_from_bottom);
+            total_entry_count += cur_entry_count;
+            array_size_remaining -= cur_entry_count;
+            if (array_size_remaining <= 0)
+                break;
+        }
+        walk = walk->m_ExecutionNext;
+    }
+
+    return total_entry_count;
+}
+
+// ====================================================================================================================
 // DebuggerGetStackVarEntries():  Fills in the array of variables for a given stack frame, to send to the debugger.
 // ====================================================================================================================
 int32 CFunctionCallStack::DebuggerGetStackVarEntries(CScriptContext* script_context, CExecStack& execstack,
-                                                     CDebuggerWatchVarEntry* entry_array, int32 max_array_size)
+                                                     CDebuggerWatchVarEntry* entry_array, int32 max_array_size,
+                                                     int32& ref_execution_offset_from_bottom)
 {
     int32 entry_count = 0;
 
@@ -524,7 +570,7 @@ int32 CFunctionCallStack::DebuggerGetStackVarEntries(CScriptContext* script_cont
 	cur_entry->mWatchRequestID = 0;
 
     // -- set the stack level
-    cur_entry->mStackLevel = -1;
+    cur_entry->mStackOffsetFromBottom = -1;
 
 	// -- copy the calling function info
 	// -- use the top level function being called, since it's the only function that can use
@@ -563,11 +609,16 @@ int32 CFunctionCallStack::DebuggerGetStackVarEntries(CScriptContext* script_cont
         }
     }
 
+    // -- iterating backwards *in case* we run out of space - more important to have stack entries at the stack top...
     int32 stack_index = m_stacktop - 1;
     while (stack_index >= 0 && entry_count < max_array_size)
     {
         if (m_functionEntryStack[stack_index].isexecuting)
         {
+            // -- update the execution depth - this is the depth from the bottom across multiple VMs
+            // -- the further we go down this function entry stack, the closer to the bottom (hence --);
+            --ref_execution_offset_from_bottom;
+
             // -- if this function call is a method, send the "self" variable
             if (m_functionEntryStack[stack_index].oe_id != 0)
             {
@@ -581,7 +632,7 @@ int32 CFunctionCallStack::DebuggerGetStackVarEntries(CScriptContext* script_cont
 				cur_entry->mWatchRequestID = 0;
 
                 // -- set the stack level
-                cur_entry->mStackLevel = stack_index;
+                cur_entry->mStackOffsetFromBottom = ref_execution_offset_from_bottom;
 
                 // -- copy the calling function info
                 cur_entry->mFuncNamespaceHash = m_functionEntryStack[stack_index].fe_ns_hash;
@@ -634,7 +685,7 @@ int32 CFunctionCallStack::DebuggerGetStackVarEntries(CScriptContext* script_cont
 				cur_entry->mWatchRequestID = 0;
 
                 // -- set the stack level
-                cur_entry->mStackLevel = stack_index;
+                cur_entry->mStackOffsetFromBottom = ref_execution_offset_from_bottom;
 
                 // -- copy the calling function info
                 cur_entry->mFuncNamespaceHash = m_functionEntryStack[stack_index].fe_ns_hash;
@@ -702,8 +753,10 @@ bool CFunctionCallStack::FindExecutionStackVar(uint32 var_hash, CDebuggerWatchVa
     // -- the depth we're looking for is the debugger execution stack offset
     int32 execution_offset = TinScript::GetContext()->mDebuggerWatchStackOffset;
     int32 stack_offset = -1;
+    int32 stack_offset_from_bottom = -1;
     const CFunctionCallStack* debug_callstack =
-        script_context->mDebuggerBreakFuncCallStack->GetBreakExecutionFunctionCallEntry(execution_offset, stack_offset);
+        script_context->mDebuggerBreakFuncCallStack->
+                        GetBreakExecutionFunctionCallEntry(execution_offset, stack_offset, stack_offset_from_bottom);
     if (debug_callstack == nullptr)
         return false;
 
@@ -722,7 +775,7 @@ bool CFunctionCallStack::FindExecutionStackVar(uint32 var_hash, CDebuggerWatchVa
 		watch_entry.mWatchRequestID = 0;
 
         // -- set the stack level
-        watch_entry.mStackLevel = stack_offset;
+        watch_entry.mStackOffsetFromBottom = stack_offset;
 
 		// -- copy the calling function info
 		watch_entry.mFuncNamespaceHash = func_call_entry->fe_ns_hash;
@@ -762,7 +815,7 @@ bool CFunctionCallStack::FindExecutionStackVar(uint32 var_hash, CDebuggerWatchVa
 				watch_entry.mWatchRequestID = 0;
 
                 // -- set the stack level
-                watch_entry.mStackLevel = stack_offset;
+                watch_entry.mStackOffsetFromBottom = stack_offset_from_bottom;
 
 				// -- copy the calling function info
 				watch_entry.mFuncNamespaceHash = func_call_entry->fe_ns_hash;
@@ -1481,7 +1534,7 @@ bool8 DebuggerBreakLoop(CCodeBlock* cb, const uint32* instrptr, CExecStack& exec
     uint32 cbHashList[kDebuggerCallstackSize];
     int32 lineNumberList[kDebuggerCallstackSize];
     int32 stack_depth = CFunctionCallStack::GetCompleteExecutionStack(oeList, feList, nsHashList, cbHashList,
-        lineNumberList, kDebuggerCallstackSize);
+                                                                      lineNumberList, kDebuggerCallstackSize);
     CFunctionCallStack::GetCompleteExecutionStack(oeList, feList, nsHashList, cbHashList, lineNumberList, kDebuggerCallstackSize);
     script_context->DebuggerSendCallstack(oeList, feList, nsHashList, cbHashList, lineNumberList, stack_depth, 0);
 
@@ -1489,8 +1542,8 @@ bool8 DebuggerBreakLoop(CCodeBlock* cb, const uint32* instrptr, CExecStack& exec
     // -- get the entire list of variables, at every level for the current call stack
     CDebuggerWatchVarEntry watch_var_stack[kDebuggerWatchWindowSize];
     int32 watch_entry_size =
-        funccallstack.DebuggerGetStackVarEntries(script_context, execstack,
-                                                    watch_var_stack, kDebuggerWatchWindowSize);
+        CFunctionCallStack::GetCompleteExecutionStackVarEntries(script_context, watch_var_stack,
+                                                                kDebuggerWatchWindowSize);
 
     // -- now loop through all stack variables, and any that are objects, send their
     // -- member dictionaries as well
