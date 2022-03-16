@@ -160,16 +160,30 @@ public:
                                  CFunctionCallStack* funccallstack = NULL, int32 array_index = 0);
     void SetStringArrayLiteralValue(void* objaddr, void* value, int32 array_index = 0);
 
+    void ClearBreakOnWrite()
+    {
+        // -- see if we need to remove an existing break
+        if (mBreakOnWrite != nullptr)
+        {
+            if (mWatchRequestID > 0)
+            {
+                TinScript::GetContext()->DebuggerVarWatchRemove(mWatchRequestID);
+            }
+
+            TinFree(mBreakOnWrite);
+            mBreakOnWrite = nullptr;
+            mWatchRequestID = 0;
+            mDebuggerSession = 0;
+        }
+    }
+
 	void SetBreakOnWrite(int32 varWatchRequestID, int32 debugger_session, bool8 break_on_write, const char* condition,
                          const char* trace, bool8 trace_on_cond)
 	{
         // -- see if we need to remove an existing break
         if (mBreakOnWrite != NULL && !break_on_write && (!trace || !trace[0]))
         {
-            TinFree(mBreakOnWrite);
-            mBreakOnWrite = NULL;
-		    mWatchRequestID = 0;
-		    mDebuggerSession = 0;
+            ClearBreakOnWrite();
         }
 
         else if (!mBreakOnWrite)

@@ -216,24 +216,32 @@ bool8 CFunctionContext::IsParameter(CVariableEntry* ve)
 // ====================================================================================================================
 void CFunctionContext::ClearParameters()
 {
-    // -- first, clear the parameters
+    // -- first, remove any data breakpoints, since they're not valid before, or after a function has executed
+    tVarTable* local_vars = GetLocalVarTable();
+    CVariableEntry* ve = local_vars->First();
+    while (ve)
+    {
+        ve->ClearBreakOnWrite();
+        ve = local_vars->Next();
+    }
+
     const int32 max_size = MAX_TYPE_SIZE * (int32)sizeof(uint32);
     char buf[max_size];
     memset(buf, 0, max_size);
     for(int32 i = 0; i < paramcount; ++i)
     {
-        CVariableEntry* ve = parameterlist[i];
-        if (ve->GetType() == TYPE_hashtable || ve->IsArray())
-            ve->ClearArrayParameter();
+        CVariableEntry* param_ve = parameterlist[i];
+
+        if (param_ve->GetType() == TYPE_hashtable || param_ve->IsArray())
+            param_ve->ClearArrayParameter();
         else
-            ve->SetValue(NULL, (void*)&buf);
+            param_ve->SetValue(NULL, (void*)&buf);
     }
 
     // -- next, we want to ensure any local variables (not parameters) belonging to this function
     // -- which are of TYPE_hashtable, are *empty* tables, to ensure clean execution
     // -- as well as no memory leaks
-    tVarTable* local_vars = GetLocalVarTable();
-    CVariableEntry* ve = local_vars->First();
+    ve = local_vars->First();
     while (ve)
     {
         if (!ve->IsParameter() && ve->GetType() == TYPE_hashtable)

@@ -2865,6 +2865,15 @@ void DebuggerNotifySourceStatus(const char* source_full_path, bool has_error)
     CConsoleWindow::GetInstance()->GetDebugSourceWin()->NotifySourceStatus(source_full_path, has_error);
 }
 
+// ====================================================================================================================
+// DebuggerVarWatchRemove():  Received from the target, that a data breakpoint for a local var has been removed
+// ====================================================================================================================
+void DebuggerVarWatchRemove(int32 watch_request_id)
+{
+    // -- notify the breakpoints window
+    CConsoleWindow::GetInstance()->GetDebugBreakpointsWin()->NotifyRemoveVarWatch(watch_request_id);
+}
+
 // == ObjectBrowser Registration ======================================================================================
 
 REGISTER_FUNCTION(DebuggerClearObjectBrowser, DebuggerClearObjectBrowser);
@@ -2875,6 +2884,8 @@ REGISTER_FUNCTION(DebuggerNotifySetRemoveObject, DebuggerNotifySetRemoveObject);
 
 REGISTER_FUNCTION(DebuggerListObjectsComplete, DebuggerListObjectsComplete);
 REGISTER_FUNCTION(DebuggerFunctionAssistComplete, DebuggerFunctionAssistComplete);
+
+REGISTER_FUNCTION(DebuggerVarWatchRemove, DebuggerVarWatchRemove);
 
 // == Scheduler Registration ==========================================================================================
 

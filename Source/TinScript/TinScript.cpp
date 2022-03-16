@@ -2927,6 +2927,21 @@ void CScriptContext::DebuggerBreakpointConfirm(uint32 codeblock_hash, int32 line
 }
 
 // ====================================================================================================================
+// DebuggerVarWatchRemove():  removes a var watch (data breakpoint) by request id... only called for local vars
+// ====================================================================================================================
+void CScriptContext::DebuggerVarWatchRemove(int32 request_id)
+{
+    // -- sanity check
+    if (request_id <= 0)
+        return;
+
+    // -- notify the debugger we've completed sending the list of objects
+    char id_buf[8];
+    sprintf_s(id_buf, sizeof(id_buf), "%d", request_id);
+    SocketManager::SendExec(Hash("DebuggerVarWatchRemove"), id_buf);
+}
+
+// ====================================================================================================================
 // DebuggerVarWatchConfirm():  Use the packet type DATA to confirm a variable watch
 // ====================================================================================================================
 void CScriptContext::DebuggerVarWatchConfirm(int32 request_id, uint32 watch_object_id, uint32 var_name_hash)

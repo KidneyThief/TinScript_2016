@@ -634,7 +634,6 @@ void CDebugBreakpointsWin::NotifyConfirmBreakpoint(uint32 codeblock_hash, int32 
 void CDebugBreakpointsWin::NotifyConfirmVarWatch(int32 watch_request_id, uint32 watch_object_id, uint32 var_name_hash)
 {
     CBreakpointEntry* found = NULL;
-    CBreakpointEntry* alreadyExists = NULL;
     for (int32 i = 0; i < mBreakpoints.size(); ++i)
     {
         CBreakpointEntry* breakpoint = mBreakpoints.at(i);
@@ -657,6 +656,25 @@ void CDebugBreakpointsWin::NotifyConfirmVarWatch(int32 watch_request_id, uint32 
         breakpoint->UpdateLabel(watch_request_id, watch_object_id, var_name_hash);
         mBreakpoints.append(breakpoint);
         sortItems();
+    }
+}
+
+// ====================================================================================================================
+// NotifyRemoveVarWatch():  Notification that a data breakpoint for a local var has been removed
+// ====================================================================================================================
+void CDebugBreakpointsWin::NotifyRemoveVarWatch(int32 watch_request_id)
+{
+    CBreakpointEntry* found = NULL;
+    CBreakpointEntry* alreadyExists = NULL;
+    for (int32 i = 0; i < mBreakpoints.size(); ++i)
+    {
+        CBreakpointEntry* breakpoint = mBreakpoints.at(i);
+        if (breakpoint->mWatchRequestID == watch_request_id)
+        {
+            mBreakpoints.removeAt(i);
+            delete breakpoint;
+            break;
+        }
     }
 }
 

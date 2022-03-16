@@ -111,6 +111,7 @@ class CDebugBreakpointsWin : public QListWidget
 
         // -- confirmation of a variable watch, requested to break on write
         void NotifyConfirmVarWatch(int32 watch_request_id, uint32 watch_object_id, uint32 var_name_hash);
+        void NotifyRemoveVarWatch(int32 watch_request_id);
 
         void NotifySourceFile(uint32 filehash);
         void NotifyOnConnect();

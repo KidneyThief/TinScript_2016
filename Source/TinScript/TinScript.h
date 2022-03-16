@@ -553,6 +553,7 @@ class CScriptContext
         void DebuggerCodeblockLoaded(uint32 codeblock_hash);
         void DebuggerBreakpointHit(int32 watch_var_request_id, uint32 codeblock_hash, int32 line_number);
         void DebuggerBreakpointConfirm(uint32 codeblock_hash, int32 line_number, int32 actual_line_number);
+        void DebuggerVarWatchRemove(int32 request_id);
         void DebuggerVarWatchConfirm(int32 request_id, uint32 watch_object_id, uint32 var_name_hash);
         void DebuggerSendCallstack(uint32* codeblock_array, uint32* objid_array,
                                    uint32* namespace_array,uint32* func_array,
