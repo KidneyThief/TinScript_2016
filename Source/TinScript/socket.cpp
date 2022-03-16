@@ -428,8 +428,8 @@ bool SendExec(int32 func_hash, const char* arg1, const char* arg2, const char* a
     SocketManager::tDataPacket* newPacket = SocketManager::CreateDataPacket(&header, data_start);
     if (!newPacket)
     {
-        ScriptAssert_(TinScript::GetContext(), false, "<internal>", -1,
-                      "Error - SocketManager::SendExec(): not connected - don't forget to SocketListen()\n");
+        TinPrint(TinScript::GetContext(),
+                 "Error - SocketManager::SendExec(): not connected - don't forget to SocketListen()\n");
         return (false);
     }
 
@@ -1442,8 +1442,7 @@ bool CSocket::SendScriptSignature(uint32 func_hash, TinScript::CFunctionContext*
     SocketManager::tDataPacket* newPacket = SocketManager::CreateDataPacket(&header, data_start);
     if (!newPacket)
     {
-        ScriptAssert_(mScriptContext, false, "<internal>", -1,
-                      "Error - SendScriptSignature():  not connected - don't forget to SocketListen()\n");
+        TinPrint(mScriptContext, "Error - SendScriptSignature():  not connected - don't forget to SocketListen()\n");
         return (false);
     }
 
