@@ -880,6 +880,9 @@ void MainWindow::setupMenuBar()
     action = debug_menu->addAction(tr("Run  [F5]"));
     connect(action, SIGNAL(triggered()), this, SLOT(menuDebugRun()));
 
+    action = debug_menu->addAction(tr("Force PC  [Shift + F9] ** UNSAFE **"));
+    connect(action, SIGNAL(triggered()), this, SLOT(menuDebugForcePC()));
+
     action = debug_menu->addAction(tr("Step Over  [F10]"));
     connect(action, SIGNAL(triggered()), this, SLOT(menuDebugStepOver()));
 
@@ -1115,6 +1118,14 @@ void MainWindow::menuDebugStop()
 void MainWindow::menuDebugRun()
 {
     CConsoleWindow::GetInstance()->GetInput()->OnButtonRunPressed();
+}
+
+// ====================================================================================================================
+// menuDebugForcePC():  Slot called when the menu option is selected.
+// ====================================================================================================================
+void MainWindow::menuDebugForcePC()
+{
+    CConsoleWindow::GetInstance()->GetDebugSourceWin()->OnForceExecuteLineNumber();
 }
 
 // ====================================================================================================================

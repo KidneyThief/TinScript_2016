@@ -161,6 +161,7 @@ public slots:
 
     void menuDebugStop();
     void menuDebugRun();
+    void menuDebugForcePC();
     void menuDebugStepOver();
     void menuDebugStepIn();
     void menuDebugStepOut();

@@ -308,6 +308,10 @@ CConsoleWindow::CConsoleWindow()
     QShortcut* shortcut_Run = new QShortcut(QKeySequence("F5"), mButtonRun);
     QObject::connect(shortcut_Run, SIGNAL(activated()), mConsoleInput, SLOT(OnButtonRunPressed()));
 
+    // Shift + F9 - Force PC
+    QShortcut* shortcut_ForcePC = new QShortcut(QKeySequence("Shift+F9"), mDebugSourceWin);
+    QObject::connect(shortcut_ForcePC, SIGNAL(activated()), mDebugSourceWin, SLOT(OnForceExecuteLineNumber()));
+
     // F11 - Step In / Pause
     QShortcut* shortcut_StepIn = new QShortcut(QKeySequence("F11"), mButtonStepIn);
     QObject::connect(shortcut_StepIn, SIGNAL(activated()), mConsoleInput, SLOT(OnButtonStepInPressed()));

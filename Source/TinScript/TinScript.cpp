@@ -413,6 +413,7 @@ CScriptContext::CScriptContext(TinPrintHandler printfunction, TinAssertHandler a
 	mDebuggerBreakExecStack = nullptr;
 	mDebuggerVarWatchRequestID = 0;
     mDebuggerWatchStackOffset = 0;
+    mDebuggerForceExecLineNumber = -1;
 
     // -- initialize the thread command
     mThreadBufPtr = NULL;
@@ -5052,6 +5053,20 @@ void DebuggerBreakRun()
 }
 
 // --------------------------------------------------------------------------------------------------------------------
+// DebuggerForceExecToLineNumber():  at a breakpoint, force the VM to resume execution at a *different* line number
+// --------------------------------------------------------------------------------------------------------------------
+void DebuggerForceExecToLineNumber(int32 line_number)
+{
+    // -- ensure we have a script context
+    CScriptContext* script_context = GetContext();
+    if (!script_context)
+        return;
+
+    // -- this must be threadsafe - only ProcessThreadCommands should ever lead to this function
+    script_context->DebuggerForceExecToLineNumber(line_number);
+}
+
+// --------------------------------------------------------------------------------------------------------------------
 // DebuggerSetWatchStackOffset():  Sets the selected callstack level for evaluating watch expressions (0 == top)
 // --------------------------------------------------------------------------------------------------------------------
 void DebuggerSetWatchStackOffset(int32 stack_offset)
@@ -5297,6 +5312,8 @@ REGISTER_FUNCTION(DebuggerRemoveAllBreakpoints, DebuggerRemoveAllBreakpoints);
 REGISTER_FUNCTION(DebuggerForceBreak, DebuggerForceBreak);
 REGISTER_FUNCTION(DebuggerBreakStep, DebuggerBreakStep);
 REGISTER_FUNCTION(DebuggerBreakRun, DebuggerBreakRun);
+
+REGISTER_FUNCTION(DebuggerForceExecToLineNumber, DebuggerForceExecToLineNumber);
 
 REGISTER_FUNCTION(DebuggerAddVariableWatch, DebuggerAddVariableWatch);
 REGISTER_FUNCTION(DebuggerToggleVarWatch, DebuggerToggleVarWatch);

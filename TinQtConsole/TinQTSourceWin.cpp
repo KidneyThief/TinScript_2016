@@ -356,6 +356,42 @@ void CDebugSourceWin::SetCurrentPC(uint32 codeblock_hash, int32 line_number) {
 }
 
 // ------------------------------------------------------------------------------------------------
+// OnForceExecuteLineNumber():  While at a breakpoint, this will request the target
+// manually set the next instruction to the line selected in the source view... extremely unsafe!
+// ------------------------------------------------------------------------------------------------
+void CDebugSourceWin::OnForceExecuteLineNumber()
+{
+    QList<QListWidgetItem*>	selected_items = selectedItems();
+    if (selected_items.size() != 1)
+        return;
+
+    // -- see if we can find the line number
+    bool found = false;
+    int32 selected_line_number = 0;
+    for (const auto& it : mSourceText)
+    {
+        if (it == selected_items[0])
+        {
+            found = true;
+            break;
+        }
+
+        ++selected_line_number;
+    }
+
+    if (!found)
+        return;
+
+    static uint32 func_hash = TinScript::Hash("DebuggerForceExecToLineNumber");
+    char buf[8];
+    sprintf_s(buf, 8, "%d", selected_line_number);
+    SocketManager::SendExec(func_hash, buf);
+
+    // -- this is semi-fake, since we've not verified that the PC will actually be here!
+    SetCurrentPC(mCurrentCodeblockHash, selected_line_number);
+}
+
+// ------------------------------------------------------------------------------------------------
 void CDebugSourceWin::GoToLineNumber(int32 line_number)
 {
     // -- validate the line number

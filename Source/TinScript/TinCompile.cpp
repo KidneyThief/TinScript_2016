@@ -4182,6 +4182,41 @@ int32 CCodeBlock::AdjustLineNumber(int32 line_number)
 }
 
 // ====================================================================================================================
+// GetPCForFunctionLineNumber():  given a line number, return where the instruction ptr would execute
+// ====================================================================================================================
+const uint32* CCodeBlock::GetPCForFunctionLineNumber(int32 line_number, int32& adjusted_line) const
+{
+    // -- sanity check
+    if (line_number < 0)
+        return nullptr;
+
+    // -- ensure the line number we're attempting to set, is one that will actually execute
+    adjusted_line = -1;
+    const uint32* instrptr = nullptr;
+    for (uint32 i = 0; i < mLineNumberCount; ++i)
+    {
+        int32 instr_line_number = mLineNumbers[i] & 0xffff;
+        if (instr_line_number != 0xffff && instr_line_number >= line_number)
+        {
+            // -- at this point, we have the first breakable line number beyond the one we were given
+            adjusted_line = mLineNumbers[i] & 0xffff;
+
+            // -- the pc is the codeblock address + the offset for the adjusted line
+            uint32 offset = mLineNumbers[i] >> 16;
+
+            instrptr = GetInstructionPtr();
+            instrptr += offset;
+
+            // $$$TZA we need to validate that the instruction ptr is actually within a specific function definition
+            break;
+        }
+    }
+
+    // -- not found
+    return instrptr;
+}
+
+// ====================================================================================================================
 // AddBreakpoint():  Add notification that the debugger wants to break on the given line.
 // ====================================================================================================================
 int32 CCodeBlock::AddBreakpoint(int32 line_number, bool8 break_enabled, const char* conditional, const char* trace,

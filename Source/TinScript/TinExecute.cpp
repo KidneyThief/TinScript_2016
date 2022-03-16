@@ -1517,6 +1517,7 @@ bool8 DebuggerBreakLoop(CCodeBlock* cb, const uint32* instrptr, CExecStack& exec
 	script_context->mDebuggerBreakFuncCallStack = &funccallstack;
 	script_context->mDebuggerBreakExecStack = &execstack;
     script_context->mDebuggerWatchStackOffset = 0;
+    script_context->mDebuggerForceExecLineNumber = -1;
 
     // -- set the current callstack we're breaking in
     g_DebuggerBreakLastCallstack = &funccallstack;
@@ -1596,6 +1597,12 @@ bool8 DebuggerBreakLoop(CCodeBlock* cb, const uint32* instrptr, CExecStack& exec
 
         // -- if the function call stack is no longer valid because a function was reloaded, break
         if (funccallstack.mDebuggerFunctionReload != 0)
+        {
+            break;
+        }
+
+        // -- if we're trying to force execution at a different line number (buyer beware!)...
+        if (script_context->mDebuggerForceExecLineNumber >= 0)
         {
             break;
         }
@@ -1804,6 +1811,38 @@ bool8 CCodeBlock::Execute(uint32 offset, CExecStack& execstack, CFunctionCallSta
             if (should_break)
             {
                 DebuggerBreakLoop(this, instrptr, execstack, funccallstack);
+
+                // -- on emerging from the break loop, see if we should force the vm to start executing from a different line number
+                if (script_context->mDebuggerForceExecLineNumber >= 0)
+                {
+                    int32 force_line_number = TinScript::GetContext()->mDebuggerForceExecLineNumber;
+                    script_context->mDebuggerForceExecLineNumber = -1;
+
+                    // -- this should *only* be permitted if the line number is within the same currently executing function
+                    // $$$TZA need to verify/enforce this
+					
+                    // -- after forcing the next line to execute, but before we actually do execute, we'll
+                    // break into the debugger, for confirmation
+                    CObjectEntry* cur_oe = nullptr;
+                    int32 cur_var_offset = 0;
+                    CFunctionEntry* cur_fe = funccallstack.GetTop(cur_oe, cur_var_offset);
+                    if (cur_fe != nullptr && cur_fe->GetCodeBlock() != nullptr)
+                    {
+                        int32 adjusted_line_number = -1;
+                        const uint32* updated_instrptr =
+                            cur_fe->GetCodeBlock()->GetPCForFunctionLineNumber(force_line_number, adjusted_line_number);
+                        if (updated_instrptr != nullptr)
+                        {
+                            instrptr = updated_instrptr;
+
+                            TinPrint(TinScript::GetContext(), "### WARNING:  forcing execution to line: %d\n"
+                                     "this will crash, if outside the definition of current function: %s()\n",
+                                adjusted_line_number + 1, UnHash(cur_fe->GetHash()));
+
+                            script_context->mDebuggerActionForceBreak = true;
+                        }
+                    }
+                }
             }
         }
 

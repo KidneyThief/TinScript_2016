@@ -75,6 +75,8 @@ class CDebugSourceWin : public QListWidget
 
     public slots:
         void OnDoubleClicked(QListWidgetItem*);
+        // -- exceedingly unsafe!!
+        void OnForceExecuteLineNumber();
 
     private:
         QList<CSourceLine*> mSourceText;

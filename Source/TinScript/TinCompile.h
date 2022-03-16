@@ -1155,6 +1155,7 @@ class CCodeBlock
 		const uint32 GetInstructionCount() const { return (mInstrCount); }
 		const uint32* GetInstructionPtr() const { return (mInstrBlock); }
 		uint32* GetInstructionPtr() { return (mInstrBlock); }
+		const uint32* GetPCForFunctionLineNumber(int32 line_number, int32& adjusted_line) const;
 
 		const uint32 GetLineNumberCount() const { return (mLineNumberCount); }
 

@@ -542,6 +542,7 @@ class CScriptContext
 		CExecStack* mDebuggerBreakExecStack;
         int32 mDebuggerVarWatchRequestID;
         int32 mDebuggerWatchStackOffset;
+        int32 mDebuggerForceExecLineNumber;
 
 		int32 GetExecutionCallStack(tIdentifierString* _obj_identifier_list, tIdentifierString* _funcname_list,
 									tIdentifierString* _ns_list, tIdentifierString* _filename_list,
@@ -584,6 +585,8 @@ class CScriptContext
         void DebuggerRequestNamespaceAssist(uint32 ns_hash);
         void DebuggerSendFunctionTable(int32 object_id, uint32 ns_hash, tFuncTable* function_table);
         void DebuggerSendFunctionAssistEntry(const CDebuggerFunctionAssistEntry& function_assist_entry);
+
+        void DebuggerForceExecToLineNumber(int32 line_number) { mDebuggerForceExecLineNumber = line_number; }
 
         // -- methods for tab completion
         bool TabComplete(const char* partial_input, int32& ref_tab_complete_index,
