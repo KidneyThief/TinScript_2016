@@ -1719,7 +1719,7 @@ bool8 CCodeBlock::Execute(uint32 offset, CExecStack& execstack, CFunctionCallSta
                                 funccallstack.IsExecutingByIndex(0, is_executing_watch);
             bool is_new_line = is_executing && !is_executing_watch &&
                                (mLineNumberCurrent != cur_line ||
-                                (g_DebuggerBreakLastCallstack && g_DebuggerBreakLastCallstack != &funccallstack));
+                               (g_DebuggerBreakLastCallstack && g_DebuggerBreakLastCallstack != &funccallstack));
             mLineNumberCurrent = cur_line;
 
             // -- unless we're forcing a break, see if we should break via stepping (in, over, out)
@@ -1840,6 +1840,7 @@ bool8 CCodeBlock::Execute(uint32 offset, CExecStack& execstack, CFunctionCallSta
                                 adjusted_line_number + 1, UnHash(cur_fe->GetHash()));
 
                             script_context->mDebuggerActionForceBreak = true;
+                            mLineNumberCurrent = -1;
                         }
                     }
                 }

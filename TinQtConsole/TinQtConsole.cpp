@@ -1066,23 +1066,32 @@ void DebuggerBreakpointHit(int32 codeblock_hash, int32 line_number)
     if (CConsoleWindow::GetInstance()->mBreakpointRun)
     {
         // -- send the message to run
-        SocketManager::SendCommand("DebuggerBreakRun();");
+        SocketManager::SendExec(TinScript::Hash("DebuggerBreakRun"));
     }
 
     // -- otherwise we're supposed to step
     // -- NOTE:  stepping *in* is the default... step over and step out are the exceptions
     else if (CConsoleWindow::GetInstance()->mBreakpointStepIn)
     {
-        SocketManager::SendCommand("DebuggerBreakStep(false, false);");
+        // -- send the message to step in (false for step_over, false for step_out)
+        SocketManager::SendExec(TinScript::Hash("DebuggerBreakStep"), "false", "false");
     }
     else if (CConsoleWindow::GetInstance()->mBreakpointStepOut)
     {
-        SocketManager::SendCommand("DebuggerBreakStep(false, true);");
+        // -- send the message to step out (false for step_over, true for step_out)
+        SocketManager::SendExec(TinScript::Hash("DebuggerBreakStep"), "false", "true");
     }
     else
     {
-        SocketManager::SendCommand("DebuggerBreakStep(true, false);");
+        // -- send the message to step over (true for step_over, false for step_out)
+        SocketManager::SendExec(TinScript::Hash("DebuggerBreakStep"), "true", "false");
     }
+
+    // -- clear all the "execution" flags
+    CConsoleWindow::GetInstance()->mBreakpointRun = false;
+    CConsoleWindow::GetInstance()->mBreakpointStepIn = false;
+    CConsoleWindow::GetInstance()->mBreakpointStep = false;
+    CConsoleWindow::GetInstance()->mBreakpointStepOut = false;
 }
 
 // ====================================================================================================================
@@ -1922,7 +1931,7 @@ void CConsoleOutput::Update()
         // -- otherwise if we're not at a breakpoint, see if we simply want to "pause" the game
         if (CConsoleWindow::GetInstance()->mBreakpointStepIn)
         {
-            SocketManager::SendCommand("DebuggerBreakStep(true, false);");
+            SocketManager::SendExec(TinScript::Hash("DebuggerBreakStep"), "true", "false");
             CConsoleWindow::GetInstance()->mBreakpointStepIn = false;
         }
     }
