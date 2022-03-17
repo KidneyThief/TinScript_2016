@@ -2442,6 +2442,19 @@ bool8 CScriptContext::EvalWatchExpression(CDebuggerWatchExpression& debugger_wat
         {
             result = false;
         }
+
+        // -- we want to copy back the watch expression var parameters to the original function...
+        // this way, we can use watch expressions to modify local variables instead of just
+        // (e.g.) printing them
+        CVariableEntry* cur_ve = cur_function->GetLocalVarTable()->First();
+        while (cur_ve)
+        {
+            void* dest_stack_addr = execstack.GetStackVarAddr(0, cur_ve->GetStackOffset());
+            void* cur_stack_addr = debug_execstack->GetStackVarAddr(debug_stacktop, cur_ve->GetStackOffset());
+
+            memcpy(cur_stack_addr, dest_stack_addr, kMaxTypeSize);
+            cur_ve = cur_function->GetLocalVarTable()->Next();
+        }
     }
 
     // -- return the result
