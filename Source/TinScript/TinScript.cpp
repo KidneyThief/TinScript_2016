@@ -2416,11 +2416,15 @@ bool8 CScriptContext::EvalWatchExpression(CDebuggerWatchExpression& debugger_wat
     CVariableEntry* cur_ve = cur_function->GetLocalVarTable()->First();
     while (cur_ve)
     {
-        void* dest_stack_addr = execstack.GetStackVarAddr(0, cur_ve->GetStackOffset());
-        void* cur_stack_addr = debug_execstack->GetStackVarAddr(debug_stacktop, cur_ve->GetStackOffset());
-
-        memcpy(dest_stack_addr, cur_stack_addr, kMaxTypeSize);
-        cur_ve = cur_function->GetLocalVarTable()->Next();
+		// -- this doesn't involve the return parameter
+		// $$$TZA support hashtable and array parameters!
+		if (cur_ve != cur_function->GetContext()->GetParameter(0))
+		{
+			void* dest_stack_addr = execstack.GetStackVarAddr(0, cur_ve->GetStackOffset());
+			void* cur_stack_addr = debug_execstack->GetStackVarAddr(debug_stacktop, cur_ve->GetStackOffset());
+			memcpy(dest_stack_addr, cur_stack_addr, kMaxTypeSize);
+		}
+		cur_ve = cur_function->GetLocalVarTable()->Next();
     }
 
     // -- call the function
@@ -2446,13 +2450,16 @@ bool8 CScriptContext::EvalWatchExpression(CDebuggerWatchExpression& debugger_wat
         // -- we want to copy back the watch expression var parameters to the original function...
         // this way, we can use watch expressions to modify local variables instead of just
         // (e.g.) printing them
-        CVariableEntry* cur_ve = cur_function->GetLocalVarTable()->First();
+        cur_ve = cur_function->GetLocalVarTable()->First();
         while (cur_ve)
         {
-            void* dest_stack_addr = execstack.GetStackVarAddr(0, cur_ve->GetStackOffset());
-            void* cur_stack_addr = debug_execstack->GetStackVarAddr(debug_stacktop, cur_ve->GetStackOffset());
-
-            memcpy(cur_stack_addr, dest_stack_addr, kMaxTypeSize);
+			// -- this doesn't involve the return parameter
+			if (cur_ve != cur_function->GetContext()->GetParameter(0))
+			{
+				void* dest_stack_addr = execstack.GetStackVarAddr(0, cur_ve->GetStackOffset());
+				void* cur_stack_addr = debug_execstack->GetStackVarAddr(debug_stacktop, cur_ve->GetStackOffset());
+				memcpy(cur_stack_addr, dest_stack_addr, kMaxTypeSize);
+			}
             cur_ve = cur_function->GetLocalVarTable()->Next();
         }
     }
