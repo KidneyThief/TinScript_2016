@@ -173,6 +173,7 @@ CObjectSet::CObjectSet()
 {
     mContextOwner = TinScript::GetContext();
     mObjectList = TinAlloc(ALLOC_ObjectGroup, CHashTable<CObjectEntry>, kObjectGroupTableSize);
+	mIsBeingDestroyed = false;
 }
 
 // ====================================================================================================================
@@ -180,6 +181,9 @@ CObjectSet::CObjectSet()
 // ====================================================================================================================
 CObjectSet::~CObjectSet()
 {
+	// -- set the flag so we don't try to add any objects
+	mIsBeingDestroyed = true;
+
     // -- use RemoveAll(), as it will call OnRemove cleanly
     RemoveAll();
     TinFree(mObjectList);
@@ -239,9 +243,19 @@ bool8 CObjectSet::IsInHierarchy(uint32 objectid)
 // ====================================================================================================================
 void CObjectSet::AddObject(uint32 objectid)
 {
-    // -- find the object entry
-    uint32 self_id = GetScriptContext()->FindObjectByAddress(this)->GetID();
-    CObjectEntry* oe = GetScriptContext()->FindObjectEntry(objectid);
+	uint32 self_id = GetScriptContext()->FindObjectByAddress(this)->GetID();
+
+	// -- you absolutely cannot add an object to a set, while the object is being destroyed...!
+	if (mIsBeingDestroyed)
+	{
+		ScriptAssert_(GetScriptContext(), 0, "<internal>", -1,
+					  "Error - [%d] CObjectSet::AddObject(): attempting to add object %d during OnDestroy()\n",
+					  self_id, objectid);
+		return;
+	}
+
+	// -- find the object entry
+	CObjectEntry* oe = GetScriptContext()->FindObjectEntry(objectid);
     if (!oe)
     {
         ScriptAssert_(GetScriptContext(), 0, "<internal>", -1,
@@ -338,7 +352,6 @@ void CObjectSet::RemoveObject(uint32 objectid)
         ScriptAssert_(GetScriptContext(), 0, "<internal>", -1,
                       "Error - [%d] CObjectSet::RemoveObject(): unable to find object %d\n",
                       GetScriptContext()->FindObjectByAddress(this)->GetID(), objectid);
-        return;
     }
 
     if (mObjectList->FindItem(objectid))
@@ -542,13 +555,19 @@ CObjectGroup::CObjectGroup() : CObjectSet()
 // ====================================================================================================================
 CObjectGroup::~CObjectGroup()
 {
-    // -- object groups actually delete their children
+	// -- set the flag so we don't try to add any objects
+	mIsBeingDestroyed = true;
+
+	// -- object groups actually delete their children
     if (mObjectList)
     {
         int32 count = mObjectList->Used();
         while (count > 0)
         {
+			// -- explicitly remove the object - if there's a registration issue with an object,
+			// this will otherwise become an infinite loop
             CObjectEntry* oe = mObjectList->FindItemByIndex(count - 1);
+			RemoveObject(oe->GetID());
             GetScriptContext()->DestroyObject(oe->GetID());
             count = mObjectList->Used();
         }
@@ -560,13 +579,24 @@ CObjectGroup::~CObjectGroup()
 // ====================================================================================================================
 void CObjectGroup::AddObject(uint32 objectid)
 {
-    // -- find the object entry
+	uint32 self_id = GetScriptContext()->FindObjectByAddress(this)->GetID();
+
+	// -- you absolutely cannot add an object to a set, while the object is being destroyed...!
+	if (mIsBeingDestroyed)
+	{
+		ScriptAssert_(GetScriptContext(), 0, "<internal>", -1,
+			"Error - [%d] CObjectGroup::AddObject(): attempting to add object %d during OnDestroy()\n",
+			self_id, objectid);
+		return;
+	}
+
+	// -- find the object entry
     CObjectEntry* oe = GetScriptContext()->FindObjectEntry(objectid);
     if (!oe)
     {
         ScriptAssert_(GetScriptContext(), 0, "<internal>", -1,
                       "Error - [%d] CObjectGroup::AddObject(): unable to find object %d\n",
-                      GetScriptContext()->FindObjectByAddress(this)->GetID(), objectid);
+				      self_id, objectid);
         return;
     }
 
@@ -588,6 +618,9 @@ void CObjectGroup::AddObject(uint32 objectid)
 // ====================================================================================================================
 void CObjectGroup::RemoveObject(uint32 objectid)
 {
+	// -- remove the object from the set
+	CObjectSet::RemoveObject(objectid);
+
     // -- find the object entry
     CObjectEntry* oe = GetScriptContext()->FindObjectEntry(objectid);
     if (!oe)
@@ -595,11 +628,10 @@ void CObjectGroup::RemoveObject(uint32 objectid)
         ScriptAssert_(GetScriptContext(), 0, "<internal>", -1,
                       "Error - [%d] CObjectGroup::RemoveObject(): unable to find object %d\n",
                       GetScriptContext()->FindObjectByAddress(this)->GetID(), objectid);
-        return;
+		return;
     }
 
     // -- remove the object
-    CObjectSet::RemoveObject(objectid);
     oe->SetObjectGroup(NULL);
 }
 

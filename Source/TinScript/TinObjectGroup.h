@@ -101,6 +101,7 @@ class CObjectSet
     protected:
         CScriptContext* mContextOwner;
         CHashTable<CObjectEntry>* mObjectList;
+		bool mIsBeingDestroyed = false;
 };
 
 // ====================================================================================================================

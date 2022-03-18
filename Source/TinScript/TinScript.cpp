@@ -3100,11 +3100,11 @@ void CScriptContext::DebuggerSendCallstack(CObjectEntry** oeList, CFunctionEntry
     }
     // -- limit the amount of data we're sending (this method is used for assert messages, etc... not the actual
     // callstack view in the debugger
-    if (array_size > kExecAssertStackDepth)
-        array_size = kExecAssertStackDepth;
+    if (array_size > kDebuggerCallstackSize)
+        array_size = kDebuggerCallstackSize;
 
-    uint32 objid_array[kExecAssertStackDepth];
-    uint32 func_hash_array[kExecAssertStackDepth];
+    uint32 objid_array[kDebuggerCallstackSize];
+    uint32 func_hash_array[kDebuggerCallstackSize];
     for (int32 i = 0; i < array_size; ++i)
     {
         objid_array[i] = oeList[i] != nullptr ? oeList[i]->GetID() : 0;
