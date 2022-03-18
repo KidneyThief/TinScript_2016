@@ -333,6 +333,7 @@ class CDebuggerWatchExpression
         char mConditional[kMaxNameLength];
         char mTrace[kMaxNameLength];
         bool8 mTraceOnCondition;
+        bool mTraceIsUpdated = false;
         CFunctionEntry* mWatchFunctionEntry;
         CFunctionEntry* mTraceFunctionEntry;
 };

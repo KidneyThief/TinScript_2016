@@ -5479,11 +5479,18 @@ void CDebuggerWatchExpression::SetAttributes(bool break_enabled, const char* new
         if (mTraceFunctionEntry)
         {
             CCodeBlock* codeblock = mTraceFunctionEntry->GetCodeBlock();
-			if (codeblock != nullptr)
-				codeblock->RemoveFunction(mTraceFunctionEntry);
+            if (codeblock != nullptr)
+                codeblock->RemoveFunction(mTraceFunctionEntry);
 			TinScript::GetContext()->GetGlobalNamespace()->GetFuncTable()->RemoveItem(mTraceFunctionEntry->GetHash());
             TinFree(mTraceFunctionEntry);
             mTraceFunctionEntry = NULL;
+        }
+
+        // -- if we're currently at the breakpoint that we're adding a trace expression, we (essentially)
+        // want that trace expression to evaluate now (not at the next time we hit the line)
+        if (new_trace[0] != '\0')
+        {
+            mTraceIsUpdated = true;
         }
 
         // -- the first time this is needed, it'll be evaluated

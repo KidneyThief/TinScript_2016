@@ -1759,16 +1759,28 @@ bool8 CCodeBlock::Execute(uint32 offset, CExecStack& execstack, CFunctionCallSta
 
             // -- whether we break or not, we need to determine if we have a breakpoint
             // that might have a trace point (which might be executed independent of actually breaking)
-            CDebuggerWatchExpression* break_condition = (!is_last_break_line && is_new_line)
-                                                        ? mBreakpoints->FindItem(cur_line)
-                                                        : nullptr;
+            bool execute_trace = false;
+            bool execute_condition = false;
+            CDebuggerWatchExpression* break_condition = mBreakpoints->FindItem(cur_line);
             if (break_condition != nullptr)
+            {
+                execute_trace = script_context->HasTraceExpression(*break_condition) &&
+                                ((!is_last_break_line && is_new_line) || break_condition->mTraceIsUpdated);
+                execute_condition = (!is_last_break_line && is_new_line) ||
+                                    (break_condition->mTraceIsUpdated && break_condition->mTraceOnCondition);
+
+                // -- either way, we only get one chance to execute a trace that's just been added to the current line
+                break_condition->mTraceIsUpdated = false;
+            }
+
+            // -- if we should execute one or both for the breakpoint
+            if (execute_trace || execute_condition)
             {
                 // -- evaluate the conditional for the line - it's also used if to see if we execute the trace point
                 bool condition_result = true;
 
                 // -- note:  if we do have an expression, that can't be evaluated, assume true
-                if (script_context->HasWatchExpression(*break_condition) &&
+                if (execute_condition && script_context->HasWatchExpression(*break_condition) &&
                     script_context->InitWatchExpression(*break_condition, false, funccallstack) &&
                     script_context->EvalWatchExpression(*break_condition, false, funccallstack, execstack))
                 {
@@ -1787,7 +1799,7 @@ bool8 CCodeBlock::Execute(uint32 offset, CExecStack& execstack, CFunctionCallSta
                 }
 
                 // -- see if we should execute the trace expression
-                if (script_context->HasTraceExpression(*break_condition))
+                if (execute_trace)
                 {
                     if (!break_condition->mTraceOnCondition || condition_result)
                     {
