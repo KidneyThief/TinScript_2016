@@ -1706,10 +1706,6 @@ bool8 CCodeBlock::Execute(uint32 offset, CExecStack& execstack, CFunctionCallSta
             int32 found_last_depth =
                 CFunctionCallStack::GetDepthOfFunctionCallStack(g_DebuggerBreakLastCallstack);
 
-            bool is_last_break_line = (g_DebuggerBreakLastCallstack == &funccallstack &&
-                                       cur_stack_depth == g_DebuggerBreakLastStackDepth &&
-                                       cur_line == g_DebuggerBreakLastLineNumber);
-
             // -- by definition, this is a new line, if we're in a different VM
             // (different funccallstack that *isn't* a watch expression)
             // -- note:  if the funccallstack has a 0 stack depth, we're executing
@@ -1750,7 +1746,7 @@ bool8 CCodeBlock::Execute(uint32 offset, CExecStack& execstack, CFunctionCallSta
                     else if (found_last_depth == -1 ||
                              (found_last_depth == 0 &&
                              (cur_stack_depth < g_DebuggerBreakLastStackDepth ||
-                              (cur_stack_depth == g_DebuggerBreakLastStackDepth && !is_last_break_line))))
+                              cur_stack_depth == g_DebuggerBreakLastStackDepth)))
                     {
                         should_break = true;
                     }
@@ -1761,13 +1757,15 @@ bool8 CCodeBlock::Execute(uint32 offset, CExecStack& execstack, CFunctionCallSta
             // that might have a trace point (which might be executed independent of actually breaking)
             bool execute_trace = false;
             bool execute_condition = false;
+            bool break_on_condition = false;
             CDebuggerWatchExpression* break_condition = mBreakpoints->FindItem(cur_line);
             if (break_condition != nullptr)
             {
                 execute_trace = script_context->HasTraceExpression(*break_condition) &&
-                                ((!is_last_break_line && is_new_line) || break_condition->mTraceIsUpdated);
-                execute_condition = (!is_last_break_line && is_new_line) ||
+                                (is_new_line || break_condition->mTraceIsUpdated);
+                execute_condition = is_new_line ||
                                     (break_condition->mTraceIsUpdated && break_condition->mTraceOnCondition);
+                break_on_condition = break_condition->mIsEnabled && is_new_line;
 
                 // -- either way, we only get one chance to execute a trace that's just been added to the current line
                 break_condition->mTraceIsUpdated = false;
@@ -1815,7 +1813,7 @@ bool8 CCodeBlock::Execute(uint32 offset, CExecStack& execstack, CFunctionCallSta
                 // (including a successful conditional)
                 if (!should_break)
                 {
-                    should_break = break_condition->mIsEnabled && condition_result;
+                    should_break = break_on_condition && condition_result;
                 }
             }
 
