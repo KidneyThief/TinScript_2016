@@ -25,19 +25,14 @@
 
 #include "integration.h"
 
-#if PLATFORM_UE4
-	#undef TEXT
-	#define WIN32_LEAN_AND_MEAN
-#endif
-
 // -- lib includes
-#include "assert.h"
-#include "string.h"
-#include "stdio.h"
+#include <assert.h>
+#include <string.h>
+#include <stdio.h>
 
 // -- external includes
 #include "socket.h"
-#include <windows.h>
+#include <thread>
 #include <chrono>
 
 // -- TinScript includes
@@ -1471,7 +1466,7 @@ bool8 DebuggerWaitForConnection(CScriptContext* script_context, const char* asse
         {
             return false;
         }
-        Sleep(1);
+        std::this_thread::sleep_for(std::chrono::milliseconds(33));        
     }
 
     return false;
@@ -1608,7 +1603,7 @@ bool8 DebuggerBreakLoop(CCodeBlock* cb, const uint32* instrptr, CExecStack& exec
         }
 
         // -- otherwise, sleep
-        Sleep(1);
+        std::this_thread::sleep_for(std::chrono::milliseconds(33));
     }
 
     // -- disable further asserts until the stack is unwound.

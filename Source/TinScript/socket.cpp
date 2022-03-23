@@ -1007,7 +1007,7 @@ bool CSocket::ReceivePackets()
     {
         int bytesRecv = recv((SOCKET)mConnectSocket, recvbuf, recvbuflen, 0);
 
-        // -- check for a disconnecct
+        // -- check for a disconnect
         int error = WSAGetLastError();
         if (error != WSAEWOULDBLOCK && error != 0)
         {
@@ -1386,6 +1386,7 @@ bool CSocket::ReceiveScriptExec(void* data)
     }
 
     // -- after all the arguments have been added, queue the command
+    // note:  this is called from within CSocket::ProcessRecvPackets(), and is threadsafe from there
     mScriptContext->QueueThreadExec();
 
     // -- if the parameter types were not optimal, send back the actual function signature

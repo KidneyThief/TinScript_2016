@@ -25,7 +25,7 @@
 
 #include "integration.h"
 
-#if PLATFORM_UE4
+#if PLATFORM_UE4 && PLATFORM_WINDOWS
 	#undef TEXT
 	#define WIN32_LEAN_AND_MEAN
 #endif
@@ -34,7 +34,10 @@
 #include "stdio.h"
 
 // -- platform includes
-#include <Windows.h>
+#if PLATFORM_WINDOWS
+    #include <Windows.h>
+#endif
+
 #include <chrono>
 
 #include "mathutil.h"
@@ -45,6 +48,10 @@
 #include "TinScript.h"
 #include "TinRegistration.h"
 #include "registrationexecs.h"
+
+#if PLATFORM_UE4 && PLATFORM_WINDOWS
+    #undef WIN32_LEAN_AND_MEAN
+#endif
 
 // -- use the DECLARE_FILE/REGISTER_FILE macros to prevent deadstripping
 DECLARE_FILE(unittest_cpp);
@@ -963,6 +970,7 @@ void ReloadUnitTests(bool recompile)
     }
 }
 
+#if PLATFORM_WINDOWS
 DWORD WINAPI MyThreadFunction(LPVOID lpParam)
 {
     // -- create a new script context
@@ -1097,6 +1105,13 @@ void BeginMultiThreadTest()
     Sleep(500);
     MTPrint("*** MULTI THREAD TEST COMPLETE ****\n");
 }
+
+#else
+void BeginMultiThreadTest()
+{
+    MTPrint("Multi-threading requires (e.g.) PLATFORM_WINDOWS to be defined\n");
+}
+#endif // PLATFORM_WINDOWS
 
 REGISTER_FUNCTION(BeginUnitTests, BeginUnitTests);
 REGISTER_FUNCTION(ReloadUnitTests, ReloadUnitTests);

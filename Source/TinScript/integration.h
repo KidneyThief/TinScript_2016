@@ -58,6 +58,11 @@
 #define PLATFORM_UE4 0
 #define PLATFORM_VS_2019 1
 
+// -- including windows.h conflicts with unreal
+// -- we'll probably implement (e.g. file read/write) through platform specific APIs
+// if this isn't defined
+#define PLATFORM_WINDOWS 1
+
 // -- if this define is enabled, every function executed from script to C++ and vice versa, will
 // be logged
 #define LOG_FUNCTION_EXEC 0

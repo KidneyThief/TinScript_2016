@@ -27,10 +27,11 @@
 #define __TINSCRIPT_H
 
 // -- includes
-#include "stddef.h"
-#include "stdarg.h"
+#include <stddef.h>
+#include <stdarg.h>
 #include <typeinfo>
 #include <chrono>
+#include <mutex>
 
 #include "integration.h"
 #include "TinMemory.h"

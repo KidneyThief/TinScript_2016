@@ -25,18 +25,11 @@
 
 #include "integration.h"
 
-#if PLATFORM_UE4
-	#undef TEXT
-	#define WIN32_LEAN_AND_MEAN
-#endif
-
 // -- includes
-#include "stdlib.h"
-#include "stdio.h"
-#include "string.h"
-#include "assert.h"
-
-#include "windows.h"
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <assert.h>
 
 #include "TinTypes.h"
 #include "TinHash.h"

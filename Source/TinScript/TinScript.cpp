@@ -25,21 +25,18 @@
 
 #include "integration.h"
 
-#if PLATFORM_UE4
+#if PLATFORM_UE4 && PLATFORM_WINDOWS
 	#undef TEXT
 	#define WIN32_LEAN_AND_MEAN
 #endif
 
 // -- includes
-#include "stdlib.h"
-#include "stdio.h"
+#include <stdlib.h>
+#include <stdio.h>
 #include <string>
+#include <filesystem>
 
 #include "windows.h"
-#include "conio.h"
-#include "direct.h"
-
-#include "integration.h"
 
 #include "TinHash.h"
 #include "TinHashtable.h"
@@ -56,6 +53,10 @@
 #include "socket.h"
 
 #include "TinScript.h"
+
+#if PLATFORM_UE4 && PLATFORM_WINDOWS
+    #undef WIN32_LEAN_AND_MEAN
+#endif
 
 // == namespace TinScript =============================================================================================
 
@@ -1196,8 +1197,8 @@ void CScriptContext::InitializeDirectory(bool init_exe)
     if (init_exe)
     {
         // -- get the executable directory
-        char* cwdBuffer = _getcwd(NULL,0);
-        if (cwdBuffer == NULL)
+        std::filesystem::path cur_path = std::filesystem::current_path();
+        if (strlen(cur_path.string().c_str()) == 0)
         {
             // -- stub the executable directory
             mExecutableDirectory[0] = '.';
@@ -1206,12 +1207,7 @@ void CScriptContext::InitializeDirectory(bool init_exe)
         }
         else
         {
-            SafeStrcpy(mExecutableDirectory, sizeof(mExecutableDirectory), cwdBuffer);
-
-// $$$TZA in UE4, this causes a crash...???
-#if !PLATFORM_UE4			
-            delete[] cwdBuffer;
-#endif			
+            SafeStrcpy(mExecutableDirectory, sizeof(mExecutableDirectory), cur_path.string().c_str());
 
             // -- ensure the last character in the directory is a '/'
             size_t dir_len = strlen(mExecutableDirectory);
@@ -2422,7 +2418,10 @@ bool8 CScriptContext::EvalWatchExpression(CDebuggerWatchExpression& debugger_wat
 		{
 			void* dest_stack_addr = execstack.GetStackVarAddr(0, cur_ve->GetStackOffset());
 			void* cur_stack_addr = debug_execstack->GetStackVarAddr(debug_stacktop, cur_ve->GetStackOffset());
-			memcpy(dest_stack_addr, cur_stack_addr, kMaxTypeSize);
+            if (dest_stack_addr != nullptr && cur_stack_addr != nullptr)
+            {
+                memcpy(dest_stack_addr, cur_stack_addr, kMaxTypeSize);
+            }
 		}
 		cur_ve = cur_function->GetLocalVarTable()->Next();
     }
@@ -2458,7 +2457,10 @@ bool8 CScriptContext::EvalWatchExpression(CDebuggerWatchExpression& debugger_wat
 			{
 				void* dest_stack_addr = execstack.GetStackVarAddr(0, cur_ve->GetStackOffset());
 				void* cur_stack_addr = debug_execstack->GetStackVarAddr(debug_stacktop, cur_ve->GetStackOffset());
-				memcpy(cur_stack_addr, dest_stack_addr, kMaxTypeSize);
+                if (dest_stack_addr != nullptr && cur_stack_addr != nullptr)
+                {
+                    memcpy(cur_stack_addr, dest_stack_addr, kMaxTypeSize);
+                }
 			}
             cur_ve = cur_function->GetLocalVarTable()->Next();
         }
@@ -2581,7 +2583,10 @@ bool8 CScriptContext::EvaluateWatchExpression(const char* expression)
                 {
                     void* stack_addr = execstack.GetStackVarAddr(0, temp_ve->GetStackOffset());
                     void* var_addr = temp_ve->GetAddr(NULL);
-                    memcpy(stack_addr, var_addr, kMaxTypeSize);
+                    if (stack_addr != nullptr && var_addr != nullptr)
+                    {
+                        memcpy(stack_addr, var_addr, kMaxTypeSize);
+                    }
                     temp_ve = temp_context->GetLocalVarTable()->Next();
                 }
 
@@ -4894,7 +4899,7 @@ bool8 CScriptContext::AddThreadExecParam(eVarType param_type, void* value)
         return (true);
     }
 
-    // -- see if the paramter type matches
+    // -- see if the parameter type matches
     bool8 paramTypeMatches = (param_type == fe_param->GetType());
 
     // -- if the param_type is a string, then the value* is a pointer to the (soon to be destructed) received packet
