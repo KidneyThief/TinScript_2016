@@ -61,7 +61,7 @@
 // -- including windows.h conflicts with unreal
 // -- we'll probably implement (e.g. file read/write) through platform specific APIs
 // if this isn't defined
-#define PLATFORM_WINDOWS 0
+#define TS_PLATFORM_WINDOWS 0
 
 // -- if this define is enabled, every function executed from script to C++ and vice versa, will
 // be logged
@@ -72,7 +72,7 @@
 
 // -- we can check whether a script has been modified, and notify when it needs to be recompiled
 // note: this also uses (currently) windows filehandles, etc...
-#define NOTIFY_SCRIPTS_MODIFIED PLATFORM_WINDOWS
+#define NOTIFY_SCRIPTS_MODIFIED TS_PLATFORM_WINDOWS
 
 // ------------------------------------------------------------------------------------------------
 // -- TYPES

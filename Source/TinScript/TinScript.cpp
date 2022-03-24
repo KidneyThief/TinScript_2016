@@ -25,7 +25,7 @@
 
 #include "integration.h"
 
-#if PLATFORM_UE4 && PLATFORM_WINDOWS
+#if PLATFORM_UE4 && TS_PLATFORM_WINDOWS
 	#undef TEXT
 	#define WIN32_LEAN_AND_MEAN
 #endif
@@ -36,7 +36,7 @@
 #include <string>
 #include <filesystem>
 
-#if PLATFORM_WINDOWS
+#if TS_PLATFORM_WINDOWS
     #include "windows.h"
 #endif
 
@@ -56,7 +56,7 @@
 
 #include "TinScript.h"
 
-#if PLATFORM_UE4 && PLATFORM_WINDOWS
+#if PLATFORM_UE4 && TS_PLATFORM_WINDOWS
     #undef WIN32_LEAN_AND_MEAN
 #endif
 
@@ -883,7 +883,7 @@ void LoadStringTable(const char* from_dir)
 	fclose(filehandle);
 }
 
-#if PLATFORM_WINDOWS
+#if TS_PLATFORM_WINDOWS
 // ====================================================================================================================
 // GetLastWriteTime():  Given a filename, get the last time the file was written.
 // ====================================================================================================================
@@ -984,7 +984,7 @@ bool8 NeedToCompile(const char* full_path_name, const char* binfilename, bool ch
 {
 // -- currently, we need to compare file/date timestamps to determine if we need to compile
 // however, Unreal compilations conflict with including windows.h, so for now, we'll simply always compile
-#if !PLATFORM_WINDOWS
+#if !TS_PLATFORM_WINDOWS
     return true;
 #else
     // -- get the filetime for the original script
@@ -1035,7 +1035,7 @@ bool8 NeedToCompile(const char* full_path_name, const char* binfilename, bool ch
         // -- we're not forcing compiles
         return false;
     }
-#endif // PLATFORM_WINDOWS
+#endif // TS_PLATFORM_WINDOWS
 }
 
 // ====================================================================================================================
@@ -1279,7 +1279,7 @@ bool8 CScriptContext::SetDirectory(const char* path)
 
     // -- for now, the directory can only be verified on windows...
     bool path_verified = true;
-#if PLATFORM_WINDOWS
+#if TS_PLATFORM_WINDOWS
     path_verified = false;
     DWORD ftyp = GetFileAttributesA(path);
     if (ftyp != INVALID_FILE_ATTRIBUTES && ftyp & FILE_ATTRIBUTE_DIRECTORY)
@@ -1287,7 +1287,7 @@ bool8 CScriptContext::SetDirectory(const char* path)
         path_verified = true;
     }
 #else
-    TinPrint(this, "### Warning:  CScriptContext::SetDirectory() only verified with PLATFORM_WINDOWS\n");
+    TinPrint(this, "### Warning:  CScriptContext::SetDirectory() only verified with TS_PLATFORM_WINDOWS\n");
 #endif
 
     if (path_verified)

@@ -25,7 +25,7 @@
 
 #include "integration.h"
 
-#if PLATFORM_UE4 && PLATFORM_WINDOWS
+#if PLATFORM_UE4 && TS_PLATFORM_WINDOWS
 	#undef TEXT
 	#define WIN32_LEAN_AND_MEAN
 #endif
@@ -34,7 +34,7 @@
 #include "stdio.h"
 
 // -- platform includes
-#if PLATFORM_WINDOWS
+#if TS_PLATFORM_WINDOWS
     #include <Windows.h>
 #endif
 
@@ -49,7 +49,7 @@
 #include "TinRegistration.h"
 #include "registrationexecs.h"
 
-#if PLATFORM_UE4 && PLATFORM_WINDOWS
+#if PLATFORM_UE4 && TS_PLATFORM_WINDOWS
     #undef WIN32_LEAN_AND_MEAN
 #endif
 
@@ -970,7 +970,7 @@ void ReloadUnitTests(bool recompile)
     }
 }
 
-#if PLATFORM_WINDOWS
+#if TS_PLATFORM_WINDOWS
 DWORD WINAPI MyThreadFunction(LPVOID lpParam)
 {
     // -- create a new script context
@@ -1109,9 +1109,9 @@ void BeginMultiThreadTest()
 #else
 void BeginMultiThreadTest()
 {
-    MTPrint("Multi-threading requires (e.g.) PLATFORM_WINDOWS to be defined\n");
+    MTPrint("Multi-threading requires (e.g.) TS_PLATFORM_WINDOWS to be defined\n");
 }
-#endif // PLATFORM_WINDOWS
+#endif // TS_PLATFORM_WINDOWS
 
 REGISTER_FUNCTION(BeginUnitTests, BeginUnitTests);
 REGISTER_FUNCTION(ReloadUnitTests, ReloadUnitTests);

@@ -36,8 +36,6 @@
 #include "TinScript.h"
 #include "TinStringTable.h"
 
-#pragma optimize("", off)
-
 // == namespace TinScript =============================================================================================
 
 namespace TinScript
