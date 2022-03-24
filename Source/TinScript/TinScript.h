@@ -249,11 +249,12 @@ class CThreadMutex
 {
     public:
         CThreadMutex();
+        ~CThreadMutex();
         void Lock();
         void Unlock();
 
     protected:
-        void* mThreadMutex;
+        std::recursive_mutex* mThreadMutex = nullptr;
         bool8 mIsLocked;
 };
 
@@ -606,19 +607,17 @@ class CScriptContext
         static bool8 gDebugForceCompile;
         static std::time_t gDebugForceCompileTime;
 
-        // -- Thread commands are only supported in WIN32
-        #ifdef WIN32
-            bool8 AddThreadCommand(const char* command);
-            void ProcessThreadCommands();
+        // -- thread commands are only use the socket library, implemented using winsockets
+        // -- if (e.g.) winsock2.h isn't available, this probably won't work, and socket.cpp won't compile
+        bool8 AddThreadCommand(const char* command);
+        void ProcessThreadCommands();
 
-            // -- we also support thread commands through the schedule - to bypass the parsing/compiling
-            CScheduler::CCommand* m_socketCommandList;
-            CScheduler::CCommand* m_socketCurrentCommand;
-            bool8 BeginThreadExec(uint32 func_hash);
-            bool8 AddThreadExecParam(eVarType param_type, void* value);
-            void QueueThreadExec();
-
-        #endif // WIN32
+        // -- we also support thread commands through the schedule - to bypass the parsing/compiling
+        CScheduler::CCommand* m_socketCommandList;
+        CScheduler::CCommand* m_socketCurrentCommand;
+        bool8 BeginThreadExec(uint32 func_hash);
+        bool8 AddThreadExecParam(eVarType param_type, void* value);
+        void QueueThreadExec();
 
     private:
         friend class CMemoryTracker;

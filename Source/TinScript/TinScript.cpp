@@ -4728,7 +4728,6 @@ bool CScriptContext::TabComplete(const char* partial_input, int32& ref_tab_compl
 // ====================================================================================================================
 // AddThreadCommand():  This enqueues a command, to be process during the normal update
 // ====================================================================================================================
-// -- Thread commands are only supported in WIN32
 bool8 CScriptContext::AddThreadCommand(const char* command)
 {
     // -- sanity check
@@ -5357,7 +5356,6 @@ REGISTER_FUNCTION(DebuggerRequestNamespaceAssist, DebuggerRequestNamespaceAssist
 REGISTER_FUNCTION(DebuggerRequestTabComplete, DebuggerRequestTabComplete);
 
 // == class CThreadMutex ==============================================================================================
-// -- CThreadMutex is only functional in WIN32
 
 // ====================================================================================================================
 // Constructor
@@ -5365,7 +5363,17 @@ REGISTER_FUNCTION(DebuggerRequestTabComplete, DebuggerRequestTabComplete);
 CThreadMutex::CThreadMutex()
     : mIsLocked(false)
 {
-    mThreadMutex = CreateMutex(NULL, false, NULL);
+    mThreadMutex = new std::recursive_mutex;
+}
+
+// ====================================================================================================================
+// Constructor
+// ====================================================================================================================
+CThreadMutex::~CThreadMutex()
+{
+    // -- for now, don't destroy the mutex, as it could still be busy...  
+    // if the context is *properly* destroyed, we should be able to explicitly ensure the thread mutex is not in use
+    mThreadMutex = nullptr;
 }
 
 // ====================================================================================================================
@@ -5373,9 +5381,13 @@ CThreadMutex::CThreadMutex()
 // ====================================================================================================================
 void CThreadMutex::Lock()
 {
+    // -- do nothing, if we're in the middle of shutting down
+    if (mThreadMutex == nullptr)
+        return;
+
     mIsLocked = true;
     //printf("[0x%x] Thread locked: %s\n", (unsigned int)this, mIsLocked ? "true" : "false");
-    WaitForSingleObject(mThreadMutex, INFINITE);
+    mThreadMutex->lock();
 }
 
 // ====================================================================================================================
@@ -5383,7 +5395,11 @@ void CThreadMutex::Lock()
 // ====================================================================================================================
 void CThreadMutex::Unlock()
 {
-    ReleaseMutex(mThreadMutex);
+    // -- do nothing, if we're in the middle of shutting down
+    if (mThreadMutex == nullptr)
+        return;
+
+    mThreadMutex->unlock();
     mIsLocked = false;
     //printf("[0x%x] Thread locked: %s\n", (unsigned int)this, mIsLocked ? "true" : "false");
 }
