@@ -36,7 +36,9 @@
 #include <string>
 #include <filesystem>
 
-#include "windows.h"
+#if PLATFORM_WINDOWS
+    #include "windows.h"
+#endif
 
 #include "TinHash.h"
 #include "TinHashtable.h"
@@ -881,6 +883,7 @@ void LoadStringTable(const char* from_dir)
 	fclose(filehandle);
 }
 
+#if PLATFORM_WINDOWS
 // ====================================================================================================================
 // GetLastWriteTime():  Given a filename, get the last time the file was written.
 // ====================================================================================================================
@@ -905,6 +908,7 @@ bool8 GetLastWriteTime(const char* filename, FILETIME& writetime)
 
     return (success);
 }
+#endif
 
 // ====================================================================================================================
 // GetFullPath():  given a source filename, pre-pend the file name with the current working directory
@@ -978,6 +982,11 @@ bool8 GetBinaryFileName(const char* filename, char* binfilename, int32 maxnamele
 // ====================================================================================================================
 bool8 NeedToCompile(const char* full_path_name, const char* binfilename, bool check_only)
 {
+// -- currently, we need to compare file/date timestamps to determine if we need to compile
+// however, Unreal compilations conflict with including windows.h, so for now, we'll simply always compile
+#if !PLATFORM_WINDOWS
+    return true;
+#else
     // -- get the filetime for the original script
     // -- if fail, then we have nothing to compile
     // note:  if we're checking for a file that's been modified externally, it may take a
@@ -1026,6 +1035,7 @@ bool8 NeedToCompile(const char* full_path_name, const char* binfilename, bool ch
         // -- we're not forcing compiles
         return false;
     }
+#endif // PLATFORM_WINDOWS
 }
 
 // ====================================================================================================================
@@ -1267,8 +1277,20 @@ bool8 CScriptContext::SetDirectory(const char* path)
         return (true);
     }
 
+    // -- for now, the directory can only be verified on windows...
+    bool path_verified = true;
+#if PLATFORM_WINDOWS
+    path_verified = false;
     DWORD ftyp = GetFileAttributesA(path);
     if (ftyp != INVALID_FILE_ATTRIBUTES && ftyp & FILE_ATTRIBUTE_DIRECTORY)
+    {
+        path_verified = true;
+    }
+#else
+    TinPrint(this, "### Warning:  CScriptContext::SetDirectory() only verified with PLATFORM_WINDOWS\n");
+#endif
+
+    if (path_verified)
     {
         // -- copy the new cwd
         SafeStrcpy(mCurrentWorkingDirectory, sizeof(mCurrentWorkingDirectory), path);
