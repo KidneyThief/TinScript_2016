@@ -1269,7 +1269,7 @@ class CCodeBlock
                 }
 #if NOTIFY_SCRIPTS_MODIFIED
 				// -- otherwise, see if the source for the codeblock has been modified
-				if (!codeblock->GetSourceHasChanged())
+				else if (!codeblock->GetSourceHasChanged())
 				{
 					bool source_hash_changed = CheckSourceNeedToCompile(codeblock->GetFileName());
 					if (source_hash_changed)

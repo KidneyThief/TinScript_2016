@@ -71,8 +71,7 @@
 #define STRING_TABLE_USE_POOLS 1
 
 // -- we can check whether a script has been modified, and notify when it needs to be recompiled
-// note: this also uses (currently) windows filehandles, etc...
-#define NOTIFY_SCRIPTS_MODIFIED TS_PLATFORM_WINDOWS
+#define NOTIFY_SCRIPTS_MODIFIED 1
 
 // ------------------------------------------------------------------------------------------------
 // -- TYPES

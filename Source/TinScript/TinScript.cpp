@@ -25,21 +25,17 @@
 
 #include "integration.h"
 
-#if PLATFORM_UE4 && TS_PLATFORM_WINDOWS
-	#undef TEXT
-	#define WIN32_LEAN_AND_MEAN
-#endif
-
 // -- includes
 #include <stdlib.h>
 #include <stdio.h>
 #include <string>
 #include <filesystem>
+#include <fstream>
+#include <chrono>
+#include <iostream>
+#include <iomanip>
 
-#if TS_PLATFORM_WINDOWS
-    #include "windows.h"
-#endif
-
+#include "socket.h"
 #include "TinHash.h"
 #include "TinHashtable.h"
 #include "TinParse.h"
@@ -51,14 +47,7 @@
 #include "TinStringTable.h"
 #include "TinRegistration.h"
 #include "TinOpExecFunctions.h"
-
-#include "socket.h"
-
 #include "TinScript.h"
-
-#if PLATFORM_UE4 && TS_PLATFORM_WINDOWS
-    #undef WIN32_LEAN_AND_MEAN
-#endif
 
 // == namespace TinScript =============================================================================================
 
@@ -883,32 +872,22 @@ void LoadStringTable(const char* from_dir)
 	fclose(filehandle);
 }
 
-#if TS_PLATFORM_WINDOWS
 // ====================================================================================================================
 // GetLastWriteTime():  Given a filename, get the last time the file was written.
 // ====================================================================================================================
-bool8 GetLastWriteTime(const char* filename, FILETIME& writetime)
+bool8 GetLastWriteTime(const char* file_path, std::filesystem::file_time_type& writetime)
 {
-    if (!filename || !filename[0])
+    if (!file_path || !file_path[0])
         return (false);
 
-	HANDLE hFile = CreateFileA(filename, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
+    // -- ensure the file exists
+    if (!std::filesystem::exists(file_path))
+        return false;
 
-    // Retrieve the file times for the file.
-    FILETIME ftCreate, ftAccess;
-    bool success = true;
-    if (hFile == INVALID_HANDLE_VALUE ||  !GetFileTime(hFile, &ftCreate, &ftAccess, &writetime))
-    {
-        success = false;
-    }
-
-    // -- close the file
-    if (hFile != INVALID_HANDLE_VALUE)
-        CloseHandle(hFile);
-
-    return (success);
+    //const auto file_handle = std::ofstream(file_path);
+    writetime = std::filesystem::last_write_time(file_path);
+    return (true);
 }
-#endif
 
 // ====================================================================================================================
 // GetFullPath():  given a source filename, pre-pend the file name with the current working directory
@@ -982,16 +961,18 @@ bool8 GetBinaryFileName(const char* filename, char* binfilename, int32 maxnamele
 // ====================================================================================================================
 bool8 NeedToCompile(const char* full_path_name, const char* binfilename, bool check_only)
 {
-// -- currently, we need to compare file/date timestamps to determine if we need to compile
-// however, Unreal compilations conflict with including windows.h, so for now, we'll simply always compile
-#if !TS_PLATFORM_WINDOWS
-    return true;
-#else
+    // -- sanity check
+    if (full_path_name == nullptr || full_path_name[0] == '\0' ||
+        binfilename == nullptr || binfilename[0] == '\0')
+    {
+        return (false);
+    }
+
     // -- get the filetime for the original script
     // -- if fail, then we have nothing to compile
     // note:  if we're checking for a file that's been modified externally, it may take a
     // frame or two before Windows will allow us access to the last write time
-    FILETIME scriptft;
+    std::filesystem::file_time_type scriptft;
     if (!GetLastWriteTime(full_path_name, scriptft))
     {
         if (!check_only)
@@ -1003,16 +984,16 @@ bool8 NeedToCompile(const char* full_path_name, const char* binfilename, bool ch
 
     // -- get the filetime for the binary file
     // -- if fail, we need to compile
-    FILETIME binft;
+    std::filesystem::file_time_type binft;
     if (!GetLastWriteTime(binfilename, binft))
     {
-        return !check_only ? true : false;
+        return (!check_only ? true : false);
     }
 
-    // -- if the binft is more recent, then we don't need to compile
-    if (CompareFileTime(&binft, &scriptft) < 0)
+    // -- if the scriptft is more recent than the binft, then we need to compile
+    if (binft < scriptft)
     {
-        return true;
+        return (true);
     }
     else
     {
@@ -1035,7 +1016,6 @@ bool8 NeedToCompile(const char* full_path_name, const char* binfilename, bool ch
         // -- we're not forcing compiles
         return false;
     }
-#endif // TS_PLATFORM_WINDOWS
 }
 
 // ====================================================================================================================
@@ -1270,7 +1250,7 @@ void CScriptContext::InitializeDirectory(bool init_exe)
 bool8 CScriptContext::SetDirectory(const char* path)
 {
     // -- if the path doesn't exist, we're done (and all scripts will execute from whatever the .exe directory is)
-    if (path == nullptr)
+    if (path == nullptr || path[0] == '\0')
     {
         // -- on an empty path, we'll reset to the current
         InitializeDirectory(false);
@@ -1278,51 +1258,36 @@ bool8 CScriptContext::SetDirectory(const char* path)
     }
 
     // -- for now, the directory can only be verified on windows...
-    bool path_verified = true;
-#if TS_PLATFORM_WINDOWS
-    path_verified = false;
-    DWORD ftyp = GetFileAttributesA(path);
-    if (ftyp != INVALID_FILE_ATTRIBUTES && ftyp & FILE_ATTRIBUTE_DIRECTORY)
+    if (! std::filesystem::exists(path) || !std::filesystem::is_directory(path))
     {
-        path_verified = true;
-    }
-#else
-    TinPrint(this, "### Warning:  CScriptContext::SetDirectory() only verified with TS_PLATFORM_WINDOWS\n");
-#endif
-
-    if (path_verified)
-    {
-        // -- copy the new cwd
-        SafeStrcpy(mCurrentWorkingDirectory, sizeof(mCurrentWorkingDirectory), path);
-
-        // -- scrub the directory to ensure all '\\' characters are actually '/'
-        char* fix_dir_char = mCurrentWorkingDirectory;
-        while(*fix_dir_char != '\0')
-        {
-            if(*fix_dir_char == '\\')
-                *fix_dir_char = '/';
-            ++fix_dir_char;
-        }
-
-        // -- ensure the last character is a '/'
-        size_t length = strlen(mCurrentWorkingDirectory);
-        assert(length < sizeof(mCurrentWorkingDirectory) - 2);
-        if (mCurrentWorkingDirectory[length - 1] != '/')
-        {
-            mCurrentWorkingDirectory[length] = '/';
-            mCurrentWorkingDirectory[length + 1] = '\0';
-        }
-
-        TinPrint(this, "SetDirectory():  cwd: %s\n", mCurrentWorkingDirectory);
-    }
-    else
-    {
-        TinPrint(this,"Error - SetDirectory():  directory not found %s\n", path);
-        TinPrint(this,"cwd: %s\n", mCurrentWorkingDirectory);
+        TinPrint(this, "Error - SetDirectory():  not a valid directory %s\n", path);
+        TinPrint(this, "cwd: %s\n", mCurrentWorkingDirectory);
         return (false);
     }
 
+    // -- copy the new cwd
+    SafeStrcpy(mCurrentWorkingDirectory, sizeof(mCurrentWorkingDirectory), path);
+
+    // -- scrub the directory to ensure all '\\' characters are actually '/'
+    char* fix_dir_char = mCurrentWorkingDirectory;
+    while(*fix_dir_char != '\0')
+    {
+        if(*fix_dir_char == '\\')
+            *fix_dir_char = '/';
+        ++fix_dir_char;
+    }
+
+    // -- ensure the last character is a '/'
+    size_t length = strlen(mCurrentWorkingDirectory);
+    assert(length < sizeof(mCurrentWorkingDirectory) - 2);
+    if (mCurrentWorkingDirectory[length - 1] != '/')
+    {
+        mCurrentWorkingDirectory[length] = '/';
+        mCurrentWorkingDirectory[length + 1] = '\0';
+    }
+
     // -- success
+    TinPrint(this, "SetDirectory():  cwd: %s\n", mCurrentWorkingDirectory);
     return (true);
 }
 
