@@ -91,12 +91,14 @@ inline uint32 GetTypeID()
 // it also only extends to pointers, but not pointers of pointers
 // e.g. char** and char** const, are the same
 // e.g. const char** adn const char** const are the same, but different from the above line
+// note: a bug where inline static const C* const t = nullptr caused an optimization that
+// *broke* GetTypeID() in a release build, but worked in debug... lesson learned!
 
 template<typename C>
 struct tGetTypeStruct
 {
-    inline static const C* const t = nullptr;
-    inline static const C** const tt = nullptr;
+    inline static const C* t = nullptr;
+    inline static const C** tt = nullptr;
     static void* GetType() { return (void*)&t; }
     static void* GetTypePointer() { return (void*)&tt; }
 };
