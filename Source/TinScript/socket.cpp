@@ -231,7 +231,7 @@ bool Listen()
 // ====================================================================================================================
 // Connect():  send a winsock connection request
 // ====================================================================================================================
-bool Connect(const char* ipAddress)
+bool Connect(const char* ipAddress, bool is_auto_connect)
 {
     bool result = false;
 
@@ -249,11 +249,15 @@ bool Connect(const char* ipAddress)
     if (!ipAddress || !ipAddress[0])
         ipAddress = "127.0.0.1";
 
-    result = mThreadSocket->Connect(ipAddress);
+    result = mThreadSocket->Connect(ipAddress, is_auto_connect);
     if (!result)
     {
-        TinPrint(TinScript::GetContext(),
-                    "Error - Connect(): unable to connect - execute SocketListen() on target IP.\n");
+        // -- we don't want to display an error each time we attempt to auto-reconnect
+        if (!is_auto_connect)
+        {
+            TinPrint(TinScript::GetContext(),
+                     "Error - Connect(): unable to connect - execute SocketListen() on target IP.\n");
+        }
     }
 
     return (result);
@@ -729,7 +733,7 @@ bool CSocket::Listen()
 // ====================================================================================================================
 // RequestConnection():  See if we can establish a connection
 // ====================================================================================================================
-bool CSocket::Connect(const char* ipAddress)
+bool CSocket::Connect(const char* ipAddress, bool is_auto_connect)
 {
     // -- this only works if we're not already connected, and we have a listening socket, and a valid address
     if (mConnected || !ipAddress || !ipAddress[0])
@@ -749,7 +753,10 @@ bool CSocket::Connect(const char* ipAddress)
     int addrResult = getaddrinfo(ipAddress, defaultPortStr, &addressHints, &addressResult);
     if (addrResult != 0)
     {
-        ScriptCommand("Print('Error - CSocket: getaddrinfo failed with error: %d\n');", addrResult);
+        if (!is_auto_connect)
+        {
+            ScriptCommand("Print('Error - CSocket: getaddrinfo failed with error: %d\n');", addrResult);
+        }
         return (false);
     }
 
@@ -765,7 +772,10 @@ bool CSocket::Connect(const char* ipAddress)
     int32 connectResult = (int32)connect((SOCKET)mConnectSocket, addressResult->ai_addr, (int32)addressResult->ai_addrlen);
     if (connectResult == SOCKET_ERROR)
     {
-        ScriptCommand("Print('Error CSocket: connect() failed.\n');");
+        if (!is_auto_connect)
+        {
+            ScriptCommand("Print('Error CSocket: connect() failed.\n');");
+        }
         closesocket((SOCKET)mConnectSocket);
         mConnectSocket = nullptr;
         return (false);
@@ -777,7 +787,10 @@ bool CSocket::Connect(const char* ipAddress)
     // -- see if we actually created a socket
     if (mConnectSocket == nullptr)
     {
-        ScriptCommand("Print('Error CSocket: connect() failed.\n');");
+        if (!is_auto_connect)
+        {
+            ScriptCommand("Print('Error CSocket: connect() failed.\n');");
+        }
         return (false);
     }
 

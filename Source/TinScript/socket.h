@@ -60,7 +60,7 @@ void Terminate();
 // -- request a connection
 bool IsListening();
 bool Listen();
-bool Connect(const char* ipAddress);
+bool Connect(const char* ipAddress, bool is_auto_connect = false);
 void Disconnect();
 bool IsConnected();
 bool SendCommand(const char* command);
@@ -231,7 +231,7 @@ class CSocket
         bool Listen();
 
         // -- request a connection
-        bool Connect(const char* ipAddress);
+        bool Connect(const char* ipAddress, bool is_auto_connect);
 
         // -- disconnect methods
         void RequestDisconnect();

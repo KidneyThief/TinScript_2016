@@ -149,6 +149,7 @@ public:
 protected:
     virtual void showEvent(QShowEvent *event);
     virtual void closeEvent(QCloseEvent *event);
+    virtual bool event(QEvent* event);
 
 public slots:
     void menuSaveLayout();

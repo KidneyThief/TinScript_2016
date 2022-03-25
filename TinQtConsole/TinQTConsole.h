@@ -53,6 +53,7 @@ class CConsoleOutput;
 class CDebugSourceWin;
 class CDebugToolBar;
 class QGridLayout;
+class QCheckBox;
 class CDebugBreakpointsWin;
 class CDebugCallstackWin;
 class CDebugWatchWin;
@@ -114,6 +115,9 @@ class CConsoleWindow
         void SetStatusMessage(const char* message, Qt::GlobalColor msg_color = Qt::black);
         void SetTargetInfoMessage(const char* message);
 
+        bool ShouldAutoConnect();
+        void TryAutoConnect();
+
         // -- Qt components
         QApplication* mApp;
         MainWindow* mMainWindow;
@@ -128,6 +132,8 @@ class CConsoleWindow
 
         QLabel* mStatusLabel;
         QLabel* mTargetInfoLabel;
+        QLabel* mAutoConnectLabel;
+        QCheckBox* mAutoConnect;
         QLabel* mIPLabel;
         QLineEdit* mConnectIP;
         QPushButton* mButtonConnect;
@@ -309,6 +315,8 @@ class CConsoleInput : public QLineEdit
 
         typedef struct { char text[TinScript::kMaxTokenLength]; } tHistoryEntry;
         void GetHistory(QStringList& history) const;
+
+        void TryConnect(bool is_auto_connect);
 
     public slots:
         void OnButtonConnectPressed();

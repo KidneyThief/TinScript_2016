@@ -115,6 +115,10 @@ CConsoleWindow::CConsoleWindow()
     mStatusLabel = new QLabel("Not Connected");
     mStatusLabel->setMinimumWidth(200);
     mTargetInfoLabel = new QLabel("");
+    mAutoConnectLabel = new QLabel("Auto-Connect:");
+    mAutoConnect = new QCheckBox();
+    mAutoConnect->setChecked(true);
+
     mIPLabel = new QLabel("IP:");
     mConnectIP = new QLineEdit();
     mConnectIP->setText("127.0.0.1");
@@ -130,6 +134,9 @@ CConsoleWindow::CConsoleWindow()
 
     mMainWindow->statusBar()->addWidget(mStatusLabel, 1);
     mMainWindow->statusBar()->addWidget(mTargetInfoLabel, 1);
+    mMainWindow->statusBar()->addWidget(mAutoConnectLabel, 0);
+    mMainWindow->statusBar()->addWidget(mAutoConnect, 0);
+    mMainWindow->statusBar()->addWidget(new QLabel("  "), 0);
     mMainWindow->statusBar()->addWidget(mIPLabel, 0);
     mMainWindow->statusBar()->addWidget(mConnectIP, 0);
     mMainWindow->statusBar()->addWidget(mButtonConnect, 0);
@@ -1303,6 +1310,26 @@ void CConsoleWindow::SetTargetInfoMessage(const char* message)
         mTargetInfoLabel->setText(QString(message));
 }
 
+// ====================================================================================================================
+// ShouldAutoConnect():  Checks the user preference to see if we should auto-connect on window focus
+// ====================================================================================================================
+bool CConsoleWindow::ShouldAutoConnect()
+{
+    return (mAutoConnect != nullptr && mAutoConnect->checkState() == Qt::Checked);
+}
+
+// ====================================================================================================================
+// TryAutoConnect():  Try to connect the socket, with no fail errors, since this is auto
+// ====================================================================================================================
+void CConsoleWindow::TryAutoConnect()
+{
+    // -- if we're not connected, try to connect when the window gains focus
+    if (!SocketManager::IsConnected())
+    {
+        GetInput()->TryConnect(true);
+    }
+}
+
 // -- class CConsoleTextEntry -----------------------------------------------------------------------------------------
 
 // ====================================================================================================================
@@ -1590,13 +1617,23 @@ void CConsoleInput::GetHistory(QStringList& history) const
     }
 }
 
+void CConsoleInput::TryConnect(bool is_auto_connect)
+{
+    // -- if we're trying to connect...
+    if (!SocketManager::IsConnected())
+    {
+        QByteArray ip_ba = CConsoleWindow::GetInstance()->GetConnectIP()->text().toUtf8();
+        const char* ip_text = ip_ba.data();
+        SocketManager::Connect(ip_text, is_auto_connect);
+    }
+}
+
 void CConsoleInput::OnButtonConnectPressed()
 {
     // -- if we're trying to connect...
     if (!SocketManager::IsConnected())
     {
-        // -- connect, same as pressing return from the connect IP
-        OnConnectIPReturnPressed();
+        TryConnect(false);
     }
 
     // -- otherwise, disconnect
@@ -1611,9 +1648,7 @@ void CConsoleInput::OnConnectIPReturnPressed()
     // -- if we're not connected, try to connect
     if (!SocketManager::IsConnected())
     {
-        QByteArray ip_ba = CConsoleWindow::GetInstance()->GetConnectIP()->text().toUtf8();
-        const char* ip_text = ip_ba.data();
-        SocketManager::Connect(ip_text);
+        TryConnect(false);
     }
 
     // -- else disconnect

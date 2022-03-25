@@ -1293,4 +1293,26 @@ void MainWindow::closeEvent(QCloseEvent* event)
     CConsoleWindow::GetInstance()->NotifyOnClose();
 }
 
+bool MainWindow::event(QEvent* e)
+{
+    switch (e->type())
+    {
+        case QEvent::WindowActivate:
+        {
+            // -- if we're not connected, try to connect when the window gains focus
+            if (CConsoleWindow::GetInstance()->ShouldAutoConnect())
+            {
+                CConsoleWindow::GetInstance()->TryAutoConnect();
+            }
+            break;
+        }
+
+        case QEvent::WindowDeactivate:
+            // lost focus
+            break;
+    };
+
+    return QMainWindow::event(e);
+}
+
 #include "mainwindowMOC.cpp"
