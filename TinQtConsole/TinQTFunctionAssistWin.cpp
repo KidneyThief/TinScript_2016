@@ -23,6 +23,10 @@
 // TinQTFunctionAssistWin.cpp:  A window to provide an incremental search for functions/methods
 // ====================================================================================================================
 
+// -- system includes
+#include <string>
+#include <sstream>
+
 // -- Qt includes
 #include <qgridlayout.h>
 #include <qlist.h>
@@ -318,28 +322,56 @@ bool CDebugFunctionAssistWin::StringContainsFilter(const char* string, bool& exa
 // ====================================================================================================================
 bool CDebugFunctionAssistWin::FilterStringCompare(const char* string)
 {
-    // -- if the filter contains a period, we want to filter based on the method string
-    const char* use_filter_ptr = strchr(mFilterString, '.');
-    if (use_filter_ptr != NULL)
-        ++use_filter_ptr;
-    else
-        use_filter_ptr = mFilterString;
-
-    // -- loop to see if the filter is contained anywhere
-    const char* substr_ptr = string;
-    while (*substr_ptr != '\0')
+    // -- there are two uses of the filter here - one, for a method when a '.' for a preceeding object id
+    // and the second, when we're searching for (multiple) space delineated substrings
+    std::vector<std::string> search_strings;
+    const char* method_search = strchr(mFilterString, '.');
+    if (method_search != nullptr)
     {
-        bool temp_exact_match = false;
-        bool temp_new_object_search = false;
-        bool result = StringContainsFilterImpl(substr_ptr, use_filter_ptr, temp_exact_match, temp_new_object_search);
+        ++method_search;
+        search_strings.push_back(method_search);
+    }
 
-        // -- if we found a matching substring, return true
-        if (result)
-            return (true);
-
-        // -- otherwise, keep looking
+    // -- if we're not doing a method search, we need to split the filter string into (space delineated) substrings
+    else
+    {
+        if (mFilterString[0] == '\0')
+        {
+            search_strings.push_back("");
+        }
         else
-            ++substr_ptr;
+        {
+            std::istringstream f(mFilterString);
+            std::string s;
+            while (getline(f, s, ' '))
+            {
+                if (s.size() > 0)
+                {
+                    search_strings.push_back(s);
+                }
+            }
+        }
+    }
+
+    // -- loop to see if the filter is contained anywhere within the string
+    // note:  if the filter contains multiple substrings, then a match on any one returns true
+    for (const auto& it : search_strings)
+    {
+        const char* substr_ptr = string;
+        while (*substr_ptr != '\0')
+        {
+            bool temp_exact_match = false;
+            bool temp_new_object_search = false;
+            bool result = StringContainsFilterImpl(substr_ptr, it.c_str(), temp_exact_match, temp_new_object_search);
+
+            // -- if we found a matching substring, return true
+            if (result)
+                return (true);
+
+            // -- otherwise, keep looking
+            else
+                ++substr_ptr;
+        }
     }
 
     // -- not contained
@@ -503,11 +535,44 @@ void CDebugFunctionAssistWin::UpdateFilter(const char* filter, bool8 force_refre
 
         for (auto iter : mFunctionEntryList)
         {
+            bool should_display = false;
             if (mSearchObjectID == 0 && filter_string_obj_id > 0 && iter->mObjectID == filter_string_obj_id)
             {
-                mFunctionList->DisplayEntry(iter);
+                should_display = true;
             }
             else if (FilterStringCompare(iter->mSearchName))
+            {
+                should_display = true;
+            }
+
+            // -- else if the iter is an object, and we're not searching on a specific object
+            // check the derivation and origin for the search string
+            else if (mSearchObjectID == 0 && filter_string_obj_id == 0 &&
+                     iter->mEntryType == TinScript::eFunctionEntryType::Object && iter->mObjectID > 0)
+            {
+                const char* object_derivation =
+                    CConsoleWindow::GetInstance()->GetDebugObjectBrowserWin()->GetObjectDerivation(iter->mObjectID);
+                if (object_derivation != nullptr)
+                {
+                    if (FilterStringCompare(object_derivation))
+                    {
+                        should_display = true;
+                    }
+                }
+
+                // -- check the origin
+                if (!should_display)
+                {
+                    const char* object_origin =
+                        CConsoleWindow::GetInstance()->GetDebugObjectBrowserWin()->GetObjectOrigin(iter->mObjectID);
+                    if (FilterStringCompare(object_origin))
+                    {
+                        should_display = true;
+                    }
+                }
+            }
+
+            if (should_display)
             {
                 mFunctionList->DisplayEntry(iter);
             }

@@ -4032,7 +4032,7 @@ void CScriptContext::DebuggerNotifyCreateObject(CObjectEntry* oe)
     total_size += sizeof(int32);
 
     // -- get the object name and length (plus EOL)
-    const char* obj_name = oe->GetName();
+    const char* obj_name = oe->GetNameHash() != 0 ? oe->GetName() : "<unnamed>";
     int32 obj_name_length = (int32)strlen(obj_name) + 1;
     obj_name_length += 4 - (obj_name_length % 4);
 

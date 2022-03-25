@@ -55,6 +55,7 @@ class CBrowserEntry : public QTreeWidgetItem
         char mName[TinScript::kMaxNameLength];
         char mFormattedName[TinScript::kMaxNameLength];
         char mDerivation[TinScript::kMaxNameLength];
+        char mFormattedOrigin[TinScript::kMaxNameLength];
         int32 mCreatedStackSize;
         uint32 mCreatedFileHashArray[kDebuggerCallstackSize];
         int32 mCreatedLineNumberArray[kDebuggerCallstackSize];
@@ -86,6 +87,7 @@ class CDebugObjectBrowserWin : public QTreeWidget
         const char* GetObjectName(uint32 object_id);
         const char* GetObjectIdentifier(uint32 object_id);
         const char* GetObjectDerivation(uint32 object_id);
+        const char* GetObjectOrigin(uint32 object_id);
         int32 GetObjectOriginStack(uint32 object_id, const uint32*& out_file_hash_array, const int32*& out_lines_array);
         void SetSelectedObject(uint32 object_id);
 

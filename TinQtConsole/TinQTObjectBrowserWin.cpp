@@ -63,13 +63,24 @@ CBrowserEntry::CBrowserEntry(uint32 parent_id, uint32 object_id, bool8 owned, co
     }
     else
     {
-        memcpy(mCreatedFileHashArray, created_file_array, sizeof(uint32) * mCreatedStackSize);;
-        memcpy(mCreatedLineNumberArray, created_line_array, sizeof(int32) * mCreatedStackSize);;
+        memcpy(mCreatedFileHashArray, created_file_array, sizeof(uint32) * mCreatedStackSize);
+        memcpy(mCreatedLineNumberArray, created_line_array, sizeof(int32) * mCreatedStackSize);
+    }
+
+    // -- create and store the formatted origin string
+    mFormattedOrigin[0] = '\0';
+    if (created_stack_size > 0)
+    {
+        // note:  linenumber + 1
+        const char* full_path = CConsoleWindow::GetInstance()->UnhashOrRequest(created_file_array[0]);
+        const char* file_name_ptr = CConsoleWindow::GetInstance()->GetDebugSourceWin()->GetFileName(full_path);
+        sprintf_s(mFormattedOrigin, TinScript::kMaxNameLength, "%s @ %d", file_name_ptr, created_line_array[0] + 1);
     }
 
     // -- set the QT elements
     setText(0, mFormattedName);
     setText(1, mDerivation);
+    setText(2, mFormattedOrigin);
 }
 
 // ====================================================================================================================
@@ -95,6 +106,7 @@ CDebugObjectBrowserWin::CDebugObjectBrowserWin(QWidget* parent) : QTreeWidget(pa
     QStringList headers;
     headers.append(tr("Object Hierarchy"));
     headers.append(tr("Derivation"));
+    headers.append(tr("Origin"));
     setHeaderLabels(headers);
 
     // -- connect up both the double clicked slot
@@ -364,6 +376,22 @@ const char* CDebugObjectBrowserWin::GetObjectDerivation(uint32 object_id)
         // -- dereference to get the List, and then again to get the first item in the list
         CBrowserEntry* entry = (*(mObjectDictionary[object_id]))[0];
         return (entry->mDerivation);
+    }
+
+    // -- not found
+    return ("");
+}
+
+// ====================================================================================================================
+// GetObjectOrigin():  Returns the leaf origin file/line for the requested entry.
+// ====================================================================================================================
+const char* CDebugObjectBrowserWin::GetObjectOrigin(uint32 object_id)
+{
+    if (mObjectDictionary.contains(object_id))
+    {
+        // -- dereference to get the List, and then again to get the first item in the list
+        CBrowserEntry* entry = (*(mObjectDictionary[object_id]))[0];
+        return (entry->mFormattedOrigin);
     }
 
     // -- not found
