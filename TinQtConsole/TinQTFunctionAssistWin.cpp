@@ -1073,8 +1073,9 @@ CFunctionListEntry::CFunctionListEntry(TinScript::CDebuggerFunctionAssistEntry* 
             CConsoleWindow::GetInstance()->GetDebugObjectBrowserWin()->GetObjectIdentifier(_entry->mObjectID);
         setText(0, object_identifier);
 
-        // -- set string for the "function" column
-        setText(1, _entry->mSearchName);
+        // -- set string for the "function" column, which is the derivation for objects
+        const char* object_derivation = CConsoleWindow::GetInstance()->GetDebugObjectBrowserWin()->GetObjectDerivation(_entry->mObjectID);
+        setText(1, object_derivation);
 
         // -- set the source to denote an object
         setText(2, QString("<object>"));
@@ -1149,7 +1150,7 @@ CFunctionAssistList::CFunctionAssistList(CDebugFunctionAssistWin* owner, QWidget
     // -- set the header
   	QTreeWidgetItem* header = new QTreeWidgetItem();
 	header->setText(0,QString("Namespace"));
-	header->setText(1,QString("Function"));
+	header->setText(1,QString("Function / Derivation"));
     header->setText(2,QString("Source"));
 	setHeaderItem(header);
 
