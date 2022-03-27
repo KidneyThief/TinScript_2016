@@ -10,6 +10,7 @@ TinQtConsole/TinQTToolsWinMoc.cpp
 TinQtConsole/TinQTWatchWinMoc.cpp
 TinQtConsole/TinScript_Auto_Layout.cfg
 TinQtConsole/mainwindowMOC.cpp
+TinQtConsole/TinQtPrefs.ts
 TinQtConsole/Debug/
 TinQtConsole/TinQtConsole.sdf
 TinQtConsole/TinQtConsole.opensdf
