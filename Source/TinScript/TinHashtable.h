@@ -30,6 +30,8 @@
 #include "TinHash.h"
 #include "TinVariableEntry.h"
 
+#include <list>
+
 // == namespace TinScript =============================================================================================
 
 namespace TinScript
@@ -151,6 +153,7 @@ class CHashtable
                 return false;
 
             // -- get the type of value we're attempting to add
+            void* value_addr = &value;
             eVarType type = GetRegisteredType(GetTypeID<T>());
             if (type == TYPE_NULL)
             {
@@ -168,9 +171,28 @@ class CHashtable
             // -- if the entry already exists, ensure it's the same type
             if (hte && hte->GetType() != type)
             {
-                TinPrint(TinScript::GetContext(), "Error - CHashtable::AddEntry(): entry %s of type %s already exists\n",
-                                                  key, GetRegisteredTypeName(hte->GetType()));
-                return false;
+                // -- see if we can convert to the type already in the hash table
+                void* converted_val = TypeConvert(TinScript::GetContext(), type, &value, hte->GetType());
+                if (converted_val == nullptr)
+                {
+                    TinPrint(TinScript::GetContext(), "Error - CHashtable::AddEntry(): entry %s of type %s already exists\n",
+                                                      key, GetRegisteredTypeName(hte->GetType()));
+                    return false;
+                }
+                else
+                {
+                    // -- we successfully converted - if we're converting to a string, then the value_addr needs
+                    // to be a literal const char*
+                    if (hte->GetType() == TYPE_string)
+                    {
+                        value_addr = (void*)UnHash(*(uint32*)converted_val);
+                    }
+                    // otherwise, the converted_val is already a pointer to whatever type we need
+                    else
+                    {
+                        value_addr = converted_val;
+                    }
+                }
             }
 
             // -- otherwise add the variable entry to the hash table
@@ -182,7 +204,6 @@ class CHashtable
             }
 
             // -- get the address to copy from - note, strings are special, since they're already a pointer
-            void* value_addr = &value;
             if (type == TYPE_string)
             {
                 const char** value_str = (const char**)&value;
@@ -195,6 +216,9 @@ class CHashtable
             // -- success
             return true;
         }
+
+        // -- get a list of the keys in the hash table
+        bool GetKeys(std::list<const char*>& outKeys) const;
 
         static bool CopyHashtableEntry(uint32 key_hash, const CVariableEntry* src_value, CVariableEntry* dest_hashtable);
         static bool CopyHashtableEntry(const char* key, const CVariableEntry* src_value, CVariableEntry* dest_hashtable);

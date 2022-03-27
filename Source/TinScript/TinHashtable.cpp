@@ -29,6 +29,8 @@
 #include "TinHash.h"
 #include "TinRegistration.h"
 
+#include <list>
+
 // -- use the DECLARE_FILE/REGISTER_FILE macros to prevent deadstripping
 DECLARE_FILE(tinhashtable_cpp);
 
@@ -196,6 +198,32 @@ void CHashtable::Dump()
     }
     tVarTable* var_table = (tVarTable*)mHashtableVE->GetAddr(nullptr);
     TinScript::DumpVarTable(TinScript::GetContext(), nullptr, var_table);
+}
+
+// ====================================================================================================================
+// GetKeys(): get a list of the keys in the hash table
+// ====================================================================================================================
+bool CHashtable::GetKeys(std::list<const char*>& outKeys) const
+{
+    tVarTable* src_vartable = (tVarTable*)mHashtableVE->GetAddr(nullptr);
+    if (src_vartable == nullptr)
+        return false;
+
+    uint32 var_hash = 0;
+    CVariableEntry* ht_var = src_vartable->First(&var_hash);
+    while (ht_var != nullptr)
+    {
+        // -- look up the string for the given hash
+        const char* key = TinScript::UnHash(var_hash);
+        if (key != nullptr && key[0] != '\0')
+        {
+            outKeys.push_back(key);
+        }
+
+        // -- get the next entry
+        ht_var = src_vartable->Next(&var_hash);
+    }
+    return true;
 }
 
 // ====================================================================================================================

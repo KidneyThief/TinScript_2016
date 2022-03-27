@@ -19,8 +19,8 @@
 
 QT_BEGIN_MOC_NAMESPACE
 struct qt_meta_stringdata_CConsoleInput_t {
-    QByteArrayData data[16];
-    char stringdata[317];
+    QByteArrayData data[17];
+    char stringdata[338];
 };
 #define QT_MOC_LITERAL(idx, ofs, len) \
     Q_STATIC_BYTE_ARRAY_DATA_HEADER_INITIALIZER_WITH_OFFSET(len, \
@@ -32,27 +32,28 @@ static const qt_meta_stringdata_CConsoleInput_t qt_meta_stringdata_CConsoleInput
 QT_MOC_LITERAL(0, 0, 13),
 QT_MOC_LITERAL(1, 14, 22),
 QT_MOC_LITERAL(2, 37, 0),
-QT_MOC_LITERAL(3, 38, 24),
-QT_MOC_LITERAL(4, 63, 15),
-QT_MOC_LITERAL(5, 79, 23),
-QT_MOC_LITERAL(6, 103, 19),
-QT_MOC_LITERAL(7, 123, 19),
-QT_MOC_LITERAL(8, 143, 18),
-QT_MOC_LITERAL(9, 162, 19),
-QT_MOC_LITERAL(10, 182, 21),
-QT_MOC_LITERAL(11, 204, 22),
-QT_MOC_LITERAL(12, 227, 15),
-QT_MOC_LITERAL(13, 243, 23),
-QT_MOC_LITERAL(14, 267, 25),
-QT_MOC_LITERAL(15, 293, 23)
+QT_MOC_LITERAL(3, 38, 20),
+QT_MOC_LITERAL(4, 59, 24),
+QT_MOC_LITERAL(5, 84, 15),
+QT_MOC_LITERAL(6, 100, 23),
+QT_MOC_LITERAL(7, 124, 19),
+QT_MOC_LITERAL(8, 144, 19),
+QT_MOC_LITERAL(9, 164, 18),
+QT_MOC_LITERAL(10, 183, 19),
+QT_MOC_LITERAL(11, 203, 21),
+QT_MOC_LITERAL(12, 225, 22),
+QT_MOC_LITERAL(13, 248, 15),
+QT_MOC_LITERAL(14, 264, 23),
+QT_MOC_LITERAL(15, 288, 25),
+QT_MOC_LITERAL(16, 314, 23)
     },
     "CConsoleInput\0OnButtonConnectPressed\0"
-    "\0OnConnectIPReturnPressed\0OnReturnPressed\0"
-    "OnFileEditReturnPressed\0OnButtonStopPressed\0"
-    "OnButtonExecPressed\0OnButtonRunPressed\0"
-    "OnButtonStepPressed\0OnButtonStepInPressed\0"
-    "OnButtonStepOutPressed\0OnFindEditFocus\0"
-    "OnFindEditReturnPressed\0"
+    "\0OnAutoConnectClicked\0OnConnectIPReturnPressed\0"
+    "OnReturnPressed\0OnFileEditReturnPressed\0"
+    "OnButtonStopPressed\0OnButtonExecPressed\0"
+    "OnButtonRunPressed\0OnButtonStepPressed\0"
+    "OnButtonStepInPressed\0OnButtonStepOutPressed\0"
+    "OnFindEditFocus\0OnFindEditReturnPressed\0"
     "OnUnhashEditReturnPressed\0"
     "OnFunctionAssistPressed"
 };
@@ -64,7 +65,7 @@ static const uint qt_meta_data_CConsoleInput[] = {
        7,       // revision
        0,       // classname
        0,    0, // classinfo
-      14,   14, // methods
+      15,   14, // methods
        0,    0, // properties
        0,    0, // enums/sets
        0,    0, // constructors
@@ -72,22 +73,24 @@ static const uint qt_meta_data_CConsoleInput[] = {
        0,       // signalCount
 
  // slots: name, argc, parameters, tag, flags
-       1,    0,   84,    2, 0x0a /* Public */,
-       3,    0,   85,    2, 0x0a /* Public */,
-       4,    0,   86,    2, 0x0a /* Public */,
-       5,    0,   87,    2, 0x0a /* Public */,
-       6,    0,   88,    2, 0x0a /* Public */,
-       7,    0,   89,    2, 0x0a /* Public */,
-       8,    0,   90,    2, 0x0a /* Public */,
-       9,    0,   91,    2, 0x0a /* Public */,
-      10,    0,   92,    2, 0x0a /* Public */,
-      11,    0,   93,    2, 0x0a /* Public */,
-      12,    0,   94,    2, 0x0a /* Public */,
-      13,    0,   95,    2, 0x0a /* Public */,
-      14,    0,   96,    2, 0x0a /* Public */,
-      15,    0,   97,    2, 0x0a /* Public */,
+       1,    0,   89,    2, 0x0a /* Public */,
+       3,    0,   90,    2, 0x0a /* Public */,
+       4,    0,   91,    2, 0x0a /* Public */,
+       5,    0,   92,    2, 0x0a /* Public */,
+       6,    0,   93,    2, 0x0a /* Public */,
+       7,    0,   94,    2, 0x0a /* Public */,
+       8,    0,   95,    2, 0x0a /* Public */,
+       9,    0,   96,    2, 0x0a /* Public */,
+      10,    0,   97,    2, 0x0a /* Public */,
+      11,    0,   98,    2, 0x0a /* Public */,
+      12,    0,   99,    2, 0x0a /* Public */,
+      13,    0,  100,    2, 0x0a /* Public */,
+      14,    0,  101,    2, 0x0a /* Public */,
+      15,    0,  102,    2, 0x0a /* Public */,
+      16,    0,  103,    2, 0x0a /* Public */,
 
  // slots: parameters
+    QMetaType::Void,
     QMetaType::Void,
     QMetaType::Void,
     QMetaType::Void,
@@ -112,19 +115,20 @@ void CConsoleInput::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _i
         CConsoleInput *_t = static_cast<CConsoleInput *>(_o);
         switch (_id) {
         case 0: _t->OnButtonConnectPressed(); break;
-        case 1: _t->OnConnectIPReturnPressed(); break;
-        case 2: _t->OnReturnPressed(); break;
-        case 3: _t->OnFileEditReturnPressed(); break;
-        case 4: _t->OnButtonStopPressed(); break;
-        case 5: _t->OnButtonExecPressed(); break;
-        case 6: _t->OnButtonRunPressed(); break;
-        case 7: _t->OnButtonStepPressed(); break;
-        case 8: _t->OnButtonStepInPressed(); break;
-        case 9: _t->OnButtonStepOutPressed(); break;
-        case 10: _t->OnFindEditFocus(); break;
-        case 11: _t->OnFindEditReturnPressed(); break;
-        case 12: _t->OnUnhashEditReturnPressed(); break;
-        case 13: _t->OnFunctionAssistPressed(); break;
+        case 1: _t->OnAutoConnectClicked(); break;
+        case 2: _t->OnConnectIPReturnPressed(); break;
+        case 3: _t->OnReturnPressed(); break;
+        case 4: _t->OnFileEditReturnPressed(); break;
+        case 5: _t->OnButtonStopPressed(); break;
+        case 6: _t->OnButtonExecPressed(); break;
+        case 7: _t->OnButtonRunPressed(); break;
+        case 8: _t->OnButtonStepPressed(); break;
+        case 9: _t->OnButtonStepInPressed(); break;
+        case 10: _t->OnButtonStepOutPressed(); break;
+        case 11: _t->OnFindEditFocus(); break;
+        case 12: _t->OnFindEditReturnPressed(); break;
+        case 13: _t->OnUnhashEditReturnPressed(); break;
+        case 14: _t->OnFunctionAssistPressed(); break;
         default: ;
         }
     }
@@ -156,13 +160,13 @@ int CConsoleInput::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
     if (_id < 0)
         return _id;
     if (_c == QMetaObject::InvokeMetaMethod) {
-        if (_id < 14)
+        if (_id < 15)
             qt_static_metacall(this, _c, _id, _a);
-        _id -= 14;
+        _id -= 15;
     } else if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
-        if (_id < 14)
+        if (_id < 15)
             *reinterpret_cast<int*>(_a[0]) = -1;
-        _id -= 14;
+        _id -= 15;
     }
     return _id;
 }

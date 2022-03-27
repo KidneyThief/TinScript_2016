@@ -62,6 +62,7 @@
 #include "TinQTObjectInspectWin.h"
 #include "TinQTSchedulesWin.h"
 #include "TinQTFunctionAssistWin.h"
+#include "TinQtPreferences.h"
 
 #include "mainwindow.h"
 
@@ -93,6 +94,9 @@ CConsoleWindow::CConsoleWindow()
     // $$$TZA there's no current API to change font (size), but who knows...
     InitFontMetrics();
 
+    // -- load our preferences
+    TinPreferences::GetInstance()->Load();
+
     // -- create the main window
     QMap<QString, QSize> customSizeHints;
     mMainWindow = new MainWindow(customSizeHints);
@@ -117,7 +121,7 @@ CConsoleWindow::CConsoleWindow()
     mTargetInfoLabel = new QLabel("");
     mAutoConnectLabel = new QLabel("Auto-Connect:");
     mAutoConnect = new QCheckBox();
-    mAutoConnect->setChecked(true);
+    mAutoConnect->setChecked(ShouldAutoConnect());
 
     mIPLabel = new QLabel("IP:");
     mConnectIP = new QLineEdit();
@@ -272,6 +276,7 @@ CConsoleWindow::CConsoleWindow()
 
     // -- connect the widgets
     QObject::connect(mButtonConnect, SIGNAL(clicked()), mConsoleInput, SLOT(OnButtonConnectPressed()));
+    QObject::connect(mAutoConnect, SIGNAL(clicked()), mConsoleInput, SLOT(OnAutoConnectClicked()));
     QObject::connect(mConnectIP, SIGNAL(returnPressed()), mConsoleInput, SLOT(OnConnectIPReturnPressed()));
 
     QObject::connect(mConsoleOutput, SIGNAL(itemClicked(QListWidgetItem*)), mConsoleOutput,
@@ -1315,7 +1320,9 @@ void CConsoleWindow::SetTargetInfoMessage(const char* message)
 // ====================================================================================================================
 bool CConsoleWindow::ShouldAutoConnect()
 {
-    return (mAutoConnect != nullptr && mAutoConnect->checkState() == Qt::Checked);
+    // -- we're now using preferences for this
+    bool auto_connect = TinPreferences::GetInstance()->GetValue("AutoConnect", true);
+    return (auto_connect);
 }
 
 // ====================================================================================================================
@@ -1641,6 +1648,12 @@ void CConsoleInput::OnButtonConnectPressed()
     {
         SocketManager::Disconnect();
     }
+}
+
+void CConsoleInput::OnAutoConnectClicked()
+{
+    bool enabled = CConsoleWindow::GetInstance()->mAutoConnect->isChecked();
+    TinPreferences::GetInstance()->SetValue("AutoConnect", enabled);
 }
 
 void CConsoleInput::OnConnectIPReturnPressed()

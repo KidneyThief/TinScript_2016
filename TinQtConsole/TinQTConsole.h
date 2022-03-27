@@ -320,6 +320,7 @@ class CConsoleInput : public QLineEdit
 
     public slots:
         void OnButtonConnectPressed();
+        void OnAutoConnectClicked();
         void OnConnectIPReturnPressed();
         void OnReturnPressed();
         void OnFileEditReturnPressed();

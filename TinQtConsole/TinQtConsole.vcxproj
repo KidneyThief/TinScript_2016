@@ -105,6 +105,7 @@
     <ClInclude Include="TinQTFunctionAssistWin.h" />
     <ClInclude Include="TinQTObjectBrowserWin.h" />
     <ClInclude Include="TinQTObjectInspectWin.h" />
+    <ClInclude Include="TinQtPreferences.h" />
     <ClInclude Include="TinQTSchedulesWin.h" />
     <ClInclude Include="TinQTSourceWin.h" />
     <ClInclude Include="TinQTToolsWin.h" />
@@ -117,6 +118,7 @@
     <ClCompile Include="TinQTFunctionAssistWin.cpp" />
     <ClCompile Include="TinQTObjectBrowserWin.cpp" />
     <ClCompile Include="TinQTObjectInspectWin.cpp" />
+    <ClCompile Include="TinQtPreferences.cpp" />
     <ClCompile Include="TinQTSchedulesWin.cpp" />
     <ClCompile Include="TinQTSourceWin.cpp" />
     <ClCompile Include="TinQTToolsWin.cpp" />
