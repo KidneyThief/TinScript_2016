@@ -42,8 +42,12 @@ class TinPreferences
 
         static TinPreferences* GetInstance();
 
-        bool Save();
-        bool Load();
+        // save preferences
+        bool SavePreferences();
+        bool LoadPreferences();
+
+        bool SaveBreakpoints();
+        bool LoadBreakpoints();
 
         // -- GetValue() is templated, so *if* there's no preference for the given key yet,
         // we can create a new one, and both the type and default value are already specified
@@ -123,11 +127,8 @@ inline bool TinPreferences::SetValue(const char* key, const T& new_value)
         return false;
     }
 
-    // -- any change, we want to save the preferences
-    if (!Save())
-    {
-        ConsolePrint(1, "Warning - unable to save preferences\n");
-    }
+    // -- save preferences on any change
+    SavePreferences();
 
     // -- success
     return true;

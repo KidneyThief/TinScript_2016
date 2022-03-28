@@ -169,6 +169,9 @@ class CConsoleWindow
         void NotifyOnConnect();
         void NotifyOnDisconnect();
 
+        // -- we apply preferences on the first update, so the UI will have been initialized
+        void ApplyPreferences();
+
         // -- if we close the window, we destroy the console input (our main signal/slot hub)
         void NotifyOnClose();
 
@@ -444,7 +447,6 @@ class CConsoleOutput : public QListWidget
     private:
         // -- the console output handles the current time, and timer events to call Update()
         QTimer* mTimer;
-
         unsigned int mCurrentTime;
 
         // -- the console output also needs to receive and process data packets

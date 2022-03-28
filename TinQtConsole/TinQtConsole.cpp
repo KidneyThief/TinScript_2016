@@ -94,9 +94,6 @@ CConsoleWindow::CConsoleWindow()
     // $$$TZA there's no current API to change font (size), but who knows...
     InitFontMetrics();
 
-    // -- load our preferences
-    TinPreferences::GetInstance()->Load();
-
     // -- create the main window
     QMap<QString, QSize> customSizeHints;
     mMainWindow = new MainWindow(customSizeHints);
@@ -121,7 +118,6 @@ CConsoleWindow::CConsoleWindow()
     mTargetInfoLabel = new QLabel("");
     mAutoConnectLabel = new QLabel("Auto-Connect:");
     mAutoConnect = new QCheckBox();
-    mAutoConnect->setChecked(ShouldAutoConnect());
 
     mIPLabel = new QLabel("IP:");
     mConnectIP = new QLineEdit();
@@ -402,6 +398,9 @@ CConsoleWindow::CConsoleWindow()
 
 	// -- notify all windows that the application elements have been created
 	mConsoleOutput->ExpandToParentSize();
+
+    // -- load and apply our preferences (which may have an impact on UI settings e.g. checkboxes, etc...)
+    ApplyPreferences();
 }
 
 CConsoleWindow::~CConsoleWindow()
@@ -531,6 +530,13 @@ void PushBreakpointDialog(const char* breakpoint_msg)
     msgBox.setModal(true);
     msgBox.setText(breakpoint_msg);
     msgBox.show();
+}
+
+// ------------------------------------------------------------------------------------------------
+void CConsoleWindow::ApplyPreferences()
+{
+    TinPreferences::GetInstance()->LoadPreferences();
+    mAutoConnect->setChecked(ShouldAutoConnect());
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -1164,6 +1170,9 @@ void NotifyCurrentDir(const char* cwd, const char* exe_dir)
     char msg[1024];
     sprintf_s(msg, "Target Dir: %s", cwd ? cwd : "./");
     CConsoleWindow::GetInstance()->SetTargetInfoMessage(msg);
+
+    // -- notify the breakpoints window as well
+    CConsoleWindow::GetInstance()->GetDebugBreakpointsWin()->NotifyCurrentDirectory();
 }
 
 // ====================================================================================================================
@@ -2979,9 +2988,12 @@ int _tmain(int argc, _TCHAR* argv[])
     SocketManager::RegisterProcessRecvDataCallback(DebuggerRecvDataCallback);
 
     // -- create the console, and start the execution
-    CConsoleWindow* debugger = new CConsoleWindow();;
+    CConsoleWindow* debugger = new CConsoleWindow();
     int result = CConsoleWindow::GetInstance()->Exec();
     debugger->GetMainWindow()->autoSaveLayout();
+
+    // -- save breakpoints on exit
+    TinPreferences::GetInstance()->SaveBreakpoints();
 
     // -- shutdown
     SocketManager::Terminate();

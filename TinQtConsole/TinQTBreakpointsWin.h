@@ -80,7 +80,7 @@ class CDebugBreakpointsWin : public QListWidget
         }
 
         // -- Toggle the breakpoint32 for a file/line
-        void ToggleBreakpoint(uint32 codeblock_hash, int32 line_number, bool add);
+        void ToggleBreakpoint(uint32 codeblock_hash, int32 line_number, bool add, bool addEnabled = true);
 
         // -- set the current breakpoint, when a file/line break has been triggered
         void SetCurrentBreakpoint(uint32 codeblock_hash, int32 line_number);
@@ -104,6 +104,8 @@ class CDebugBreakpointsWin : public QListWidget
         // -- get the trace expression for the currently selected break
         const char* GetTraceExpression(bool8& trace_enabled, bool8& trace_on_condition);
 
+        // -- codeblock hashes are always full path, but the display label is relative to the cwd
+        void NotifyCurrentDirectory();
         void NotifyCodeblockLoaded(uint32 codeblock_hash);
 
         // -- confirmation of a file/line breakpoint, to correct the actual breakable line
@@ -115,6 +117,8 @@ class CDebugBreakpointsWin : public QListWidget
 
         void NotifySourceFile(uint32 filehash);
         void NotifyOnConnect();
+
+        const QList<CBreakpointEntry*>& GetBreakpointEntries() const { return mBreakpoints; }
 
     public slots:
         void OnClicked(QListWidgetItem*);

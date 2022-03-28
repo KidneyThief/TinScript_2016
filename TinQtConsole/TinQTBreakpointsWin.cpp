@@ -33,6 +33,7 @@
 #include "TinQTSourceWin.h"
 #include "TinQTBreakpointsWin.h"
 #include "TinQTWatchWin.h"
+#include "TinQtPreferences.h"
 
 // ------------------------------------------------------------------------------------------------
 CBreakpointEntry::CBreakpointEntry(uint32 codeblock_hash, int32 line_number, QListWidget* owner)
@@ -302,7 +303,7 @@ CDebugBreakpointsWin::~CDebugBreakpointsWin() {
     }
 }
 
-void CDebugBreakpointsWin::ToggleBreakpoint(uint32 codeblock_hash, int32 line_number, bool addOrRemove)
+void CDebugBreakpointsWin::ToggleBreakpoint(uint32 codeblock_hash, int32 line_number, bool addOrRemove, bool addEnabled)
 {
     // -- see if the breakpoint already exists
     int32 found_index = -1;
@@ -338,7 +339,18 @@ void CDebugBreakpointsWin::ToggleBreakpoint(uint32 codeblock_hash, int32 line_nu
         breakpoint = new CBreakpointEntry(codeblock_hash, line_number, this);
         breakpoint->UpdateLabel(codeblock_hash, line_number);
         mBreakpoints.append(breakpoint);
+
+        // -- if we're adding a disabled breakpoint (e.g. restoring preferences)
+        if (!addEnabled)
+        {
+            breakpoint->mChecked = false;
+            breakpoint->SetCheckedState(false, false);
+        }
+
         sortItems();
+
+        // -- set the current entry
+        setCurrentItem(breakpoint);
     }
 
     // -- send the message
@@ -530,6 +542,16 @@ const char* CDebugBreakpointsWin::GetTraceExpression(bool8& trace_enabled, bool8
     return (cur_entry->mTracePoint);
 }
 
+void CDebugBreakpointsWin::NotifyCurrentDirectory()
+{
+    // -- loop through all the existing breakpoints, update the labels
+    for (int32 i = 0; i < mBreakpoints.size(); ++i)
+    {
+        CBreakpointEntry* breakpoint = mBreakpoints.at(i);
+        breakpoint->UpdateLabel(breakpoint->mCodeblockHash, breakpoint->mLineNumber);
+    }
+}
+
 void CDebugBreakpointsWin::NotifyCodeblockLoaded(uint32 codeblock_hash)
 {
     // -- get the file name
@@ -700,6 +722,9 @@ void CDebugBreakpointsWin::NotifySourceFile(uint32 filehash)
 // ====================================================================================================================
 void CDebugBreakpointsWin::NotifyOnConnect()
 {
+    // -- reload our saved breakpoints
+    TinPreferences::GetInstance()->LoadBreakpoints();
+
     // -- we want to re-broadcast all active breakpoints, upon reconnection
     for (int32 i = 0; i < mBreakpoints.size(); ++i)
     {

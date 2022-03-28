@@ -26,6 +26,8 @@
 // -- includes --------------------------------------------------------------------------------------------------------
 
 #include "TinQtPreferences.h"
+#include "TinQtConsole.h"
+#include "TinQTBreakpointsWin.h"
 
 #include <QFile>
 
@@ -37,6 +39,7 @@
 
 TinPreferences* TinPreferences::gInstance = nullptr;
 static const char* kPreferencesScriptFileName = "TinQtPrefs.ts";
+static const char* kBreakpointsScriptFileName = "TinQtBreakpoints.ts";
 
 // -- class TinPreferences --------------------------------------------------------------------------------------------
 
@@ -100,9 +103,9 @@ bool TinPreferences::IsValidKey(const char* key)
 }
 
 // ====================================================================================================================
-// Save():  We're going to save the preferences as an executable script
+// SavePreferences():  We're going to save the preferences as an executable script
 // ====================================================================================================================
-bool TinPreferences::Save()
+bool TinPreferences::SavePreferences()
 {
     QFile file(kPreferencesScriptFileName);
     if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
@@ -128,17 +131,72 @@ bool TinPreferences::Save()
         }
     }
 
-    // -- close the file and return
+    // -- close the preferences file and return
     file.close();
     return true;
 }
 
 // ====================================================================================================================
-// Load():  Simply execute the preferences script
+// SavePreferences():  We're going to save the breakpoints as an executable script
 // ====================================================================================================================
-bool TinPreferences::Load()
+bool TinPreferences::SaveBreakpoints()
+{
+    QFile breakpoints_file(kBreakpointsScriptFileName);
+    if (!breakpoints_file.open(QIODevice::WriteOnly | QIODevice::Text))
+        return false;
+
+    // -- we also want to preserve breakpoints
+    const QList<CBreakpointEntry*>& breakpoints =
+        CConsoleWindow::GetInstance()->GetDebugBreakpointsWin()->GetBreakpointEntries();
+
+    // -- we want to save all breakpoints (active or not) to the preferences file, to be reloaded on restart
+    // note:  this is very similar to NotifyOnConnect()
+    for (int32 i = 0; i < breakpoints.size(); ++i)
+    {
+        const CBreakpointEntry* breakpoint = breakpoints.at(i);
+
+        // -- we're not preserving data breakpoints (obviously)
+        if (breakpoint->mWatchRequestID != 0)
+        {
+            continue;
+        }
+
+        // -- create the command to restore the breakpoint
+        char command[TinScript::kMaxTokenLength];
+        sprintf_s(command, TinScript::kMaxTokenLength,
+                  "SetTinQtBreakpoint(`%s`, %d, %s, `%s`, %s, `%s`, %s, %s);\n",
+                  TinScript::UnHash(breakpoint->mCodeblockHash), breakpoint->mLineNumber,
+                  (breakpoint->mChecked ? "true" : "false"),
+                  &breakpoint->mCondition[0], (breakpoint->mConditionEnabled ? "true" : "false"),
+                  &breakpoint->mTracePoint[0], (breakpoint->mTraceEnabled ? "true" : "false"),
+                  (breakpoint->mTraceOnCondition ? "true" : "false"));
+
+        // -- write the command out to the file
+        breakpoints_file.write(command);
+    }
+
+    // -- close the file
+    breakpoints_file.close();
+
+    // -- success
+    return true;
+}
+
+// ====================================================================================================================
+// LoadPreferences():  Simply execute the script
+// ====================================================================================================================
+bool TinPreferences::LoadPreferences()
 {
     TinScript::ExecScript(kPreferencesScriptFileName, true);
+    return true;
+}
+
+// ====================================================================================================================
+// LoadBreakpoints():  Simply execute the script
+// ====================================================================================================================
+bool TinPreferences::LoadBreakpoints()
+{
+    TinScript::ExecScript(kBreakpointsScriptFileName, true);
     return true;
 }
 
@@ -150,6 +208,31 @@ void SetTinQtPreference(const char* key, const char* value)
     preferences->SetValue(key, value);
 }
 
+void SetTinQtBreakpoint(const char* filepath, int32 line_number, bool enabled, const char* condition,
+                        bool condition_enabled, const char* trace, bool trace_enabled, bool trace_on_condition)
+{
+    if (filepath == nullptr || filepath[0] == '\0')
+        return;
+
+    // -- notify the Breakpoints Window - add the new breakpoint, but restore the "enabled" state
+    CConsoleWindow::GetInstance()->GetDebugBreakpointsWin()->ToggleBreakpoint(TinScript::Hash(filepath), line_number,
+                                                                              true, enabled);
+    
+    // -- set the condition
+    if (condition != nullptr && condition[0] != '\0')
+    {
+        CConsoleWindow::GetInstance()->GetDebugBreakpointsWin()->SetBreakCondition(condition, condition_enabled);
+    }
+
+    // -- set the tracepoint
+    if (trace != nullptr && trace[0] != '\0')
+    {
+        CConsoleWindow::GetInstance()->GetDebugBreakpointsWin()->SetTraceExpression(trace, trace_enabled,
+                                                                                    trace_on_condition);
+    }
+}
+
 REGISTER_FUNCTION(SetTinQtPreference, SetTinQtPreference);
+REGISTER_FUNCTION(SetTinQtBreakpoint, SetTinQtBreakpoint);
 
 // -- eof -------------------------------------------------------------------------------------------------------------
