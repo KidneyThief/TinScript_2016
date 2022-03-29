@@ -910,15 +910,34 @@ const char* ReadFileAllocBuf(const char* filename)
 	char* filebuf = (char*)TinAllocArray(ALLOC_FileBuf, char, filesize + 1);
 	int32 bytesread = (int32)fread(filebuf, 1, filesize, filehandle);
 
-    // $$$TZA for some reason, my text file is taking more space on disk than what is actually read...
-	//if (bytesread != filesize) {
-	if (bytesread <= 0)
+    // -- ensure the file contains *something* besides whitespace
+    if (bytesread > 0)
+    {
+        filebuf[bytesread] = '\0';
+        bool found = false;
+        const char* test_char = filebuf;
+        while (*test_char != '\0')
+        {
+            if (*test_char++ > 0x20)
+            {
+                found = true;
+                break;
+            }
+        }
+
+        if (!found)
+        {
+            bytesread = 0;
+        }
+    }
+
+    // -- if we didn't (or couldn't) have anything to read...
+    if (bytesread <= 0)
     {
 		delete[] filebuf;
 		fclose(filehandle);
 		return (NULL);
 	}
-	filebuf[bytesread] = '\0';
 
 	// -- close the file before we leave
 	fclose(filehandle);
@@ -5713,10 +5732,18 @@ static bool8 gDebugParseTree = false;
 // ====================================================================================================================
 // ParseFile():  Parse and compile a given file.
 // ====================================================================================================================
-CCodeBlock* ParseFile(CScriptContext* script_context, const char* filename)
+CCodeBlock* ParseFile(CScriptContext* script_context, const char* filename, bool& is_empty)
 {
-	// -- see if we can open the file
+	// -- open the file - if it fails, it's an empty (or unreadable) file, and we're done
+    is_empty = false;
 	const char* filebuf = ReadFileAllocBuf(filename);
+    if (filebuf == nullptr)
+    {
+        is_empty = true;
+        return nullptr;
+    }
+
+    // -- return the codeblock created from parsing the file
     return ParseText(script_context, filename, filebuf);
 }
 

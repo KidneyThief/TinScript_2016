@@ -1149,14 +1149,23 @@ CCodeBlock* CScriptContext::CompileScript(const char* filename)
     }
 
     // -- compile the source
-    CCodeBlock* codeblock = ParseFile(this, full_path);
+    bool is_empty = false;
+    CCodeBlock* codeblock = ParseFile(this, full_path, is_empty);
     if (codeblock == NULL)
     {
-        // track or notify the debugger that this file (now) contains an error
-        NotifySourceStatus(full_path, false, true);
+        // -- if the file is empty, it's just a message, not an assert
+        if (is_empty)
+        {
+            TinWarning(this, "CompileScript():  file is empty or unreadable: %s\n", filename);
+        }
+        else
+        {
+            // track or notify the debugger that this file (now) contains an error
+            NotifySourceStatus(full_path, false, true);
 
-        // -- assert, and return null
-        ScriptAssert_(this, 0, "<internal>", -1, "Error - unable to parse file: %s\n", full_path);
+            // -- assert, and return null
+            ScriptAssert_(this, 0, "<internal>", -1, "Error - unable to parse file: %s\n", full_path);
+        }
         return nullptr;
     }
     else

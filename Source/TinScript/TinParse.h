@@ -326,7 +326,7 @@ const char* ReadFileAllocBuf(const char* filename);
 CCompileTreeNode*& AppendToRoot(CCompileTreeNode& root);
 bool8 ParseStatementBlock(CCodeBlock* codeblock, CCompileTreeNode*& root, tReadToken& filebuf,
                          bool8 requiresbraceclose);
-CCodeBlock* ParseFile(CScriptContext* script_context, const char* filename);
+CCodeBlock* ParseFile(CScriptContext* script_context, const char* filename, bool& is_empty);
 CCodeBlock* ParseText(CScriptContext* script_context, const char* filename, const char* filebuf);
 
 bool8 SaveBinary(CCodeBlock* codeblock, const char* binfilename);
