@@ -364,15 +364,42 @@ CConsoleWindow::CConsoleWindow()
     QShortcut* shortcut_FunctionAssist = new QShortcut(QKeySequence("F1"), mMainWindow);
     QObject::connect(shortcut_FunctionAssist, SIGNAL(activated()), mConsoleInput, SLOT(OnFunctionAssistPressed()));
 
+    // -- split the dock widgets into columns
+    static const float columnWidth = 1000;
+    static const float columnHeight = 1000;
+    mSourceWinDockWidget->setMinimumWidth(columnWidth * 0.333f);
+    mSourceWinDockWidget->setMinimumHeight(columnHeight * 0.5f);
+    callstackDockWidget->setMinimumWidth(columnWidth * 0.333f);
+    callstackDockWidget->setMinimumHeight(columnHeight * 0.3f);
+    schedulesDockWidget->setMinimumWidth(columnWidth * 0.333f);
+    schedulesDockWidget->setMinimumHeight(columnHeight * 0.2f);
     mMainWindow->addDockWidget(Qt::TopDockWidgetArea, mSourceWinDockWidget);
-    mMainWindow->addDockWidget(Qt::LeftDockWidgetArea, outputDockWidget);
-    mMainWindow->addDockWidget(Qt::TopDockWidgetArea, callstackDockWidget);
-    mMainWindow->addDockWidget(Qt::RightDockWidgetArea, breakpointsDockWidget);
-    mMainWindow->addDockWidget(Qt::BottomDockWidgetArea, mAutosWinDockWidget);
-    mMainWindow->addDockWidget(Qt::BottomDockWidgetArea, watchesDockWidget);
-    mMainWindow->addDockWidget(Qt::BottomDockWidgetArea, browserDockWidget);
-    mMainWindow->addDockWidget(Qt::BottomDockWidgetArea, schedulesDockWidget);
-    mMainWindow->addDockWidget(Qt::BottomDockWidgetArea, functionAssistDockWidget);
+    mMainWindow->splitDockWidget(mSourceWinDockWidget, callstackDockWidget, Qt::Horizontal);
+    mMainWindow->splitDockWidget(callstackDockWidget, schedulesDockWidget, Qt::Horizontal);
+
+    // -- split the widget columns now, source win above console
+    outputDockWidget->setMinimumWidth(columnWidth * 0.333f);
+    outputDockWidget->setMinimumHeight(columnHeight * 0.5f);
+    mMainWindow->splitDockWidget(mSourceWinDockWidget, outputDockWidget, Qt::Vertical);
+
+    // -- callstack, breakpoints, autos
+    breakpointsDockWidget->setMinimumWidth(columnWidth * 0.333f);
+    breakpointsDockWidget->setMinimumHeight(columnHeight * 0.3f);
+    mAutosWinDockWidget->setMinimumWidth(columnWidth * 0.333f);
+    mAutosWinDockWidget->setMinimumHeight(columnHeight * 0.4f);
+    mMainWindow->splitDockWidget(callstackDockWidget, breakpointsDockWidget, Qt::Vertical);
+    mMainWindow->splitDockWidget(breakpointsDockWidget, mAutosWinDockWidget, Qt::Vertical);
+
+    // -- scheduler, object browser, function assist
+    browserDockWidget->setMinimumWidth(columnWidth * 0.333f);
+    browserDockWidget->setMinimumHeight(columnHeight * 0.3f);
+    functionAssistDockWidget->setMinimumWidth(columnWidth * 0.333f);
+    functionAssistDockWidget->setMinimumHeight(columnHeight * 0.5f);
+    mMainWindow->splitDockWidget(schedulesDockWidget, browserDockWidget, Qt::Vertical);
+    mMainWindow->splitDockWidget(browserDockWidget, functionAssistDockWidget, Qt::Vertical);
+
+    // -- autos and watches belong to the same tab
+    mMainWindow->tabifyDockWidget(mAutosWinDockWidget, watchesDockWidget);
 
     mMainWindow->show();
 
