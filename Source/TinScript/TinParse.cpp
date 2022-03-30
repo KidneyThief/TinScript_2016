@@ -4239,15 +4239,9 @@ bool8 TryParseReturn(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNod
     if (gGlobalReturnStatement)
         return (false);
 
-    // -- disallow return statments while in the middle of parenthetical expressions
+    // -- disallow return statements while in the middle of parenthetical expressions
     // -- (at least until I can think of a valid example)
     if (gGlobalExprParenDepth > 0)
-        return (false);
-
-    // -- can't return from a function, if there's no active function being defined
-    int32 stacktopdummy = 0;
-    CObjectEntry* dummy = NULL;
-    if (codeblock->smFuncDefinitionStack->GetTop(dummy, stacktopdummy) == NULL)
         return (false);
 
     // -- ensure the next token is the 'return' keyword
@@ -4263,9 +4257,55 @@ bool8 TryParseReturn(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNod
     filebuf = peektoken;
     gGlobalReturnStatement = true;
 
+        // -- can't return from a function, if there's no active function being defined
+    int32 stacktopdummy = 0;
+    CObjectEntry* dummy = NULL;
+    CFunctionEntry* curfunction = codeblock->smFuncDefinitionStack->GetTop(dummy, stacktopdummy);
+    if (curfunction == nullptr)
+    {
+        ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
+                     filebuf.linenumber,
+                     "Error - 'return' statement not within a function definition\n");
+        gGlobalReturnStatement = false;
+        return (false);
+    }
+
+    // -- see if the return type is void
+    CFunctionContext* fe_context = curfunction->GetContext();
+    CVariableEntry* return_ve = fe_context != nullptr ? fe_context->GetParameter(0) : nullptr;
+    eVarType return_type = return_ve != nullptr ? return_ve->GetType() : TYPE_void;
+
     // -- add a return node to the tree, and parse the return expression
     CFuncReturnNode* returnnode = TinAlloc(ALLOC_TreeNode, CFuncReturnNode, codeblock, link,
                                            filebuf.linenumber);
+
+    // -- if the return type is void, then this must be a semi-colon completed statement as is
+    if (return_type == TYPE_void)
+    {
+        bool valid_return = false;
+        if (!GetToken(peektoken) || peektoken.type != TOKEN_SEMICOLON)
+        {
+            ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
+                filebuf.linenumber,
+                "Error - void function return type, expecting a ';'\n");
+        }
+        else
+        {
+            filebuf = peektoken;
+            valid_return = true;
+
+            // -- we still need to push a return value on the stack... even for void
+            CValueNode* nullreturn = TinAlloc(ALLOC_TreeNode, CValueNode, codeblock,
+                                              returnnode->leftchild, filebuf.linenumber, "", 0, false,
+                                              TYPE_int);
+            Unused_(nullreturn);
+        }
+
+        // -- reset the re-entrant guard, and return the result
+        gGlobalReturnStatement = false;
+        return (valid_return);
+
+    }
     bool8 result = TryParseStatement(codeblock, filebuf, returnnode->leftchild);
 	if (!result)
     {
