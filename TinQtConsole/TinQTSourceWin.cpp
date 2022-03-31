@@ -101,7 +101,9 @@ CSourceLine::CSourceLine(const char* source_text, int line_number) : QListWidget
     sprintf_s(clean_buf, "%5d", line_number + 1);
     char* clean_ptr = &clean_buf[strlen(clean_buf)];
 
-    // -- put a couple of spaces between the line number and the text
+    // -- put a tab's worth of spaces between the line number and the text
+    *clean_ptr++ = ' ';
+    *clean_ptr++ = ' ';
     *clean_ptr++ = ' ';
     *clean_ptr++ = ' ';
 
@@ -197,7 +199,10 @@ CDebugSourceWin::CDebugSourceWin(QWidget* parent) : QListWidget(parent)
     font.setBold(false);
     setFont(font);
 
-    setIconSize(QSize(48, 24));
+    // -- the source art for the icons is 48 x 24, so we'll scale that to the current font height
+    float font_height = CConsoleWindow::FontHeight();
+    float icon_scale = font_height / 24.0f;
+    setIconSize(QSize(48 * icon_scale, 24 * icon_scale));
 
     mCurrentCodeblockHash = 0;
     mCurrentLineNumber = -1;
