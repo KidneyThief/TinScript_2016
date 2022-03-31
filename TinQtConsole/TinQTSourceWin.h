@@ -59,7 +59,7 @@ class CDebugSourceWin : public QListWidget
         void NotifyCurrentDir(const char* cwd, const char* exe_dir);
         bool OpenSourceFile(const char* filename, bool reload = false);
         bool OpenFullPathFile(const char* fullPath, bool reload = false);
-        bool SetSourceView(uint32 codeblock_hash, int32 line_number);
+        bool SetSourceView(uint32 codeblock_hash, int32 line_number, bool update_history = true);
         void SetCurrentPC(uint32 codeblock_hash, int32 line_number);
         void GoToLineNumber(int32 line_number);
         void FindInFile(const char* search_string);
@@ -74,7 +74,11 @@ class CDebugSourceWin : public QListWidget
         static const char* GetFileName(const char* full_path);
 
     public slots:
+        void OpenHistoryPrevious();
+        void OpenHistoryNext();
+
         void OnDoubleClicked(QListWidgetItem*);
+
         // -- exceedingly unsafe!!
         void OnForceExecuteLineNumber();
 
@@ -88,6 +92,12 @@ class CDebugSourceWin : public QListWidget
 
         // -- cache the current visible line (different from the current PC line)
         int32 mViewLineNumber;
+
+        // -- history stack of files open
+        void UpdateHistory(uint32 codeblock_hash, int32 line_number);
+        int32 mHistoryIndex = -1;
+        std::vector<uint32> mHistoryCodeBlock;
+        std::vector<int32> mHistoryLineNumber;
 };
 
 #endif

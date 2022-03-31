@@ -87,6 +87,8 @@ class CConsoleWindow
         CConsoleInput* GetInput() { return (mConsoleInput); }
         QLineEdit* GetConnectIP() { return (mConnectIP); }
         QPushButton* GetConnectButton() { return (mButtonConnect); }
+        QPushButton* GetSourcePrevButton() { return (mSourcePrev); }
+        QPushButton* GetSourceNextButton() { return (mSourceNext); }
         QLineEdit* GetFileLineEdit() { return (mFileLineEdit); }
         QLineEdit* GetFindLineEdit() { return (mFindLineEdit); }
         QLabel* GetFindResult() { return (mFindResult); }
@@ -150,6 +152,8 @@ class CConsoleWindow
         CDebugFunctionAssistWin* mFunctionAssistWin;
 
         QHBoxLayout* mToolbarLayout;
+        QPushButton* mSourcePrev;
+        QPushButton* mSourceNext;
         QLineEdit* mFileLineEdit;
         QPushButton* mButtonExec;
         QPushButton* mButtonRun;

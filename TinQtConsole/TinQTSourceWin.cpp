@@ -277,7 +277,8 @@ bool CDebugSourceWin::OpenFullPathFile(const char* full_path, bool reload)
 }
 
 // ------------------------------------------------------------------------------------------------
-bool CDebugSourceWin::SetSourceView(uint32 codeblock_hash, int32 line_number) {
+bool CDebugSourceWin::SetSourceView(uint32 codeblock_hash, int32 line_number, bool update_history)
+{
     const char* full_path = TinScript::UnHash(codeblock_hash);
     if (full_path)
     {
@@ -302,6 +303,13 @@ bool CDebugSourceWin::SetSourceView(uint32 codeblock_hash, int32 line_number) {
 
                 // -- cache the line we're viewing
                 mViewLineNumber = line_number;
+
+
+                // -- update the file history
+                if (update_history)
+                {
+                    UpdateHistory(codeblock_hash, line_number);
+                }
             }
         }
         return (result);
@@ -498,7 +506,10 @@ void CDebugSourceWin::NotifyCodeblockLoaded(uint32 codeblock_hash)
     if (mCurrentCodeblockHash == 0 && mCurrentCodeblockHash != codeblock_hash)
     {
         // -- get the file name, and open the file
-        OpenSourceFile(filename, true);
+        if (OpenSourceFile(filename, true))
+        {
+            SetSourceView(codeblock_hash, 0);
+        }
     }
 
     // -- add an action to the main menu
@@ -528,7 +539,10 @@ void CDebugSourceWin::NotifyCodeblockLoaded(const char* full_path)
     if (mCurrentCodeblockHash == 0 && mCurrentCodeblockHash != codeblock_hash)
     {
         // -- open the file
-        OpenSourceFile(full_path, true);
+        if (OpenSourceFile(full_path, true))
+        {
+            SetSourceView(codeblock_hash, 0);
+        }
     }
 
     // -- add an entry to the Scripts menu
@@ -542,6 +556,68 @@ void CDebugSourceWin::NotifySourceStatus(const char* source_full_path, bool has_
         return;
     // -- we're also going to update the compile menu
     CConsoleWindow::GetInstance()->GetMainWindow()->AddScriptCompileAction(source_full_path, has_error);
+}
+
+// ====================================================================================================================
+// UpdateHistory():  track the opening of a source file so we can move forward/back in the source view history
+// ====================================================================================================================
+void CDebugSourceWin::UpdateHistory(uint32 codeblock_hash, int32 line_number)
+{
+    // -- sanity check
+    if (codeblock_hash == 0 || line_number < 0)
+        return;
+
+    // if we're not at the end of the history, then we need to pop the recent history to the current index
+    if (mHistoryIndex >= 0 && mHistoryIndex < (int32)mHistoryCodeBlock.size() - 1)
+    {
+        int32 num_to_pop = mHistoryCodeBlock.size() - mHistoryIndex - 1;
+        for (int32 i = 0; i < num_to_pop; ++i)
+        {
+            mHistoryCodeBlock.pop_back();
+            mHistoryLineNumber.pop_back();
+        }
+    }
+
+    // -- push back the new file/line location into the history, and set the index to the history end
+    mHistoryCodeBlock.push_back(codeblock_hash);
+    mHistoryLineNumber.push_back(line_number);
+    mHistoryIndex = mHistoryCodeBlock.size() - 1;
+
+    // -- update the buttons
+    CConsoleWindow::GetInstance()->GetSourcePrevButton()->setDisabled(mHistoryIndex <= 0);
+    CConsoleWindow::GetInstance()->GetSourceNextButton()->setDisabled(mHistoryIndex >= (int32)mHistoryCodeBlock.size() - 1);
+}
+
+// ====================================================================================================================
+// OpenHistoryPrevious():  Opens the previous file/line in the history buffer
+// ====================================================================================================================
+void CDebugSourceWin::OpenHistoryPrevious()
+{
+    if (mHistoryIndex > 0)
+    {
+        mHistoryIndex--;
+        SetSourceView(mHistoryCodeBlock[mHistoryIndex], mHistoryLineNumber[mHistoryIndex], false);
+
+        // -- update the buttons
+        CConsoleWindow::GetInstance()->GetSourcePrevButton()->setDisabled(mHistoryIndex <= 0);
+        CConsoleWindow::GetInstance()->GetSourceNextButton()->setDisabled(mHistoryIndex >= (int32)mHistoryCodeBlock.size() - 1);
+    }
+}
+
+// ====================================================================================================================
+// OpenHistoryNext():  Opens the next file/line in the history buffer
+// ====================================================================================================================
+void CDebugSourceWin::OpenHistoryNext()
+{
+    if (mHistoryIndex < (int32)mHistoryCodeBlock.size() - 1)
+    {
+        mHistoryIndex++;
+        SetSourceView(mHistoryCodeBlock[mHistoryIndex], mHistoryLineNumber[mHistoryIndex], false);
+
+        // -- update the buttons
+        CConsoleWindow::GetInstance()->GetSourcePrevButton()->setDisabled(mHistoryIndex <= 0);
+        CConsoleWindow::GetInstance()->GetSourceNextButton()->setDisabled(mHistoryIndex >= (int32)mHistoryCodeBlock.size() - 1);
+    }
 }
 
 // --------------------------------------------------------------------------------------------------------------------

@@ -145,7 +145,24 @@ CConsoleWindow::CConsoleWindow()
     QToolBar* toolbar = new QToolBar();
     toolbar->setObjectName("Debug Toolbar");
 	toolbar->setWindowTitle("Debug Toolbar");
-    QLabel* file_label = new QLabel("File:");
+
+    // file history prev button (initially disabled)
+    mSourcePrev = new QPushButton();
+    QPixmap prev_pixmap("resource/button_file_prev");
+    QIcon prev_icon(prev_pixmap);
+    mSourcePrev->setIcon(prev_icon);
+    mSourcePrev->setGeometry(0, 0, 24, CConsoleWindow::FontHeight());
+    mSourcePrev->setDisabled(true);
+
+    // file history next button (initially disabled)
+    mSourceNext = new QPushButton();
+    QPixmap next_pixmap("resource/button_file_next");
+    QIcon next_icon(next_pixmap);
+    mSourceNext->setIcon(next_icon);
+    mSourceNext->setGeometry(0, 0, 24, CConsoleWindow::FontHeight());
+    mSourceNext->setDisabled(true);
+
+    QLabel* file_label = new QLabel("  File:");
     QWidget* spacer_0a = new QWidget();
     spacer_0a->setFixedWidth(8);
     mFileLineEdit = new QLineEdit();
@@ -154,18 +171,35 @@ CConsoleWindow::CConsoleWindow()
     mButtonExec->setText("Exec");
     QWidget* spacer_0 = new QWidget();
     spacer_0->setFixedWidth(16);
+
     mButtonRun = new QPushButton();
     mButtonRun->setText("Run");
+    QPixmap play_pixmap("resource/button_play");
+    QIcon play_icon(play_pixmap);
+    mButtonRun->setIcon(play_icon);
     mButtonRun->setGeometry(0, 0, 24, CConsoleWindow::FontHeight()); 
+
     mButtonStepIn = new QPushButton();
     mButtonStepIn->setText("Pause");
+    QPixmap pause_pixmap("resource/button_pause");
+    QIcon pause_icon(pause_pixmap);
+    mButtonStepIn->setIcon(pause_icon);
     mButtonStepIn->setGeometry(0, 0, 24, CConsoleWindow::FontHeight());
+
     mButtonStep = new QPushButton();
     mButtonStep->setText("Step");
-	mButtonStep->setGeometry(0, 0, 24, CConsoleWindow::FontHeight());
+    QPixmap step_over_pixmap("resource/button_step_over");
+    QIcon step_over_icon(step_over_pixmap);
+    mButtonStep->setIcon(step_over_icon);
+    mButtonStep->setGeometry(0, 0, 24, CConsoleWindow::FontHeight());
+
     mButtonStepOut = new QPushButton();
     mButtonStepOut->setText("Step Out");
+    QPixmap step_out_pixmap("resource/button_step_out");
+    QIcon step_out_icon(step_out_pixmap);
+    mButtonStepOut->setIcon(step_out_icon);
     mButtonStepOut->setGeometry(0, 0, 24, CConsoleWindow::FontHeight());
+
     QWidget* spacer_1 = new QWidget();
     spacer_1->setFixedWidth(16);
     QLabel* find_label = new QLabel("Find:");
@@ -191,6 +225,8 @@ CConsoleWindow::CConsoleWindow()
     mUnhashResult = new QLabel("<unhash result>");
     mUnhashResult->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
 
+    toolbar->addWidget(mSourcePrev);
+    toolbar->addWidget(mSourceNext);
     toolbar->addWidget(file_label);
     toolbar->addWidget(spacer_0a);
     toolbar->addWidget(mFileLineEdit);
@@ -271,6 +307,9 @@ CConsoleWindow::CConsoleWindow()
     mFunctionAssistWin = new CDebugFunctionAssistWin(functionAssistDockWidget);
 
     // -- connect the widgets
+    QObject::connect(mSourcePrev, SIGNAL(clicked()), mDebugSourceWin, SLOT(OpenHistoryPrevious()));
+    QObject::connect(mSourceNext, SIGNAL(clicked()), mDebugSourceWin, SLOT(OpenHistoryNext()));
+
     QObject::connect(mButtonConnect, SIGNAL(clicked()), mConsoleInput, SLOT(OnButtonConnectPressed()));
     QObject::connect(mAutoConnect, SIGNAL(clicked()), mConsoleInput, SLOT(OnAutoConnectClicked()));
     QObject::connect(mConnectIP, SIGNAL(returnPressed()), mConsoleInput, SLOT(OnConnectIPReturnPressed()));
@@ -696,6 +735,9 @@ void CConsoleWindow::HandleBreakpointHit(const char* breakpoint_msg)
 
     // -- the "step In" button duals as a pause button, when we're running
     mButtonStepIn->setText("Step In");
+    QPixmap step_in_pixmap("resource/button_step_in");
+    QIcon step_in_icon(step_in_pixmap);
+    mButtonStepIn->setIcon(step_in_icon);
 
     // -- set the status message
     if (mBreakpointWatchRequestID > 0)
@@ -736,6 +778,9 @@ void CConsoleWindow::HandleBreakpointHit(const char* breakpoint_msg)
 
     // -- the "step In" button duals as a pause button, when we're running
     mButtonStepIn->setText("Pause");
+    QPixmap pause_pixmap("resource/button_pause");
+    QIcon pause_icon(pause_pixmap);
+    mButtonStepIn->setIcon(pause_icon);
 
     // -- clear the callstack and the watch window
     GetDebugCallstackWin()->ClearCallstack();
