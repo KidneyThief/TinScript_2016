@@ -101,9 +101,9 @@ CSourceLine::CSourceLine(const char* source_text, int line_number) : QListWidget
     sprintf_s(clean_buf, "%5d", line_number + 1);
     char* clean_ptr = &clean_buf[strlen(clean_buf)];
 
-    // -- Handle the breakpoint icon as "B  " (3 chars) , and the PC as a "--> " (4 chars)
-    for (int i = 0; i < 7; ++i)
-        *clean_ptr++ = ' ';
+    // -- put a couple of spaces between the line number and the text
+    *clean_ptr++ = ' ';
+    *clean_ptr++ = ' ';
 
     // -- lets see if we can clean up the preceding spaces/tabs, hardcoding all tabs to 4x spaces
     const char* text_ptr = source_text;
@@ -128,7 +128,64 @@ CSourceLine::CSourceLine(const char* source_text, int line_number) : QListWidget
 
     setText(line_text);
     mLineNumber = line_number;
-    mBreakpointSet = false;
+    mBreakpointSet = eBreakpointStatus::None;
+    mIsPC = false;
+
+    // -- update the icon (no breakpoint, not pc)
+    UpdateIcon();
+}
+
+// --------------------------------------------------------------------------------------------------------------------
+// UpdateIcon():  QListWidgetItem's only allow a single icon, so we've made 6 to cover all combinations of BP and PC
+// --------------------------------------------------------------------------------------------------------------------
+void CSourceLine::UpdateIcon()
+{
+    // -- kinda clunky - could put this in a table
+    if (mBreakpointSet == eBreakpointStatus::None)
+    {
+        if (mIsPC)
+        {
+            QPixmap line_pixmap("resource/Source_blank_pc");
+            QIcon line_icon(line_pixmap);
+            setIcon(line_icon);
+        }
+        else
+        {
+            QPixmap line_pixmap("resource/Source_blank_blank");
+            QIcon line_icon(line_pixmap);
+            setIcon(line_icon);
+        }
+    }
+    else if (mBreakpointSet == eBreakpointStatus::Disabled)
+    {
+        if (mIsPC)
+        {
+            QPixmap line_pixmap("resource/Source_breakoff_pc");
+            QIcon line_icon(line_pixmap);
+            setIcon(line_icon);
+        }
+        else
+        {
+            QPixmap line_pixmap("resource/Source_breakoff_blank");
+            QIcon line_icon(line_pixmap);
+            setIcon(line_icon);
+        }
+    }
+    else
+    {
+        if (mIsPC)
+        {
+            QPixmap line_pixmap("resource/Source_breakon_pc");
+            QIcon line_icon(line_pixmap);
+            setIcon(line_icon);
+        }
+        else
+        {
+            QPixmap line_pixmap("resource/Source_breakon_blank");
+            QIcon line_icon(line_pixmap);
+            setIcon(line_icon);
+        }
+    }
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -139,6 +196,8 @@ CDebugSourceWin::CDebugSourceWin(QWidget* parent) : QListWidget(parent)
     font.setFixedPitch(true);
     font.setBold(false);
     setFont(font);
+
+    setIconSize(QSize(48, 24));
 
     mCurrentCodeblockHash = 0;
     mCurrentLineNumber = -1;
@@ -330,11 +389,8 @@ void CDebugSourceWin::SetCurrentPC(uint32 codeblock_hash, int32 line_number) {
             {
                 // -- find the CSourceLine for the actual_line
                 CSourceLine* source_line = mSourceText.at(mCurrentLineNumber);
-                QString source_text = source_line->text();
-                source_text[7] = ' ';
-                source_text[8] = ' ';
-                source_text[9] = ' ';
-                source_line->setText(source_text);
+                source_line->mIsPC = false;
+                source_line->UpdateIcon();
 
                 QFont font;
                 font.setBold(false);
@@ -346,11 +402,8 @@ void CDebugSourceWin::SetCurrentPC(uint32 codeblock_hash, int32 line_number) {
             {
                 mCurrentLineNumber = line_number;
                 CSourceLine* source_line = mSourceText.at(mCurrentLineNumber);
-                QString source_text = source_line->text();
-                source_text[7] = '-';
-                source_text[8] = '-';
-                source_text[9] = '>';
-                source_line->setText(source_text);
+                source_line->mIsPC = true;
+                source_line->UpdateIcon();
 
                 QFont font;
                 font.setBold(true);
@@ -469,11 +522,13 @@ void CDebugSourceWin::OnDoubleClicked(QListWidgetItem * item) {
     CSourceLine* source_line = static_cast<CSourceLine*>(item);
     int actual_line = -1;
     bool set_breakpoint = false;
-    if(! source_line->mBreakpointSet) {
+    if (source_line->mBreakpointSet == CSourceLine::eBreakpointStatus::None)
+    {
         CConsoleWindow::GetInstance()->ToggleBreakpoint(mCurrentCodeblockHash,
                                                         source_line->mLineNumber, true, true);
     }
-    else {
+    else
+    {
         CConsoleWindow::GetInstance()->ToggleBreakpoint(mCurrentCodeblockHash,
                                                         source_line->mLineNumber, false, false);
     }
@@ -491,10 +546,10 @@ void CDebugSourceWin::ToggleBreakpoint(uint32 codeblock_hash, int32 line_number,
 
     // -- find the CSourceLine for the actual_line
     CSourceLine* actual_source_line = mSourceText.at(line_number);
-    QString source_text = actual_source_line->text();
-    source_text[6] = add && enable ? 'B' : add ? 'b' : ' ';
-    actual_source_line->setText(source_text);
-    actual_source_line->mBreakpointSet = add;
+    actual_source_line->mBreakpointSet = add && enable ? CSourceLine::eBreakpointStatus::Enabled :
+                                         add ? CSourceLine::eBreakpointStatus::Disabled :
+                                         CSourceLine::eBreakpointStatus::None;
+    actual_source_line->UpdateIcon();
 }
 
 void CDebugSourceWin::NotifyCodeblockLoaded(uint32 codeblock_hash)

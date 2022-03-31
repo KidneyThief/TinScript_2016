@@ -37,9 +37,13 @@
 class CSourceLine : public QListWidgetItem
 {
     public:
+        enum class eBreakpointStatus { None, Disabled, Enabled };
+
         CSourceLine(const char* source_text, int line_number);
-        int mLineNumber;
-        bool mBreakpointSet;
+        int mLineNumber = -1;
+        eBreakpointStatus mBreakpointSet = eBreakpointStatus::None;
+        bool mIsPC = false;
+        void UpdateIcon();
 };
 
 class CDebugSourceWin : public QListWidget
