@@ -114,7 +114,7 @@ int32 CDebugToolEntry::Initialize(const char* name, const char* description, QWi
 
     // -- add the entry to the named map
     char hash_string[TinScript::kMaxNameLength];
-    sprintf_s(hash_string, "%s::%s", mParent != nullptr ? mParent->GetWindowName() : "<unnamed>", name);
+    snprintf(hash_string, sizeof(hash_string), "%s::%s", mParent != nullptr ? mParent->GetWindowName() : "<unnamed>", name);
     mEntryNameHash = TinScript::Hash(hash_string);
     if (!CDebugToolsWin::gDebugToolEntryNamedMap.contains(mEntryNameHash))
         CDebugToolsWin::gDebugToolEntryNamedMap[mEntryNameHash] = this;
@@ -274,9 +274,9 @@ void CDebugToolSlider::OnSliderReleased()
     // -- create the command, by inserting the slider value as the first parameter
     char command_buf[TinScript::kMaxTokenLength];
     if (!mCommand[0])
-        sprintf_s(command_buf, "Print(%d);", mSlider->value());
+        snprintf(command_buf, sizeof(command_buf), "Print(%d);", mSlider->value());
     else
-        sprintf_s(command_buf, "%s(%d);", mCommand, mSlider->value());
+        snprintf(command_buf, sizeof(command_buf), "%s(%d);", mCommand, mSlider->value());
 
     bool8 is_connected = CConsoleWindow::GetInstance()->IsConnected();
     if (is_connected)
@@ -342,9 +342,9 @@ void CDebugToolTextEdit::OnReturnPressed()
     // -- create the command, by inserting the slider value as the first parameter
     char command_buf[TinScript::kMaxTokenLength];
     if (!mCommand[0])
-        sprintf_s(command_buf, "Print(`%s`);", mLineEdit->GetStringValue());
+        snprintf(command_buf, sizeof(command_buf), "Print(`%s`);", mLineEdit->GetStringValue());
     else
-        sprintf_s(command_buf, "%s(`%s`);", mCommand, mLineEdit->GetStringValue());
+        snprintf(command_buf, sizeof(command_buf), "%s(`%s`);", mCommand, mLineEdit->GetStringValue());
 
     bool8 is_connected = CConsoleWindow::GetInstance()->IsConnected();
     if (is_connected)
@@ -409,9 +409,9 @@ void CDebugToolCheckBox::OnClicked()
     bool value = (mCheckBox->checkState() == Qt::Checked);
     char command_buf[TinScript::kMaxTokenLength];
     if (!mCommand[0])
-        sprintf_s(command_buf, "Print(%s);", value ? "true" : "false");
+        snprintf(command_buf, sizeof(command_buf), "Print(%s);", value ? "true" : "false");
     else
-        sprintf_s(command_buf, "%s(%s);", mCommand, value ? "true" : "false");
+        snprintf(command_buf, sizeof(command_buf), "%s(%s);", mCommand, value ? "true" : "false");
 
     bool8 is_connected = CConsoleWindow::GetInstance()->IsConnected();
     if (is_connected)

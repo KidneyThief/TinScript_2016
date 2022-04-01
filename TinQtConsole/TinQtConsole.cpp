@@ -563,9 +563,9 @@ bool8 AssertHandler(TinScript::CScriptContext* script_context, const char* condi
         // -- get the assert msg
         char assertmsg[2048];
         if(linenumber >= 0)
-            sprintf_s(assertmsg, 2048, "Assert(%s) file: %s, line %d:\n", condition, file, linenumber + 1);
+            snprintf(assertmsg, sizeof(assertmsg), "Assert(%s) file: %s, line %d:\n", condition, file, linenumber + 1);
         else
-            sprintf_s(assertmsg, 2048, "Exec Assert(%s):\n", condition);
+            snprintf(assertmsg, sizeof(assertmsg), "Exec Assert(%s):\n", condition);
 
         char errormsg[2048];
         va_list args;
@@ -1118,7 +1118,7 @@ const char* CConsoleWindow::UnhashOrRequest(uint32 hash_value)
         {
             // -- request the string unhash from the target
             char hash_as_string[16];
-            sprintf_s(hash_as_string, "%d", hash_value);
+            snprintf(hash_as_string, sizeof(hash_as_string), "%d", hash_value);
             SocketManager::SendExec(TinScript::Hash("DebuggerRequestStringUnhash"), hash_as_string, nullptr, nullptr,
                                     nullptr, nullptr, nullptr, nullptr);
         }
@@ -1141,7 +1141,7 @@ void DebuggerBreakpointHit(int32 codeblock_hash, int32 line_number)
     bool8 press_ignore_run = false;
     bool8 press_trace_step = false;
     char breakpoint_msg[256];
-    sprintf_s(breakpoint_msg, 256, "Break on line: %d", line_number);
+    snprintf(breakpoint_msg, sizeof(breakpoint_msg), "Break on line: %d", line_number);
 
     // -- set the PC
     CConsoleWindow::GetInstance()->mDebugSourceWin->SetCurrentPC(static_cast<uint32>(codeblock_hash), line_number);
@@ -1240,7 +1240,7 @@ void NotifyCurrentDir(const char* cwd, const char* exe_dir)
 
     // -- set the status message
     char msg[1024];
-    sprintf_s(msg, "Target Dir: %s", cwd ? cwd : "./");
+    snprintf(msg, sizeof(msg), "Target Dir: %s", cwd ? cwd : "./");
     CConsoleWindow::GetInstance()->SetTargetInfoMessage(msg);
 
     // -- notify the breakpoints window as well
@@ -1625,13 +1625,13 @@ bool8 CConsoleInput::LocalTabComplete(const char* partial_input, int32 tab_compl
         {
             // -- if we have parameters (more than 1, since the first parameter is always the return value)
             if(fe->GetContext()->GetParameterCount() > 1)
-                sprintf_s(&prototype_ptr[tab_string_offset], TinScript::kMaxTokenLength - tab_string_offset - slash_offset, "%s(", tab_result);
+                snprintf(&prototype_ptr[tab_string_offset], TinScript::kMaxTokenLength - tab_string_offset - slash_offset, "%s(", tab_result);
             else
-                sprintf_s(&prototype_ptr[tab_string_offset], TinScript::kMaxTokenLength - tab_string_offset - slash_offset, "%s()", tab_result);
+                snprintf(&prototype_ptr[tab_string_offset], TinScript::kMaxTokenLength - tab_string_offset - slash_offset, "%s()", tab_result);
         }
         else
         {
-            sprintf_s(&prototype_ptr[tab_string_offset], TinScript::kMaxTokenLength - tab_string_offset, "%s", tab_result);
+            snprintf(&prototype_ptr[tab_string_offset], TinScript::kMaxTokenLength - tab_string_offset, "%s", tab_result);
         }
 
         mTabCompletionIndex = tab_complete_index;
@@ -1813,7 +1813,7 @@ void CConsoleInput::OnButtonExecPressed()
     if (filename && filename[0])
     {
         char cmd_buf[TinScript::kMaxNameLength];
-        sprintf_s(cmd_buf, "Exec('%s');", filename);
+        snprintf(cmd_buf, sizeof(cmd_buf), "Exec('%s');", filename);
         ConsolePrint(0, "%s%s\n", kConsoleSendPrefix, cmd_buf);
         SocketManager::SendCommand(cmd_buf);
     }
@@ -1869,7 +1869,7 @@ void CConsoleInput::OnUnhashEditReturnPressed()
         {
             string_hash = TinScript::Hash(unhash_str);
             char hash_as_string[16];
-            sprintf_s(hash_as_string, "0x%x", string_hash);
+            snprintf(hash_as_string, sizeof(hash_as_string), "0x%x", string_hash);
             QLabel* unhash_result = CConsoleWindow::GetInstance()->GetUnhashResult();
             unhash_result->setText(hash_as_string);
         }
@@ -1889,7 +1889,7 @@ void CConsoleInput::OnUnhashEditReturnPressed()
 
         // -- request the string unhash from the target
         char hash_as_string[16];
-        sprintf_s(hash_as_string, "%d", string_hash);
+        snprintf(hash_as_string, sizeof(hash_as_string), "%d", string_hash);
         SocketManager::SendExec(TinScript::Hash("DebuggerRequestStringUnhash"), hash_as_string, nullptr, nullptr,
                                 nullptr, nullptr, nullptr, nullptr);
     }

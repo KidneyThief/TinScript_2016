@@ -552,12 +552,12 @@ const char* CCmdShell::Update()
                 {
                     // -- if we have parameters (more than 1, since the first parameter is always the return value)
                     if (fe->GetContext()->GetParameterCount() > 1)
-                        sprintf_s(&prototype_string[tab_string_offset], TinScript::kMaxTokenLength - tab_string_offset, "%s(", tab_result);
+                        snprintf(&prototype_string[tab_string_offset], TinScript::kMaxTokenLength - tab_string_offset, "%s(", tab_result);
                     else
-                        sprintf_s(&prototype_string[tab_string_offset], TinScript::kMaxTokenLength - tab_string_offset, "%s()", tab_result);
+                        snprintf(&prototype_string[tab_string_offset], TinScript::kMaxTokenLength - tab_string_offset, "%s()", tab_result);
                 }
                 else
-                    sprintf_s(&prototype_string[tab_string_offset], TinScript::kMaxTokenLength - tab_string_offset, "%s", tab_result);
+                    snprintf(&prototype_string[tab_string_offset], TinScript::kMaxTokenLength - tab_string_offset, "%s", tab_result);
 
                 RefreshConsoleInput(false, prototype_string);
             }

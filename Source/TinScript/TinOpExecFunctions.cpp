@@ -3752,7 +3752,7 @@ bool8 OpExecScheduleBegin(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, C
     uint32 codeblock_hash = cb->GetFilenameHash();
     int32 cur_line = cb->CalcLineNumber(instrptr - 12);
     char call_origin[kMaxNameLength];
-    sprintf_s(call_origin, sizeof(call_origin), "%s @ %d", UnHash(codeblock_hash), cur_line + 1);
+    snprintf(call_origin, sizeof(call_origin), "%s @ %d", UnHash(codeblock_hash), cur_line + 1);
     schedule_origin = call_origin;
 #endif
 
@@ -3802,7 +3802,7 @@ bool8 OpExecScheduleParam(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, C
     // -- add the parameter to the function context, inheriting the type from whatever
     // -- was pushed
     char varnamebuf[32];
-    sprintf_s(varnamebuf, 32, "_%d", paramindex);
+    snprintf(varnamebuf, sizeof(varnamebuf), "_%d", paramindex);
     cb->GetScriptContext()->GetScheduler()->mCurrentSchedule->mFuncContext->
         AddParameter(varnamebuf, Hash(varnamebuf), stack_valtype, 1, paramindex, 0);
 

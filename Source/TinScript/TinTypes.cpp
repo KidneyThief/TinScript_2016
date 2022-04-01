@@ -180,7 +180,7 @@ bool8 STEToString(TinScript::CScriptContext* script_context, void* value, char* 
 {
 	if (value && buf && bufsize > 0)
     {
-        sprintf_s(buf, bufsize, "%s", script_context->GetStringTable()->FindString(*(uint32*)value));
+        snprintf(buf, bufsize, "%s", script_context->GetStringTable()->FindString(*(uint32*)value));
 		return (true);
 	}
 	return (false);
@@ -204,7 +204,7 @@ bool8 IntToString(TinScript::CScriptContext* script_context, void* value, char* 
 {
 	if (value && buf && bufsize > 0)
     {
-		sprintf_s(buf, bufsize, "%d", *(int32*)(value));
+        snprintf(buf, bufsize, "%d", *(int32*)(value));
 		return (true);
 	}
 	return (false);
@@ -227,7 +227,7 @@ bool8 BoolToString(TinScript::CScriptContext* script_context, void* value, char*
 {
 	if (value && buf && bufsize > 0)
     {
-		sprintf_s(buf, bufsize, "%s", *(bool8*)(value) ? "true" : "false");
+        snprintf(buf, bufsize, "%s", *(bool8*)(value) ? "true" : "false");
 		return (true);
 	}
 	return (false);
@@ -260,7 +260,7 @@ bool8 FloatToString(TinScript::CScriptContext* script_context, void* value, char
 {
 	if (value && buf && bufsize > 0)
     {
-		sprintf_s(buf, bufsize, "%.4f", *(float32*)(value));
+        snprintf(buf, bufsize, "%.4f", *(float32*)(value));
 		return (true);
 	}
 	return (false);
@@ -508,7 +508,7 @@ const char* DebugPrintVar(void* addr, eVarType vartype)
     char* convertbuf = TinScript::GetContext()->GetScratchBuffer();
     char* destbuf = TinScript::GetContext()->GetScratchBuffer();
 	gRegisteredTypeToString[vartype](TinScript::GetContext(), addr, convertbuf, kMaxTokenLength);
-    sprintf_s(destbuf, kMaxTokenLength, "[%s] %s", GetRegisteredTypeName(vartype), convertbuf);
+    snprintf(destbuf, kMaxTokenLength, "[%s] %s", GetRegisteredTypeName(vartype), convertbuf);
     return convertbuf;
 }
 

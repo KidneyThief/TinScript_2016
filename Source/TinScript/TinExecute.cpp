@@ -642,7 +642,7 @@ int32 CFunctionCallStack::DebuggerGetStackVarEntries(CScriptContext* script_cont
                 cur_entry->mType = TYPE_object;
                 cur_entry->mArraySize = 1;
                 strcpy_s(cur_entry->mVarName, "self");
-                sprintf_s(cur_entry->mValue, "%d", cur_entry->mFunctionObjectID);
+                snprintf(cur_entry->mValue, sizeof(cur_entry->mValue), "%d", cur_entry->mFunctionObjectID);
 
                 // -- fill in the cached members
                 cur_entry->mVarHash = Hash("self");
@@ -784,7 +784,7 @@ bool CFunctionCallStack::FindExecutionStackVar(uint32 var_hash, CDebuggerWatchVa
 		// -- copy the var type, name and value
 		watch_entry.mType = TYPE_object;
 		strcpy_s(watch_entry.mVarName, "self");
-		sprintf_s(watch_entry.mValue, "%d", func_call_entry->oe_id);
+		snprintf(watch_entry.mValue, sizeof(watch_entry.mValue), "%d", func_call_entry->oe_id);
 
 		// -- copy the var type
 		watch_entry.mVarHash = var_hash;
@@ -927,7 +927,7 @@ void CFunctionCallStack::FormatFunctionCallString(char* bufferptr, int32 buffer_
     bufferptr[0] = '\0';
     if (fc_oe != nullptr)
     {
-        sprintf_s(bufferptr, buffer_len, "%s%s%s(), obj: [%d] %s, src: %s @ %d",
+        snprintf(bufferptr, buffer_len, "%s%s%s(), obj: [%d] %s, src: %s @ %d",
             // -- function call
             fc_ns != 0 ? TinScript::UnHash(fc_ns) : "",
             fc_ns != 0 ? "::" : "",
@@ -943,7 +943,7 @@ void CFunctionCallStack::FormatFunctionCallString(char* bufferptr, int32 buffer_
     }
     else
     {
-        sprintf_s(bufferptr, buffer_len, "%s%s%s(), src: %s @ %d",
+        snprintf(bufferptr, buffer_len, "%s%s%s(), src: %s @ %d",
             // -- function call
             fc_ns != 0 ? TinScript::UnHash(fc_ns) : "",
             fc_ns != 0 ? "::" : "",
@@ -1391,7 +1391,7 @@ bool8 DebuggerAssertLoop(const char* condition, CCodeBlock* cb, const uint32* in
     const char* filename = cb->GetFileName();
     int32 line_number = cb->CalcLineNumber(instrptr);
     char cond_buf[512];
-    sprintf_s(cond_buf, "Assert(%s) file: %s, line %d:", condition, filename, line_number + 1);
+    snprintf(cond_buf, sizeof(cond_buf), "Assert(%s) file: %s, line %d:", condition, filename, line_number + 1);
 
     // -- compose the assert message
     va_list args;
@@ -1402,7 +1402,7 @@ bool8 DebuggerAssertLoop(const char* condition, CCodeBlock* cb, const uint32* in
 
     // -- put both messages together, and send that to the DebuggerBreakLoop
     char assert_msg[2048];
-    sprintf_s(assert_msg, "%s\n%s", cond_buf, msg_buf);
+    snprintf(assert_msg, sizeof(assert_msg), "%s\n%s", cond_buf, msg_buf);
 
     return (DebuggerBreakLoop(cb, instrptr, execstack, funccallstack, assert_msg));
 }

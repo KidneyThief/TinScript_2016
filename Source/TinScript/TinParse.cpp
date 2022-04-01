@@ -1093,16 +1093,16 @@ void FormatVarEntry(CScriptContext* script_context, CVariableEntry* ve, void* va
                 int32 bytes_written = 0;
                 if (oe->GetNameHash() != 0 && oe->GetNamespace() != nullptr)
                 {
-                    bytes_written = sprintf_s(buffer, size, "%d: %s [%s]", oe->GetID(), UnHash(oe->GetNameHash()),
+                    bytes_written = snprintf(buffer, size, "%d: %s [%s]", oe->GetID(), UnHash(oe->GetNameHash()),
                                                                            UnHash(oe->GetNamespace()->GetHash()));
                 }
                 else if (oe->GetNamespace() != nullptr)
                 {
-                    bytes_written = sprintf_s(buffer, size, "%d: [%s]", oe->GetID(), UnHash(oe->GetNamespace()->GetHash()));
+                    bytes_written = snprintf(buffer, size, "%d: [%s]", oe->GetID(), UnHash(oe->GetNamespace()->GetHash()));
                 }
                 else
                 {
-                    bytes_written = sprintf_s(buffer, size, "%d", oe->GetID());
+                    bytes_written = snprintf(buffer, size, "%d", oe->GetID());
                 }
 
                 // -- make sure we terminate
@@ -1119,7 +1119,7 @@ void FormatVarEntry(CScriptContext* script_context, CVariableEntry* ve, void* va
             const char* hashed_string = script_context->GetStringTable()->FindString(string_hash);
             if (hashed_string != nullptr && hashed_string[0] != '\0')
             {
-                int32 bytes_written = sprintf_s(buffer, size, "%d  [0x%x `%s`]", string_hash, string_hash, hashed_string);
+                int32 bytes_written = snprintf(buffer, size, "%d  [0x%x `%s`]", string_hash, string_hash, hashed_string);
 
                 // -- make sure we terminate
                 if (bytes_written >= size)
@@ -1128,14 +1128,14 @@ void FormatVarEntry(CScriptContext* script_context, CVariableEntry* ve, void* va
             }
             else
             {
-                sprintf_s(buffer, size, "%d", string_hash);
+                snprintf(buffer, size, "%d", string_hash);
             }
         }
         break;
 
         case TYPE_string:
         {
-            sprintf_s(buffer, size, "%s", (const char*)val_addr);
+            snprintf(buffer, size, "%s", (const char*)val_addr);
         }
         break;
 
@@ -1203,7 +1203,7 @@ void DumpFuncEntry(CScriptContext* script_context, CFunctionEntry* fe)
     char* sig_ptr = signature_buf;
 
     // -- print the signature start
-    int len = sprintf_s(sig_ptr, length_left, "    %s %s(", GetRegisteredTypeName(return_type), UnHash(fe->GetHash()));
+    int len = snprintf(sig_ptr, length_left, "    %s %s(", GetRegisteredTypeName(return_type), UnHash(fe->GetHash()));
     length_left -= len;
     sig_ptr += len;
 
@@ -1225,12 +1225,12 @@ void DumpFuncEntry(CScriptContext* script_context, CFunctionEntry* fe)
                 // -- strings continue to be a pain
                 if (default_arg_type == TYPE_string)
                 {
-                    len = sprintf_s(sig_ptr, length_left, "%s%s %s = `%s`", (i >= 2 ? ", " : ""), GetRegisteredTypeName(param->GetType()),
+                    len = snprintf(sig_ptr, length_left, "%s%s %s = `%s`", (i >= 2 ? ", " : ""), GetRegisteredTypeName(param->GetType()),
                                                            default_arg_name, value_as_string);
                 }
                 else
                 {
-                    len = sprintf_s(sig_ptr, length_left, "%s%s %s = %s", (i >= 2 ? ", " : ""), GetRegisteredTypeName(param->GetType()),
+                    len = snprintf(sig_ptr, length_left, "%s%s %s = %s", (i >= 2 ? ", " : ""), GetRegisteredTypeName(param->GetType()),
                                                            default_arg_name, value_as_string);
                 }
                 has_default_value = true;
@@ -1240,7 +1240,7 @@ void DumpFuncEntry(CScriptContext* script_context, CFunctionEntry* fe)
         // -- if we don't have a default value, or were unable to find/convert, print the standard param name
         if (!has_default_value)
         {
-            len = sprintf_s(sig_ptr, length_left, "%s%s %s", (i >= 2 ? ", " : ""), GetRegisteredTypeName(param->GetType()),
+            len = snprintf(sig_ptr, length_left, "%s%s %s", (i >= 2 ? ", " : ""), GetRegisteredTypeName(param->GetType()),
                                                   UnHash(param->GetHash()));
         }
         length_left -= len;
@@ -1250,7 +1250,7 @@ void DumpFuncEntry(CScriptContext* script_context, CFunctionEntry* fe)
     }
 
     // -- close the signature string
-    len = sprintf_s(sig_ptr, length_left, ")\n");
+    len = snprintf(sig_ptr, length_left, ")\n");
     sig_ptr += len;
     length_left -= len;
 
@@ -1258,7 +1258,7 @@ void DumpFuncEntry(CScriptContext* script_context, CFunctionEntry* fe)
     const char* help_str = default_args != nullptr ? default_args->GetHelpString() : nullptr;
     if (help_str != nullptr && help_str[0] != '\0')
     {
-        len = sprintf_s(sig_ptr, length_left, "        use: %s\n", help_str);
+        len = snprintf(sig_ptr, length_left, "        use: %s\n", help_str);
         sig_ptr += len;
         length_left -= len;
     }
@@ -4487,7 +4487,7 @@ bool8 TryParseHash(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*
     // -- because these are literals, add the string to the dictionary, as it may help debugging
     uint32 hash_value = Hash(string_token.tokenptr, string_token.length, true);
     char hash_value_buf[32];
-    sprintf_s(hash_value_buf, 32, "%d", hash_value);
+    snprintf(hash_value_buf, sizeof(hash_value_buf), "%d", hash_value);
     CValueNode* hash_node = TinAlloc(ALLOC_TreeNode, CValueNode, codeblock, link, filebuf.linenumber, hash_value_buf,
                                      (int32)strlen(hash_value_buf), false, TYPE_int);
 
@@ -6245,7 +6245,7 @@ bool8 SaveToSourceC(const char* script_filename, const char* source_C_filename, 
 
     // -- write the filename
     char fn_buffer[kMaxArgLength];
-    sprintf_s(fn_buffer, "// Comile To C: %s\n", source_C_filename);
+    snprintf(fn_buffer, sizeof(fn_buffer), "// Comile To C: %s\n", source_C_filename);
     instrwritten = (int32)fwrite((void*)fn_buffer, sizeof(char), strlen(fn_buffer), filehandle);
     if (instrwritten != strlen(fn_buffer))
     {
@@ -6256,7 +6256,7 @@ bool8 SaveToSourceC(const char* script_filename, const char* source_C_filename, 
 
     // -- write the version
     char version_buffer[kMaxArgLength];
-    sprintf_s(version_buffer, "// version: %d\n", kCompilerVersion);
+    snprintf(version_buffer, sizeof(version_buffer), "// version: %d\n", kCompilerVersion);
     instrwritten = (int32)fwrite((void*)&version_buffer, sizeof(char), strlen(version_buffer), filehandle);
     if (instrwritten != strlen(version_buffer))
     {

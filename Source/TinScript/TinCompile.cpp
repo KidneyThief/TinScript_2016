@@ -390,7 +390,7 @@ int32 CCompileTreeNode::Eval(uint32*& instrptr, eVarType, bool8 countonly) const
 // ====================================================================================================================
 void CCompileTreeNode::Dump(char*& output, int32& length) const
 {
-	sprintf_s(output, length, "type: %s", gCompileNodeTypes[type]);
+	snprintf(output, length, "type: %s", gCompileNodeTypes[type]);
 	int32 debuglength = (int32)strlen(output);
 	output += debuglength;
 	length -= debuglength;
@@ -701,7 +701,7 @@ int32 CIncludeScriptNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 cou
 // ====================================================================================================================
 void CIncludeScriptNode::Dump(char*& output, int32& length) const
 {
-    sprintf_s(output, length, "type: %s, filename: %s", gCompileNodeTypes[type], UnHash(mFilenameHash));
+    snprintf(output, length, "type: %s, filename: %s", gCompileNodeTypes[type], UnHash(mFilenameHash));
 	int32 debuglength = (int32)strlen(output);
 	output += debuglength;
 	length -= debuglength;
@@ -883,11 +883,11 @@ int32 CValueNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 countonly) 
 void CValueNode::Dump(char*& output, int32& length) const
 {
     if (isparam)
-	    sprintf_s(output, length, "type: %s, param: %d", gCompileNodeTypes[type], paramindex);
+        snprintf(output, length, "type: %s, param: %d", gCompileNodeTypes[type], paramindex);
     else if (isvariable)
-	    sprintf_s(output, length, "type: %s, var: %s", gCompileNodeTypes[type], value);
+        snprintf(output, length, "type: %s, var: %s", gCompileNodeTypes[type], value);
     else
-	    sprintf_s(output, length, "type: %s, %s", gCompileNodeTypes[type], value);
+        snprintf(output, length, "type: %s, %s", gCompileNodeTypes[type], value);
 	int32 debuglength = (int32)strlen(output);
 	output += debuglength;
 	length -= debuglength;
@@ -1052,7 +1052,7 @@ int32 CObjMemberNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 counton
 // ====================================================================================================================
 void CObjMemberNode::Dump(char*& output, int32& length) const
 {
-	sprintf_s(output, length, "type: %s, %s", gCompileNodeTypes[type], membername);
+    snprintf(output, length, "type: %s, %s", gCompileNodeTypes[type], membername);
 	int32 debuglength = (int32)strlen(output);
 	output += debuglength;
 	length -= debuglength;
@@ -1146,7 +1146,7 @@ int32 CPODMemberNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 counton
 // ====================================================================================================================
 void CPODMemberNode::Dump(char*& output, int32& length) const
 {
-	sprintf_s(output, length, "type: %s, %s", gCompileNodeTypes[type], podmembername);
+    snprintf(output, length, "type: %s, %s", gCompileNodeTypes[type], podmembername);
 	int32 debuglength = (int32)strlen(output);
 	output += debuglength;
 	length -= debuglength;
@@ -1300,8 +1300,8 @@ int32 CBinaryOpNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 countonl
 // ====================================================================================================================
 void CBinaryOpNode::Dump(char*& output, int32& length) const
 {
-	sprintf_s(output, length, "type: %s, op: %s", gCompileNodeTypes[type],
-              gOperationName[binaryopcode]);
+    snprintf(output, length, "type: %s, op: %s", gCompileNodeTypes[type],
+             gOperationName[binaryopcode]);
 	int32 debuglength = (int32)strlen(output);
 	output += debuglength;
 	length -= debuglength;
@@ -2350,7 +2350,7 @@ int32 CFuncDeclNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 countonl
 // ====================================================================================================================
 void CFuncDeclNode::Dump(char*& output, int32& length) const
 {
-	sprintf_s(output, length, "type: %s, funcname: %s", gCompileNodeTypes[type], funcname);
+    snprintf(output, length, "type: %s, funcname: %s", gCompileNodeTypes[type], funcname);
 	int32 debuglength = (int32)strlen(output);
 	output += debuglength;
 	length -= debuglength;
@@ -2533,7 +2533,7 @@ int32 CFuncCallNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 countonl
 // ====================================================================================================================
 void CFuncCallNode::Dump(char*& output, int32& length) const
 {
-	sprintf_s(output, length, "type: %s, funcname: %s", gCompileNodeTypes[type], funcname);
+    snprintf(output, length, "type: %s, funcname: %s", gCompileNodeTypes[type], funcname);
 	int32 debuglength = (int32)strlen(output);
 	output += debuglength;
 	length -= debuglength;
@@ -2697,7 +2697,7 @@ int32 CObjMethodNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 counton
 // ====================================================================================================================
 void CObjMethodNode::Dump(char*& output, int32& length) const
 {
-	sprintf_s(output, length, "type: %s, %s", gCompileNodeTypes[type], methodname);
+    snprintf(output, length, "type: %s, %s", gCompileNodeTypes[type], methodname);
 	int32 debuglength = (int32)strlen(output);
 	output += debuglength;
 	length -= debuglength;
@@ -3647,9 +3647,9 @@ int32 CSelfVarDeclNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 count
 void CSelfVarDeclNode::Dump(char*& output, int32& length) const
 {
     if (mArraySize > 1)
-	    sprintf_s(output, length, "type: %s, var[%d]: %s", gCompileNodeTypes[GetType()], mArraySize, varname);
+        snprintf(output, length, "type: %s, var[%d]: %s", gCompileNodeTypes[GetType()], mArraySize, varname);
     else
-	    sprintf_s(output, length, "type: %s, var: %s", gCompileNodeTypes[GetType()], varname);
+        snprintf(output, length, "type: %s, var: %s", gCompileNodeTypes[GetType()], varname);
 	int32 debuglength = (int32)strlen(output);
 	output += debuglength;
 	length -= debuglength;
@@ -3717,9 +3717,9 @@ int32 CObjMemberDeclNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 cou
 void CObjMemberDeclNode::Dump(char*& output, int32& length) const
 {
     if (mArraySize > 1)
-	    sprintf_s(output, length, "type: %s, var[%d]: %s", gCompileNodeTypes[GetType()], mArraySize, varname);
+        snprintf(output, length, "type: %s, var[%d]: %s", gCompileNodeTypes[GetType()], mArraySize, varname);
     else
-	    sprintf_s(output, length, "type: %s, var: %s", gCompileNodeTypes[GetType()], varname);
+        snprintf(output, length, "type: %s, var: %s", gCompileNodeTypes[GetType()], varname);
 	int32 debuglength = (int32)strlen(output);
 	output += debuglength;
 	length -= debuglength;

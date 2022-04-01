@@ -226,7 +226,7 @@ void CMemoryTracker::Free(void* addr)
 uint32 CMemoryTracker::CalculateFileLineHash(uint32 codeblock_hash, int32 line_number)
 {
     char buffer[kMaxArgLength];
-    sprintf_s(buffer, "%s:%d", UnHash(codeblock_hash), line_number);
+    snprintf(buffer, sizeof(buffer), "%s:%d", UnHash(codeblock_hash), line_number);
     uint32 file_line_hash = Hash(buffer);
     return (file_line_hash);
 }

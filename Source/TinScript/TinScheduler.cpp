@@ -275,13 +275,13 @@ void CScheduler::DebuggerAddSchedule(const CCommand& command)
     char debug_msg[kMaxTokenLength];
     if (command.mFuncHash != 0)
     {
-        sprintf_s(debug_msg, "DebuggerAddSchedule(%d, %s, %d, %d, `%s();`);", command.mReqID,
+        snprintf(debug_msg, sizeof(debug_msg), "DebuggerAddSchedule(%d, %s, %d, %d, `%s();`);", command.mReqID,
                   command.mRepeatTime > 0 ? "true" : "false", time_remaining_ms, command.mObjectID,
                   UnHash(command.mFuncHash));
     }
     else
     {
-        sprintf_s(debug_msg, "DebuggerAddSchedule(%d, %s, %d, %d, `%s`);", command.mReqID,
+        snprintf(debug_msg, sizeof(debug_msg), "DebuggerAddSchedule(%d, %s, %d, %d, `%s`);", command.mReqID,
                   command.mRepeatTime > 0 ? "true" : "false", time_remaining_ms, command.mObjectID,
                   command.mCommandBuf);
     }

@@ -747,7 +747,7 @@ bool CSocket::Connect(const char* ipAddress, bool is_auto_connect)
 
     // -- get the connection info
     char defaultPortStr[8];
-    sprintf_s(defaultPortStr, "%d", k_DefaultPort);
+    snprintf(defaultPortStr, sizeof(defaultPortStr), "%d", k_DefaultPort);
     
     memset(&addressHints, 0, sizeof(addrinfo));
     int addrResult = getaddrinfo(ipAddress, defaultPortStr, &addressHints, &addressResult);

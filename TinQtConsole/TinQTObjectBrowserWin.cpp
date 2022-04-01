@@ -53,7 +53,7 @@ CBrowserEntry::CBrowserEntry(uint32 parent_id, uint32 object_id, bool8 owned, co
     TinScript::SafeStrcpy(mDerivation, sizeof(mDerivation), derivation, TinScript::kMaxNameLength);
 
     // -- create and store the formatted name string
-    sprintf_s(mFormattedName, TinScript::kMaxNameLength, "[%d] %s", object_id, mName);
+    snprintf(mFormattedName, TinScript::kMaxNameLength, "[%d] %s", object_id, mName);
 
     //-- store the origin info
     mCreatedStackSize = created_stack_size;
@@ -74,7 +74,7 @@ CBrowserEntry::CBrowserEntry(uint32 parent_id, uint32 object_id, bool8 owned, co
         // note:  linenumber + 1
         const char* full_path = CConsoleWindow::GetInstance()->UnhashOrRequest(created_file_array[0]);
         const char* file_name_ptr = CConsoleWindow::GetInstance()->GetDebugSourceWin()->GetFileName(full_path);
-        sprintf_s(mFormattedOrigin, TinScript::kMaxNameLength, "%s @ %d", file_name_ptr, created_line_array[0] + 1);
+        snprintf(mFormattedOrigin, TinScript::kMaxNameLength, "%s @ %d", file_name_ptr, created_line_array[0] + 1);
     }
 
     // -- set the QT elements

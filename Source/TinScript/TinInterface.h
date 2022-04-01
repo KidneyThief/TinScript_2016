@@ -280,7 +280,7 @@ bool8 ObjExecF(void* objaddr, T& returnval, const char* methodformat, ...)
     va_end(args);
 
     char execbuf[kMaxTokenLength];
-    sprintf_s(execbuf, kMaxTokenLength - strlen(methodbuf), "%d.%s", objectid,
+    snprintf(execbuf, kMaxTokenLength - strlen(methodbuf), "%d.%s", objectid,
               methodbuf);
 
         // -- execute the command
@@ -322,7 +322,7 @@ bool8 ObjExecF(uint32 objectid, T& returnval, const char* methodformat, ...)
 
 	// -- the registered variable to hold the return result is a thread local const char*, registered as "__return"
     char execbuf[kMaxTokenLength];
-    sprintf_s(execbuf, kMaxTokenLength - strlen(methodbuf), "%d.%s", objectid,
+    snprintf(execbuf, kMaxTokenLength - strlen(methodbuf), "%d.%s", objectid,
               methodbuf);
 
     // -- execute the command

@@ -57,7 +57,7 @@ bool8 Vector3fToString(TinScript::CScriptContext* script_context, void* value, c
 		float x = (float)c3vector->v3f_X;
 		float y = (float)c3vector->v3f_Y;
 		float z = (float)c3vector->v3f_Z;
-		sprintf_s(buf, bufsize, "%.4f %.4f %.4f", x, y, z);
+        snprintf(buf, bufsize, "%.4f %.4f %.4f", x, y, z);
 		return (true);
 	}
 	return (false);
@@ -210,7 +210,7 @@ bool8 FVectorToString(TinScript::CScriptContext* script_context, void* value, ch
 		double x = (float)ueVector->X;
 		double y = (float)ueVector->Y;
 		double z = (float)ueVector->Z;
-		sprintf_s(buf, bufsize, "%.4lf %.4lf %.4lf", x, y, z);
+        snprintf(buf, bufsize, "%.4lf %.4lf %.4lf", x, y, z);
 		return (true);
 	}
 #endif

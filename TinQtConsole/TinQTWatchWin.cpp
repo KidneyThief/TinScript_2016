@@ -543,9 +543,9 @@ bool CDebugWatchWin::GetSelectedWatchExpression(int32& out_use_watch_id, char* o
 
         // -- see if we have a variable or a member
         if (cur_item->mDebuggerEntry.mObjectID > 0)
-            sprintf_s(out_watch_string, max_expr_length, "%d.%s", cur_item->mDebuggerEntry.mObjectID,cur_item->mDebuggerEntry.mVarName);
+            snprintf(out_watch_string, max_expr_length, "%d.%s", cur_item->mDebuggerEntry.mObjectID,cur_item->mDebuggerEntry.mVarName);
         else
-            strcpy_s(out_watch_string, max_expr_length, cur_item->mDebuggerEntry.mVarName);
+            snprintf(out_watch_string, max_expr_length, cur_item->mDebuggerEntry.mVarName);
 
         // -- set the current value
         strcpy_s(out_value_string, max_value_length, cur_item->mDebuggerEntry.mValue);

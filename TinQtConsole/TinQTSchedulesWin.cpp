@@ -69,7 +69,7 @@ CScheduleEntry::CScheduleEntry(uint32 sched_id, bool repeat, int32 time_remainin
 
     // -- schedule ID
     char sched_id_str[32];
-    sprintf_s(sched_id_str, "%d", sched_id);
+    snprintf(sched_id_str, sizeof(sched_id_str), "%d", sched_id);
     mScheduleIDLabel = new QLabel(sched_id_str);
 
     // -- object ID
@@ -82,7 +82,7 @@ CScheduleEntry::CScheduleEntry(uint32 sched_id, bool repeat, int32 time_remainin
         else
         {
             char object_id_str[32];
-            sprintf_s(object_id_str, "[%d]", object_id);
+            snprintf(object_id_str, sizeof(object_id_str), "[%d]", object_id);
             mObjectIDLabel = new QLabel(object_id_str);
         }
     }
@@ -139,7 +139,7 @@ void CScheduleEntry::SetTimeRemaining(int32 time_remaining_ms)
 
     char buf[32];
     float time_remaining_float = static_cast<float>(mTimeRemaining) / 1000.0f;
-    sprintf_s(buf, "%.2f", time_remaining_float);
+    snprintf(buf, sizeof(buf), "%.2f", time_remaining_float);
     mTimeRemainingLabel->setText(buf);
 }
 
@@ -163,7 +163,7 @@ void CScheduleEntry::OnButtonKillPressed()
 {
     // -- create the command, by inserting the slider value as the first parameter
     char command_buf[TinScript::kMaxTokenLength];
-    sprintf_s(command_buf, "ScheduleCancel(%d);", mScheduleID);
+    snprintf(command_buf, sizeof(command_buf), "ScheduleCancel(%d);", mScheduleID);
 
     bool8 is_connected = CConsoleWindow::GetInstance()->IsConnected();
     if (is_connected)

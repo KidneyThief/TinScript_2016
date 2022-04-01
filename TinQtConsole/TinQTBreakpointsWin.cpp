@@ -128,7 +128,7 @@ void CBreakpointEntry::UpdateLabel(uint32 codeblock_hash, int32 line_number)
     bool condition_enabled = mConditionEnabled && mCondition[0];
     char condition_buf[TinScript::kMaxNameLength];
     if (condition_enabled)
-        sprintf_s(condition_buf, "cond: [ %s ]", condition_enabled ? mCondition : "");
+        snprintf(condition_buf, sizeof(condition_buf), "cond: [ %s ]", condition_enabled ? mCondition : "");
     else
         condition_buf[0] = '\0';
 
@@ -136,16 +136,16 @@ void CBreakpointEntry::UpdateLabel(uint32 codeblock_hash, int32 line_number)
     bool trace_on_condition = condition_enabled && trace_enabled && mTraceOnCondition;
     char tracepoint_buf[TinScript::kMaxNameLength];
     if (trace_on_condition)
-        sprintf_s(tracepoint_buf, "c-trace: [ %s ]", mTracePoint);
+        snprintf(tracepoint_buf, sizeof(tracepoint_buf), "c-trace: [ %s ]", mTracePoint);
     else if (trace_enabled)
-        sprintf_s(tracepoint_buf, "trace: [ %s ]", mTracePoint);
+        snprintf(tracepoint_buf, sizeof(tracepoint_buf), "trace: [ %s ]", mTracePoint);
     else
         tracepoint_buf[0] = '\0';
 
     // -- note:  all line numbers are stored accurately (0 based), but displayed +1, to match text editors
     const char* full_path = CConsoleWindow::GetInstance()->UnhashOrRequest(codeblock_hash);
     const char* file_name_ptr = CConsoleWindow::GetInstance()->GetDebugSourceWin()->GetFileName(full_path);
-    sprintf_s(linebuf, 256, "%s : %s%d    %s    %s", file_name_ptr, spaces, line_number + 1,
+    snprintf(linebuf, sizeof(linebuf), "%s : %s%d    %s    %s", file_name_ptr, spaces, line_number + 1,
               condition_buf, tracepoint_buf);
 
     // -- set the text in the QWidget
@@ -158,7 +158,7 @@ void CBreakpointEntry::UpdateLabel(int32 watch_request_id, uint32 var_object_id,
     bool condition_enabled = mConditionEnabled && mCondition[0];
     char condition_buf[TinScript::kMaxNameLength];
     if (condition_enabled)
-        sprintf_s(condition_buf, "cond: [ %s ]", condition_enabled ? mCondition : "");
+        snprintf(condition_buf, sizeof(condition_buf), "cond: [ %s ]", condition_enabled ? mCondition : "");
     else
         condition_buf[0] = '\0';
 
@@ -166,20 +166,20 @@ void CBreakpointEntry::UpdateLabel(int32 watch_request_id, uint32 var_object_id,
     bool trace_on_condition = condition_enabled && trace_enabled && mTraceOnCondition;
     char tracepoint_buf[TinScript::kMaxNameLength];
     if (trace_on_condition)
-        sprintf_s(tracepoint_buf, "c-trace: [ %s ]", mTracePoint);
+        snprintf(tracepoint_buf, sizeof(tracepoint_buf), "c-trace: [ %s ]", mTracePoint);
     else if (trace_enabled)
-        sprintf_s(tracepoint_buf, "trace: [ %s ]", mTracePoint);
+        snprintf(tracepoint_buf, sizeof(tracepoint_buf), "trace: [ %s ]", mTracePoint);
     else
         tracepoint_buf[0] = '\0';
 
     // -- set the text in the QWidget
     char label_buf[TinScript::kMaxNameLength];
     if (mWatchVarObjectID > 0)
-        sprintf_s(label_buf, 256, "_watch:  %d.%s    %s    %s", mWatchVarObjectID,
+        snprintf(label_buf, sizeof(label_buf), "_watch:  %d.%s    %s    %s", mWatchVarObjectID,
                   CConsoleWindow::GetInstance()->UnhashOrRequest(mWatchVarNameHash),
                   condition_buf, tracepoint_buf);
     else
-        sprintf_s(label_buf, 256, "_watch:  %s   %s    %s",
+        snprintf(label_buf, sizeof(label_buf), "_watch:  %s   %s    %s",
                   CConsoleWindow::GetInstance()->UnhashOrRequest(mWatchVarNameHash), condition_buf,
                   tracepoint_buf);
 
@@ -771,7 +771,7 @@ CCallstackEntry::CCallstackEntry(uint32 codeblock_hash, int32 line_number, uint3
                                                    : "[C++]";
 
     // note:  line numbers need to be displayed, counting from 1, to match the editor
-    sprintf_s(buf, 2048, "[ %d ] %s::%s   %s @ %d", object_id,
+    snprintf(buf, sizeof(buf), "[ %d ] %s::%s   %s @ %d", object_id,
               CConsoleWindow::GetInstance()->UnhashOrRequest(namespace_hash),
               CConsoleWindow::GetInstance()->UnhashOrRequest(function_hash),
               file_name_ptr, codeblock_hash > 0 ? line_number + 1 : -1);
@@ -833,7 +833,7 @@ void CDebugCallstackWin::OnDoubleClicked(QListWidgetItem* item)
             // the queued commands to update watch values
             static uint32 func_hash = TinScript::Hash("DebuggerSetWatchStackOffset");
             char buf[8];
-            sprintf_s(buf, 8, "%d", i);
+            snprintf(buf, sizeof(buf), "%d", i);
             SocketManager::SendExec(func_hash, buf);
 
             // -- we also want to re-query all user variable watches, since they'll

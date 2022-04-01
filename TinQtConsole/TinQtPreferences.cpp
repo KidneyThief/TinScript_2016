@@ -124,7 +124,7 @@ bool TinPreferences::SavePreferences()
         if (mPreferencesMap->GetValue(it, value))
         {
             char command[TinScript::kMaxTokenLength];
-            sprintf_s(command, TinScript::kMaxTokenLength, "SetTinQtPreference(`%s`, `%s`);\n", it, value);
+            snprintf(command, sizeof(command), "SetTinQtPreference(`%s`, `%s`);\n", it, value);
 
             // -- write the command out to the file
             file.write(command);
@@ -163,7 +163,7 @@ bool TinPreferences::SaveBreakpoints()
 
         // -- create the command to restore the breakpoint
         char command[TinScript::kMaxTokenLength];
-        sprintf_s(command, TinScript::kMaxTokenLength,
+        snprintf(command, sizeof(command),
                   "SetTinQtBreakpoint(`%s`, %d, %s, `%s`, %s, `%s`, %s, %s);\n",
                   TinScript::UnHash(breakpoint->mCodeblockHash), breakpoint->mLineNumber,
                   (breakpoint->mChecked ? "true" : "false"),

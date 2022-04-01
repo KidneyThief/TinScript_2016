@@ -454,19 +454,19 @@ const char* StringCat(const char* str0, const char* str1, const char* str2, cons
     // -- stop as soon as we have an empty string
     char buf[2048];
     if (!str2 || !str2[0])
-        sprintf_s(buf, "%s%s", str0, str1);
+        snprintf(buf, sizeof(buf), "%s%s", str0, str1);
     else if (!str3 || !str3[0])
-        sprintf_s(buf, "%s%s%s", str0, str1, str2);
+        snprintf(buf, sizeof(buf), "%s%s%s", str0, str1, str2);
     else if (!str4 || !str4[0])
-        sprintf_s(buf, "%s%s%s%s", str0, str1, str2, str3);
+        snprintf(buf, sizeof(buf), "%s%s%s%s", str0, str1, str2, str3);
     else if (!str5 || !str5[0])
-        sprintf_s(buf, "%s%s%s%s%s", str0, str1, str2, str3, str4);
+        snprintf(buf, sizeof(buf), "%s%s%s%s%s", str0, str1, str2, str3, str4);
     else if (!str6 || !str6[0])
-        sprintf_s(buf, "%s%s%s%s%s%s", str0, str1, str2, str3, str4, str5);
+        snprintf(buf, sizeof(buf), "%s%s%s%s%s%s", str0, str1, str2, str3, str4, str5);
     else if (!str7 || !str7[0])
-        sprintf_s(buf, "%s%s%s%s%s%s%s", str0, str1, str2, str3, str4, str5, str6);
+        snprintf(buf, sizeof(buf), "%s%s%s%s%s%s%s", str0, str1, str2, str3, str4, str5, str6);
     else
-        sprintf_s(buf, "%s%s%s%s%s%s%s%s", str0, str1, str2, str3, str4, str5, str6, str7);
+        snprintf(buf, sizeof(buf), "%s%s%s%s%s%s%s%s", str0, str1, str2, str3, str4, str5, str6, str7);
 
     // -- add the result to the string table
     TinScript::CScriptContext* script_context = ::TinScript::GetContext();

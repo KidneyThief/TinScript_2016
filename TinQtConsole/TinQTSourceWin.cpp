@@ -98,7 +98,7 @@ CSourceLine::CSourceLine(const char* source_text, int line_number) : QListWidget
 
     // -- leave room for a 5x digit line number
     char clean_buf[256];
-    sprintf_s(clean_buf, "%5d", line_number + 1);
+    snprintf(clean_buf, sizeof(clean_buf), "%5d", line_number + 1);
     char* clean_ptr = &clean_buf[strlen(clean_buf)];
 
     // -- put a tab's worth of spaces between the line number and the text
@@ -450,7 +450,7 @@ void CDebugSourceWin::OnForceExecuteLineNumber()
 
     static uint32 func_hash = TinScript::Hash("DebuggerForceExecToLineNumber");
     char buf[8];
-    sprintf_s(buf, 8, "%d", selected_line_number);
+    snprintf(buf, sizeof(buf), "%d", selected_line_number);
     SocketManager::SendExec(func_hash, buf);
 
     // -- this is semi-fake, since we've not verified that the PC will actually be here!
@@ -505,11 +505,11 @@ void CDebugSourceWin::FindInFile(const char* search_string)
         SetSourceView(mCurrentCodeblockHash, found_index);
         if (found_index < start_index)
         {
-            sprintf_s(result_msg, "found: %d  wrapped", found_index + 1);
+            snprintf(result_msg, sizeof(result_msg), "found: %d  wrapped", found_index + 1);
         }
         else
         {
-            sprintf_s(result_msg, "found: %d", found_index + 1);
+            snprintf(result_msg, sizeof(result_msg), "found: %d", found_index + 1);
         }
     }
     else
@@ -574,7 +574,7 @@ void CDebugSourceWin::NotifyCodeblockLoaded(uint32 codeblock_hash)
 
     // -- add an action to the main menu
     char fullPath[kMaxArgLength];
-    int length = sprintf_s(fullPath, "%s%s", mDebuggerDir, filename);
+    int length = snprintf(fullPath, sizeof(fullPath), "%s%s", mDebuggerDir, filename);
     if (length >= kMaxArgLength)
         return;
 

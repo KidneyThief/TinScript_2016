@@ -99,7 +99,7 @@ class CBase {
             {
                 /*
                 char initial_value[32];
-                sprintf_s(initial_value, "string %d", i);
+                snprintf(initial_value, sizeof(initial_value), "string %d", i);
                 stringArray[i] = TinScript::GetContext()->GetStringTable()->AddString(initial_value, -1, TinScript::Hash(initial_value), true);
                 */
                 stringArray[i] = nullptr;
@@ -320,7 +320,7 @@ void UnitTest_GetScriptReturnInt()
     else
     {
         // -- print the result to a testable string
-        sprintf_s(CUnitTest::gCodeResult, "%d", result);
+        snprintf(CUnitTest::gCodeResult, sizeof(CUnitTest::gCodeResult), "%d", result);
     }
 }
 
@@ -335,7 +335,7 @@ void UnitTest_GetScriptReturnFloat()
     else
     {
         // -- print the result to a testable string
-        sprintf_s(CUnitTest::gCodeResult, "%.4f", result);
+        snprintf(CUnitTest::gCodeResult, sizeof(CUnitTest::gCodeResult), "%.4f", result);
     }
 }
 
@@ -350,7 +350,7 @@ void UnitTest_GetScriptReturnBool()
     else
     {
         // -- print the result to a testable string
-        sprintf_s(CUnitTest::gCodeResult, "%s", result ? "true" : "false");
+        snprintf(CUnitTest::gCodeResult, sizeof(CUnitTest::gCodeResult), "%s", result ? "true" : "false");
     }
 }
 
@@ -367,7 +367,7 @@ void UnitTest_GetScriptReturnString()
     else
     {
         // -- print the result to a testable string
-        sprintf_s(CUnitTest::gCodeResult, "%s", result);
+        snprintf(CUnitTest::gCodeResult, sizeof(CUnitTest::gCodeResult), "%s", result);
     }
 }
 
@@ -384,7 +384,7 @@ void UnitTest_GetScriptReturnStringExec()
 	else
 	{
 		// -- print the result to a testable string
-		sprintf_s(CUnitTest::gCodeResult, "%s", result);
+        snprintf(CUnitTest::gCodeResult, sizeof(CUnitTest::gCodeResult), "%s", result);
 	}
 }
 
@@ -673,7 +673,7 @@ void UnitTest_RegisteredIntAccess()
 void UnitTest_RegisteredIntModify()
 {
     // -- the script will have modified the registered int to the value of 23
-    sprintf_s(CUnitTest::gCodeResult, "%d", gUnitTestRegisteredInt);
+    snprintf(CUnitTest::gCodeResult, sizeof(CUnitTest::gCodeResult), "%d", gUnitTestRegisteredInt);
 }
 
 void UnitTest_ScriptIntAccess()
@@ -688,7 +688,7 @@ void UnitTest_ScriptIntAccess()
     // -- otherwise, pring the value to the code result
     else
     {
-        sprintf_s(CUnitTest::gCodeResult, "%d", script_value);
+        snprintf(CUnitTest::gCodeResult, sizeof(CUnitTest::gCodeResult), "%d", script_value);
     }
 }
 
@@ -699,12 +699,12 @@ void UnitTest_ScriptIntModify()
 
 void UnitTest_RegisteredIntArrayModify()
 {
-    sprintf_s(CUnitTest::gCodeResult, "%d %d", gUnitTestIntArray[3], gUnitTestIntArray[5]);
+    snprintf(CUnitTest::gCodeResult, sizeof(CUnitTest::gCodeResult), "%d %d", gUnitTestIntArray[3], gUnitTestIntArray[5]);
 }
 
 void UnitTest_RegisteredStringArrayModify()
 {
-    sprintf_s(CUnitTest::gCodeResult, "%s %s", gUnitTestStringArray[4], gUnitTestStringArray[9]);
+    snprintf(CUnitTest::gCodeResult, sizeof(CUnitTest::gCodeResult), "%s %s", gUnitTestStringArray[4], gUnitTestStringArray[9]);
 }
 
 bool8 CreateUnitTests()

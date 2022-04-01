@@ -463,9 +463,9 @@ void CDebugFunctionAssistWin::UpdateFilter(const char* filter, bool8 force_refre
                 CConsoleWindow::GetInstance()->GetDebugObjectBrowserWin()->GetObjectIdentifier(object_id);
             char buf[TinScript::kMaxNameLength];
             if (!object_identifier || !object_identifier[0])
-                sprintf_s(buf, "Object: [%d]", object_id);
+                snprintf(buf, sizeof(buf), "Object: [%d]", object_id);
             else
-                sprintf_s(buf, "Object: %s", object_identifier);
+                snprintf(buf, sizeof(buf), "Object: %s", object_identifier);
             mObjectIndentifier->setText(buf);
         }
 
@@ -644,7 +644,7 @@ void CDebugFunctionAssistWin::SetAssistObjectID(uint32 object_id)
         else
         {
             char buf[32];
-            sprintf_s(buf, "%d.", object_id);
+            snprintf(buf, sizeof(buf), "%d.", object_id);
             mFunctionInput->setText(buf);
             UpdateFilter(buf);
         }
@@ -723,7 +723,7 @@ void CDebugFunctionAssistWin::NotifyAssistEntryDoubleClicked(TinScript::CDebugge
     {
         // -- on double-click, set the filter to be the "<object_name>."
         char new_filter[TinScript::kMaxNameLength];
-        sprintf_s(new_filter, "%d.", list_entry->mObjectID);
+        snprintf(new_filter, sizeof(new_filter), "%d.", list_entry->mObjectID);
         mFunctionInput->setText(new_filter);
         UpdateFilter(new_filter);
 
@@ -821,9 +821,9 @@ void CDebugFunctionAssistWin::OnButtonCopyToConsolePressed()
     char buf[TinScript::kMaxTokenLength];
     int length_remaining = TinScript::kMaxTokenLength;
     if(mSearchObjectID > 0)
-        sprintf_s(buf, "%d.%s(", mSearchObjectID, assist_entry->mSearchName);
+        snprintf(buf, sizeof(buf), "%d.%s(", mSearchObjectID, assist_entry->mSearchName);
     else
-        sprintf_s(buf, "%s(", assist_entry->mSearchName);
+        snprintf(buf, sizeof(buf), "%s(", assist_entry->mSearchName);
 
     int length = strlen(buf);
     length_remaining -= length;
@@ -839,10 +839,10 @@ void CDebugFunctionAssistWin::OnButtonCopyToConsolePressed()
         if (type_name == nullptr)
         {
             if (mSearchObjectID > 0)
-                sprintf_s(buf, "%d.%s() has an invalid signature - REGISTER_METHOD() contains an unregistered param type",
+                snprintf(buf, sizeof(buf), "%d.%s() has an invalid signature - REGISTER_METHOD() contains an unregistered param type",
                     mSearchObjectID, assist_entry->mSearchName);
             else
-                sprintf_s(buf, "%s() has an invalid signature - REGISTER_FUNCTION() contains an unregistered param type",
+                snprintf(buf, sizeof(buf), "%s() has an invalid signature - REGISTER_FUNCTION() contains an unregistered param type",
                     assist_entry->mSearchName);
 
             CConsoleWindow::GetInstance()->AddText(0, 0, const_cast<char*>(buf));
@@ -850,7 +850,7 @@ void CDebugFunctionAssistWin::OnButtonCopyToConsolePressed()
         }
 
         if (i != 1)
-            sprintf_s(buf_ptr, length_remaining, ", %s", type_name);
+            snprintf(buf_ptr, length_remaining, ", %s", type_name);
         else
             strcpy_s(buf_ptr, length_remaining, type_name);
 
@@ -953,7 +953,7 @@ bool CDebugFunctionAssistWin::GetSelectedWatchExpression(int32& out_use_watch_id
 
     uint32 assist_object_id = GetAssistObjectID();
     if (assist_object_id > 0)
-        sprintf_s(out_watch_string, max_expr_length,"%d", assist_object_id);
+        snprintf(out_watch_string, max_expr_length, "%d", assist_object_id);
 
     return true;
 }
@@ -1379,7 +1379,7 @@ CFunctionParameterEntry::CFunctionParameterEntry(TinScript::eVarType var_type, b
 
     const char* type_name = TinScript::GetRegisteredTypeName(var_type);
     char type_buf[TinScript::kMaxNameLength];
-    sprintf_s(type_buf, "%s%s", type_name, is_array ? "[]" : "");
+    snprintf(type_buf, sizeof(type_buf), "%s%s", type_name, is_array ? "[]" : "");
     setText(0, type_buf);
     setText(1, _name);
 

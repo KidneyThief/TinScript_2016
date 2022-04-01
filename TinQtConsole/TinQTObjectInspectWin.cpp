@@ -135,7 +135,7 @@ void CObjectInspectEntry::OnReturnPressed()
 {
     // -- create the command, by inserting the slider value as the first parameter
     char command_buf[TinScript::kMaxTokenLength];
-    sprintf_s(command_buf, "%d.%s = `%s`;", mParent->GetObjectID(), mName, mValue->GetStringValue());
+    snprintf(command_buf, sizeof(command_buf), "%d.%s = `%s`;", mParent->GetObjectID(), mName, mValue->GetStringValue());
 
     bool8 is_connected = CConsoleWindow::GetInstance()->IsConnected();
     if (is_connected)

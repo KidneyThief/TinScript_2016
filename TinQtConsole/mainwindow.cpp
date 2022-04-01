@@ -314,7 +314,7 @@ public:
     void SetObjectIdentifier(const char* object_identifier)
     {
         char title_buf[TinScript::kMaxNameLength];
-        sprintf_s(title_buf, "Object Inspect: ");
+        snprintf(title_buf, sizeof(title_buf), "Object Inspect: ");
         TinScript::SafeStrcpy(&title_buf[strlen(title_buf)], TinScript::kMaxNameLength - strlen(title_buf),
                               object_identifier,
                               TinScript::kMaxNameLength - strlen(title_buf));
@@ -493,7 +493,7 @@ void MainWindow::menuCreateObjectInspector()
     if (object_id > 0)
     {
         char object_id_buf[32];
-        sprintf_s(object_id_buf, "%d", object_id);
+        snprintf(object_id_buf, sizeof(object_id_buf), "%d", object_id);
         dialog.SetObjectID(object_id_buf);
     }
 
@@ -512,7 +512,7 @@ void MainWindow::menuCreateObjectInspector()
             CConsoleWindow::GetInstance()->GetDebugObjectBrowserWin()->GetObjectIdentifier(object_id);
 
         char object_buf[TinScript::kMaxNameLength];
-        sprintf_s(object_buf, "Object: %s", object_identifier);
+        snprintf(object_buf, sizeof(object_buf), "Object: %s", object_identifier);
 
         CDebugObjectInspectWin* object_inspect_win =
             CConsoleWindow::GetInstance()->FindOrCreateObjectInspectWin(object_id, object_buf);
@@ -686,7 +686,7 @@ void MainWindow::AddScriptCompileAction(const char* fullPath, bool has_error)
     connect(action, SIGNAL(triggered()), actionWidget, SLOT(menuCompileScriptAction()));
 
     char msg_buf[TinScript::kMaxTokenLength];
-    sprintf_s(msg_buf, sizeof(msg_buf), "Source %s: %s", has_error ? "error" : "modified", fullPath);
+    snprintf(msg_buf, sizeof(msg_buf), "Source %s: %s", has_error ? "error" : "modified", fullPath);
     CConsoleWindow::GetInstance()->SetStatusMessage(msg_buf, Qt::red);
 }
 

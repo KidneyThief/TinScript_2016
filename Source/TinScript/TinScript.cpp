@@ -654,7 +654,7 @@ const char* UnHash(uint32 hash)
         static char buffers[8][20];
         static int32 bufindex = -1;
         bufindex = (bufindex + 1) % 8;
-        sprintf_s(buffers[bufindex], 20, "<hash:0x%08x>", hash);
+        snprintf(buffers[bufindex], 20, "<hash:0x%08x>", hash);
         return buffers[bufindex];
     }
     else
@@ -725,7 +725,7 @@ void SaveStringTable()
         char tempbuf[kMaxTokenLength];
 
         // -- write the hash
-        sprintf_s(tempbuf, kMaxTokenLength, "0x%08x: ", ste_hash);
+        snprintf(tempbuf, kMaxTokenLength, "0x%08x: ", ste_hash);
         int32 count = (int32)fwrite(tempbuf, sizeof(char), 12, filehandle);
         if (count != 12)
         {
@@ -735,7 +735,7 @@ void SaveStringTable()
         }
 
         // -- write the string length
-        sprintf_s(tempbuf, kMaxTokenLength, "%04d: ", length);
+        snprintf(tempbuf, kMaxTokenLength, "%04d: ", length);
         count = (int32)fwrite(tempbuf, sizeof(char), 6, filehandle);
         if (count != 6)
         {
@@ -2034,7 +2034,7 @@ void CScriptContext::AddVariableWatch(int32 request_id, const char* variable_wat
 			// -- type, name, and value string, and array size
 			found_variable.mType = TYPE_object;
 			SafeStrcpy(found_variable.mVarName, sizeof(found_variable.mVarName), UnHash(oe->GetNameHash()), kMaxNameLength);
-			sprintf_s(found_variable.mValue, "%d", object_id);
+            snprintf(found_variable.mValue, sizeof(found_variable.mValue), "%d", object_id);
             found_variable.mArraySize = 1;
 
 			found_variable.mVarHash = oe->GetNameHash();
@@ -2252,7 +2252,7 @@ bool8 CScriptContext::InitWatchExpression(CDebuggerWatchExpression& debugger_wat
 
     // -- create the name to uniquely identify both the codeblock and the associated function
     char watch_name[kMaxNameLength];
-    sprintf_s(watch_name, "_%s_expr_%d_", use_trace ? "trace" : debugger_watch.mIsConditional ? "cond" : "watch", watch_id);
+    snprintf(watch_name, sizeof(watch_name), "_%s_expr_%d_", use_trace ? "trace" : debugger_watch.mIsConditional ? "cond" : "watch", watch_id);
     uint32 watch_name_hash = Hash(watch_name);
 
 	// create the code block and the starting root node
@@ -2306,7 +2306,7 @@ bool8 CScriptContext::InitWatchExpression(CDebuggerWatchExpression& debugger_wat
     if (use_trace)
         SafeStrcpy(expr_result, sizeof(expr_result), expression, kMaxTokenLength);
     else
-        sprintf_s(expr_result, "return (%s);", expression);
+        snprintf(expr_result, sizeof(expr_result), "return (%s);", expression);
 
     // -- now we've got a temporary function with exactly the same set of local variables
     // -- see if we can parse the expression
@@ -2540,7 +2540,7 @@ bool8 CScriptContext::EvaluateWatchExpression(const char* expression)
 
     // -- if this is a conditional, then we want to see if the value of it is true/false
     char expr_result[kMaxTokenLength];
-    sprintf_s(expr_result, "return (%s);", expression);
+    snprintf(expr_result, sizeof(expr_result), "return (%s);", expression);
 
     // -- now we've got a temporary function with exactly the same set of local variables
     // -- see if we can parse the expression
@@ -2681,7 +2681,7 @@ int32 CScriptContext::GetExecutionCallStack(tIdentifierString* _obj_identifier_l
 		// -- object name/ID
 		if (oeList[stack_index] != nullptr)
 		{
-			sprintf_s(_obj_identifier_list[stack_index].Text, tIdentifierString::Length, "[%d] %s", oeList[stack_index]->GetID(),
+            snprintf(_obj_identifier_list[stack_index].Text, tIdentifierString::Length, "[%d] %s", oeList[stack_index]->GetID(),
 					  (oeList[stack_index]->GetNameHash() != 0 ? TinScript::UnHash(oeList[stack_index]->GetNameHash()) : ""));
 		}
 		else
@@ -2959,7 +2959,7 @@ void CScriptContext::DebuggerVarWatchRemove(int32 request_id)
 
     // -- notify the debugger we've completed sending the list of objects
     char id_buf[8];
-    sprintf_s(id_buf, sizeof(id_buf), "%d", request_id);
+    snprintf(id_buf, sizeof(id_buf), "%d", request_id);
     SocketManager::SendExec(Hash("DebuggerVarWatchRemove"), id_buf);
 }
 
@@ -3134,18 +3134,18 @@ void CScriptContext::DebuggerWatchFormatValue(CDebuggerWatchVarEntry* watch_var_
                 uint32 bytes_written = 0;
                 if (oe->GetNameHash() != 0 && oe->GetNamespace() != nullptr)
                 {
-                    bytes_written = sprintf_s(watch_var_entry->mValue, sizeof(watch_var_entry->mValue), "%d: %s [%s]",
+                    bytes_written = snprintf(watch_var_entry->mValue, sizeof(watch_var_entry->mValue), "%d: %s [%s]",
                                               oe->GetID(), UnHash(oe->GetNameHash()),
                                               UnHash(oe->GetNamespace()->GetHash()));
                 }
                 else if (oe->GetNamespace() != nullptr)
                 {
-                    bytes_written = sprintf_s(watch_var_entry->mValue, sizeof(watch_var_entry->mValue), "%d: [%s]",
+                    bytes_written = snprintf(watch_var_entry->mValue, sizeof(watch_var_entry->mValue), "%d: [%s]",
                                               oe->GetID(), UnHash(oe->GetNamespace()->GetHash()));
                 }
                 else
                 {
-                    bytes_written = sprintf_s(watch_var_entry->mValue, sizeof(watch_var_entry->mValue), "%d", oe->GetID());
+                    bytes_written = snprintf(watch_var_entry->mValue, sizeof(watch_var_entry->mValue), "%d", oe->GetID());
                 }
 
                 // -- make sure we terminate
@@ -3162,7 +3162,7 @@ void CScriptContext::DebuggerWatchFormatValue(CDebuggerWatchVarEntry* watch_var_
             const char* hashed_string = GetStringTable()->FindString(string_hash);
             if (hashed_string != nullptr && hashed_string[0] != '\0')
             {
-                uint32 bytes_written = sprintf_s(watch_var_entry->mValue, sizeof(watch_var_entry->mValue),
+                uint32 bytes_written = snprintf(watch_var_entry->mValue, sizeof(watch_var_entry->mValue),
                                                  "%d  [0x%x `%s`]", string_hash, string_hash, hashed_string);
                 // -- make sure we terminate
                 if (bytes_written >= kMaxNameLength)
@@ -3171,7 +3171,7 @@ void CScriptContext::DebuggerWatchFormatValue(CDebuggerWatchVarEntry* watch_var_
             }
             else
             {
-                sprintf_s(watch_var_entry->mValue, sizeof(watch_var_entry->mValue), "%d", string_hash);
+                snprintf(watch_var_entry->mValue, sizeof(watch_var_entry->mValue), "%d", string_hash);
             }
         }
         break;
@@ -4003,9 +4003,9 @@ void CScriptContext::DebuggerNotifyCreateObject(CObjectEntry* oe)
     {
         // -- if this is registered class, highlight it
         if (ns->IsRegisteredClass())
-            sprintf_s(derivation_ptr, remaining, "%s[%s]", !first ? "-->" : " ", UnHash(ns->GetHash()));
+            snprintf(derivation_ptr, remaining, "%s[%s]", !first ? "-->" : " ", UnHash(ns->GetHash()));
         else
-            sprintf_s(derivation_ptr, remaining, "%s%s", !first ? "-->" : " ", UnHash(ns->GetHash()));
+            snprintf(derivation_ptr, remaining, "%s%s", !first ? "-->" : " ", UnHash(ns->GetHash()));
 
         // -- update the pointer
         int32 length = (int32)strlen(derivation_ptr);
@@ -5290,12 +5290,12 @@ void DebuggerRequestTabComplete(int32 request_id, const char* partial_input, int
         {
             // -- if we have parameters (more than 1, since the first parameter is always the return value)
             if (fe->GetContext()->GetParameterCount() > 1)
-                sprintf_s(&prototype_string[tab_string_offset], TinScript::kMaxTokenLength - tab_string_offset, "%s(", tab_result);
+                snprintf(&prototype_string[tab_string_offset], TinScript::kMaxTokenLength - tab_string_offset, "%s(", tab_result);
             else
-                sprintf_s(&prototype_string[tab_string_offset], TinScript::kMaxTokenLength - tab_string_offset, "%s()", tab_result);
+                snprintf(&prototype_string[tab_string_offset], TinScript::kMaxTokenLength - tab_string_offset, "%s()", tab_result);
         }
         else
-            sprintf_s(&prototype_string[tab_string_offset], TinScript::kMaxTokenLength - tab_string_offset, "%s", tab_result);
+            snprintf(&prototype_string[tab_string_offset], TinScript::kMaxTokenLength - tab_string_offset, "%s", tab_result);
 
         // -- send the tab completed string back to the debugger
         SocketManager::SendCommandf("DebuggerNotifyTabComplete(%d, `%s`, %d);", request_id, prototype_string, tab_complete_index);
@@ -5318,7 +5318,7 @@ void DebuggerRequestStringUnhash(uint32 string_hash)
 
     // -- notify the debugger of the result
     char hash_as_string[16];
-    sprintf_s(hash_as_string, "%d", string_hash);
+    snprintf(hash_as_string, sizeof(hash_as_string), "%d", string_hash);
     SocketManager::SendExec(Hash("DebuggerNotifyStringUnhash"), hash_as_string, string_value);
 }
 

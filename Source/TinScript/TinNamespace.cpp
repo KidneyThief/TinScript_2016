@@ -1192,14 +1192,14 @@ const char* CScriptContext::ExportFormattedValue(eVarType type, void* addr)
     // -- object IDs, for export, are actually object variables, who's name contains the ID at the time of export
     else if (type == TYPE_object)
     {
-        sprintf_s(formatbuf, kMaxTokenLength, "obj_%s", convertbuf);
+        snprintf(formatbuf, kMaxTokenLength, "obj_%s", convertbuf);
         return (formatbuf);
     }
 
     // -- everything else is enquoted
     else
     {
-        sprintf_s(formatbuf, kMaxTokenLength, "`%s`", convertbuf);
+        snprintf(formatbuf, kMaxTokenLength, "`%s`", convertbuf);
         return (formatbuf);
     }
 }
@@ -1470,7 +1470,7 @@ bool8 CScriptContext::SaveObjectTree(uint32 object_id, const char* savefilename)
     int32 length = (int32)strlen(savefilename);
     if (length < 3 || strcmp(&savefilename[length - 3], ".ts") != 0)
     {
-        sprintf_s(file_name_buffer, kMaxNameLength, "%s.ts", savefilename);
+        snprintf(file_name_buffer, kMaxNameLength, "%s.ts", savefilename);
         savefilename = file_name_buffer;
     }
 
