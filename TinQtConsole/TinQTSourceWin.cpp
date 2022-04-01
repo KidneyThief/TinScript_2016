@@ -237,7 +237,7 @@ void CDebugSourceWin::NotifyCurrentDir(const char* cwd, const char* exe_dir)
     }
 
     // -- copy the cwd
-    strcpy_s(mDebuggerDir, cwd);
+    snprintf(mDebuggerDir, sizeof(mDebuggerDir), "%s", cwd);
 
     // -- ensure the directory ends in a '/'
     if (mDebuggerDir[length - 1] != '/' && mDebuggerDir[length - 1] != '\\')
@@ -514,7 +514,7 @@ void CDebugSourceWin::FindInFile(const char* search_string)
     }
     else
     {
-        strcpy_s(result_msg, "not found");
+        snprintf(result_msg, sizeof(result_msg), "%s", "not found");
         CConsoleWindow::GetInstance()->GetFindResult()->setText("not found");
     }
 

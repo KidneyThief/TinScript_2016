@@ -1494,7 +1494,7 @@ bool8 CScriptContext::SaveObjectTree(uint32 object_id, const char* savefilename)
 
     // -- we're going to pass a buffer of spaces around, to create the appearance of the hierarchy through indenting
     char indent_buf[kMaxTokenLength];
-    strcpy_s(indent_buf, "    ");
+    snprintf(indent_buf, sizeof(indent_buf), "%s", "    ");
 
     // -- write out the tree beginning with our oe
     if (oe)

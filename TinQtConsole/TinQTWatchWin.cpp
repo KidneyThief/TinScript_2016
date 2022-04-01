@@ -107,7 +107,7 @@ void CWatchEntry::UpdateValue(const char* new_value)
         new_value = "<invalid>";
     }
 
-    strcpy_s(mDebuggerEntry.mValue, new_value);
+    snprintf(mDebuggerEntry.mValue, sizeof(mDebuggerEntry.mValue), "%s", new_value);
     setText(2, mDebuggerEntry.mValue);
 }
 
@@ -548,7 +548,7 @@ bool CDebugWatchWin::GetSelectedWatchExpression(int32& out_use_watch_id, char* o
             snprintf(out_watch_string, max_expr_length, cur_item->mDebuggerEntry.mVarName);
 
         // -- set the current value
-        strcpy_s(out_value_string, max_value_length, cur_item->mDebuggerEntry.mValue);
+        snprintf(out_value_string, max_value_length, "%s", cur_item->mDebuggerEntry.mValue);
 
         return true;
     }
@@ -574,16 +574,17 @@ void CDebugWatchWin::CreateSelectedWatch()
         if (cur_item->mDebuggerEntry.mObjectID > 0)
             sprintf_s(watch_string, "%d.%s", cur_item->mDebuggerEntry.mObjectID, cur_item->mDebuggerEntry.mVarName);
         else
-            strcpy_s(watch_string, cur_item->mDebuggerEntry.mVarName);
+            snprintf(watch_string, sizeof(watch_string), "%s", cur_item->mDebuggerEntry.mVarName);
 
         // -- set the current value
-        strcpy_s(cur_value, cur_item->mDebuggerEntry.mValue);
+        snprintf(cur_value, sizeof(cur_value), "%s", cur_item->mDebuggerEntry.mValue);
 
         CConsoleWindow::GetInstance()->GetMainWindow()->CreateVariableWatch(cur_item->mDebuggerEntry.mWatchRequestID,
                                                                             watch_string, cur_value);
     }
 }
 */
+
 // ====================================================================================================================
 // GetSelectedObjectID(): Used for creating an ObjectInspector, if the selected enty is a variable of type object.
 // ====================================================================================================================

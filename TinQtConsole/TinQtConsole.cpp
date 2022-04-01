@@ -801,7 +801,7 @@ void CConsoleWindow::NotifyAssertTriggered(const char* assert_msg, uint32 codebl
     // -- set the bool
     mAssertTriggered = true;
 
-    strcpy_s(mAssertMessage, assert_msg);
+    snprintf(mAssertMessage, sizeof(mAssertMessage), "%s", assert_msg);
     mBreakpointCodeblockHash = codeblock_hash;
     mBreakpointLinenumber = line_number;
 
@@ -1769,7 +1769,7 @@ void CConsoleInput::OnReturnPressed()
     {
         mHistoryFull = mHistoryFull || mHistoryLastIndex == kMaxHistory - 1;
         mHistoryLastIndex = (mHistoryLastIndex + 1) % kMaxHistory;
-        strcpy_s(mHistory[mHistoryLastIndex].text, TinScript::kMaxTokenLength, input_text);
+        snprintf(mHistory[mHistoryLastIndex].text, TinScript::kMaxTokenLength, "%s", input_text);
     }
     mHistoryIndex = -1;
 
@@ -2467,14 +2467,14 @@ void CConsoleOutput::HandlePacketWatchVarEntry(int32* dataPtr)
     int32 name_str_length = *dataPtr++;
 
     // -- copy the name string
-    strcpy_s(watch_var_entry.mVarName, (const char*)dataPtr);
+    snprintf(watch_var_entry.mVarName, sizeof(watch_var_entry.mVarName), "%s", (const char*)dataPtr);
     dataPtr += (name_str_length / 4);
 
     // -- value string length
     int32 value_str_length = *dataPtr++;
 
     // -- copy the value string
-    strcpy_s(watch_var_entry.mValue, (const char*)dataPtr);
+    snprintf(watch_var_entry.mValue, sizeof(watch_var_entry.mValue), "%s", (const char*)dataPtr);
     dataPtr += (value_str_length / 4);
 
     // -- cached var name hash

@@ -423,7 +423,7 @@ void UnitTest_CallScriptedMethodExecf()
     }
 
     // -- print the result to a testable string
-    strcpy_s(CUnitTest::gCodeResult, result);
+    snprintf(CUnitTest::gCodeResult, sizeof(CUnitTest::gCodeResult), "%s", result);
 
     // -- unregister the object
     TinScript::GetContext()->UnregisterObject(test_obj);
@@ -452,7 +452,7 @@ void UnitTest_CallScriptedMethodHashed()
     }
 
     // -- print the result to a testable string
-    strcpy_s(CUnitTest::gCodeResult,result);
+    snprintf(CUnitTest::gCodeResult, sizeof(CUnitTest::gCodeResult), "%s", result);
 
     // -- unregister the object
     TinScript::GetContext()->UnregisterObject(test_obj);
@@ -481,7 +481,7 @@ void UnitTest_CallScriptedMethodObjectArg()
     }
 
     // -- print the result to a testable string
-    strcpy_s(CUnitTest::gCodeResult,result);
+    snprintf(CUnitTest::gCodeResult, sizeof(CUnitTest::gCodeResult), "%s", result);
 
     // -- unregister the object
     TinScript::GetContext()->UnregisterObject(test_obj);
@@ -510,7 +510,7 @@ void UnitTest_CallScriptedMethodObjectAddrArg()
     }
 
     // -- print the result to a testable string
-    strcpy_s(CUnitTest::gCodeResult,result);
+    snprintf(CUnitTest::gCodeResult, sizeof(CUnitTest::gCodeResult), "%s", result);
 
     // -- unregister the object
     TinScript::GetContext()->UnregisterObject(test_obj);

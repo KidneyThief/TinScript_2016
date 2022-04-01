@@ -852,7 +852,7 @@ void CDebugFunctionAssistWin::OnButtonCopyToConsolePressed()
         if (i != 1)
             snprintf(buf_ptr, length_remaining, ", %s", type_name);
         else
-            strcpy_s(buf_ptr, length_remaining, type_name);
+            snprintf(buf_ptr, length_remaining, "%s", type_name);
 
         // -- update the buf pointer,and the length remaining
         length = strlen(buf_ptr);
@@ -861,7 +861,7 @@ void CDebugFunctionAssistWin::OnButtonCopyToConsolePressed()
     }
 
     // -- complete the command
-    strcpy_s(buf_ptr,length_remaining,");");
+    snprintf(buf_ptr, length_remaining,"%s", ");");
 
     // -- send the command
     CConsoleWindow::GetInstance()->GetInput()->SetText(buf,cursor_pos);

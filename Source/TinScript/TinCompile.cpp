@@ -413,7 +413,7 @@ bool8 CCompileTreeNode::OutputIndentToBuffer(int32 indent, char*& out_buffer, in
     // -- prepend the indent
     for (int i = 0; i < indent; ++i)
     {
-        strcpy_s(out_buffer, max_size, "    ");
+        snprintf(out_buffer, max_size, "%s", "    ");
         out_buffer += strlen(indent_buffer);
         max_size -= strlen(indent_buffer);
     }

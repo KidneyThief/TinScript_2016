@@ -581,7 +581,7 @@ int32 CFunctionCallStack::DebuggerGetStackVarEntries(CScriptContext* script_cont
 	// -- copy the var type, name and value
 	cur_entry->mType = funcReturnType;
     cur_entry->mArraySize = 1;
-	strcpy_s(cur_entry->mVarName, "__return");
+	snprintf(cur_entry->mVarName, sizeof(cur_entry->mVarName), "%s", "__return");
 
     // -- copy the value, as a string (to a max length)
 	if (funcReturnType >= FIRST_VALID_TYPE)
@@ -641,7 +641,7 @@ int32 CFunctionCallStack::DebuggerGetStackVarEntries(CScriptContext* script_cont
                 // -- copy the var type, name and value
                 cur_entry->mType = TYPE_object;
                 cur_entry->mArraySize = 1;
-                strcpy_s(cur_entry->mVarName, "self");
+                snprintf(cur_entry->mVarName, sizeof(cur_entry->mVarName), "%s", "self");
                 snprintf(cur_entry->mValue, sizeof(cur_entry->mValue), "%d", cur_entry->mFunctionObjectID);
 
                 // -- fill in the cached members
@@ -783,7 +783,7 @@ bool CFunctionCallStack::FindExecutionStackVar(uint32 var_hash, CDebuggerWatchVa
 
 		// -- copy the var type, name and value
 		watch_entry.mType = TYPE_object;
-		strcpy_s(watch_entry.mVarName, "self");
+		snprintf(watch_entry.mVarName, sizeof(watch_entry.mVarName), "%s", "self");
 		snprintf(watch_entry.mValue, sizeof(watch_entry.mValue), "%d", func_call_entry->oe_id);
 
 		// -- copy the var type

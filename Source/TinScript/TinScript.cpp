@@ -4274,7 +4274,7 @@ int32 ParseIdentifierStack(const char* input_str, char identifierStack[kMaxNameL
     // -- copy the string
     char input_buf[kMaxTokenLength];
     const char* input_buf_start = input_buf;
-    strcpy_s(input_buf, input_str);
+    snprintf(input_buf, sizeof(input_buf), "%s", input_str);
     int identifier_count = 0;
     last_token_offset = -1;
 
@@ -4293,7 +4293,7 @@ int32 ParseIdentifierStack(const char* input_str, char identifierStack[kMaxNameL
             break;
 
         // -- copy the identifier to the stack
-        strcpy_s(identifierStack[identifier_count++], kMaxNameLength, input_ptr);
+        snprintf(identifierStack[identifier_count++], kMaxNameLength, "%s", input_ptr);
 
         // -- set the last token offset
         if (last_token_offset < 0)
@@ -4319,13 +4319,13 @@ int32 ParseIdentifierStack(const char* input_str, char identifierStack[kMaxNameL
             if (kPointerDiffUInt32(input_ptr, input_buf) >= (uint32)create_length &&
                 !strncmp(input_ptr - create_length, "create", create_length + 1))
             {
-                strcpy_s(identifierStack[identifier_count++], kMaxNameLength, "create");
+                snprintf(identifierStack[identifier_count++], kMaxNameLength, "%s", "create");
                 break;
             }
             else if (kPointerDiffUInt32(input_ptr, input_buf) >= (uint32)createlocal_length &&
                      !strncmp(input_ptr - createlocal_length, "create_local", createlocal_length + 1))
             {
-                strcpy_s(identifierStack[identifier_count++], kMaxNameLength, "create_local");
+                snprintf(identifierStack[identifier_count++], kMaxNameLength, "%s", "create_local");
                 break;
             }
         }
