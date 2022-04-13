@@ -61,7 +61,7 @@ void Terminate();
 bool IsListening();
 bool Listen();
 bool Connect(const char* ipAddress, bool is_auto_connect = false);
-void Disconnect();
+void Disconnect(bool is_shutting_down);
 bool IsConnected();
 bool SendCommand(const char* command);
 bool SendCommandf(const char* fmt, ...);
@@ -230,12 +230,15 @@ class CSocket
         bool IsListening();
         bool Listen();
 
+        void SetShuttingDown() { mIsShuttingDown = true; }
+        bool IsShuttingDown() const { return mIsShuttingDown;  }
+
         // -- request a connection
         bool Connect(const char* ipAddress, bool is_auto_connect);
 
         // -- disconnect methods
-        void RequestDisconnect();
-        void Disconnect();
+        void RequestDisconnect(bool is_shutting_down);
+        void Disconnect(bool is_shutting_down);
 
         // -- handle the socket traffic
         bool ProcessSendPackets();
@@ -272,6 +275,7 @@ class CSocket
     protected:
         bool mListen;
         bool mConnected;
+        bool mIsShuttingDown = false;
         uint32* mListenSocket;
         uint32* mConnectSocket;
 

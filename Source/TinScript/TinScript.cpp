@@ -250,6 +250,9 @@ void CScriptContext::Destroy()
 {
     assert(gThreadContext != nullptr);
 
+    // -- atm, this only sets a bool and prevents thread commands from processing
+    gThreadContext->ThreadShutdown();
+
     // -- shutdown the memory tracker
     CMemoryTracker::Shutdown();
 
@@ -4727,7 +4730,7 @@ bool CScriptContext::TabComplete(const char* partial_input, int32& ref_tab_compl
 bool8 CScriptContext::AddThreadCommand(const char* command)
 {
     // -- sanity check
-    if (!command || !command[0])
+    if (!command || !command[0] || IsShuttingDown())
         return (true);
 
     // -- we need to wrap access to the command buffer in a thread mutex, to prevent simultaneous access
@@ -4767,6 +4770,10 @@ bool8 CScriptContext::AddThreadCommand(const char* command)
 // ====================================================================================================================
 void CScriptContext::ProcessThreadCommands()
 {
+    // -- if we're shutting down, ensure we don't process any commands
+    if (mIsShuttingDown)
+        return;
+
     // -- if there's nothing to process, we're done
     if (mThreadBufPtr == NULL && m_socketCommandList == nullptr)
         return;
@@ -4791,6 +4798,9 @@ void CScriptContext::ProcessThreadCommands()
     // -- the current queue of socket commands (created directly) need to be inserted into the scheduler as well
     while (m_socketCommandList != nullptr)
     {
+        if (mIsShuttingDown)
+            break;
+
         CScheduler::CCommand* socket_command = m_socketCommandList;
         m_socketCommandList = socket_command->mNext;
 
@@ -4969,6 +4979,14 @@ void CScriptContext::QueueThreadExec()
 
     // -- unlock the thread
     mThreadLock.Unlock();
+}
+
+// ====================================================================================================================
+// ThreadShutdown():  Cleanup any threadding issues- mark the context so we don't try to process commands, etc...
+// ====================================================================================================================
+void CScriptContext::ThreadShutdown()
+{
+    mIsShuttingDown = true;
 }
 
 // -- Debugger Registration -------------------------------------------------------------------------------------------

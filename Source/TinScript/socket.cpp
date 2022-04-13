@@ -120,9 +120,10 @@ void Initialize()
 DWORD WINAPI ThreadUpdate(void* script_context)
 {
     // -- see if we need to create the socket
+    TinScript::CScriptContext* ts_context = (TinScript::CScriptContext*)(script_context);
     if (mThreadSocket == NULL)
     {
-        mThreadSocket = new CSocket((TinScript::CScriptContext*)(script_context));
+        mThreadSocket = new CSocket(ts_context);
 
         // -- initialize the WSAData
         int error = WSAStartup(SCK_VERSION2, &mWSAdata);
@@ -147,7 +148,7 @@ DWORD WINAPI ThreadUpdate(void* script_context)
     while (true)
     {
 		// if our thread socket is deleted (hard shutdown??), we're done
-		if (mThreadSocket == nullptr)
+		if (mThreadSocket == nullptr || ts_context->IsShuttingDown())
 		{
 			break;
 		}
@@ -177,7 +178,7 @@ DWORD WINAPI ThreadUpdate(void* script_context)
 void Terminate()
 {
     // -- first disconnect the socket
-    Disconnect();
+    Disconnect(true);
 
     // -- kill the thread
     TerminateThread(mThreadHandle, 0);
@@ -283,14 +284,14 @@ bool IsConnected()
 // ====================================================================================================================
 // Disconnect():  disconnect a winsock connection
 // ====================================================================================================================
-void Disconnect()
+void Disconnect(bool is_shutting_down)
 {
     // -- sanity check
-    if (!mThreadSocket)
+    if (!mThreadSocket || mThreadSocket->IsShuttingDown())
         return;
 
     // -- call disconnect
-    mThreadSocket->RequestDisconnect();
+    mThreadSocket->RequestDisconnect(is_shutting_down);
     mThreadSocket->SetListen(false);
 }
 
@@ -601,6 +602,7 @@ void DataQueue::Clear()
 CSocket::CSocket(TinScript::CScriptContext* script_context)
     : mListen(false)
     , mConnected(false)
+    , mIsShuttingDown(false)
     , mListenSocket(nullptr)
     , mConnectSocket(nullptr)
     , mScriptContext(script_context)
@@ -822,9 +824,9 @@ bool CSocket::Connect(const char* ipAddress, bool is_auto_connect)
 // ====================================================================================================================
 // RequestDisconnect():  Disconnect the socket from our end
 // ====================================================================================================================
-void CSocket::RequestDisconnect()
+void CSocket::RequestDisconnect(bool is_shutting_down)
 {
-    // -- this must be threadsafe, so as not to stomp the current Update thread
+    // -- perform an update, to flush the queues - especially to send the disconnect
     mThreadLock.Lock();
 
     // -- enqueue a disconnect packet to send to our partner
@@ -835,20 +837,28 @@ void CSocket::RequestDisconnect()
     // -- unlock the thread
     mThreadLock.Unlock();
 
-    // -- perform an update, to flush the queues
+    // -- set the bool - update will only send (ideally, just the above disconnect packet)
+    if (is_shutting_down)
+    {
+        SetShuttingDown();
+    }
+
     Update();
 
     // -- and finally disconnect
-    Disconnect();
+    Disconnect(is_shutting_down);
 }
 
 // ====================================================================================================================
 // Disconnect():  Disconnect the socket, either from our connected partner, or from an error
 // ====================================================================================================================
-void CSocket::Disconnect()
+void CSocket::Disconnect(bool is_shutting_down)
 {
     // -- kill the connection (thread safe)
-    mThreadLock.Lock();
+    if (!is_shutting_down)
+    {
+        mThreadLock.Lock();
+    }
 
     // -- close the listening socket as well
     if (mListenSocket != nullptr)
@@ -865,15 +875,21 @@ void CSocket::Disconnect()
     mConnected = false;
 
     // -- notify TinScript, in case this connection was from a debugger
-    ScriptCommand("Print('CSocket: Disconnected.');");
-    ScriptCommand("DebuggerSetConnected(false);");
+    if (!is_shutting_down)
+    {
+        ScriptCommand("Print('CSocket: Disconnected.');");
+        ScriptCommand("DebuggerSetConnected(false);");
+    }
 
     // -- clear the queues
     mSendQueue.Clear();
     mRecvQueue.Clear();
 
     // -- unlock
-    mThreadLock.Unlock();
+    if (!is_shutting_down)
+    {
+        mThreadLock.Unlock();
+    }
 }
 
 // ====================================================================================================================
@@ -881,15 +897,14 @@ void CSocket::Disconnect()
 // ====================================================================================================================
 bool CSocket::ProcessSendPackets()
 {
-    // -- this must be threadsafe
-    mThreadLock.Lock();
-
     // -- if we're not connected, return (successfully)
     if (!mConnected)
     {
-        mThreadLock.Unlock();
         return (true);
     }
+
+    // -- this must be threadsafe
+    mThreadLock.Lock();
 
     // -- check the heartbeat timer
     if (mSendHeartbeatTimer <= 0)
@@ -982,7 +997,7 @@ bool CSocket::ProcessSendPackets()
         // -- notify the script context
         ScriptCommand("Print('Error - CSocket::Send(): failed with error: %d\n');", error);
         mThreadLock.Unlock();
-        Disconnect();
+        Disconnect(false);
         return (true);
     }
 
@@ -997,15 +1012,14 @@ bool CSocket::ProcessSendPackets()
 // ====================================================================================================================
 bool CSocket::ReceivePackets()
 {
-    // -- in an update, we want to lock any access to the send and recv queues, from outside this thread
-    mThreadLock.Lock();
-
     // -- if we're not connected, we're done
     if (!mConnected)
     {
-        mThreadLock.Unlock();
         return (true);
     }
+
+    // -- in an update, we want to lock any access to the send and recv queues, from outside this thread
+    mThreadLock.Lock();
 
     // -- decrement the heartbeat timers
     mSendHeartbeatTimer -= k_ThreadUpdateTimeMS;
@@ -1027,7 +1041,7 @@ bool CSocket::ReceivePackets()
             // -- notify the script context
             ScriptCommand("Print('CSocket: Recv error %d\n');", error);
             mThreadLock.Unlock();
-            Disconnect();
+            Disconnect(false);
             return (true);
         }
 
@@ -1042,7 +1056,7 @@ bool CSocket::ReceivePackets()
                 // -- notify the script context
                 ScriptCommand("Print('CSocket: Unable to ProcessRecvData()\n');");
                 mThreadLock.Unlock();
-                Disconnect();
+                Disconnect(false);
                 return (true);
             }
         }
@@ -1055,7 +1069,7 @@ bool CSocket::ReceivePackets()
             {
                 ScriptCommand("Print('CSocket: Heartbeat timeout\n');");
                 mThreadLock.Unlock();
-                Disconnect();
+                Disconnect(false);
             }
 
             break;
@@ -1073,15 +1087,14 @@ bool CSocket::ReceivePackets()
 // ====================================================================================================================
 bool CSocket::ProcessRecvPackets()
 {
-    // -- this must be threadsafe
-    mThreadLock.Lock();
-
     // -- if we're not connected, return (successfully)
     if (!mConnected)
     {
-        mThreadLock.Unlock();
         return (true);
     }
+
+    // -- this must be threadsafe
+    mThreadLock.Lock();
 
     // -- process our recv queue
     int packet_receive_count = 0;
@@ -1172,7 +1185,9 @@ bool CSocket::ProcessRecvPackets()
 
     // -- if we received a disconnect...
     if (receivedDisconnect)
-        Disconnect();
+    {
+        Disconnect(false);
+    }
 
     return (true);
 }
@@ -1298,11 +1313,15 @@ bool CSocket::SendPrintDataPacket(tDataPacket* dataPacket)
 // ====================================================================================================================
 bool CSocket::Update()
 {
-    // -- first, receive socket data
-    bool result = ReceivePackets();
-    if (!result)
+    bool result = true;
+
+    if (!IsShuttingDown())
     {
-        return (false);
+        result = ReceivePackets();
+        if (!result)
+        {
+            return (false);
+        }
     }
 
     // -- then send queued packets
@@ -1313,10 +1332,13 @@ bool CSocket::Update()
     }
 
     // -- finally, process the received packets
-    result = ProcessRecvPackets();
-    if (!result)
+    if (!IsShuttingDown())
     {
-        return (false);
+        result = ProcessRecvPackets();
+        if (!result)
+        {
+            return (false);
+        }
     }
 
     // -- success

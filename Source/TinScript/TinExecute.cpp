@@ -294,7 +294,7 @@ const CFunctionCallStack*
 
     stack_offset_from_bottom = 0;
     int32 current_stack_index = 0;
-    CFunctionCallStack* found = this;
+    CFunctionCallStack* found = nullptr;
     CFunctionCallStack* walk = this;
     while (walk != nullptr)
     {
@@ -986,6 +986,10 @@ const char* CFunctionCallStack::GetExecutingFunctionCallString(bool& isScriptFun
 // ====================================================================================================================
 bool CFunctionCallStack::IsExecutingByIndex(int32 stack_top_offset, bool& is_watch_expression) const
 {
+    // -- sanity check
+    if (stack_top_offset < 0)
+        return false;
+
     // -- init the return value
     is_watch_expression = false;
 

@@ -241,7 +241,6 @@ struct tIdentifierString
 	char Text[Length];
 };
 
-// -- CThreadMutex is only functional in Win32
 // ====================================================================================================================
 // class CThreadMutex:  Prevents access to namespace objects from different threads
 // ====================================================================================================================
@@ -619,6 +618,10 @@ class CScriptContext
         bool8 AddThreadExecParam(eVarType param_type, void* value);
         void QueueThreadExec();
 
+        // -- we may have to 
+        void ThreadShutdown();
+        bool IsShuttingDown() const { return mIsShuttingDown; }
+
     private:
         friend class CMemoryTracker;
         // -- use the static Create() method
@@ -631,6 +634,7 @@ class CScriptContext
 
         // -- in case we need to differentiate - likely only the main thread
         // -- will be permitted to write out the string dictionary
+        bool mIsShuttingDown = false;
         bool mIsMainThread;
         uint32 mObjectIDGenerator;
 

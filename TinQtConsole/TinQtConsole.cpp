@@ -669,7 +669,7 @@ void CConsoleWindow::NotifyOnDisconnect()
 void CConsoleWindow::NotifyOnClose()
 {
     // -- disconnect
-    SocketManager::Disconnect();
+    SocketManager::Disconnect(true);
 }
 
 // ====================================================================================================================
@@ -1727,7 +1727,7 @@ void CConsoleInput::OnButtonConnectPressed()
     // -- otherwise, disconnect
     else
     {
-        SocketManager::Disconnect();
+        SocketManager::Disconnect(false);
     }
 }
 
@@ -1748,7 +1748,7 @@ void CConsoleInput::OnConnectIPReturnPressed()
     // -- else disconnect
     else 
     {
-        SocketManager::Disconnect();
+        SocketManager::Disconnect(false);
     }
 }
 
