@@ -272,6 +272,12 @@ class CHashTable
 
 	void AddItem(T& _item, uint32 _hash)
 	{
+		// -- if the object is already contained within, we're done
+		if (Contains(_item, _hash))
+		{
+			return;
+		}
+
 		CHashTableEntry* hte = TinAlloc(ALLOC_HashTable, CHashTableEntry, _item, _hash);
 		int32 bucket = _hash % size;
 		hte->nextbucket = table[bucket];
@@ -310,6 +316,15 @@ class CHashTable
         // -- ensure the index is valid
         if (_index < 0)
             _index = 0;
+
+		// -- ensure the item isn't already at the index
+		if (FindItemByIndex(_index) == &_item)
+			return;
+
+		// -- remove the item, to ensure no duplicates
+		// note:  this can probably screw up iterators, if a person were to write a loop
+		// that keeps re-inserting the same item, while iterating through the list...
+		RemoveItem(&_item, _hash);
 
         // -- create the entry, add it to the table as per the hash, and clear the iterators
 		CHashTableEntry* hte = TinAlloc(ALLOC_HashTable, CHashTableEntry, _item, _hash);
@@ -353,6 +368,22 @@ class CHashTable
 
         // -- finally, increment the used count
         ++used;
+	}
+
+	bool Contains(T& _item, uint32 _hash)
+	{
+		int32 bucket = _hash % size;
+		CHashTableEntry* hte = table[bucket];
+		while (hte)
+		{
+			if (hte->hash == _hash && hte->item == &_item)
+				return (true);
+
+			hte = hte->nextbucket;
+		}
+
+		// -- not found
+		return false;
 	}
 
 	T* FindItem(uint32 _hash) const
@@ -485,7 +516,7 @@ class CHashTable
                 // -- remove the entry from the index table
                 RemoveRawEntryFromIndexTable(curentry);
 
-                // -- delete the entry, and decriment the count
+                // -- delete the entry, and decrement the count
 				TinFree(curentry);
                 --used;
 				return;
