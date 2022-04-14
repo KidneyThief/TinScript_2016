@@ -697,12 +697,9 @@ class CScriptContext
 
         // -- We may need to queue script commands from a remote connection
         // -- which requires a thread lock
-        // -- Thread commands are only supported in WIN32
-        #ifdef WIN32
-            CThreadMutex mThreadLock;
-            char mThreadExecBuffer[kThreadExecBufferSize];
-        #endif // WIN32
-            char* mThreadBufPtr;
+        CThreadMutex mThreadLock;
+        char mThreadExecBuffer[kThreadExecBufferSize];
+        char* mThreadBufPtr;
 };
 
 }  // TinScript
