@@ -1070,6 +1070,7 @@ bool CSocket::ReceivePackets()
                 ScriptCommand("Print('CSocket: Heartbeat timeout\n');");
                 mThreadLock.Unlock();
                 Disconnect(false);
+                return (false);
             }
 
             break;
