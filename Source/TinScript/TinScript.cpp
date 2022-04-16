@@ -1860,9 +1860,13 @@ void CScriptContext::InitWatchEntryFromVarEntry(CVariableEntry& ve, CObjectEntry
 			watch_entry.mVarObjectID = objectID;
 	}
 
-    // -- after the member_entry has all fields filled in, see if we can format
-    // the mValue to be more readable
-    DebuggerWatchFormatValue(&watch_entry, value_addr);
+    // -- set the original source ve
+    // note:  CDebuggerWatchVarEntry is expected to be a temporary variable, where the mSourceVarEntry is valid
+    // only for the frame its sending it's values to the debugger
+    watch_entry.mSourceVarEntry = &ve;
+
+    // -- we also set the source var addr - this is also a volatile address as per above
+    watch_entry.mSourceVarAddr = value_addr;
 }
 
 // ====================================================================================================================
@@ -1928,19 +1932,13 @@ void CScriptContext::AddVariableWatchExpression(int32 request_id, const char* va
                         watch_result.mVarObjectID = oe_0->GetID();
                 }
 
-                // -- after the member_entry has all fields filled in, see if we can format
-                // the mValue to be more readable
-                DebuggerWatchFormatValue(&watch_result, returnValue);
+                // -- we use the addr to format the value...  this is a volatile pointer and should not be
+                // referenced beyond sending the variable to the debugger
+                watch_result.mSourceVarAddr = returnValue;
 
 			    // -- send the response
                 valid_response = true;
 			    DebuggerSendWatchVariable(&watch_result);
-
-			    // -- if the result is an object, then send the complete object
-			    if (watch_result.mType == TYPE_object && watch_result.mVarObjectID > 0)
-			    {
-				    DebuggerSendObjectMembers(&watch_result, watch_result.mVarObjectID);
-			    }
             }
         }
     }
@@ -1993,8 +1991,10 @@ void CScriptContext::AddVariableWatch(int32 request_id, const char* variable_wat
 		uint32 var_hash = Hash(token.tokenptr, token.length);
 
 		// -- if this isn't a stack variable, see if it's a global variable
-		if (DebuggerFindStackVar(this, var_hash, found_variable, ve))
+		if (DebuggerFindStackVar(this, var_hash, found_variable))
 		{
+            ve = found_variable.mSourceVarEntry;
+
 			// -- if this refers to an object, find the object entry
 			if (found_variable.mType == TYPE_object)
 			{
@@ -2119,12 +2119,6 @@ void CScriptContext::AddVariableWatch(int32 request_id, const char* variable_wat
 			    // -- send the response
 			    DebuggerSendWatchVariable(&found_variable);
 
-			    // -- if the result is an object, then send the complete object
-			    if (found_variable.mType == TYPE_object)
-			    {
-				    DebuggerSendObjectMembers(&found_variable, found_variable.mVarObjectID);
-			    }
-
 			    // -- if we've been requested to break on write, set the flag on the variable entry
 			    if (ve && breakOnWrite)
 			    {
@@ -2172,11 +2166,11 @@ void CScriptContext::AddVariableWatch(int32 request_id, const char* variable_wat
                     found_variable.mWatchRequestID = request_id;
                     found_variable.mStackOffsetFromBottom = -1;
 
+                    // -- set the value address - this is a volatile address, not to be referenced
+                    // beyond sending the watch variable to the debugger
+                    found_variable.mSourceVarAddr = value_addr;
+
 			        DebuggerSendWatchVariable(&found_variable);
-			        if (found_variable.mType == TYPE_object)
-			        {
-				        DebuggerSendObjectMembers(&found_variable, found_variable.mVarObjectID);
-			        }
                 }
             }
 		}
@@ -2412,16 +2406,21 @@ bool8 CScriptContext::EvalWatchExpression(CDebuggerWatchExpression& debugger_wat
     while (cur_ve)
     {
 		// -- this doesn't involve the return parameter
-		// $$$TZA support hashtable and array parameters!
-		if (cur_ve != cur_function->GetContext()->GetParameter(0))
-		{
-			void* dest_stack_addr = execstack.GetStackVarAddr(0, cur_ve->GetStackOffset());
-			void* cur_stack_addr = debug_execstack->GetStackVarAddr(debug_stacktop, cur_ve->GetStackOffset());
-            if (dest_stack_addr != nullptr && cur_stack_addr != nullptr)
-            {
-                memcpy(dest_stack_addr, cur_stack_addr, kMaxTypeSize);
-            }
-		}
+		// $$$TZA support hashtable, array and object local vars
+        if (cur_ve == cur_function->GetContext()->GetParameter(0) ||
+            cur_ve->IsArray() ||cur_ve->GetType() == TYPE_hashtable || cur_ve->GetType() == TYPE_object)
+        {
+            cur_ve = cur_function->GetLocalVarTable()->Next();
+            continue;
+        }
+
+        // -- do a direct memcpy of the "value" of the variable to the local copy
+		void* dest_stack_addr = execstack.GetStackVarAddr(0, cur_ve->GetStackOffset());
+		void* cur_stack_addr = debug_execstack->GetStackVarAddr(debug_stacktop, cur_ve->GetStackOffset());
+        if (dest_stack_addr != nullptr && cur_stack_addr != nullptr)
+        {
+            memcpy(dest_stack_addr, cur_stack_addr, kMaxTypeSize);
+        }
 		cur_ve = cur_function->GetLocalVarTable()->Next();
     }
 
@@ -2451,16 +2450,22 @@ bool8 CScriptContext::EvalWatchExpression(CDebuggerWatchExpression& debugger_wat
         cur_ve = cur_function->GetLocalVarTable()->First();
         while (cur_ve)
         {
-			// -- this doesn't involve the return parameter
-			if (cur_ve != cur_function->GetContext()->GetParameter(0))
-			{
-				void* dest_stack_addr = execstack.GetStackVarAddr(0, cur_ve->GetStackOffset());
-				void* cur_stack_addr = debug_execstack->GetStackVarAddr(debug_stacktop, cur_ve->GetStackOffset());
-                if (dest_stack_addr != nullptr && cur_stack_addr != nullptr)
-                {
-                    memcpy(cur_stack_addr, dest_stack_addr, kMaxTypeSize);
-                }
-			}
+            // -- this doesn't involve the return parameter
+            // $$$TZA support hashtable, array and object local vars
+            if (cur_ve == cur_function->GetContext()->GetParameter(0) ||
+                cur_ve->IsArray() || cur_ve->GetType() == TYPE_hashtable || cur_ve->GetType() == TYPE_object)
+            {
+                cur_ve = cur_function->GetLocalVarTable()->Next();
+                continue;
+            }
+
+            // -- do a direct memcpy of the "value" of the variable back the original stack var
+            void* dest_stack_addr = execstack.GetStackVarAddr(0, cur_ve->GetStackOffset());
+			void* cur_stack_addr = debug_execstack->GetStackVarAddr(debug_stacktop, cur_ve->GetStackOffset());
+            if (dest_stack_addr != nullptr && cur_stack_addr != nullptr)
+            {
+                memcpy(cur_stack_addr, dest_stack_addr, kMaxTypeSize);
+            }
             cur_ve = cur_function->GetLocalVarTable()->Next();
         }
     }
@@ -2638,16 +2643,23 @@ void CScriptContext::ToggleVarWatch(int32 watch_request_id, uint32 object_id, ui
 	{
 		// -- first see if the variable is a local variable on the stack
 		CDebuggerWatchVarEntry found_variable;
-		if (!DebuggerFindStackVar(this, var_name_hash, found_variable, ve))
-		{
+        if (DebuggerFindStackVar(this, var_name_hash, found_variable))
+        {
+            if (DebuggerFindStackVar(this, var_name_hash, found_variable))
+                ve = found_variable.mSourceVarEntry;
+        }
+        else
+        {
 			// -- not a stack variable - the only remaining option is a global
 			ve = GetGlobalNamespace()->GetVarTable()->FindItem(var_name_hash);
 		}
 	}
 
 	// -- if we found our variable, toggle the break
-	if (ve)
-		ve->SetBreakOnWrite(watch_request_id, mDebuggerSessionNumber, breakOnWrite, condition, trace, trace_on_cond);
+    if (ve)
+    {
+        ve->SetBreakOnWrite(watch_request_id, mDebuggerSessionNumber, breakOnWrite, condition, trace, trace_on_cond);
+    }
 }
 
 // ====================================================================================================================
@@ -3119,42 +3131,44 @@ void CScriptContext::DebuggerSendCallstack(CObjectEntry** oeList, CFunctionEntry
 }
 
 // ====================================================================================================================
-// DebuggerWatchFormatValue(): format the mValue to be debugger-friendly (e.g.  object ID with object name, ...)
+// DebuggerVarFormatValue(): format a raw addr to a readble value string based on type
 // ====================================================================================================================
-void CScriptContext::DebuggerWatchFormatValue(CDebuggerWatchVarEntry* watch_var_entry, void* val_addr)
+bool CScriptContext::DebuggerVarFormatValue(eVarType type, void* val_addr, char* out_value, uint32 max_size)
 {
     // -- sanity check
-    if (watch_var_entry == nullptr || val_addr == nullptr)
-        return;
+    if (out_value == nullptr || max_size <= 0 || val_addr == nullptr)
+        return false;
 
-    switch (watch_var_entry->mType)
+    uint32 bytes_written = 0;
+    switch (type)
     {
         case TYPE_object:
         {
-            CObjectEntry* oe = FindObjectEntry(watch_var_entry->mVarObjectID);
+            // -- if this is an object, then the val_addr is actually an id
+            uint32 object_id = *(uint32*)val_addr;
+            CObjectEntry* oe = FindObjectEntry(object_id);
             if (oe != nullptr)
             {
-                uint32 bytes_written = 0;
                 if (oe->GetNameHash() != 0 && oe->GetNamespace() != nullptr)
                 {
-                    bytes_written = snprintf(watch_var_entry->mValue, sizeof(watch_var_entry->mValue), "%d: %s [%s]",
+                    bytes_written = snprintf(out_value, max_size, "%d: %s [%s]",
                                               oe->GetID(), UnHash(oe->GetNameHash()),
                                               UnHash(oe->GetNamespace()->GetHash()));
                 }
                 else if (oe->GetNamespace() != nullptr)
                 {
-                    bytes_written = snprintf(watch_var_entry->mValue, sizeof(watch_var_entry->mValue), "%d: [%s]",
+                    bytes_written = snprintf(out_value, max_size, "%d: [%s]",
                                               oe->GetID(), UnHash(oe->GetNamespace()->GetHash()));
                 }
                 else
                 {
-                    bytes_written = snprintf(watch_var_entry->mValue, sizeof(watch_var_entry->mValue), "%d", oe->GetID());
+                    bytes_written = snprintf(out_value, max_size, "%d", oe->GetID());
                 }
 
                 // -- make sure we terminate
-                if (bytes_written >= kMaxNameLength)
-                    bytes_written = kMaxNameLength - 1;
-                watch_var_entry->mValue[bytes_written] = '\0';
+                if (bytes_written >= max_size)
+                    bytes_written = max_size - 1;
+                out_value[bytes_written] = '\0';
             }
         }
         break;
@@ -3165,16 +3179,16 @@ void CScriptContext::DebuggerWatchFormatValue(CDebuggerWatchVarEntry* watch_var_
             const char* hashed_string = GetStringTable()->FindString(string_hash);
             if (hashed_string != nullptr && hashed_string[0] != '\0')
             {
-                uint32 bytes_written = snprintf(watch_var_entry->mValue, sizeof(watch_var_entry->mValue),
+                uint32 bytes_written = snprintf(out_value, max_size,
                                                  "%d  [0x%x `%s`]", string_hash, string_hash, hashed_string);
                 // -- make sure we terminate
                 if (bytes_written >= kMaxNameLength)
                     bytes_written = kMaxNameLength - 1;
-                watch_var_entry->mValue[bytes_written] = '\0';
+                out_value[bytes_written] = '\0';
             }
             else
             {
-                snprintf(watch_var_entry->mValue, sizeof(watch_var_entry->mValue), "%d", string_hash);
+                snprintf(out_value, max_size, "%d", string_hash);
             }
         }
         break;
@@ -3182,9 +3196,45 @@ void CScriptContext::DebuggerWatchFormatValue(CDebuggerWatchVarEntry* watch_var_
         default:
         {
             // -- copy the value, as a string (to a max length)
-            gRegisteredTypeToString[watch_var_entry->mType](this, val_addr, watch_var_entry->mValue, kMaxNameLength);
-            return;
+            gRegisteredTypeToString[type](this, val_addr, out_value, max_size);
         }
+        break;
+    }
+
+    return true;
+
+}
+// ====================================================================================================================
+// DebuggerWatchFormatValue(): format the mValue to be debugger-friendly (e.g.  object ID with object name, ...)
+// ====================================================================================================================
+void CScriptContext::DebuggerWatchFormatValue(CDebuggerWatchVarEntry* watch_var_entry)
+{
+    // -- sanity check
+    if (watch_var_entry == nullptr)
+        return;
+
+    // -- tag the entry sourcVarID using a 32-bit version of the addr
+    // note:  a bit redundant here, since we're going to use the addr directly when the packet is sent
+    watch_var_entry->mSourceVarID = kPointerToUInt32(watch_var_entry->mSourceVarAddr);
+
+    // -- if the var entry is an array (with array size > 1), it doesn't have a value
+    if (watch_var_entry->mArraySize > 1)
+    {
+        watch_var_entry->mValue[0] = '\0';
+        return;
+    }
+
+    bool success = false;
+    if (watch_var_entry->mType == TYPE_object)
+    {
+        uint32 object_id = watch_var_entry->mVarObjectID;
+        DebuggerVarFormatValue(watch_var_entry->mType, &object_id, watch_var_entry->mValue,
+                               sizeof(watch_var_entry->mValue));
+    }
+    else if (watch_var_entry->mSourceVarAddr != nullptr)
+    {
+        DebuggerVarFormatValue(watch_var_entry->mType, watch_var_entry->mSourceVarAddr, watch_var_entry->mValue,
+                               sizeof(watch_var_entry->mValue));
     }
 }
 
@@ -3193,6 +3243,9 @@ void CScriptContext::DebuggerWatchFormatValue(CDebuggerWatchVarEntry* watch_var_
 // ====================================================================================================================
 void CScriptContext::DebuggerSendWatchVariable(CDebuggerWatchVarEntry* watch_var_entry)
 {
+    // -- format the value we're about to send
+    DebuggerWatchFormatValue(watch_var_entry);
+
     // -- calculate the size of the data
     int32 total_size = 0;
 
@@ -3246,6 +3299,9 @@ void CScriptContext::DebuggerSendWatchVariable(CDebuggerWatchVarEntry* watch_var
     total_size += sizeof(int32);
 
     // -- cached var object ID
+    total_size += sizeof(int32);
+
+    // -- array var id
     total_size += sizeof(int32);
 
     // -- declare a header
@@ -3313,8 +3369,139 @@ void CScriptContext::DebuggerSendWatchVariable(CDebuggerWatchVarEntry* watch_var
     // -- write the cached var object ID
     *dataPtr++ = watch_var_entry->mVarObjectID;
 
+    // -- source var addr...  the VE is the variable, but if it's a stack variable,
+    // we need to send an ID matching the actual address, so we know which watch var to update
+    // -- this will be read into the structure as the mSourceVarID when de-serialized
+    uint32 source_var_addr = kPointerToUInt32(watch_var_entry->mSourceVarAddr);
+    *dataPtr++ = source_var_addr;
+
     // -- send the packet
     SocketManager::SendDataPacket(newPacket);
+
+    // -- if this watch variable is an array, we need to send the array entries as well
+    if (watch_var_entry->mArraySize > 1)
+    {
+        if (watch_var_entry->mSourceVarEntry != nullptr)
+        {
+            DebuggerSendArrayEntries(*watch_var_entry);
+        }
+    }
+
+    // -- else if this variable is an object, send the object members
+    // $$$TZA implement array of objects
+    else if (watch_var_entry->mType == TYPE_object && watch_var_entry->mVarObjectID > 0)
+    {
+        DebuggerSendObjectMembers(watch_var_entry, watch_var_entry->mVarObjectID);
+    }
+}
+
+// ====================================================================================================================
+// DebuggerSendArrayEntries():  Send an array entry for an array variable (individually - there could be 1000s)
+// ====================================================================================================================
+void CScriptContext::DebuggerSendArrayEntries(const CDebuggerWatchVarEntry& watch_var)
+{
+    // -- we're going to send one packet per array entry
+    if (watch_var.mArraySize < 1 || watch_var.mSourceVarEntry == nullptr)
+    {
+        if (watch_var.mArraySize < 1)
+        {
+            TinPrint(this, "Error - DebuggerSendArrayEntries():  not an array: %s\n", watch_var.mVarName);
+        }
+        else
+        {
+            TinPrint(this, "Error - DebuggerSendArrayEntries():  no source variable: %s\n", watch_var.mVarName);
+        }
+
+        return;
+    }
+
+    // -- get the object if it exists
+    void* obj_addr = nullptr;
+    if (watch_var.mVarObjectID != 0)
+    {
+        CObjectEntry* oe = FindObjectEntry(watch_var.mVarObjectID);
+        if (oe == nullptr || oe->GetAddr() == nullptr)
+        {
+            TinPrint(this, "Error - DebuggerSendArrayEntries():  unable to find object: %u\n", watch_var.mVarObjectID);
+            return;
+        }
+        obj_addr = oe->GetAddr();
+    }
+
+    // -- we're going to use the array var ID, so all the "children" know which array they're an entry of
+    for (int32 i = 0; i < watch_var.mArraySize; ++i)
+    {
+        // -- calculate the size of the data
+        int32 total_size = 0;
+
+        // -- first int32 will be identifying this data packet
+        total_size += sizeof(int32);
+
+        // -- send the request ID
+        total_size += sizeof(int32);
+
+        // -- send the stack offset
+        total_size += sizeof(int32);
+
+        // -- next is the var array ID, so the "entries" can be added to the "parent" array var entry
+        total_size += sizeof(int32);
+
+        // -- next is the var array index
+        total_size += sizeof(int32);
+
+        // -- each array value is different - we need to format them
+        char* bufferptr = TinScript::GetContext()->GetScratchBuffer();
+        void* val_addr = watch_var.mSourceVarEntry->GetArrayVarAddr(obj_addr, i);
+        DebuggerVarFormatValue(watch_var.mType, val_addr, bufferptr, kMaxTokenLength);
+
+        // -- calculate the value string length we'll need to send
+        int32 valueLength = (int32)strlen(bufferptr) + 1;
+        valueLength += 4 - (valueLength % 4);
+
+        // -- we send first the string length, then the string
+        total_size += sizeof(int32);
+        total_size += valueLength;
+
+        // -- declare a header
+        SocketManager::tPacketHeader header(k_PacketVersion, SocketManager::tPacketHeader::DATA, total_size);
+
+        // -- create the packet (null data, as we'll fill in the data directly into the packet)
+        SocketManager::tDataPacket* newPacket = SocketManager::CreateDataPacket(&header, NULL);
+        if (!newPacket)
+        {
+            TinPrint(this, "Error - DebuggerSendArrayEntries(): unable to send\n");
+            return;
+        }
+
+        // -- initialize the ptr to the data buffer
+        int32* dataPtr = (int32*)newPacket->mData;
+
+        // -- write the identifier - defined in the debugger constants near the top of TinScript.h
+        *dataPtr++ = k_DebuggerArrayEntryPacketID;
+
+        // -- write the request ID
+        *dataPtr++ = watch_var.mWatchRequestID;
+
+        // -- write the stack level
+        *dataPtr++ = watch_var.mStackOffsetFromBottom;
+
+        // -- next is the var (addr) ID, so the "entries" can be added to the "parent" array var entry
+        uint32 source_var_addr = kPointerToUInt32(watch_var.mSourceVarAddr);
+        *dataPtr++ = source_var_addr;
+
+        // -- next is the var array index
+        *dataPtr++ = i;
+
+        // -- finally the value (length, and value string)
+        *dataPtr++ = valueLength;
+
+        // -- write the value string
+        SafeStrcpy((char*)dataPtr, valueLength, bufferptr, valueLength);
+        dataPtr += (valueLength / 4);
+
+        // -- send the packet
+        SocketManager::SendDataPacket(newPacket);
+    }
 }
 
 // ====================================================================================================================
@@ -3444,9 +3631,13 @@ void CScriptContext::DebuggerSendObjectVarTable(CDebuggerWatchVarEntry* callingF
              member_entry.mVarObjectID = *(uint32*)(member->GetAddr(oe->GetAddr()));
         }
 
-        // -- after the member_entry has all fields filled in, see if we can format
-        // the mValue to be more readable
-        DebuggerWatchFormatValue(&member_entry, member->GetAddr(oe->GetAddr()));
+        // $$$TZA SendArray - support object member arrays
+        member_entry.mSourceVarEntry = member;
+
+        // -- this is a volatile address, not to be referenced beyond sending the
+        // watch var to the debugger
+        void* val_addr = member->GetAddr(oe->GetAddr());
+        member_entry.mSourceVarAddr = val_addr;
 
         // -- send to the debugger
         DebuggerSendWatchVariable(&member_entry);
@@ -4247,7 +4438,7 @@ void CScriptContext::DebuggerInspectObject(uint32 object_id)
     if (oe)
     {
         // -- send a dump of the object to the debugger
-        DebuggerSendObjectMembers(NULL, object_id);
+        DebuggerSendObjectMembers(nullptr, object_id);
     }
 }
 

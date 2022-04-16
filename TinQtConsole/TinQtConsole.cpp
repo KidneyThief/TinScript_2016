@@ -634,6 +634,10 @@ void CConsoleWindow::NotifyOnConnect()
     // -- request the SchedulesWin be repopulated
     GetDebugSchedulesWin()->NotifyOnConnect();
 
+    // -- notify the watch windows (both autos and manual)
+    GetDebugAutosWin()->NotifyOnConnect();
+    GetDebugWatchesWin()->NotifyOnConnect();
+
     // -- Console Input label is colored to reflect connection status
     mConsoleOutput->NotifyConnectionStatus(true);
     mConsoleInput->NotifyConnectionStatus(true);
@@ -2239,6 +2243,10 @@ void CConsoleOutput::ProcessDataPackets()
                 HandlePacketWatchVarEntry(dataPtr);
                 break;
 
+            case k_DebuggerArrayEntryPacketID:
+                HandlePacketArrayVarEntry(dataPtr);
+                break;
+
             case k_DebuggerAssertMsgPacketID:
                 HandlePacketAssertMsg(dataPtr);
                 break;
@@ -2433,7 +2441,7 @@ void CConsoleOutput::HandlePacketWatchVarEntry(int32* dataPtr)
     // -- skip past the packet ID
     ++dataPtr;
 
-    // -- reconstitute the stuct
+    // -- reconstitute the struct
     TinScript::CDebuggerWatchVarEntry watch_var_entry;
 
 	// -- variable watch request ID (unused for stack dumps)
@@ -2483,6 +2491,10 @@ void CConsoleOutput::HandlePacketWatchVarEntry(int32* dataPtr)
     // -- cached var object ID
     watch_var_entry.mVarObjectID = *dataPtr++;
 
+    // -- the source var ID uniquely identifies not just the VE, but if it's a
+    // stack var, "which" (stack level) var this is
+    watch_var_entry.mSourceVarID = *dataPtr++;
+
     // -- this packet is received both for updating autos and watch entries...
     // -- if there's a watch requestID, then it's a response to a user entered watch expression
     bool is_response = watch_var_entry.mWatchRequestID > 0;
@@ -2496,12 +2508,45 @@ void CConsoleOutput::HandlePacketWatchVarEntry(int32* dataPtr)
     {
         // -- otherwise, as a response, we update only in the autos, but we want to ensure the
         // entry exists in the watches window
-        CConsoleWindow::GetInstance()->GetDebugAutosWin()->NotifyWatchVarEntry(&watch_var_entry, true);
         CConsoleWindow::GetInstance()->GetDebugWatchesWin()->NotifyVarWatchResponse(&watch_var_entry);
+        CConsoleWindow::GetInstance()->GetDebugAutosWin()->NotifyWatchVarEntry(&watch_var_entry, true);
     }
 
     // -- also, this entry may update the value in an object inspector window
     CConsoleWindow::GetInstance()->NotifyWatchVarEntry(&watch_var_entry);
+}
+
+// ====================================================================================================================
+// HandlePacketArrayVarEntry():  A handler for packet type "array entry"
+// ====================================================================================================================
+void CConsoleOutput::HandlePacketArrayVarEntry(int32* dataPtr)
+{
+    // -- skip past the packet ID
+    ++dataPtr;
+
+    // -- get the request ID
+    int32 watch_request_id = *dataPtr++;
+
+    // -- get the stack offset (from the bottom)
+    int32 stack_offset_bottom = *dataPtr++;
+
+    // -- get the array var ID - this is a child of that array
+    uint32 array_var_id = *dataPtr++;
+
+    // -- next is the var array index
+    int32 array_index = *dataPtr++;
+
+    // -- value string length
+    int32 value_str_length = *dataPtr++;
+
+    // -- the rest is the value string
+    const char* value_str = (const char*)dataPtr;
+
+    // -- notify both watches and autos...
+    CConsoleWindow::GetInstance()->GetDebugAutosWin()->NotifyArrayEntry(watch_request_id, stack_offset_bottom,
+                                                                        array_var_id, array_index, value_str);
+    CConsoleWindow::GetInstance()->GetDebugWatchesWin()->NotifyArrayEntry(watch_request_id, stack_offset_bottom,
+                                                                          array_var_id, array_index, value_str);
 }
 
 // ====================================================================================================================

@@ -62,13 +62,49 @@ CWatchEntry::CWatchEntry(const TinScript::CDebuggerWatchVarEntry& debugger_entry
     // -- otherwise, it's a real entry
     else
     {
-        // -- set the text
-        setText(0, mDebuggerEntry.mVarName);
+        UpdateDisplay();
+    }
+}
 
-		if (mDebuggerEntry.mType != TinScript::TYPE_void)
-			setText(1, TinScript::GetRegisteredTypeName(mDebuggerEntry.mType));
-		else
-			setText(1, "");
+CWatchEntry::~CWatchEntry()
+{
+}
+
+void CWatchEntry::UpdateType(TinScript::eVarType type, int32 array_size)
+{
+	mDebuggerEntry.mType = type;
+    mDebuggerEntry.mArraySize = array_size;
+    UpdateDisplay();
+}
+
+void CWatchEntry::UpdateArrayVar(uint32 var_array_id, int32 array_size)
+{
+    mDebuggerEntry.mSourceVarID = var_array_id;
+    mDebuggerEntry.mArraySize = array_size;
+    UpdateDisplay();
+}
+
+void CWatchEntry::UpdateValue(const char* new_value)
+{
+    if (!new_value)
+        new_value = "";
+
+    strcpy_s(mDebuggerEntry.mValue, new_value);
+    UpdateDisplay();
+}
+
+void CWatchEntry::UpdateDisplay()
+{
+    // -- set the text
+    setText(0, mDebuggerEntry.mVarName);
+
+    // -- array variable entries don't have values - their "children" do...
+    if (mDebuggerEntry.mArraySize <= 1)
+    {
+        if (mDebuggerEntry.mType != TinScript::TYPE_void)
+            setText(1, TinScript::GetRegisteredTypeName(mDebuggerEntry.mType));
+        else
+            setText(1, "");
 
         const char* value = mDebuggerEntry.mValue;
         if (mDebuggerEntry.mType == TinScript::TYPE_object && mDebuggerEntry.mVarObjectID == 0)
@@ -79,36 +115,15 @@ CWatchEntry::CWatchEntry(const TinScript::CDebuggerWatchVarEntry& debugger_entry
         // -- if this is set to value_text above, setText() had better be making a copy!
         setText(2, value);
     }
-}
-
-CWatchEntry::~CWatchEntry()
-{
-}
-
-void CWatchEntry::UpdateType(TinScript::eVarType type)
-{
-	mDebuggerEntry.mType = type;
-	if (mDebuggerEntry.mType != TinScript::TYPE_void)
-		setText(1, TinScript::GetRegisteredTypeName(mDebuggerEntry.mType));
-	else
-		setText(1, "");
-}
-
-void CWatchEntry::UpdateValue(const char* new_value)
-{
-    if (!new_value)
-        new_value = "";
-
-    // -- in case we need to format the value...
-
-    // -- if it's of type object, it's could be a variable that was uninitialized - re-cache the object ID
-    if (mDebuggerEntry.mType == TinScript::TYPE_object && mDebuggerEntry.mVarObjectID == 0)
+    // -- to display an array, the "type" is array, and the "value" is the arraytype[size] (e.g.  int[5])
+    else
     {
-        new_value = "<invalid>";
+        setText(1, "<array>");
+        char array_type_size[32];
+        sprintf_s(array_type_size, "%s[%d]", TinScript::GetRegisteredTypeName(mDebuggerEntry.mType),
+            mDebuggerEntry.mArraySize);
+        setText(2, array_type_size);
     }
-
-    snprintf(mDebuggerEntry.mValue, sizeof(mDebuggerEntry.mValue), "%s", new_value);
-    setText(2, mDebuggerEntry.mValue);
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -155,7 +170,7 @@ void CDebugWatchWin::UpdateReturnValueEntry(const TinScript::CDebuggerWatchVarEn
             }
 
             // -- update the type (it may have been undetermined)
-            entry->UpdateType(watch_var_entry.mType);
+            entry->UpdateType(watch_var_entry.mType, watch_var_entry.mArraySize);
 
             // -- if the type is a variable, copy the object ID as well
             if (watch_var_entry.mType == TinScript::TYPE_object)
@@ -166,6 +181,12 @@ void CDebugWatchWin::UpdateReturnValueEntry(const TinScript::CDebuggerWatchVarEn
 
                 // -- set the new object ID
                 entry->mDebuggerEntry.mVarObjectID = watch_var_entry.mVarObjectID;
+            }
+
+            // -- if the watch is an array, then we're going to be receiving the array entries
+            if (entry->mDebuggerEntry.mArraySize > 1)
+            {
+                entry->UpdateArrayVar(entry->mDebuggerEntry.mSourceVarID, entry->mDebuggerEntry.mArraySize);
             }
 
 			// -- update the value
@@ -240,11 +261,15 @@ void CDebugWatchWin::AddTopLevelEntry(const TinScript::CDebuggerWatchVarEntry& w
         if (entry->mDebuggerEntry.mObjectID == 0)
         {
             // -- see if this entry matches an existing top level stack variable
+            // note:  we might be able to simplify all of this with the mSourceVarID,
+            // but the stack offset is still relevant...
+            // a recursive call using an array param will have the same mSourceVarID, but different stack offsets
             if (entry->mDebuggerEntry.mFuncNamespaceHash == watch_var_entry.mFuncNamespaceHash &&
                 entry->mDebuggerEntry.mFunctionHash == watch_var_entry.mFunctionHash &&
                 entry->mDebuggerEntry.mFunctionObjectID == watch_var_entry.mFunctionObjectID &&
                 entry->mDebuggerEntry.mType == watch_var_entry.mType && 
                 entry->mDebuggerEntry.mVarHash == watch_var_entry.mVarHash &&
+                entry->mDebuggerEntry.mSourceVarID == watch_var_entry.mSourceVarID &&
                 (entry->mDebuggerEntry.mStackOffsetFromBottom == watch_var_entry.mStackOffsetFromBottom ||
                  entry->mDebuggerEntry.mWatchRequestID > 0))
             {
@@ -260,6 +285,12 @@ void CDebugWatchWin::AddTopLevelEntry(const TinScript::CDebuggerWatchVarEntry& w
 
                         // -- update the object ID
                         entry->mDebuggerEntry.mVarObjectID = watch_var_entry.mVarObjectID;
+                    }
+
+                    // -- if the watch is an array, then we're going to be receiving the array entries
+                    if (entry->mDebuggerEntry.mArraySize > 1)
+                    {
+                        entry->UpdateArrayVar(entry->mDebuggerEntry.mSourceVarID, entry->mDebuggerEntry.mArraySize);
                     }
 
                     // -- update the value (text label)
@@ -371,7 +402,7 @@ void CDebugWatchWin::AddObjectMemberEntry(const TinScript::CDebuggerWatchVarEntr
             CWatchEntry* ns = new CWatchEntry(watch_var_entry);
             obj_entry->addChild(ns);
 
-            if (entry_index == mWatchList.size())
+            if (entry_index >= mWatchList.size())
             {
                 mWatchList.append(ns);
             }
@@ -406,6 +437,13 @@ void CDebugWatchWin::AddObjectMemberEntry(const TinScript::CDebuggerWatchVarEntr
 
                 // -- update the object ID
                 member_entry->mDebuggerEntry.mVarObjectID = watch_var_entry.mVarObjectID;
+            }
+
+            // -- if the watch is an array, then we're going to be receiving the array entries
+            if (member_entry->mDebuggerEntry.mArraySize > 1)
+            {
+                member_entry->UpdateArrayVar(member_entry->mDebuggerEntry.mSourceVarID,
+                                             member_entry->mDebuggerEntry.mArraySize);
             }
 
             member_entry->UpdateValue(watch_var_entry.mValue);
@@ -602,11 +640,56 @@ uint32 CDebugWatchWin::GetSelectedObjectID()
     return (0);
 }
 
-// ------------------------------------------------------------------------------------------------
-void CDebugWatchWin::ClearWatchWin()
+// ====================================================================================================================
+// NotifyOnConnect():  Initialization when the IDE becomes connected to the target
+// ====================================================================================================================
+void CDebugWatchWin::NotifyOnConnect()
 {
-    mWatchList.clear();
-    clear();
+    // -- on connect, we want to clear all autos (leave the user watches)
+    ClearWatchWin(false);
+}
+
+// ====================================================================================================================
+// ClearWatchWin():  Clears the display and the array of watches
+// ====================================================================================================================
+void CDebugWatchWin::ClearWatchWin(bool clear_user_watches)
+{
+    // -- if we're clearing user watches, then we're clearing everything!
+    if (clear_user_watches)
+    {
+        mWatchList.clear();
+        clear();
+    }
+
+    // -- otherwise we need to remove only autos
+    else
+    {
+        // -- loop through all watches
+        int entry_index = 0;
+        while (entry_index < mWatchList.size())
+        {
+            bool removed = false;
+            CWatchEntry* entry = mWatchList.at(entry_index);
+
+            // -- we only remove the non-requested watches...
+            // note:  it should be impossible while iterating, to reach a non-topLevelEntry
+            if (entry->mDebuggerEntry.mWatchRequestID <= 0 && IsTopLevelEntry(*entry))
+            {
+                // -- remove the children of this entry
+                RemoveWatchVarChildren(entry_index);
+
+                // -- remove this entry
+                mWatchList.removeAt(entry_index);
+
+                // -- now delete the entry (and leave the entry_index)
+                delete entry;
+            }
+            else
+            {
+                ++entry_index;
+            }
+        }
+    }
 }
 
 // ====================================================================================================================
@@ -617,18 +700,17 @@ void CDebugWatchWin::RemoveWatchVarChildren(int32 object_entry_index)
     // -- sanity check
     if (object_entry_index < 0 || object_entry_index >= mWatchList.size())
         return;
-
     CWatchEntry* parent_entry = mWatchList.at(object_entry_index);
-    int32 object_id = parent_entry->mDebuggerEntry.mVarObjectID;
 
-    // -- remove all children (if we had any)
+    // -- remove the children from the Qt list
+    while (parent_entry->childCount() > 0)
+        parent_entry->removeChild(parent_entry->child(0));
+
+    // -- remove all children if the parent watch entry is for an object
+    int32 object_id = parent_entry->mDebuggerEntry.mVarObjectID;
     if (object_id > 0)
     {
-        // -- remove the children from the Qt list
-        while (parent_entry->childCount() > 0)
-            parent_entry->removeChild(parent_entry->child(0));
-
-        // -- removethe children from the watch list
+        // -- remove the children from the watch list
         int entry_index = object_entry_index + 1;
         while (entry_index < mWatchList.size())
         {
@@ -646,9 +728,38 @@ void CDebugWatchWin::RemoveWatchVarChildren(int32 object_entry_index)
             }
         }
     }
+
+    // -- else if the entry is for an array
+    // $$$TZA We need a better way to identify children of a parent watch - this is redundant code...
+    else
+    {
+        int32 var_array_id = parent_entry->mDebuggerEntry.mSourceVarID;
+        if (var_array_id > 0 && parent_entry->mDebuggerEntry.mArraySize > 1)
+        {
+            // -- remove the children from the watch list
+            int entry_index = object_entry_index + 1;
+            while (entry_index < mWatchList.size())
+            {
+                CWatchEntry* child_entry = mWatchList.at(entry_index);
+                if (child_entry->mDebuggerEntry.mSourceVarID == var_array_id)
+                {
+                    mWatchList.removeAt(entry_index);
+                    delete child_entry;
+                }
+
+                // -- otherwise we're done
+                else
+                {
+                    break;
+                }
+            }
+        }
+    }
 }
 
-// ------------------------------------------------------------------------------------------------
+// ====================================================================================================================
+// NotifyWatchVarEntry():  received from the connected target, an auto or watch expression response
+// ====================================================================================================================
 void CDebugWatchWin::NotifyWatchVarEntry(TinScript::CDebuggerWatchVarEntry* watch_var_entry, bool update_only)
 {
 	// -- sanity check
@@ -682,7 +793,7 @@ void CDebugWatchWin::NotifyVarWatchResponse(TinScript::CDebuggerWatchVarEntry* w
     while (entry_index < mWatchList.size())
     {
 		CWatchEntry* entry = mWatchList.at(entry_index);
-        if (entry->mDebuggerEntry.mWatchRequestID == watch_var_entry->mWatchRequestID) // && entry->mDebuggerEntry.mObjectID == 0)
+        if (entry->mDebuggerEntry.mWatchRequestID == watch_var_entry->mWatchRequestID)
 		{
 
             // -- if this entry is a matching object, then this is a member of that object
@@ -695,18 +806,18 @@ void CDebugWatchWin::NotifyVarWatchResponse(TinScript::CDebuggerWatchVarEntry* w
             // -- else this response is the value of a top level watch request
             else
             {
+                // -- update the type if undetermined
+                if (entry->mDebuggerEntry.mType == TinScript::eVarType::TYPE_void)
+                {
+                    entry->UpdateType(watch_var_entry->mType, watch_var_entry->mArraySize);
+                }
+
                 // -- if the type used to be an object, and the new type is something else, we
                 // -- need to remove the children
                 if (entry->mDebuggerEntry.mType == TinScript::TYPE_object &&
                     watch_var_entry->mType != TinScript::TYPE_object)
                 {
                     RemoveWatchVarChildren(entry_index);
-                }
-
-                // -- update the type if undetermined
-                if (entry->mDebuggerEntry.mType == TinScript::eVarType::TYPE_void)
-                {
-                    entry->UpdateType(watch_var_entry->mType);
                 }
 
                 // -- watch entries are contextual - copy the source of the variable
@@ -726,11 +837,17 @@ void CDebugWatchWin::NotifyVarWatchResponse(TinScript::CDebuggerWatchVarEntry* w
                     entry->mDebuggerEntry.mVarObjectID = watch_var_entry->mVarObjectID;
                 }
 
+                // -- if the watch is an array, then we're going to be receiving the array entries
+                if (watch_var_entry->mArraySize > 1)
+                {
+                    entry->UpdateArrayVar(watch_var_entry->mSourceVarID, watch_var_entry->mArraySize);
+                }
+
 			    // -- update the value
 			    entry->UpdateValue(watch_var_entry->mValue);
             }
 
-			// -- we're done
+			// -- we're done (each watch request can only ever have one response)
 			return;
 		}
 
@@ -780,10 +897,101 @@ void CDebugWatchWin::NotifyVarWatchMember(int32 parent_entry_index, TinScript::C
     // -- right before entry_index
     CWatchEntry* ns = new CWatchEntry(*watch_var_entry);
     parent_entry->addChild(ns);
-    if (entry_index == mWatchList.size())
+    if (entry_index >= mWatchList.size())
         mWatchList.append(ns);
     else
         mWatchList.insert(mWatchList.begin() + entry_index, ns);
+}
+
+// ====================================================================================================================
+// NotifyArrayEntry():  an array entry has been received... this is essentially a child of an array var
+// ====================================================================================================================
+void CDebugWatchWin::NotifyArrayEntry(int32 watch_request_id, int32 stack_offset_bottom, uint32 array_var_id,
+                                      int32 array_index, const char* value_str)
+{
+    // -- loop through all watch entries, each parent, and ensure it has a child
+    int entry_index = 0;
+    while (entry_index < mWatchList.size())
+    {
+        // this is the parent if either we have a matching non-zero request ID, or
+        // the varID and the stack offset are the same
+        CWatchEntry* parent_entry = mWatchList.at(entry_index);
+        if (parent_entry->mDebuggerEntry.mArraySize > 1 &&
+            parent_entry->mDebuggerEntry.mWatchRequestID == watch_request_id &&
+            (watch_request_id > 0 ||
+             (parent_entry->mDebuggerEntry.mStackOffsetFromBottom == stack_offset_bottom &&
+              parent_entry->mDebuggerEntry.mSourceVarID == array_var_id)))
+        {
+            // -- now we see if there's a child with the same index
+            char array_entry_name[32];
+            sprintf_s(array_entry_name, sizeof(array_entry_name), "[%d]", array_index);
+
+            bool found_child = false;
+            int parent_index = entry_index;
+            ++entry_index;
+            while (entry_index < mWatchList.size())
+            {
+                // -- make sure the child belongs to the same array variable
+                CWatchEntry* child = mWatchList.at(entry_index);
+
+                // -- same as above - either this is an array entry for a requested watch,
+                // or it's for the same array variable at the same stack offset
+                if (watch_request_id > 0 ||
+                    (child->mDebuggerEntry.mStackOffsetFromBottom == stack_offset_bottom &&
+                        child->mDebuggerEntry.mSourceVarID == array_var_id))
+                {
+                    // -- see if it's the child we're looking for
+                    if (!strcmp(child->mDebuggerEntry.mVarName, array_entry_name))
+                    {
+                        found_child = true;
+                        TinScript::SafeStrcpy(child->mDebuggerEntry.mValue, sizeof(child->mDebuggerEntry.mValue),
+                            value_str);
+                        child->UpdateDisplay();
+                        break;
+                    }
+                    // -- else check the next child
+                    else
+                    {
+                        ++entry_index;
+                    }
+                }
+                // -- else we've past the entries for this array
+                else
+                {
+                    break;
+                }
+            }
+
+            // -- if we didn't find the child, add one
+            // note:  entry_index will be the entry of the next var, so we want to insert here
+            if (!found_child)
+            {
+                // -- create the new array entry
+                TinScript::CDebuggerWatchVarEntry array_entry;
+                array_entry.mWatchRequestID = watch_request_id;
+                array_entry.mStackOffsetFromBottom = stack_offset_bottom;
+                array_entry.mSourceVarID = parent_entry->mDebuggerEntry.mSourceVarID;
+                sprintf_s(array_entry.mVarName, sizeof(array_entry.mVarName), "%s", array_entry_name);
+                sprintf_s(array_entry.mValue, sizeof(array_entry.mValue), "%s", value_str);
+
+                // -- add to the parent
+                CWatchEntry* array_child_entry = new CWatchEntry(array_entry);
+                parent_entry->addChild(array_child_entry);
+
+                // -- insert into the watch list
+                if (entry_index >= mWatchList.size())
+                    mWatchList.append(array_child_entry);
+                else
+                    mWatchList.insert(mWatchList.begin() + entry_index, array_child_entry);
+            }
+        }
+
+        // -- next entry
+        // note:  if we found the child, entry_index will be that child, but we're only searching for mArraySize > 1
+        // entries, so we'll skip the rest of the children.
+        // -- if we didn't find the child, we appended, or inserted at entry_index, so we need to increment anyways
+        entry_index++;
+    }
 }
 
 // ====================================================================================================================
@@ -867,37 +1075,11 @@ void CDebugWatchWin::NotifyUpdateCallstack(bool breakpointHit)
                                                                 entry->mDebuggerEntry.mFunctionObjectID);
             if (stack_index < 0)
             {
+                // -- remove the children of this entry
+                RemoveWatchVarChildren(entry_index);
+
                 // -- remove this entry
                 mWatchList.removeAt(entry_index);
-
-                // -- if this is an object, we need to delete its children as well
-                if (entry->mDebuggerEntry.mType == TinScript::TYPE_object && entry->childCount() > 0)
-                {
-                    // -- ensure we have a valid object ID
-                    CWatchEntry* child_entry = static_cast<CWatchEntry*>(entry->child(0));
-                    uint32 object_id = child_entry->mDebuggerEntry.mObjectID;
-
-                    // -- clear the children
-                    while (entry->childCount() > 0)
-                        entry->removeChild(entry->child(0));
-
-                    // -- now starting from the next index, delete the children of this object
-                    while (entry_index < mWatchList.size())
-                    {
-                        CWatchEntry* child_entry = mWatchList.at(entry_index);
-                        if (entry->mDebuggerEntry.mObjectID == object_id)
-                        {
-                            mWatchList.removeAt(entry_index);
-                            delete child_entry;
-                        }
-
-                        // -- otherwise we're done
-                        else
-                        {
-                            break;
-                        }
-                    }
-                }
 
                 // -- now delete the entry
                 delete entry;

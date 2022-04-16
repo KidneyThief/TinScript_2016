@@ -714,8 +714,16 @@ bool8 PerformAssignOp(CScriptContext* script_context, CExecStack& execstack, CFu
         return (false);
 
     // -- cache the result value, because we'll need to push it back onto the stack if we have consecutive assignments
-    g_lastAssignResultType = val1type;
-    memcpy(g_lastAssignResultBuffer, val1addr, MAX_TYPE_SIZE * sizeof(uint32));
+    // $$$TZA SendArray - need to support array return values
+    if (val1type != TYPE_hashtable && ve1 != nullptr && !ve1->IsArray())
+    {
+        g_lastAssignResultType = val1type;
+        memcpy(g_lastAssignResultBuffer, val1addr, MAX_TYPE_SIZE * sizeof(uint32));
+    }
+    else
+    {
+        g_lastAssignResultType = TYPE_void;
+    }
 
     // -- we're also going to convert val1add to the required type for assignment
     void* val1_convert = val1addr;
@@ -789,8 +797,9 @@ bool8 PerformAssignOp(CScriptContext* script_context, CExecStack& execstack, CFu
         // -- but since the assignment uses the same path, we use the test below and trust
         // -- the compiled code.  This implementation is 100% solid, just less preferable than
         // -- a deliberate initialization.
-        if (ve0->IsParameter() && ve0->GetArraySize() == -1 && ve1 && ve1->IsArray() &&
-            ve0->GetType() == ve1->GetType())
+        //if (ve0->IsParameter() && ve0->GetArraySize() == -1 && ve1 && ve1->IsArray() &&
+        //    ve0->GetType() == ve1->GetType())
+        if (ve0->IsParameter() && ve1 && ve1->IsArray() && ve0->GetType() == ve1->GetType())
         {
             ve0->InitializeArrayParameter(ve1, oe1, execstack, funccallstack);
         }

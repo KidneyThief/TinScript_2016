@@ -201,6 +201,7 @@ const int32 k_DebuggerAssertMsgPacketID             = 0x08;
 const int32 k_DebuggerPrintMsgPacketID              = 0x09;
 const int32 k_DebuggerFunctionAssistPacketID        = 0x0a;
 const int32 k_DebuggerObjectCreatedID               = 0x0b;
+const int32 k_DebuggerArrayEntryPacketID            = 0x0c;
 const int32 k_DebuggerMaxPacketID                   = 0xff;
 
 // == namespace TinScript =============================================================================================
@@ -310,6 +311,12 @@ class CDebuggerWatchVarEntry
         char mValue[kMaxNameLength];
 
         // -- cached values for the hash of the VarName, and the var objectID (for TYPE_object vars)
+        // -- arrays need to be displayed just like objects, the variable entry for the array (parent)
+        // will have an mArraySize > 1, and the children will all have mArraySize 0, but they'll all match
+        // mVarArrayID...
+        CVariableEntry* mSourceVarEntry = nullptr;
+        void* mSourceVarAddr = nullptr;
+        uint32 mSourceVarID = 0;
         uint32 mVarHash = 0;
         uint32 mVarObjectID = 0;
 };
@@ -563,8 +570,10 @@ class CScriptContext
                                    int32* linenumber_array, int array_size, uint32 print_msg_id);
         void DebuggerSendCallstack(CObjectEntry** oeList, CFunctionEntry** feList, uint32* nsHashList,
                                    uint32* cbHashList, int32* lineNumberList, int array_size, uint32 print_msg_id);
-        void DebuggerWatchFormatValue(CDebuggerWatchVarEntry* watch_var_entry, void* val_addr);
+        bool DebuggerVarFormatValue(eVarType type, void* val_addr, char* out_value, uint32 max_size);
+        void DebuggerWatchFormatValue(CDebuggerWatchVarEntry* watch_var_entry);
         void DebuggerSendWatchVariable(CDebuggerWatchVarEntry* watch_var_entry);
+        void DebuggerSendArrayEntries(const CDebuggerWatchVarEntry& watch_var);
         void DebuggerSendObjectMembers(CDebuggerWatchVarEntry* callingFunction, uint32 objectID);
         void DebuggerSendObjectVarTable(CDebuggerWatchVarEntry* callingFunction, CObjectEntry* oe, uint32 ns_hash,
                                         tVarTable* var_table);

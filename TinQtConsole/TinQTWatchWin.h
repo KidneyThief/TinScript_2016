@@ -45,8 +45,10 @@ class CWatchEntry : public QTreeWidgetItem {
 
         virtual ~CWatchEntry();
 
-        void UpdateType(TinScript::eVarType type);
+        void UpdateType(TinScript::eVarType type, int32 array_size);
+        void UpdateArrayVar(uint32 var_array_id, int32 array_size);
         void UpdateValue(const char* newValue);
+        void UpdateDisplay();
 
         TinScript::CDebuggerWatchVarEntry mDebuggerEntry;
         bool mBreakOnWrite;
@@ -91,12 +93,15 @@ class CDebugWatchWin : public QTreeWidget {
         // -- this is used for creating an ObjectInspector, if the currently selected entry is a variable of type object
         uint32 GetSelectedObjectID();
 
-        void ClearWatchWin();
+        void NotifyOnConnect();
+        void ClearWatchWin(bool clear_user_watches = false);
 
         void RemoveWatchVarChildren(int32 object_entry_index);
         void NotifyWatchVarEntry(TinScript::CDebuggerWatchVarEntry* watch_var_entry, bool update_only);
         void NotifyVarWatchResponse(TinScript::CDebuggerWatchVarEntry* watch_var_entry);
         void NotifyVarWatchMember(int32 parent_entry_index, TinScript::CDebuggerWatchVarEntry* watch_var_entry);
+        void NotifyArrayEntry(int32 watch_request_id, int32 stack_offset_bottom,uint32 array_var_id,
+                              int32 array_index, const char* value_str);
 
         void NotifyBreakpointHit();
         void NotifyEndOfBreakpoint() { }

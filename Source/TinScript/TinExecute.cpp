@@ -604,6 +604,10 @@ int32 CFunctionCallStack::DebuggerGetStackVarEntries(CScriptContext* script_cont
         }
     }
 
+    // $$$TZA SendArray - tagging this entry with the original VE, need to test arrays as object members, etc..
+    // do we have access to the return VE?
+    cur_entry->mSourceVarAddr = funcReturnValue;
+
     // -- iterating backwards *in case* we run out of space - more important to have stack entries at the stack top...
     int32 stack_index = m_stacktop - 1;
     while (stack_index >= 0 && entry_count < max_array_size)
@@ -721,6 +725,11 @@ int32 CFunctionCallStack::DebuggerGetStackVarEntries(CScriptContext* script_cont
                     }
                 }
 
+                // $$$TZA SendArray - the sourceVarEntry is volatile - this can only be valid from initial
+                // call, to sending the variable back to the debugger
+                cur_entry->mSourceVarEntry = ve;
+                cur_entry->mSourceVarAddr = stack_var_addr;
+
                 // -- get the next
                 ve = func_vt->Next();
             }
@@ -734,11 +743,12 @@ int32 CFunctionCallStack::DebuggerGetStackVarEntries(CScriptContext* script_cont
 // ====================================================================================================================
 // FindExecutionStackVar():  Find the variable entry by hash, at the execution stack offset
 // ====================================================================================================================
-bool CFunctionCallStack::FindExecutionStackVar(uint32 var_hash, CDebuggerWatchVarEntry& watch_entry,
-											   CVariableEntry*& found_ve)
+bool CFunctionCallStack::FindExecutionStackVar(uint32 var_hash, CDebuggerWatchVarEntry& watch_entry)
 {
-    // -- initialize the output param
-    found_ve = NULL;
+    // -- initialize the source ve
+    // note:  CDebuggerWatchVarEntry is a *temporary* struct - only used during a single call
+    // to query the execution stack and report back to the debugger!
+    watch_entry.mSourceVarEntry = nullptr;
 
     CScriptContext* script_context = TinScript::GetContext();
     if (script_context == nullptr || script_context->mDebuggerBreakFuncCallStack == nullptr)
@@ -803,9 +813,6 @@ bool CFunctionCallStack::FindExecutionStackVar(uint32 var_hash, CDebuggerWatchVa
 		{
 			if (ve->GetHash() == var_hash)
 			{
-				// -- set the ve result
-				found_ve = ve;
-
 				// -- clear the dynamic watch request ID
 				watch_entry.mWatchRequestID = 0;
 
@@ -823,6 +830,7 @@ bool CFunctionCallStack::FindExecutionStackVar(uint32 var_hash, CDebuggerWatchVa
 
 				// -- copy the var type
 				watch_entry.mType = ve->GetType();
+                watch_entry.mArraySize = ve->GetArraySize();
 
 				// -- copy the var name
 				SafeStrcpy(watch_entry.mVarName, sizeof(watch_entry.mVarName), UnHash(ve->GetHash()), kMaxNameLength);
@@ -849,6 +857,12 @@ bool CFunctionCallStack::FindExecutionStackVar(uint32 var_hash, CDebuggerWatchVa
 						watch_entry.mValue[0] = '\0';
 					}
 				}
+
+                // -- set the source var addr - this is a volatile address that should not be referenced
+                // beyond sending the watch var to the debugger
+                // $$$TZA SendArray
+                watch_entry.mSourceVarEntry = ve;
+                watch_entry.mSourceVarAddr = stack_var_addr;
 
 				// -- success
 				return (true);
@@ -1550,13 +1564,6 @@ bool8 DebuggerBreakLoop(CCodeBlock* cb, const uint32* instrptr, CExecStack& exec
     for (int32 i = 0; i < watch_entry_size; ++i)
     {
         script_context->DebuggerSendWatchVariable(&watch_var_stack[i]);
-
-        // -- if the watch var is of type object, send the object members over as well
-        if (watch_var_stack[i].mType == TYPE_object)
-        {
-            script_context->DebuggerSendObjectMembers(&watch_var_stack[i],
-                                                        watch_var_stack[i].mVarObjectID);
-        }
     }
 
     // -- send a message to the debugger - either this is an assert, or a breakpoint
@@ -1629,8 +1636,7 @@ bool8 DebuggerBreakLoop(CCodeBlock* cb, const uint32* instrptr, CExecStack& exec
 // ====================================================================================================================
 // DebuggerFindStackVar():  Interface to retrieve the variable entry for a currently executing function.
 // ====================================================================================================================
-bool8 DebuggerFindStackVar(CScriptContext* script_context, uint32 var_hash, CDebuggerWatchVarEntry& watch_entry,
-							  CVariableEntry*& ve)
+bool8 DebuggerFindStackVar(CScriptContext* script_context, uint32 var_hash, CDebuggerWatchVarEntry& watch_entry)
 {
 	// -- this is only valid while we're broken in the debugger
 	if (!script_context || !script_context->mDebuggerConnected || !script_context->mDebuggerBreakLoopGuard)
@@ -1642,7 +1648,7 @@ bool8 DebuggerFindStackVar(CScriptContext* script_context, uint32 var_hash, CDeb
 
     // -- find the stack variable - it'll use the mDebuggerWatchStackOffset, so we can find
     // locals from functions not at the stack top
-	return (CFunctionCallStack::FindExecutionStackVar(var_hash, watch_entry, ve));
+	return (CFunctionCallStack::FindExecutionStackVar(var_hash, watch_entry));
 }
 
 // ====================================================================================================================

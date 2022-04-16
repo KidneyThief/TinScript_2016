@@ -427,6 +427,7 @@ class CConsoleOutput : public QListWidget
         void HandlePacketBreakpointHit(int32* dataPtr);
         void HandlePacketCallstack(int32* dataPtr);
         void HandlePacketWatchVarEntry(int32* dataPtr);
+        void HandlePacketArrayVarEntry(int32* dataPtr);
         void HandlePacketAssertMsg(int32* dataPtr);
         void HandlePacketPrintMsg(int32* dataPtr);
         void HandlePacketFunctionAssist(int32* dataPtr);

@@ -283,9 +283,16 @@ void CVariableEntry::ClearArrayParameter()
     ScriptAssert_(GetScriptContext(), mIsParameter, "<internal>", -1,
                     "Error - calling ClearArrayParameter() on an invalid variable (%s)\n",
                     UnHash(GetHash()));
+
+    // -- we're going to rely on InitializeArrayParameter to set these correctly...
+    // -- if we call a function recursively, using an array param, we need the previous iteration's
+    // param var, as it was initialized, to be used in this iteration...  arrays are by reference anyways,
+    // so the mAddr will be the same value, regardless of which call (at any stack depth) we're using
+    /*
     mArraySize = -1;
     mAddr = NULL;
     mStringHashArray = NULL;
+    */
 }
 
 // ====================================================================================================================
@@ -294,14 +301,19 @@ void CVariableEntry::ClearArrayParameter()
 void CVariableEntry::InitializeArrayParameter(CVariableEntry* assign_from_ve, CObjectEntry* assign_from_oe,
                                               CExecStack& execstack, CFunctionCallStack& funccallstack)
 {
-    // -- ensure we have an array parameter
-    if (!mIsParameter || mArraySize != -1 || !assign_from_ve)
+    // -- ensure we have an array parameter, and a valid source to initialize from
+    if (!mIsParameter || !assign_from_ve)
     {
         ScriptAssert_(GetScriptContext(), 0, "<internal>", -1,
                       "Error - calling InitializeArrayParameter() on an invalid variable (%s)\n",
                       UnHash(GetHash()));
         return;
     }
+
+    // $$$TZA SendArray
+    // note:  if we're calling a function recursively, assign_from_ve could easily be "this"...
+    // however, if assign_from_oe is different...  something to figure out and test??
+    // for now, it should be harmless to this to this
 
     // -- we basically duplicate the internals of the variable entry, allowing the parameter to act as a reference
 	mOffset = assign_from_ve->mOffset;

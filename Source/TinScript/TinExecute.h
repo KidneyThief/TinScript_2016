@@ -371,7 +371,7 @@ class CFunctionCallStack
         // member that is not a global (thread) var
         uint32 mDebuggerFunctionReload;
 
-        static bool FindExecutionStackVar(uint32 var_hash, CDebuggerWatchVarEntry& watch_entry, CVariableEntry*& ve);
+        static bool FindExecutionStackVar(uint32 var_hash, CDebuggerWatchVarEntry& watch_entry);
 
         // -- we're looking for the function call at the internal mDebuggerWatchStackOffset, from the break callstack
         const CFunctionCallStack* GetBreakExecutionFunctionCallEntry(int32 execution_depth, int32& stack_offset,
@@ -419,8 +419,7 @@ bool8 DebuggerBreakLoop(CCodeBlock* cb, const uint32* instrptr, CExecStack& exec
 bool8 DebuggerAssertLoop(const char* condition, CCodeBlock* cb, const uint32* instrptr, CExecStack& execstack,
                          CFunctionCallStack& funccallstack, const char* fmt, ...);
 
-bool8 DebuggerFindStackVar(CScriptContext* script_context, uint32 var_hash, CDebuggerWatchVarEntry& watch_entry,
-						   CVariableEntry*& ve);
+bool8 DebuggerFindStackVar(CScriptContext* script_context, uint32 var_hash, CDebuggerWatchVarEntry& watch_entry);
 
 // --  a debugger assert is special, in that it happens while we have a callstack and use a remote
 // -- debugger to provide insight into the issue (callstack variables can be examined for a bad value/object/etc...)
