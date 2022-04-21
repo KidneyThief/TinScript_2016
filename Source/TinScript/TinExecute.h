@@ -53,7 +53,7 @@ class CExecStack
         {
 		}
 
-        CScriptContext* GetContextOwner() { return (mContextOwner); }
+        CScriptContext* GetContextOwner() const { return (mContextOwner); }
 
 		void Push(void* content, eVarType contenttype)
 		{
@@ -218,7 +218,7 @@ class CExecStack
             return (kPointerDiffUInt32(mStackTop, mStack) / sizeof(uint32));
         }
 
-        void* GetStackVarAddr(int32 varstacktop, int32 varoffset)
+        void* GetStackVarAddr(int32 varstacktop, int32 varoffset) const
         {
             uint32* varaddr = &mStack[varstacktop];
 
@@ -300,7 +300,7 @@ class CFunctionCallStack
                 local_object_id;
 		}
 
-   		CFunctionEntry* GetTop(CObjectEntry*& objentry, int32& varoffset)
+   		CFunctionEntry* GetTop(CObjectEntry*& objentry, int32& varoffset) const
         {
             if (m_stacktop > 0)
             {
@@ -337,7 +337,7 @@ class CFunctionCallStack
         void BeginExecution(const uint32* instrptr);
         void BeginExecution();
 
-        CFunctionEntry* GetExecuting(uint32& obj_id, CObjectEntry*& objentry, int32& varoffset);
+        CFunctionEntry* GetExecuting(uint32& obj_id, CObjectEntry*& objentry, int32& varoffset) const;
         bool IsExecutingByIndex(int32 stack_top_offset, bool& is_watch_expression) const;
 		bool GetExecutingByIndex(uint32& oe_id, CObjectEntry*& objentry, uint32& fe_hash, CFunctionEntry*& funcentry,
                                  uint32& _ns_hash, uint32& _cb_hash, int32& _linenumber, int32 stack_top_offset);

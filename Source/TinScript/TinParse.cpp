@@ -4173,6 +4173,7 @@ bool8 TryParseFuncCall(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeN
                           filebuf.linenumber,
                           "Error - Unable to evaluate parameter %d in call to %s()\n", paramindex,
                           TokenPrint(idtoken));
+            --gGlobalExprParenDepth;
             return (false);
         }
     }
@@ -5758,6 +5759,10 @@ bool8 ParseStatementBlock(CCodeBlock* codeblock, CCompileTreeNode*& link, tReadT
                               gTokenTypeStrings[filetokenbuf.type], TokenPrint(filetokenbuf),
                               filetokenbuf.linenumber);
 			}
+            // -- at this point, we want to ensure the paren depth is reset...
+            // an un-parsable watch expression for example, can leave this non-zero, which will
+            // prevent any subsequent watch expressions from being parsed
+            gGlobalExprParenDepth = 0;
             return (false);
 		}
 	} while (foundtoken);

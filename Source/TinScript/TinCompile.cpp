@@ -797,6 +797,7 @@ int32 CValueNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 countonly) 
 				size += PushInstruction(countonly, instrptr, 0, DBG_func);
         		size += PushInstruction(countonly, instrptr, var->GetHash(), DBG_var);
             }
+            // -- otherwise this is a stack var
             else
             {
 				size += PushInstruction(countonly, instrptr, push_value ? OP_PushLocalValue : OP_PushLocalVar,
@@ -2817,6 +2818,9 @@ int32 CArrayVarNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 countonl
     }
 
    	// -- left child will have pushed the hashtable variable
+    // $$$TZA Array - this is "unusual", but basically, the OpExecArrayHash(), will use the var
+	// pushed on the stack, and will figure out then, whether it's a hashtable (using a key),
+	// or it'll convert the key to an index... arguably this could use a small clarity refactor
     int32 tree_size = leftchild->Eval(instrptr, TYPE_hashtable, countonly);
     if (tree_size < 0)
         return (-1);

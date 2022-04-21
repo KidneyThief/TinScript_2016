@@ -44,10 +44,10 @@ public:
     CFunctionContext();
     virtual ~CFunctionContext();
 
-    bool8 AddParameter(const char* varname, uint32 varhash, eVarType type, int32 array_size,
-                       uint32 convert_type_from_object, bool is_thread_exec = false);
-    bool8 AddParameter(const char* varname, uint32 varhash, eVarType type, int32 array_size, int32 paramindex,
-                       uint32 convert_type_from_object, bool8 is_thread_exec = false);
+    CVariableEntry* AddParameter(const char* varname, uint32 varhash, eVarType type, int32 array_size,
+                                 uint32 convert_type_from_object, bool is_thread_exec = false);
+    CVariableEntry* AddParameter(const char* varname, uint32 varhash, eVarType type, int32 array_size, int32 paramindex,
+                                 uint32 convert_type_from_object, bool8 is_thread_exec = false);
     CVariableEntry* AddLocalVar(const char* varname, uint32 varhash, eVarType type, int32 array_size,
                                 bool8 is_param, bool8 is_thread_exec = false);
     int32 GetParameterCount();

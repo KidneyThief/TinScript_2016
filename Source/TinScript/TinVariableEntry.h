@@ -103,7 +103,7 @@ public:
     int32 GetArraySize() const
     {
         // -- note:  0 or 1 means this is not an array...
-        // -- postive value < kMaxVariableArraySize is the size, and -1 is an array, but an undetermined size
+        // -- positive value < kMaxVariableArraySize is the size, and -1 is an array, but an undetermined size
         return (mArraySize);
     }
 
@@ -121,7 +121,7 @@ public:
     bool8 ConvertToArray(int32 array_size);
     void ClearArrayParameter();
     void InitializeArrayParameter(CVariableEntry* assign_from_ve, CObjectEntry* assign_from_oe,
-                                  CExecStack& execstack, CFunctionCallStack& funccallstack);
+                                  const CExecStack& execstack, const CFunctionCallStack& funccallstack);
 
     // -- this method is used only for registered arrays of const char*
     // -- the address is actually a const char*[], and there's a parallel
@@ -149,7 +149,7 @@ public:
         return (mIsParameter);
     }
 
-    bool8 IsStackVariable(CFunctionCallStack& funccallstack, bool allow_indexed_var = false) const;
+    bool8 IsStackVariable(const CFunctionCallStack& funccallstack, bool allow_indexed_var = false) const;
 
     void SetValue(void* objaddr, void* value, CExecStack* execstack = NULL, CFunctionCallStack* funccallstack = NULL,
                   int32 array_index = 0);

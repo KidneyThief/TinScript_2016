@@ -42,8 +42,8 @@ extern OpExecuteFunction gOpExecFunctions[OP_COUNT];
 
 void DebugTrace(eOpCode opcode, const char* fmt, ...);
 
-void* GetStackVarAddr(CScriptContext* script_context, CExecStack& execstack,
-                      CFunctionCallStack& funccallstack, int32 stackvaroffset);
+void* GetStackVarAddr(CScriptContext* script_context, const CExecStack& execstack,
+                      const CFunctionCallStack& funccallstack, int32 stackvaroffset);
 
 bool8 GetStackValue(CScriptContext* script_context, CExecStack& execstack,
                     CFunctionCallStack& funccallstack, void*& valaddr, eVarType& valtype,

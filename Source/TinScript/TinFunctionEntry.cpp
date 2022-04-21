@@ -59,8 +59,8 @@ CFunctionContext::~CFunctionContext()
 // ====================================================================================================================
 // AddParameter():  Parameter declaration for a function definition, for a specific index.
 // ====================================================================================================================
-bool8 CFunctionContext::AddParameter(const char* varname, uint32 varhash, eVarType type, int32 array_size,
-                                     int32 paramindex, uint32 actual_type_id, bool is_thread_exec)
+CVariableEntry* CFunctionContext::AddParameter(const char* varname, uint32 varhash, eVarType type, int32 array_size,
+                                               int32 paramindex, uint32 actual_type_id, bool is_thread_exec)
 {
     // add the entry to the parameter list as well
     assert(paramindex >= 0 && paramindex < eMaxParameterCount);
@@ -68,26 +68,28 @@ bool8 CFunctionContext::AddParameter(const char* varname, uint32 varhash, eVarTy
     {
         TinPrint(TinScript::GetContext(), "Error - Max parameter count %d exceeded, parameter: %s\n",
                 eMaxParameterCount, varname);
-        return (false);
+        return (nullptr);
     }
 
     if (parameterlist[paramindex] != NULL)
     {
         TinPrint(TinScript::GetContext(), "Error - parameter %d has already been added\n",paramindex);
-        return (false);
+        return (nullptr);
     }
 
     // -- if the parameter type is invalid,
     if (paramindex >= 1 && type < FIRST_VALID_TYPE)
     {
         TinPrint(TinScript::GetContext(), "Error - invalid parameter %d", paramindex);
-        return false;
+        return (nullptr);
     }
 
     // -- create the Variable entry
     CVariableEntry* ve = AddLocalVar(varname, varhash, type, array_size, true, is_thread_exec);
     if (!ve)
-        return (false);
+    {
+        return (nullptr);
+    }
 
     // -- parameters that are registered as TYPE_object, but are actually
     // -- pointers to registered classes, can be automatically
@@ -102,14 +104,14 @@ bool8 CFunctionContext::AddParameter(const char* varname, uint32 varhash, eVarTy
         paramcount = paramindex + 1;
     parameterlist[paramindex] = ve;
 
-    return (true);
+    return (ve);
 }
 
 // ====================================================================================================================
 // AddParameter():  Parameter declaration for a function definition.
 // ====================================================================================================================
-bool8 CFunctionContext::AddParameter(const char* varname, uint32 varhash, eVarType type, int32 array_size,
-                                     uint32 actual_type_id, bool is_thread_exec)
+CVariableEntry* CFunctionContext::AddParameter(const char* varname, uint32 varhash, eVarType type, int32 array_size,
+                                               uint32 actual_type_id, bool is_thread_exec)
 {
     // -- adding automatically increments the paramcount if needed
     return AddParameter(varname, varhash, type, array_size, paramcount, actual_type_id, is_thread_exec);

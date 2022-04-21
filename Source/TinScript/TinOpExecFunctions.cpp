@@ -201,8 +201,8 @@ bool8 ApplyPostUnaryOpEntry(eVarType value_type, void* value_addr)
 // ====================================================================================================================
 // GetStackVarAddr():  Get the address of a stack veriable, given the actual variable entry
 // ====================================================================================================================
-void* GetStackVarAddr(CScriptContext* script_context, CExecStack& execstack, CFunctionCallStack& funccallstack,
-                      CVariableEntry& ve, int32 array_var_index)
+void* GetStackVarAddr(CScriptContext* script_context, const CExecStack& execstack,
+                      const CFunctionCallStack& funccallstack, CVariableEntry& ve, int32 array_var_index)
 {
     // -- ensure the variable is a stack variable
     if (!ve.IsStackVariable(funccallstack, array_var_index == 0))
@@ -256,8 +256,8 @@ void* GetStackVarAddr(CScriptContext* script_context, CExecStack& execstack, CFu
 // ====================================================================================================================
 // GetStackVarAddr():  Get the address of a stack veriable, given the local variable index
 // ====================================================================================================================
-void* GetStackVarAddr(CScriptContext* script_context, CExecStack& execstack, CFunctionCallStack& funccallstack,
-                      int32 stackvaroffset)
+void* GetStackVarAddr(CScriptContext* script_context, const CExecStack& execstack,
+                      const CFunctionCallStack& funccallstack, int32 stackvaroffset)
 {
     int32 stacktop = 0;
     CObjectEntry* oe = NULL;

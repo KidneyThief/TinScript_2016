@@ -2263,32 +2263,34 @@ bool8 CScriptContext::InitWatchExpression(CDebuggerWatchExpression& debugger_wat
     CFunctionContext* cur_func_context = cur_function->GetContext();
     CFunctionContext* temp_context = fe->GetContext();
 
-    bool returnAdded = false;
+    // -- we need the watch function context to have an identical set of local variables,
+    // in the same exact order, 
     tVarTable* cur_var_table = cur_func_context->GetLocalVarTable();
     CVariableEntry* cur_ve = cur_var_table->First();
     while (cur_ve)
     {
-        // $$$TZA TYPE__array
-        // -- first variable is always the "__return" parameter
-        if (!returnAdded)
+        CVariableEntry* watch_ve = nullptr;
+        if (cur_ve->IsParameter())
         {
-            returnAdded = true;
-            temp_context->AddParameter("__return", Hash("__return"), TYPE__resolve, 1, 0);
+            watch_ve = temp_context->AddParameter(cur_ve->GetName(), cur_ve->GetHash(), cur_ve->GetType(),
+                                                  cur_ve->GetArraySize(), 0);
         }
         else
         {
-            // -- create a cloned local variable
-            temp_context->AddLocalVar(cur_ve->GetName(), cur_ve->GetHash(), cur_ve->GetType(), 1, false);
+            watch_ve = temp_context->AddLocalVar(cur_ve->GetName(), cur_ve->GetHash(), cur_ve->GetType(),
+                                                 cur_ve->GetArraySize(), false);
         }
 
+        // -- we need the stack offset to match exactly...
+        // -- in the case of arrays, array size, address, etc...  are initialized
+        // to match below, using InitializeArrayParameter()
+        watch_ve->SetStackOffset(cur_ve->GetStackOffset());
+        
         // -- get the next local var
         cur_ve = cur_var_table->Next();
     }
 
-    // -- initialize the stack offsets
-    temp_context->InitStackVarOffsets(fe);
-
-    // -- push the temporary function entry onto the temp code block, so we can compile our watch function
+   // -- push the temporary function entry onto the temp code block, so we can compile our watch function
     codeblock->smFuncDefinitionStack->Push(fe, cur_object, 0, true);
 
     // -- add a funcdecl node, and set its left child to be the statement block
@@ -2350,7 +2352,7 @@ bool8 CScriptContext::InitWatchExpression(CDebuggerWatchExpression& debugger_wat
 }
 
 // ====================================================================================================================
-// EvaluateWatchExpression():  Used by the debugger for watches and breakpoints conditionals.
+// EvalWatchExpression():  Used by the debugger for watches and breakpoints conditionals.
 // ====================================================================================================================
 bool8 CScriptContext::EvalWatchExpression(CDebuggerWatchExpression& debugger_watch, bool use_trace,
                                           CFunctionCallStack& cur_call_stack, CExecStack& cur_exec_stack,
@@ -2402,26 +2404,41 @@ bool8 CScriptContext::EvalWatchExpression(CDebuggerWatchExpression& debugger_wat
     execstack.Reserve(localvarcount * MAX_TYPE_SIZE);
 
     // -- copy the local values from the currently executing function, to stack
+    // make sure this loop matches InitWatchExpression()
     CVariableEntry* cur_ve = cur_function->GetLocalVarTable()->First();
-    while (cur_ve)
+    CVariableEntry* watch_ve = watch_function->GetLocalVarTable()->First();
+    while (cur_ve && watch_ve)
     {
-		// -- this doesn't involve the return parameter
-		// $$$TZA support hashtable, array and object local vars
+        // -- this doesn't involve the return parameter
+        // $$$TZA support hashtable and object local vars
         if (cur_ve == cur_function->GetContext()->GetParameter(0) ||
-            cur_ve->IsArray() ||cur_ve->GetType() == TYPE_hashtable || cur_ve->GetType() == TYPE_object)
+            cur_ve->GetType() == TYPE_hashtable || cur_ve->GetType() == TYPE_object)
         {
             cur_ve = cur_function->GetLocalVarTable()->Next();
+            watch_ve = watch_function->GetLocalVarTable()->Next();
             continue;
         }
 
-        // -- do a direct memcpy of the "value" of the variable to the local copy
-		void* dest_stack_addr = execstack.GetStackVarAddr(0, cur_ve->GetStackOffset());
-		void* cur_stack_addr = debug_execstack->GetStackVarAddr(debug_stacktop, cur_ve->GetStackOffset());
-        if (dest_stack_addr != nullptr && cur_stack_addr != nullptr)
+        // -- arrays are by reference, so we copy the mAddr VE directly
+        if (cur_ve->IsArray())
         {
-            memcpy(dest_stack_addr, cur_stack_addr, kMaxTypeSize);
+            // -- note:  the execstack is from the current function (obviously)
+            watch_ve->InitializeArrayParameter(cur_ve, cur_object, *debug_execstack, *debug_callstack);
         }
-		cur_ve = cur_function->GetLocalVarTable()->Next();
+
+        else
+        {
+            // -- do a direct memcpy of the "value" of the variable to the local copy
+            void* dest_stack_addr = execstack.GetStackVarAddr(0, cur_ve->GetStackOffset());
+            void* cur_stack_addr = debug_execstack->GetStackVarAddr(debug_stacktop, cur_ve->GetStackOffset());
+            if (dest_stack_addr != nullptr && cur_stack_addr != nullptr)
+            {
+                memcpy(dest_stack_addr, cur_stack_addr, kMaxTypeSize);
+            }
+        }
+
+        cur_ve = cur_function->GetLocalVarTable()->Next();
+        watch_ve = watch_function->GetLocalVarTable()->Next();
     }
 
     // -- call the function
@@ -2429,6 +2446,7 @@ bool8 CScriptContext::EvalWatchExpression(CDebuggerWatchExpression& debugger_wat
     bool8 result = CodeBlockCallFunction(watch_function, NULL, execstack, funccallstack, false);
 
     // -- if we executed successfully...
+    // $$$TZA Arrays!  Fix-me, loop should match the above
     if (result)
     {
         // -- if we can retrieve the return value
@@ -2447,11 +2465,14 @@ bool8 CScriptContext::EvalWatchExpression(CDebuggerWatchExpression& debugger_wat
         // -- we want to copy back the watch expression var parameters to the original function...
         // this way, we can use watch expressions to modify local variables instead of just
         // (e.g.) printing them
-        cur_ve = cur_function->GetLocalVarTable()->First();
+        CVariableEntry* cur_ve = cur_function->GetLocalVarTable()->First();
         while (cur_ve)
         {
             // -- this doesn't involve the return parameter
             // $$$TZA support hashtable, array and object local vars
+            // $$$TZA Arrays!  Because arrays, hashtables, and objects are all passed by reference
+            // we probably don't need to do anything anyways - the source ve isn't a local, so it'll already
+            // have any changes incurred by the watch expression
             if (cur_ve == cur_function->GetContext()->GetParameter(0) ||
                 cur_ve->IsArray() || cur_ve->GetType() == TYPE_hashtable || cur_ve->GetType() == TYPE_object)
             {
@@ -2472,156 +2493,6 @@ bool8 CScriptContext::EvalWatchExpression(CDebuggerWatchExpression& debugger_wat
 
     // -- return the result
     return (result);
-}
-
-// ====================================================================================================================
-// EvaluateWatchExpression():  Used by the debugger for variable watches.
-// ====================================================================================================================
-bool8 CScriptContext::EvaluateWatchExpression(const char* expression)
-{
-    // -- ensure we have an expression
-    if (!expression || !expression[0])
-        return (false);
-
-    // -- we can't create or evaluate until we've actually broken (so we have a call stack and function)
-    if (!mDebuggerBreakFuncCallStack)
-        return (false);
-
-    // -- find the function we're currently executing
-    int32 stacktop = 0;
-    CFunctionEntry* cur_function = NULL;
-    CObjectEntry* cur_object = NULL;
-    uint32 cur_oe_id = 0;
-    cur_function = mDebuggerBreakFuncCallStack->GetExecuting(cur_oe_id, cur_object, stacktop);
-
-    // -- make sure we've got a valid function
-    if (!cur_function)
-        return (false);
-
-	// create the temporary code block and the starting root node
-    CCodeBlock* codeblock = TinAlloc(ALLOC_CodeBlock, CCodeBlock, this, "<internal>");
-	CCompileTreeNode* root = CCompileTreeNode::CreateTreeRoot(codeblock);
-
-	// -- create the function entry, and add it to the global table
-    const char* temp_func_name = "_eval_watch_expr_";
-	uint32 temp_func_hash = Hash(temp_func_name);
-	CFunctionEntry* fe = FuncDeclaration(this, GetGlobalNamespace(), temp_func_name, temp_func_hash,
-                                         eFuncTypeScript);
-
-    // -- copy the function context from our currently executing function, to the temporary,
-    // -- so we have access to the same variables, and their current values - but won't change
-    // -- the *real* variables
-    CFunctionContext* cur_func_context = cur_function->GetContext();
-    CFunctionContext* temp_context = fe->GetContext();
-
-    // -- first parameter is always "__return"
-    bool returnAdded = false;
-    tVarTable* cur_var_table = cur_func_context->GetLocalVarTable();
-    CVariableEntry* cur_ve = cur_var_table->First();
-    while (cur_ve)
-    {
-        if (!returnAdded)
-        {
-            // $$$TZA TYPE__array
-            returnAdded = true;
-            temp_context->AddParameter("__return", Hash("__return"), TYPE__resolve, 1, 0);
-        }
-        else
-        {
-            // -- create a copy, and set the same value - value lives on the stack
-            CVariableEntry* temp_ve = temp_context->AddLocalVar(cur_ve->GetName(), cur_ve->GetHash(),
-                                                                cur_ve->GetType(), 1, true);
-            void* varaddr = mDebuggerBreakExecStack->GetStackVarAddr(stacktop, cur_ve->GetStackOffset());
-            temp_ve->SetValue(NULL, varaddr);
-        }
-
-        // -- get the next local var
-        cur_ve = cur_var_table->Next();
-    }
-
-	// -- push the temporary function entry onto the temp code block
-    codeblock->smFuncDefinitionStack->Push(fe, NULL, 0);
-
-        // -- add a funcdecl node, and set its left child to be the statement block
-    CFuncDeclNode* funcdeclnode = TinAlloc(ALLOC_TreeNode, CFuncDeclNode, codeblock, root->next,
-                                           -1, temp_func_name, (int32)strlen(temp_func_name), "", 0 , 0);
-
-    // -- if this is a conditional, then we want to see if the value of it is true/false
-    char expr_result[kMaxTokenLength];
-    snprintf(expr_result, sizeof(expr_result), "return (%s);", expression);
-
-    // -- now we've got a temporary function with exactly the same set of local variables
-    // -- see if we can parse the expression
-	tReadToken parsetoken(expr_result, 0);
-    if (ParseStatementBlock(codeblock, funcdeclnode->leftchild, parsetoken, false))
-    {
-        // -- if we made it this far, execute the function
-        DumpTree(root, 0, false, false);
-
-        // we successfully created the tree, now calculate the size needed by running through the tree
-        int32 size = codeblock->CalcInstrCount(*root);
-        if (size > 0)
-        {
-            // -- allocate space for the instructions
-            codeblock->AllocateInstructionBlock(size, codeblock->GetLineNumberCount());
-
-            // -- compile the tree
-            if (codeblock->CompileTree(*root))
-            {
-                // -- execute the code block - if we're successful, we'll have a value to return
-                //bool8 result = ExecuteCodeBlock(*codeblock);
-	            // -- create the stack to use for the execution
-	            CExecStack execstack;
-                CFunctionCallStack funccallstack(&execstack);
-
-                // -- push the function entry onto the call stack
-                funccallstack.Push(fe, NULL, 0, true);
-
-                // -- create space on the execstack, if this is a script function
-                int32 localvarcount = fe->GetContext()->CalculateLocalVarStackSize();
-                execstack.Reserve(localvarcount * MAX_TYPE_SIZE);
-
-                // -- copy the local values onto the stack
-                CVariableEntry* temp_ve = temp_context->GetLocalVarTable()->First();
-                while (temp_ve)
-                {
-                    void* stack_addr = execstack.GetStackVarAddr(0, temp_ve->GetStackOffset());
-                    void* var_addr = temp_ve->GetAddr(NULL);
-                    if (stack_addr != nullptr && var_addr != nullptr)
-                    {
-                        memcpy(stack_addr, var_addr, kMaxTypeSize);
-                    }
-                    temp_ve = temp_context->GetLocalVarTable()->Next();
-                }
-
-                // -- call the function
-                funccallstack.BeginExecution();
-                bool8 result = CodeBlockCallFunction(fe, NULL, execstack, funccallstack, false);
-
-                // -- if we executed successfully...
-                if (result)
-                {
-                    eVarType returnType;
-                    void* returnValue = execstack.Pop(returnType);
-                    if (returnValue)
-                    {
-                        char resultString[kMaxNameLength];
-                        gRegisteredTypeToString[returnType](this, returnValue, resultString, kMaxNameLength);
-                        TinPrint(this, "*** EvaluateWatchExpression(): [%s] %s\n", GetRegisteredTypeName(returnType), resultString);
-                    }
-                }
-            }
-        }
-    }
-
-    // -- on our way out, cleanup
-    ResetAssertStack();
-    codeblock->SetFinishedParsing();
-    DestroyTree(root);
-    CCodeBlock::DestroyCodeBlock(codeblock);
-
-    // -- fail
-    return (false);
 }
 
 // ====================================================================================================================

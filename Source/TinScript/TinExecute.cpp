@@ -908,7 +908,7 @@ void CFunctionCallStack::BeginExecution()
 // ====================================================================================================================
 // GetExecuting():  Get the function entry at the top of the stack, that is currently executing
 // ====================================================================================================================
-CFunctionEntry* CFunctionCallStack::GetExecuting(uint32& obj_id, CObjectEntry*& objentry, int32& varoffset)
+CFunctionEntry* CFunctionCallStack::GetExecuting(uint32& obj_id, CObjectEntry*& objentry, int32& varoffset) const
 {
     int32 temp = m_stacktop - 1;
     while (temp >= 0)

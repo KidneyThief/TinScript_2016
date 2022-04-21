@@ -205,6 +205,7 @@ CVariableEntry::~CVariableEntry()
 	if (mScriptVar)
     {
         // -- if this isn't a hashtable, and it isn't a parameter array
+        // $$$TZA Array - *this* is why we require array parameters to be marked as a parameter!
         if (mType != TYPE_hashtable && (!mIsParameter || !IsArray()))
         {
 		    TinFreeArray((char*)mAddr);
@@ -299,10 +300,12 @@ void CVariableEntry::ClearArrayParameter()
 // InitializeArrayParameter():  Array parameters are like references - initialize the details upon function call.
 // ====================================================================================================================
 void CVariableEntry::InitializeArrayParameter(CVariableEntry* assign_from_ve, CObjectEntry* assign_from_oe,
-                                              CExecStack& execstack, CFunctionCallStack& funccallstack)
+                                              const CExecStack& execstack, const CFunctionCallStack& funccallstack)
 {
     // -- ensure we have an array parameter, and a valid source to initialize from
-    if (!mIsParameter || !assign_from_ve)
+    // note:  watch expressions don't really use parameters, but in this case, arrays need to be
+    // assigned as references (and parameters)
+    if (!assign_from_ve)
     {
         ScriptAssert_(GetScriptContext(), 0, "<internal>", -1,
                       "Error - calling InitializeArrayParameter() on an invalid variable (%s)\n",
@@ -316,8 +319,10 @@ void CVariableEntry::InitializeArrayParameter(CVariableEntry* assign_from_ve, CO
     // for now, it should be harmless to this to this
 
     // -- we basically duplicate the internals of the variable entry, allowing the parameter to act as a reference
+    // not dynamic, and arrays are always parameters - we never destroy the memory from a (reference) array
+    mIsParameter = true;
 	mOffset = assign_from_ve->mOffset;
-    mIsDynamic = assign_from_ve->mIsDynamic;
+    mIsDynamic = false;
     mScriptVar = assign_from_ve->mScriptVar;
     mArraySize = assign_from_ve->mArraySize;
     mStringHashArray = assign_from_ve->mStringHashArray;
@@ -462,7 +467,7 @@ void* CVariableEntry::GetArrayVarAddr(void* objaddr,int32 array_index) const
 // ====================================================================================================================
 // IsStackVariable():  Returns true if this variable is to use space on the stack as it's function is executing.
 // ====================================================================================================================
-bool8 CVariableEntry::IsStackVariable(CFunctionCallStack& funccallstack, bool allow_indexed_var) const
+bool8 CVariableEntry::IsStackVariable(const CFunctionCallStack& funccallstack, bool allow_indexed_var) const
 {
     int32 stackoffset = 0;
     CObjectEntry* oe = NULL;
