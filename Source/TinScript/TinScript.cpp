@@ -250,6 +250,10 @@ void CScriptContext::Destroy()
 {
     assert(gThreadContext != nullptr);
 
+    //  save the string table as we exit
+    if (gThreadContext->IsMainThread())
+        SaveStringTable();
+
     // -- atm, this only sets a bool and prevents thread commands from processing
     gThreadContext->ThreadShutdown();
 
@@ -3470,7 +3474,7 @@ void CScriptContext::DebuggerSendObjectVarTable(CDebuggerWatchVarEntry* callingF
         return;
 
     CVariableEntry* member = var_table->First();
-    while (member)
+     while (member)
     {
         // - -- declare the new entry
         CDebuggerWatchVarEntry member_entry;
