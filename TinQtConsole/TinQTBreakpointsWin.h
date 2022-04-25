@@ -79,6 +79,8 @@ class CDebugBreakpointsWin : public QListWidget
             QListWidget::paintEvent(e);
         }
 
+        bool HasBreakpoint(uint32 codeblock_hash);
+
         // -- Toggle the breakpoint32 for a file/line
         void ToggleBreakpoint(uint32 codeblock_hash, int32 line_number, bool add, bool addEnabled = true);
 

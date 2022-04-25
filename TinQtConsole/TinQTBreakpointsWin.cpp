@@ -303,12 +303,32 @@ CDebugBreakpointsWin::~CDebugBreakpointsWin() {
     }
 }
 
+bool CDebugBreakpointsWin::HasBreakpoint(uint32 codeblock_hash)
+{
+    // -- sanity check
+    if (codeblock_hash == 0)
+        return false;
+
+    // -- see if we've got a non-watchvar breakpoint for this file
+    for (int32 i = 0; i < mBreakpoints.size(); ++i)
+    {
+        CBreakpointEntry* temp = mBreakpoints.at(i);
+        if (temp->mWatchRequestID == 0 && temp->mCodeblockHash == codeblock_hash)
+        {
+            return true;
+        }
+    }
+
+    // -- not found
+    return false;
+}
+
 void CDebugBreakpointsWin::ToggleBreakpoint(uint32 codeblock_hash, int32 line_number, bool addOrRemove, bool addEnabled)
 {
     // -- see if the breakpoint already exists
     int32 found_index = -1;
     CBreakpointEntry* breakpoint = NULL;
-    for(int32 i = 0; i < mBreakpoints.size(); ++i)
+    for (int32 i = 0; i < mBreakpoints.size(); ++i)
     {
         CBreakpointEntry* temp = mBreakpoints.at(i);
         if (temp->mWatchRequestID == 0 && temp->mCodeblockHash == codeblock_hash && temp->mLineNumber == line_number)

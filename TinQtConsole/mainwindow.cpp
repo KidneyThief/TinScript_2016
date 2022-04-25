@@ -647,31 +647,45 @@ void MainWindow::AddScriptOpenAction(const char* fullPath)
 }
 
 // ====================================================================================================================
-// AddScriptCompileAction():  Adds an action to the top menu bar, to request a script be recompiled
+// HasScriptCompileAction():  returns true if we already have a compile action for this script
 // ====================================================================================================================
-void MainWindow::AddScriptCompileAction(const char* fullPath, bool has_error)
+bool MainWindow::HasScriptCompileAction(const char* fullPath)
 {
+    // -- sanity check
     if (!fullPath || !fullPath[0])
-        return;
+        return false;
 
-    const char* fileName = CDebugSourceWin::GetFileName(fullPath);
+    // -- see if  we haven't already added this action
     uint32 fileHash = TinScript::Hash(fullPath);
-
-    // -- ensure we haven't already added this action
-    bool found = false;
     for (int i = 0; i < mScriptCompileActionList.size(); ++i)
     {
         CScriptOpenAction* scriptOpenAction = mScriptCompileActionList[i];
         if (scriptOpenAction->GetFileHash() == fileHash)
         {
-            found = true;
-            break;
+            // -- found
+            return (true);
         }
     }
 
-    // -- if this entry already exists, we're done
-    if (found)
+    // -- not found
+    return (false);
+}
+
+// ====================================================================================================================
+// AddScriptCompileAction():  Adds an action to the top menu bar, to request a script be recompiled
+// ====================================================================================================================
+void MainWindow::AddScriptCompileAction(const char* fullPath, bool has_error)
+{
+    // -- sanity check
+    if (!fullPath || !fullPath[0])
         return;
+
+    // -- ensure we haven't already added this action
+    if (HasScriptCompileAction(fullPath))
+        return;
+
+    const char* fileName = CDebugSourceWin::GetFileName(fullPath);
+    uint32 fileHash = TinScript::Hash(fullPath);
 
     // -- update the compile menu title
     mCompileMenu->setTitle("*** COMPILE ***");

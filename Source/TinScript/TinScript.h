@@ -32,6 +32,7 @@
 #include <typeinfo>
 #include <chrono>
 #include <mutex>
+#include <filesystem>
 
 #include "integration.h"
 #include "TinMemory.h"
@@ -231,7 +232,8 @@ const char* GetStringTableName();
 void SaveStringTable();
 void LoadStringTable(const char* from_dir = NULL);
 
-bool CheckSourceNeedToCompile(const char* filename);
+bool CheckSourceNeedToCompile(const char* filename, bool& out_found_source_ft,
+                              std::filesystem::file_time_type& out_source_modified_ft);
 
 // ====================================================================================================================
 // struct tIdentifierString:  helper to retrieve arrays of strings

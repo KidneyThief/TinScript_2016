@@ -141,6 +141,7 @@ public:
     ~MainWindow();
 
     void AddScriptOpenAction(const char* fullPath);
+    bool HasScriptCompileAction(const char* fullPath);
     void AddScriptCompileAction(const char* fullPath, bool has_error);
     void RemoveScriptCompileAction(const char* fullPath);
 

@@ -27,7 +27,8 @@
 #define __TINCOMPILE_H
 
 // -- includes
-#include "assert.h"
+#include <assert.h>
+#include <filesystem>
 
 #include "integration.h"
 #include "TinTypes.h"
@@ -1226,10 +1227,11 @@ class CCodeBlock
 
         void SetFinishedParsing() { mIsParsing = false; }
 
-		// -- conveniently, any time a script is compiled, it's a brand new codeblock,
-		// so there's never a need to set this back to false;
-		bool GetSourceHasChanged() { return mSourceHasChanged; }
-		void SetSourceHasChanged() { mSourceHasChanged = true; }
+		// -- track the source file time - any time the source needs to be recompiled, then we notify
+		// the debugger that the file has been modified...
+        const std::filesystem::file_time_type& GetCheckSourceFileTime() const { return mCheckSourceFileTime; }
+		void SetCheckSourceFileTime(std::filesystem::file_time_type new_source_ft) { mCheckSourceFileTime = new_source_ft; }
+        std::filesystem::file_time_type mCheckSourceFileTime;
 
         CFunctionCallStack* smFuncDefinitionStack;
         tVarTable* smCurrentGlobalVarTable;
@@ -1260,6 +1262,7 @@ class CCodeBlock
         static void DestroyUnusedCodeBlocks(CHashTable<CCodeBlock>* code_block_list)
         {
             CCodeBlock* codeblock = code_block_list->First();
+			int32 dummy_session = 0;
             while (codeblock)
             {
                 if (!codeblock->IsInUse())
@@ -1268,14 +1271,27 @@ class CCodeBlock
                     TinFree(codeblock);
                 }
 #if NOTIFY_SCRIPTS_MODIFIED
-				// -- otherwise, see if the source for the codeblock has been modified
-				else if (!codeblock->GetSourceHasChanged())
+				// -- any time the debugger is *not* connected, clear the check ft, so we resend on a new attachment
+				else if (!codeblock->GetScriptContext()->IsDebuggerConnected(dummy_session))
 				{
-					bool source_hash_changed = CheckSourceNeedToCompile(codeblock->GetFileName());
-					if (source_hash_changed)
+					codeblock->SetCheckSourceFileTime({});
+				}
+
+				// -- otherwise, see if the source for the codeblock has been modified
+				else
+				{
+                    bool found_source_ft = false;
+                    std::filesystem::file_time_type source_modified_ft;
+                    bool need_to_compile = CheckSourceNeedToCompile(codeblock->GetFileName(), found_source_ft, source_modified_ft);
+
+					// -- if we need to compile, see if we need to send the notification (again...)
+					if (need_to_compile && found_source_ft)
 					{
-						codeblock->SetSourceHasChanged();
-						codeblock->GetScriptContext()->NotifySourceStatus(codeblock->GetFileName(), true, false);
+						if (source_modified_ft != codeblock->GetCheckSourceFileTime())
+						{
+							codeblock->SetCheckSourceFileTime(source_modified_ft);
+                            codeblock->GetScriptContext()->NotifySourceStatus(codeblock->GetFileName(), true, false);
+						}
 					}
 				}
 #endif

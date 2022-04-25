@@ -610,12 +610,54 @@ void CDebugSourceWin::NotifyCodeblockLoaded(const char* full_path)
     CConsoleWindow::GetInstance()->GetMainWindow()->RemoveScriptCompileAction(full_path);
 }
 
+// ====================================================================================================================
+// NotifySourceStatus():  Notification that the source file is out of date (modified and/or contains errors)
+// ====================================================================================================================
 void CDebugSourceWin::NotifySourceStatus(const char* source_full_path, bool has_error)
 {
+    // -- sanity check
     if (source_full_path == nullptr || source_full_path[0] == '\0')
         return;
-    // -- we're also going to update the compile menu
+
+    // -- if this is the file we're currently displaying, reload it
+    uint32 codeblock_hash = TinScript::Hash(source_full_path);
+    if (codeblock_hash == mCurrentCodeblockHash)
+    {
+        OpenSourceFile(source_full_path, true);
+    }
+
+    // -- if we already know this file needs to be recompiled, we don't need to spam additional warning
+    if (CConsoleWindow::GetInstance()->GetMainWindow()->HasScriptCompileAction(source_full_path))
+        return;
+
+    // -- Update the "*** COMPILE" menu, which is (essentially) a list of files that
+    // need to be (possibly fixed and) re-executed
     CConsoleWindow::GetInstance()->GetMainWindow()->AddScriptCompileAction(source_full_path, has_error);
+
+    // -- if there are no errors, and this file is what we're currently displaying, we  want to reload the file,
+    // with a warning to update any breakpoints, and re-execute it
+    const char* file_name = CDebugSourceWin::GetFileName(source_full_path);
+    if (codeblock_hash == 0 || file_name == nullptr || file_name[0] == '\0')
+    {
+        return;
+    }
+
+    // -- if we have an error, display a warning
+    if (has_error)
+    {
+        ConsolePrint(1, "Source file contains error(s) and should be fixed and re-executed: %s\n", file_name);
+    }
+    else
+    {
+        if (codeblock_hash == mCurrentCodeblockHash)
+        {
+            ConsolePrint(1, "Source file has been modified and may need to be re-executed: %s\n", file_name);
+        }
+        if (CConsoleWindow::GetInstance()->GetDebugBreakpointsWin()->HasBreakpoint(codeblock_hash))
+        {
+            ConsolePrint(1, "Breakpoint(s) may need to be adjusted for modified file: %s\n", file_name);
+        }
+    }
 }
 
 // ====================================================================================================================

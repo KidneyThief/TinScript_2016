@@ -1028,7 +1028,8 @@ bool8 NeedToCompile(const char* full_path_name, const char* binfilename, bool ch
 // ====================================================================================================================
 // CheckSourceNeedToCompile():  Given just the source name, see if it needs to be (re)compiled
 // ====================================================================================================================
-bool CheckSourceNeedToCompile(const char* full_path)
+bool CheckSourceNeedToCompile(const char* full_path, bool& out_found_source_ft,
+                              std::filesystem::file_time_type& out_source_modified_ft)
 {
     // -- sanity check
     CScriptContext* script_context = TinScript::GetContext();
@@ -1037,10 +1038,13 @@ bool CheckSourceNeedToCompile(const char* full_path)
         return (false);
     }
 
+    // -- get the source file timestamp
+    out_found_source_ft = GetLastWriteTime(full_path, out_source_modified_ft);
+
     char binfilename[kMaxNameLength * 2];
     if (!GetBinaryFileName(full_path, binfilename, kMaxNameLength * 2))
     {
-        return false;
+        return (false);
     }
 
     // -- check used only to compare file modification timestamps, if a source
