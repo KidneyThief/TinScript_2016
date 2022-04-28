@@ -37,6 +37,7 @@
 #include "TinScheduler.h"
 #include "TinExecute.h"
 #include "TinHashtable.h"
+#include "TinObjectGroup.h"
 #include "TinOpExecFunctions.h"
 
 // == namespace TinScript =============================================================================================
@@ -1962,11 +1963,28 @@ bool8 OpExecForeachIterNext(CCodeBlock* cb, eOpCode op, const uint32*& instrptr,
         return false;
     }
 
+    bool container_is_array = container_ve != nullptr && container_ve->IsArray();
+    CObjectSet* container_set = nullptr;
+    if (!container_is_array && container_ve != nullptr && container_ve->GetType() == TYPE_object)
+    {
+        // -- TYPE_object is actually just an uint32 ID
+        uint32 objectid = *(uint32*)container_val;
+
+        // -- find the object, and see if it's an object set
+        static uint32 object_set_hash = Hash("CObjectSet");
+        CObjectEntry* oe = cb->GetScriptContext()->FindObjectEntry(objectid);
+        void* obj_addr = oe != nullptr ? oe->GetAddr() : nullptr;
+        if (obj_addr != nullptr && oe->HasNamespace(object_set_hash))
+        {
+            container_set = static_cast<CObjectSet*>(obj_addr);
+        }
+    }
+
     // -- make sure we got a valid address for the container entry value
-    if (container_ve == nullptr || !container_ve->IsArray())
+    if (!container_is_array && container_set == nullptr)
     {
         DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
-                        "Error - foreach() only supports arrays, CObjectgGroup and hashtable variable support coming.\n");
+                        "Error - foreach() only supports arrays and CObjectSets. (hashtable variable support coming).\n");
         return (false);
     }
 
@@ -2008,8 +2026,9 @@ bool8 OpExecForeachIterNext(CCodeBlock* cb, eOpCode op, const uint32*& instrptr,
     // -- otherwise, we pop the container and iter vars off the stack since they're no longer needed, and
     // push false on the stack, to exit the while loop
     // $$$TZA break and continue also need to pop the stack....!!
+    uint32 container_entry_obj_id = 0;
     void* container_entry_val = nullptr;
-    if (container_ve->IsArray())
+    if (container_is_array)
     {
         // -- ensure it's within range
         if (cur_index >= 0 && cur_index < container_ve->GetArraySize())
@@ -2028,6 +2047,19 @@ bool8 OpExecForeachIterNext(CCodeBlock* cb, eOpCode op, const uint32*& instrptr,
                                 "Error - foreach() unable to assign container value to iter variable\n");
                 return (false);
             }
+        }
+    }
+
+    // -- object groups/sets
+    else if (container_set != nullptr)
+    {
+        // -- this is a bit weird, but if we're able to get the object by index, then
+        // what we're copying to the iterator variable, is the object ID...
+        // -- setting an address and then using a memcpy...  keeps the logic simple
+        container_entry_obj_id = container_set->GetObjectByIndex(cur_index);
+        if (container_entry_obj_id != 0)
+        {
+            container_entry_val = &container_entry_obj_id;
         }
     }
 
