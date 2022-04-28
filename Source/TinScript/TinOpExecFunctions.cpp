@@ -1963,9 +1963,13 @@ bool8 OpExecForeachIterNext(CCodeBlock* cb, eOpCode op, const uint32*& instrptr,
         return false;
     }
 
+    // -- we support three types of containers to iterate through with a foreach() loop
     bool container_is_array = container_ve != nullptr && container_ve->IsArray();
+    bool container_is_hashtable = container_ve != nullptr && !container_ve->IsArray() &&
+                                  container_ve->GetType() == TYPE_hashtable;
     CObjectSet* container_set = nullptr;
-    if (!container_is_array && container_ve != nullptr && container_ve->GetType() == TYPE_object)
+    if (!container_is_array && !container_is_hashtable && container_ve != nullptr &&
+        container_ve->GetType() == TYPE_object)
     {
         // -- TYPE_object is actually just an uint32 ID
         uint32 objectid = *(uint32*)container_val;
@@ -1981,10 +1985,10 @@ bool8 OpExecForeachIterNext(CCodeBlock* cb, eOpCode op, const uint32*& instrptr,
     }
 
     // -- make sure we got a valid address for the container entry value
-    if (!container_is_array && container_set == nullptr)
+    if (!container_is_array && !container_is_hashtable && container_set == nullptr)
     {
         DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
-                        "Error - foreach() only supports arrays and CObjectSets. (hashtable variable support coming).\n");
+                        "Error - foreach() can only iterate on an array, hashtable, or CObjectSet.\n");
         return (false);
     }
 
@@ -2060,6 +2064,35 @@ bool8 OpExecForeachIterNext(CCodeBlock* cb, eOpCode op, const uint32*& instrptr,
         if (container_entry_obj_id != 0)
         {
             container_entry_val = &container_entry_obj_id;
+        }
+    }
+
+    // -- hashtable
+    else if (container_is_hashtable)
+    {
+        // -- pull the var table from the hashtable variable entry
+        tVarTable* ht_vars = static_cast<tVarTable*>(container_val);
+        if (ht_vars != nullptr)
+        {
+            // -- see if we can get the VariableEntry by index
+            CVariableEntry* ht_ve = ht_vars->FindItemByIndex(cur_index);
+            if (ht_ve != nullptr)
+            {
+                // -- if we found an entry, get the address, and get set the (converted) address for its value 
+                void* ht_ve_val = ht_ve->GetAddr(nullptr);
+
+                // -- see if we can convert that value to our iterator type
+                container_entry_val = TypeConvert(cb->GetScriptContext(), ht_ve->GetType(), ht_ve_val,
+                                                   iter_ve->GetType());
+
+                // -- we have a valid container entry, but won't be able to assign it (incompatible types) -
+                if (container_entry_val == nullptr)
+                {
+                    DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
+                                    "Error - foreach() unable to assign container value to iter variable\n");
+                    return (false);
+                }
+            }
         }
     }
 
