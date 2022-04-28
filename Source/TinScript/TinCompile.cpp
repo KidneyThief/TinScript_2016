@@ -2038,7 +2038,7 @@ int32 CWhileLoopNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 counton
 		return (-1);
 	}
 
-	// -- ensure we have a left child
+	// -- ensure we have a right child
 	if (!rightchild)
     {
         TinPrint(TinScript::GetContext(), "Error - CWhileLoopNode with no right child\n");
@@ -2097,7 +2097,7 @@ int32 CWhileLoopNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 counton
         return (-1);
     size += tree_size;
 
-    // -- continue statemtents need to jump to the end of the loop body, but still evaluate the end of loop statement
+    // -- continue statements need to jump to the end of the loop body, but still evaluate the end of loop statement
     // -- e.g.  continuing within a 'for' loop, skips the body, but executes the end of loop statement(s)
     if (!countonly)
     {
@@ -2170,6 +2170,159 @@ bool8 CWhileLoopNode::AddLoopJumpNode(CLoopJumpNode* jump_node)
 bool8 CWhileLoopNode::CompileToC(int32 indent, char*& out_buffer, int32& max_size, bool root_node) const
 {
     TinPrint(TinScript::GetContext(), "CWhileLoopNode::CompileToC() not implemented.\n");
+    return (true);
+}
+
+// == class CForeachLoopNode ============================================================================================
+
+// ====================================================================================================================
+// Constructor:  Used to evaluate the container expression, then set up an iterator of the correct type
+// ====================================================================================================================
+CForeachLoopNode::CForeachLoopNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber,
+                       const char* _iter_name, int32 _iter_length)
+    : CCompileTreeNode(_codeblock, _link, eForeachLoop, _linenumber)
+{
+	SafeStrcpy(mIteratorVar, sizeof(mIteratorVar), _iter_name, _iter_length + 1);
+}
+
+// ====================================================================================================================
+// Eval():  Generates the byte code instruction compiled from this node.
+// ====================================================================================================================
+int32 CForeachLoopNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 countonly) const
+{
+    DebugEvaluateNode(*this, countonly, instrptr);
+    int32 size = 0;
+
+    // -- ensure we have a left child
+    if (!leftchild)
+    {
+        TinPrint(TinScript::GetContext(), "Error - CWhileLoopNode with no left child\n");
+        return (-1);
+    }
+
+    // -- ensure we have a right child
+    if (!rightchild)
+    {
+        TinPrint(TinScript::GetContext(), "Error - CWhileLoopNode with no right child\n");
+        return (-1);
+    }
+
+    // the left child is the branch that resolves (for now) to an array variable
+    int32 tree_size = leftchild->Eval(instrptr, TYPE__var, countonly);
+    if (tree_size < 0)
+        return (-1);
+    size += tree_size;
+
+    // -- next we push the iterator variable (member, global, stack var, etc...)
+    int32 stacktopdummy = 0;
+    CObjectEntry* dummy = NULL;
+    CFunctionEntry* curfunction = codeblock->smFuncDefinitionStack->GetTop(dummy, stacktopdummy);
+
+    // -- ensure we can find the variable
+    uint32 varhash = Hash(mIteratorVar);
+    uint32 funchash = curfunction ? curfunction->GetHash() : 0;
+    uint32 nshash = curfunction ? curfunction->GetNamespaceHash() : CScriptContext::kGlobalNamespaceHash;
+    CVariableEntry* var = GetVariable(codeblock->GetScriptContext(), codeblock->smCurrentGlobalVarTable,
+        nshash, funchash, varhash, 0);
+    if (!var || var->IsArray() || var->GetType() == TYPE_hashtable)
+    {
+        ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), linenumber,
+                      "Error - undefined or invalid iterator variable: %s\n", mIteratorVar);
+        return (-1);
+    }
+    eVarType vartype = var->GetType();
+
+    // -- if this isn't a func var, make sure we push the global namespace
+    if (var->GetFunctionEntry() == NULL)
+    {
+        size += PushInstruction(countonly, instrptr, OP_PushGlobalVar, DBG_instr);
+        size += PushInstruction(countonly, instrptr, CScriptContext::kGlobalNamespaceHash, DBG_hash);
+        size += PushInstruction(countonly, instrptr, 0, DBG_func);
+        size += PushInstruction(countonly, instrptr, var->GetHash(), DBG_var);
+    }
+    // -- otherwise this is a stack var
+    else
+    {
+        size += PushInstruction(countonly, instrptr, OP_PushLocalVar, DBG_instr);
+        size += PushInstruction(countonly, instrptr, var->GetType(), DBG_vartype);
+
+        // -- for local vars, it's the offset on the stack we need to push
+        int32 stackoffset = var->GetStackOffset();
+        if (!countonly && stackoffset < 0)
+        {
+            ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), linenumber,
+                "Error - invalid stack offset for local var: %s\n", UnHash(var->GetHash()));
+            return (-1);
+        }
+        size += PushInstruction(countonly, instrptr, stackoffset, DBG_var);
+
+        // -- push the local var index as well
+        int32 var_index = 0;
+        CVariableEntry* local_ve = var->GetFunctionEntry()->GetLocalVarTable()->First();
+        while (local_ve && local_ve != var)
+        {
+            local_ve = var->GetFunctionEntry()->GetLocalVarTable()->Next();
+            ++var_index;
+        }
+        size += PushInstruction(countonly, instrptr, var_index, DBG_var);
+    }
+
+    // -- we need to push the initial iterator var assignment
+    size += PushInstruction(countonly, instrptr, OP_ForeachIterInit, DBG_instr);
+
+    // -- finally, we can simply use our while loop
+    tree_size = rightchild->Eval(instrptr, TYPE_void, countonly);
+    if (tree_size < 0)
+        return (-1);
+    size += tree_size;
+
+    // -- after the while loop exits, we need to pop the container, iterator variables and index off the stack
+    size += PushInstruction(countonly, instrptr, OP_Pop, DBG_instr);
+    size += PushInstruction(countonly, instrptr, OP_Pop, DBG_instr);
+    size += PushInstruction(countonly, instrptr, OP_Pop, DBG_instr);
+
+    return size;
+}
+
+// ====================================================================================================================
+// CompileToC(): Convert the parse tree to valid C, to compile directly to the executable. 
+// ====================================================================================================================
+bool8 CForeachLoopNode::CompileToC(int32 indent, char*& out_buffer, int32& max_size, bool root_node) const
+{
+    TinPrint(TinScript::GetContext(), "CForeachLoopNode::CompileToC() not implemented.\n");
+    return (true);
+}
+
+// == class CForeachIterNext =========================================================================================
+
+// ====================================================================================================================
+// Constructor:  Used to evaluate the container expression, then set up an iterator of the correct type
+// ====================================================================================================================
+CForeachIterNext::CForeachIterNext(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber)
+    : CCompileTreeNode(_codeblock, _link, eForeachIterNext, _linenumber)
+{
+}
+
+// ====================================================================================================================
+// Eval():  Generates the byte code instruction compiled from this node.
+// ====================================================================================================================
+int32 CForeachIterNext::Eval(uint32*& instrptr, eVarType pushresult, bool8 countonly) const
+{
+    DebugEvaluateNode(*this, countonly, instrptr);
+    int32 size = 0;
+
+    // -- we don't need to do much - simply issue the op instruction
+    size += PushInstruction(countonly, instrptr, OP_ForeachIterNext, DBG_instr);
+
+    return size;
+}
+
+// ====================================================================================================================
+// CompileToC(): Convert the parse tree to valid C, to compile directly to the executable. 
+// ====================================================================================================================
+bool8 CForeachIterNext::CompileToC(int32 indent, char*& out_buffer, int32& max_size, bool root_node) const
+{
+    TinPrint(TinScript::GetContext(), "CForeachIterNext::CompileToC() not implemented.\n");
     return (true);
 }
 

@@ -682,7 +682,7 @@ bool8 PerformAssignOp(CScriptContext* script_context, CExecStack& execstack, CFu
                 return (false);
         }
 
-        // -- if the operation isn't a simple assignement, we've got the variable to be assigned - perform the op
+        // -- if the operation isn't a simple assignment, we've got the variable to be assigned - perform the op
         // -- this will replace the top two stack entries, with the result
         if (!PerformBinaryOpPush(script_context, execstack, funccallstack, perform_op))
         {
@@ -1908,6 +1908,153 @@ bool8 OpExecPop(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExecStack&
         ApplyPostUnaryOpEntry(contenttype, content);
     }
 
+    return (true);
+}
+
+// ====================================================================================================================
+// OpExecForeachIterInit():  Initializes the stack with the interator var, assigned to the containsers "first" value
+// ====================================================================================================================
+bool8 OpExecForeachIterInit(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExecStack& execstack,
+                            CFunctionCallStack& funccallstack)
+{
+    // -- on the stack, we should have:
+    // the container at a depth 1 below the top
+    // the iterator variable at the top...
+
+    // -- at the start of the foreach loop, all we need to do is push a -1 index, and then get the "next" container value
+    int32 initial_index = -1;
+    execstack.Push(&initial_index, TYPE_int);
+
+    return (OpExecForeachIterNext(cb, op, instrptr, execstack, funccallstack));    
+}
+
+// ====================================================================================================================
+// OpExecForeachIterValid():  
+// ====================================================================================================================
+bool8 OpExecForeachIterValid(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExecStack& execstack,
+                            CFunctionCallStack& funccallstack)
+{
+    return false;
+}
+
+
+// ====================================================================================================================
+// OpExecForeachIterNext():  
+// ====================================================================================================================
+bool8 OpExecForeachIterNext(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExecStack& execstack,
+                            CFunctionCallStack& funccallstack)
+{
+    // -- on the stack, we should have:
+    // the container at a depth 2 below the top
+    // the iterator variable at 1 below top...
+    // the "index" at top
+
+    // -- uses peek, so the stack is unchanged
+    eVarType container_valtype;
+    CVariableEntry* container_ve = NULL;
+    CObjectEntry* container_oe = NULL;
+    void* container_val = execstack.Peek(container_valtype, 2);
+    if (!GetStackValue(cb->GetScriptContext(), execstack, funccallstack, container_val, container_valtype, container_ve,
+        container_oe) || container_val == nullptr)
+    {
+        DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
+                        "Error - foreach loop expecting a container variable (e.g. array) on the stack\n");
+        return false;
+    }
+
+    // -- make sure we got a valid address for the container entry value
+    if (container_ve == nullptr || !container_ve->IsArray())
+    {
+        DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
+                        "Error - foreach() only supports arrays, CObjectgGroup and hashtable variable support coming.\n");
+        return (false);
+    }
+
+    // -- uses still uses peek, so the stack is unchanged
+    eVarType iter_valtype;
+    CVariableEntry* iter_ve = NULL;
+    CObjectEntry* iter_oe = NULL;
+    void* iter_val = execstack.Peek(iter_valtype, 1);
+    if (!GetStackValue(cb->GetScriptContext(), execstack, funccallstack, iter_val, iter_valtype, iter_ve,
+        iter_oe) || iter_val == nullptr)
+    {
+        DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
+                        "Error - foreach loop expecting a container variable (e.g. array) on the stack\n");
+        return false;
+    }
+
+    // -- pop the index from the stack
+    eVarType index_valtype;
+    CVariableEntry* index_ve = NULL;
+    CObjectEntry* index_oe = NULL;
+    void* index_val = execstack.Pop(index_valtype);
+    if (index_valtype != TYPE_int)
+    {
+        DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
+                       "Error - foreach loop expecting a int index on the stack\n");
+        return false;
+    }
+
+    // -- get the current index, and increment
+    int32 cur_index = *(int32*)index_val;
+    ++cur_index;
+
+    // -- push the current index back onto the stack, for the next loop iteration
+    // note:  exiting the foreach loop always expects to pop three stack entries
+    execstack.Push(&cur_index, TYPE_int);
+
+    // -- if we have a next, we assign the next value to the iterator, and push the current index,
+    // and push true (for the while loop to continue)
+    // -- otherwise, we pop the container and iter vars off the stack since they're no longer needed, and
+    // push false on the stack, to exit the while loop
+    // $$$TZA break and continue also need to pop the stack....!!
+    void* container_entry_val = nullptr;
+    if (container_ve->IsArray())
+    {
+        // -- ensure it's within range
+        if (cur_index >= 0 && cur_index < container_ve->GetArraySize())
+        {
+            // -- get the address for the value at the specific index
+            container_entry_val = container_ve->GetArrayVarAddr(container_oe ? container_oe->GetAddr() : nullptr, cur_index);
+
+            // -- see if we can convert that value to our iterator type
+            container_entry_val = TypeConvert(cb->GetScriptContext(), container_ve->GetType(), container_entry_val,
+                                              iter_ve->GetType());
+
+            // -- we have a valid container entry, but won't be able to assign it (incompatible types) -
+            if (container_entry_val == nullptr)
+            {
+                DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
+                                "Error - foreach() unable to assign container value to iter variable\n");
+                return (false);
+            }
+        }
+    }
+
+    // -- debug trace output
+    DebugTrace(op, "Container var: %s, iter var: %s, index: %d, valid: %s", UnHash(container_ve->GetHash()),
+                    UnHash(iter_ve->GetHash()), cur_index - 1, (container_entry_val != nullptr ? "true" : "false"));
+
+    // -- if we have a "next", make the assignment
+    if (container_entry_val != nullptr)
+    {
+        // -- the assignment is a simple memcpy (from the converted value, so the types match of course)
+        memcpy(iter_val, container_entry_val, gRegisteredTypeSize[iter_ve->GetType()]);
+
+        // -- push 'true', so the while loop will step into the body
+        bool val_true = true;
+        execstack.Push(&val_true, TYPE_bool);
+    }
+    
+    // -- else, we don't have a "next value"...
+    else
+    {
+        // -- push false on the stack, so our while loop exits
+        bool val_false = false;
+        execstack.Push(&val_false, TYPE_bool);
+    }
+
+    // -- either way, the operation executed successfully
     return (true);
 }
 

@@ -74,6 +74,8 @@ class CWhileLoopNode;
 	CompileNodeTypeEntry(CondBranch)			\
 	CompileNodeTypeEntry(WhileLoop)				\
 	CompileNodeTypeEntry(ForLoop)				\
+	CompileNodeTypeEntry(ForeachLoop)			\
+	CompileNodeTypeEntry(ForeachIterNext)		\
 	CompileNodeTypeEntry(LoopJump)        		\
 	CompileNodeTypeEntry(FuncDecl)				\
 	CompileNodeTypeEntry(FuncCall)				\
@@ -143,6 +145,8 @@ const char* GetNodeTypeString(ECompileNodeType nodetype);
 	OperationEntry(PushPODMemberVal)    \
 	OperationEntry(PushSelf)    		\
 	OperationEntry(Pop)					\
+	OperationEntry(ForeachIterInit)		\
+	OperationEntry(ForeachIterNext)		\
 	OperationEntry(Add)					\
 	OperationEntry(Sub)					\
 	OperationEntry(Mult)				\
@@ -622,6 +626,40 @@ class CWhileLoopNode : public CCompileTreeNode
         bool8 m_isDoWhile;
         int32 mLoopJumpNodeCount;
         CLoopJumpNode* mLoopJumpNodeList[kMaxLoopJumpCount];
+};
+
+// ====================================================================================================================
+// class CForeachLoopNode:  Parse tree node, compiling to a foreach loop.
+// ====================================================================================================================
+class CForeachLoopNode : public CCompileTreeNode
+{
+public:
+	CForeachLoopNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber, const char* iter_name,
+				     int32 iter_length);
+
+	virtual int32 Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
+	virtual bool8 CompileToC(int32 indent, char*& out_buffer, int32& max_size, bool root_node) const;
+
+protected:
+	CForeachLoopNode() { }
+
+	// -- at compile time, we have the iterator name, but the type comes from the type stored in the container
+    char mIteratorVar[kMaxTokenLength];
+};
+
+// ====================================================================================================================
+// class CForeachIterNext:  Parse tree node, evaluating the iterator var on the stack, to push true if valid.
+// ====================================================================================================================
+class CForeachIterNext : public CCompileTreeNode
+{
+public:
+	CForeachIterNext(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber);
+
+	virtual int32 Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
+	virtual bool8 CompileToC(int32 indent, char*& out_buffer, int32& max_size, bool root_node) const;
+
+protected:
+	CForeachIterNext() { }
 };
 
 // ====================================================================================================================

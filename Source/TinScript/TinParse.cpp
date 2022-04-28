@@ -61,7 +61,7 @@ static const int32 gMaxTernaryDepth = 32;
 static int32 gTernaryDepth = 0;
 static int32 gTernaryStack[gMaxTernaryDepth];
 
-// -- stack for managing loops (break and continue statments need to know where to jump)
+// -- stack for managing loops (break and continue statements need to know where to jump)
 // -- applies to both while loops and switch statements
 static const int32 gMaxBreakStatementDepth = 32;
 static int32 gBreakStatementDepth = 0;
@@ -3555,6 +3555,176 @@ bool8 TryParseForLoop(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNo
 }
 
 // ====================================================================================================================
+// TryParseForeachLoop():  A 'foreach' loopwill have to operate on hashtables, arrays, and CObjectSets
+// ====================================================================================================================
+bool8 TryParseForeachLoop(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link)
+{
+	// -- the first token can be anything but a reserved word or type
+	tReadToken firsttoken(filebuf);
+	if (!GetToken(firsttoken))
+		return (false);
+
+	// -- starts with the keyword 'foreach'
+	if (firsttoken.type != TOKEN_KEYWORD)
+		return (false);
+
+	int32 reservedwordtype = GetReservedKeywordType(firsttoken.tokenptr, firsttoken.length);
+	if (reservedwordtype != KEYWORD_foreach)
+		return (false);
+
+    // -- we're committed to a 'foreach' loop now
+    filebuf = firsttoken;
+
+	// -- next token better be an open parenthesis
+	tReadToken peektoken(firsttoken);
+	if (!GetToken(peektoken) || (peektoken.type != TOKEN_PAREN_OPEN))
+	{
+		ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
+                      firsttoken.linenumber, "Error - expecting '('\n");
+		return (false);
+	}
+
+	// -- valid so far
+	filebuf = peektoken;
+
+    // -- increment the parenthesis stack
+    ++gGlobalExprParenDepth;
+
+    // a foreach is a while loop structured as:
+    // -- the left child resolves the container to iterate
+    // -- the right node is the while loop
+    // -- whileloop left child is normally the condition but in this case,
+    // the condition is pushed by the endOfLoop which is a single OP foreachIterNext instruction
+    // -- whileloop right child is the loop body
+    // -- whileloop endOfLoopNode increments the iterator
+    // note:  (eventually) a container will be one of:  hashtable, array, CObjectSet
+
+    // -- the next token is the variable identifier
+    tReadToken iter_var_name(filebuf);
+    if (!GetToken(iter_var_name))
+    {
+        ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
+                      filebuf.linenumber, "Error - invalid foreach loop iterator var identifier\n");
+        --gBreakStatementDepth;
+        return (false);
+    }
+
+    filebuf = iter_var_name;
+
+  	// -- consume the separating colon
+	if (!GetToken(filebuf) || (filebuf.type != TOKEN_COLON))
+	{
+		ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
+                      filebuf.linenumber, "Error - expecting ':'\n");
+        --gBreakStatementDepth;
+        return (false);
+	}
+
+    // -- we start with a Foreach loop node, the left branch resolves the expression to push a container
+    // -- the right branch initializes and pushes the iterator variable
+    CForeachLoopNode* foreach_node = TinAlloc(ALLOC_TreeNode, CForeachLoopNode, codeblock, link, filebuf.linenumber,
+                                              iter_var_name.tokenptr, iter_var_name.length);
+
+    // -- the second parameter in the foreach is a statement resolving to a container
+    bool result = TryParseStatement(codeblock, filebuf, foreach_node->leftchild, false);
+    if (!result)
+    {
+        ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
+                      filebuf.linenumber,
+                      "Error - unable to parse the foreach 'container' expression\n");
+                      --gBreakStatementDepth;
+        return (false);
+    }
+
+	// add the foreach loop node (implemented as a while loop), as the right child of our foreach loop node
+    int32 foreach_linenumber = filebuf.linenumber;
+	CWhileLoopNode* foreach_while_loop = TinAlloc(ALLOC_TreeNode, CWhileLoopNode, codeblock,
+                                                  foreach_node->rightchild, foreach_linenumber, false);
+
+    // -- push the while loop onto the stack
+    if (gBreakStatementDepth >= gMaxBreakStatementDepth)
+    {
+		ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
+                      filebuf.linenumber,
+                      "Error - 'while loop' depth of %d exceeded\n", gMaxBreakStatementDepth);
+                      --gBreakStatementDepth;
+        return (false);
+    }
+
+    // -- push the while node onto the stack (used so break and continue know which loop they're affecting)
+    gBreakStatementStack[gBreakStatementDepth++] = foreach_while_loop;
+
+   	// -- consume the closing parenthesis
+	if (!GetToken(filebuf) || (filebuf.type != TOKEN_PAREN_CLOSE))
+	{
+		ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
+                      filebuf.linenumber, "Error - expecting ')'\n");
+        --gBreakStatementDepth;
+		return (false);
+	}
+
+    // -- decrement the parenthesis stack
+    --gGlobalExprParenDepth;
+
+	// -- the left child of a while loop is normally a condition
+    // -- the foreachIterNext operation will push the "true/false", so here we need an empty node
+    foreach_while_loop->leftchild = CCompileTreeNode::CreateTreeRoot(codeblock);
+
+	// -- see if it's a single statement, or a statement block
+	peektoken = filebuf;
+	if (!GetToken(peektoken))
+    {
+		ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
+                      filebuf.linenumber,
+                      "Error - unable to parse the foreach loop body\n");
+        --gBreakStatementDepth;
+		return (false);
+	}
+
+	if (peektoken.type == TOKEN_BRACE_OPEN)
+    {
+		// -- consume the brace, and parse an entire statement block
+		filebuf = peektoken;
+        result = ParseStatementBlock(codeblock, foreach_while_loop->rightchild, filebuf, true);
+		if (!result)
+        {
+			ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
+                          filebuf.linenumber,
+                          "Error - failed to read statement block\n");
+            --gBreakStatementDepth;
+			return (false);
+		}
+	}
+
+	// else try a single expression
+	else
+	{
+		result = TryParseStatement(codeblock, filebuf, foreach_while_loop->rightchild);
+		if (!result)
+        {
+			ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
+                          filebuf.linenumber,
+                          "Error - failed to read statement block\n");
+            --gBreakStatementDepth;
+			return (false);
+		}
+	}
+
+	// notify the while node of the end of the loop statements
+    // -- set up the while node end of loop to be a CForeachIterNext node
+    CCompileTreeNode* tempendofloop = NULL;
+    CForeachIterNext* foreach_iter_next = TinAlloc(ALLOC_TreeNode, CForeachIterNext, codeblock, tempendofloop,
+                                                   foreach_linenumber);
+    foreach_while_loop->SetEndOfLoopNode(foreach_iter_next);
+
+    // -- success - pop the while node off the stack
+    --gBreakStatementDepth;
+
+	// -- success
+	return (true);
+}
+
+// ====================================================================================================================
 // TryParseFuncDefinition():  A function has a well defined syntax.
 // ====================================================================================================================
 bool8 TryParseFuncDefinition(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link)
@@ -5729,7 +5899,8 @@ bool8 ParseStatementBlock(CCodeBlock* codeblock, CCompileTreeNode*& link, tReadT
         found = found || TryParseWhileLoop(codeblock, filetokenbuf, curroot->next);
         found = found || TryParseDoWhileLoop(codeblock, filetokenbuf, curroot->next);
         found = found || TryParseForLoop(codeblock, filetokenbuf, curroot->next);
-		found = found || TryParseDestroyObject(codeblock, filetokenbuf, curroot->next);
+        found = found || TryParseForeachLoop(codeblock, filetokenbuf, curroot->next);
+        found = found || TryParseDestroyObject(codeblock, filetokenbuf, curroot->next);
 
         // -- ensure we're not parsing in an infinite loop - this can (only?) happen
         // if there was an error at a lower recursive level, that somehow didn't get surfaced

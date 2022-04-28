@@ -229,6 +229,7 @@ enum eMathBinaryFunctionType
 	ReservedKeywordEntry(break)			        \
 	ReservedKeywordEntry(continue)		        \
 	ReservedKeywordEntry(for)			        \
+	ReservedKeywordEntry(foreach)			    \
 	ReservedKeywordEntry(return)		        \
     ReservedKeywordEntry(schedule)		        \
     ReservedKeywordEntry(execute)		        \
@@ -352,6 +353,7 @@ bool8 TryParseSwitchStatement(CCodeBlock* codeblock, tReadToken& filebuf, CCompi
 bool8 TryParseWhileLoop(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link);
 bool8 TryParseDoWhileLoop(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link);
 bool8 TryParseForLoop(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link);
+bool8 TryParseForeachLoop(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link);
 bool8 TryParseFuncDefinition(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link);
 bool8 TryParseFuncCall(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link,
                       bool8 ismethod);
