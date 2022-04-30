@@ -203,6 +203,7 @@ void CDebugWatchWin::UpdateReturnValueEntry(const TinScript::CDebuggerWatchVarEn
 
     // -- we didn't already find it - add it
     CWatchEntry* new_entry = new CWatchEntry(watch_var_entry);
+    new_entry->mIsTopLevel = true;
     addTopLevelItem(new_entry);
     mWatchList.insert(0, new_entry);
 }
@@ -210,7 +211,7 @@ void CDebugWatchWin::UpdateReturnValueEntry(const TinScript::CDebuggerWatchVarEn
 bool CDebugWatchWin::IsTopLevelEntry(const CWatchEntry& watch_var_entry)
 {
     // -- ensure this is a top level watch
-    return  (watch_var_entry.mDebuggerEntry.mObjectID == 0);
+    return (watch_var_entry.mIsTopLevel);
 }
 
 void CDebugWatchWin::AddTopLevelEntry(const TinScript::CDebuggerWatchVarEntry& watch_var_entry, bool update_only)
@@ -309,6 +310,7 @@ void CDebugWatchWin::AddTopLevelEntry(const TinScript::CDebuggerWatchVarEntry& w
     if (!found_callstack_entry && !update_only)
     {
         CWatchEntry* new_entry = new CWatchEntry(watch_var_entry);
+        new_entry->mIsTopLevel = true;
         addTopLevelItem(new_entry);
         mWatchList.append(new_entry);
         bool hidden = (watch_var_entry.mStackOffsetFromBottom != selected_depth_from_bottom &&
@@ -320,7 +322,7 @@ void CDebugWatchWin::AddTopLevelEntry(const TinScript::CDebuggerWatchVarEntry& w
     }
 }
 
-void CDebugWatchWin::AddObjectMemberEntry(const TinScript::CDebuggerWatchVarEntry& watch_var_entry, bool update_only)
+void CDebugWatchWin::AddObjectMemberEntry(const TinScript::CDebuggerWatchVarEntry& watch_var_entry)
 {
     // -- find out what function call is currently selected on the stack
     uint32 cur_func_ns_hash = 0;
@@ -344,8 +346,7 @@ void CDebugWatchWin::AddObjectMemberEntry(const TinScript::CDebuggerWatchVarEntr
         while (entry_index < mWatchList.size())
         {
             CWatchEntry* entry = mWatchList.at(entry_index);
-            if (entry->mDebuggerEntry.mObjectID == 0 &&
-                entry->mDebuggerEntry.mType == TinScript::TYPE_object &&
+            if (entry->mDebuggerEntry.mType == TinScript::TYPE_object &&
                 entry->mDebuggerEntry.mVarObjectID == watch_var_entry.mObjectID)
             {
                 // -- increment the index - we want to start looking for the member/label after the object entry
@@ -388,12 +389,6 @@ void CDebugWatchWin::AddObjectMemberEntry(const TinScript::CDebuggerWatchVarEntr
             // -- not yet found - increment the index
             else
                 ++entry_index;
-        }
-
-        // -- if we didn't find a label, and we're only permitted to update, then we're done
-        if (member_entry == NULL && update_only)
-        {
-            return;
         }
 
         // -- if we didn't find a label, add one
@@ -541,6 +536,7 @@ void CDebugWatchWin::AddVariableWatch(const char* variableWatch, bool breakOnWri
 	// -- we're allowed *anything* including duplicates when adding variable watches
 	CWatchEntry* new_entry = new CWatchEntry(new_watch, breakOnWrite);
     addTopLevelItem(new_entry);
+    new_entry->mIsTopLevel = true;
     mWatchList.append(new_entry);
 
     // -- send the request to the target
@@ -769,7 +765,7 @@ void CDebugWatchWin::NotifyWatchVarEntry(TinScript::CDebuggerWatchVarEntry* watc
     // -- if we're adding a namespace label
     if (watch_var_entry->mObjectID > 0)
     {
-        AddObjectMemberEntry(*watch_var_entry, update_only);
+        AddObjectMemberEntry(*watch_var_entry);
     }
 
     // -- else see if we're adding a top level entry
@@ -797,10 +793,12 @@ void CDebugWatchWin::NotifyVarWatchResponse(TinScript::CDebuggerWatchVarEntry* w
 		{
 
             // -- if this entry is a matching object, then this is a member of that object
+            // note:  mVarObjectID is the value of the object...
+            // a watch entry with an mObjectID means it's a member of that value...
             if (entry->mDebuggerEntry.mType == TinScript::TYPE_object &&
-                 entry->mDebuggerEntry.mVarObjectID == watch_var_entry->mObjectID)
+                watch_var_entry->mObjectID > 0 && entry->mDebuggerEntry.mVarObjectID == watch_var_entry->mObjectID)
             {
-                NotifyVarWatchMember(entry_index,watch_var_entry);
+                NotifyVarWatchMember(entry_index, watch_var_entry);
             }
 
             // -- else this response is the value of a top level watch request

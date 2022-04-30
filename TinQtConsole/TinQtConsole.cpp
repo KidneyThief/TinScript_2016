@@ -2498,6 +2498,7 @@ void CConsoleOutput::HandlePacketWatchVarEntry(int32* dataPtr)
     // -- this packet is received both for updating autos and watch entries...
     // -- if there's a watch requestID, then it's a response to a user entered watch expression
     bool is_response = watch_var_entry.mWatchRequestID > 0;
+
     if (!is_response)
     {
         // -- if it's not a response, we can "update only" in the watch window, but we add to the autos window

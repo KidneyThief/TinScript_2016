@@ -590,6 +590,7 @@ int32 CFunctionCallStack::DebuggerGetStackVarEntries(CScriptContext* script_cont
 		cur_entry->mValue[0] = '\0';
 
 	// -- fill in the cached members
+    // $$$TZA Arrays!  Support array return type...
 	cur_entry->mVarHash = Hash("__return");
 	cur_entry->mVarObjectID = 0;
     if (funcReturnType == TYPE_object)
@@ -713,7 +714,7 @@ int32 CFunctionCallStack::DebuggerGetStackVarEntries(CScriptContext* script_cont
                 // -- fill in the hash of the var name, and if applicable, the var object ID
                 cur_entry->mVarHash = ve->GetHash();
                 cur_entry->mVarObjectID = 0;
-                if (ve->GetType() == TYPE_object)
+                if (ve->GetType() == TYPE_object && !ve->IsArray())
                 {
                     cur_entry->mVarObjectID = stack_var_addr ? *(uint32*)stack_var_addr : 0;
 
@@ -846,7 +847,7 @@ bool CFunctionCallStack::FindExecutionStackVar(uint32 var_hash, CDebuggerWatchVa
 				// -- fill in the hash of the var name, and if applicable, the var object ID
 				watch_entry.mVarHash = ve->GetHash();
 				watch_entry.mVarObjectID = 0;
-				if (ve->GetType() == TYPE_object)
+				if (ve->GetType() == TYPE_object && !ve->IsArray())
 				{
 					watch_entry.mVarObjectID = stack_var_addr ? *(uint32*)stack_var_addr : 0;
 
@@ -1550,8 +1551,12 @@ bool8 DebuggerBreakLoop(CCodeBlock* cb, const uint32* instrptr, CExecStack& exec
     int32 stack_depth = CFunctionCallStack::GetCompleteExecutionStack(oeList, feList, nsHashList, cbHashList,
                                                                       lineNumberList, kDebuggerCallstackSize);
     CFunctionCallStack::GetCompleteExecutionStack(oeList, feList, nsHashList, cbHashList, lineNumberList, kDebuggerCallstackSize);
-    script_context->DebuggerSendCallstack(oeList, feList, nsHashList, cbHashList, lineNumberList, stack_depth, 0);
 
+    // -- before we send anything, lets clear the list of objects that we're sending to the debugger
+    script_context->DebuggerClearSendingObjectList();
+
+    // -- send the callstack
+    script_context->DebuggerSendCallstack(oeList, feList, nsHashList, cbHashList, lineNumberList, stack_depth, 0);
 
     // -- get the entire list of variables, at every level for the current call stack
     CDebuggerWatchVarEntry watch_var_stack[kDebuggerWatchWindowSize];
@@ -1616,6 +1621,9 @@ bool8 DebuggerBreakLoop(CCodeBlock* cb, const uint32* instrptr, CExecStack& exec
         // -- otherwise, sleep
         std::this_thread::sleep_for(std::chrono::milliseconds(33));
     }
+
+    // -- clear the list again after we've resumed
+    script_context->DebuggerClearSendingObjectList();
 
     // -- disable further asserts until the stack is unwound.
     if (is_assert)

@@ -58,7 +58,8 @@
 // -- executed through their hash values...
 #define CASE_SENSITIVE 1
 
-const int32 kCompilerVersion = 12;
+// -- 04/29 bump... another bump coming soon, as foreach() is about to be added
+const int32 kCompilerVersion = 13;
 
 // --------------------------------------------------------------------------------------------------------------------
 // -- only case_sensitive has been extensively tested, however theoretically TinScript should function as a
@@ -558,6 +559,14 @@ class CScriptContext
 									tIdentifierString* _ns_list, tIdentifierString* _filename_list,
 									int32* _linenumber_list, int32 max_count);
         void DumpExecutionCallStack(int32 depth);
+
+		// -- We want to ensure we don't send an infinite loop of object members, if two objects each
+		// have members that refer to each other
+		bool DebuggerIsSendingObject(uint32 obj_id);
+		void DebuggerNotifySendingObject(CObjectEntry* oe);
+		void DebuggerSendingObjectComplete(CObjectEntry* oe);
+		void DebuggerClearSendingObjectList();
+		CHashTable<CObjectEntry>* mDebuggerSendingObjectList = nullptr;
 
         // -- communication with the debugger
         void DebuggerNotifyDirectories(const char* cwd, const char* exe_dir);

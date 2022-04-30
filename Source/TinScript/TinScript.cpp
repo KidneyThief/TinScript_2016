@@ -265,6 +265,10 @@ void CScriptContext::Destroy()
     // -- within the context - it'll be automatically cleaned up
     gThreadContext->ShutdownDictionaries();
 
+	// -- cleanup the list of object members we might currently be sending
+	gThreadContext->mDebuggerSendingObjectList->RemoveAll();
+	TinFree(gThreadContext->mDebuggerSendingObjectList);
+
     // -- cleanup all related codeblocks
     // -- by deleting the namespace dictionaries, all codeblocks should now be unused
     gThreadContext->mDeferredBreakpointsList.DestroyAll();
@@ -397,7 +401,8 @@ CScriptContext::CScriptContext(TinPrintHandler printfunction, TinAssertHandler a
     mScratchBufferIndex = 0;
 
     // -- debugger members
-    m_DebuggerAssertConnectTime = kExecAssertConnectWaitTime;
+	mDebuggerSendingObjectList = TinAlloc(ALLOC_HashTable, CHashTable<CObjectEntry>, kGlobalVarTableSize);
+	m_DebuggerAssertConnectTime = kExecAssertConnectWaitTime;
     m_AssertMsgStackDepth = kExecAssertStackDepth;
 	mDebuggerSessionNumber = 0;
     mDebuggerConnected = false;
@@ -1860,7 +1865,9 @@ void CScriptContext::InitWatchEntryFromVarEntry(CVariableEntry& ve, CObjectEntry
 	watch_entry.mVarHash = ve.GetHash();
 	watch_entry.mVarObjectID = 0;
 
-	if (ve.GetType() == TYPE_object)
+    // -- an array doesn't have just one object ID as a value...
+    // -- array values are sent to the debugger through their own function
+	if (ve.GetType() == TYPE_object && !ve.IsArray())
 	{
 		uint32 objectID = *(uint32*)value_addr;
 		oe = FindObjectEntry(objectID);
@@ -1932,6 +1939,7 @@ void CScriptContext::AddVariableWatchExpression(int32 request_id, const char* va
 		        watch_result.mVarObjectID = 0;
 
                 // -- if the type is an object, see if it actually exists
+                // $$$TZA Arrays!  support array return types
                 if (returnType == TYPE_object)
                 {
                     // -- ensure the object actually exists
@@ -2473,7 +2481,7 @@ bool8 CScriptContext::EvalWatchExpression(CDebuggerWatchExpression& debugger_wat
         // -- we want to copy back the watch expression var parameters to the original function...
         // this way, we can use watch expressions to modify local variables instead of just
         // (e.g.) printing them
-        CVariableEntry* cur_ve = cur_function->GetLocalVarTable()->First();
+        cur_ve = cur_function->GetLocalVarTable()->First();
         while (cur_ve)
         {
             // -- this doesn't involve the return parameter
@@ -2738,6 +2746,44 @@ void CScriptContext::DebuggerCodeblockLoaded(uint32 codeblock_hash)
 
     // -- send the packet
     SocketManager::SendDataPacket(newPacket);
+}
+
+// ====================================================================================================================
+// DebuggerIsSendingObject():  returns true, if we're already in the process of sending members for this object
+// ====================================================================================================================
+bool CScriptContext::DebuggerIsSendingObject(uint32 obj_id)
+{
+	return (mDebuggerSendingObjectList->FindItem(obj_id) != nullptr);
+}
+
+// ====================================================================================================================
+// DebuggerNotifySendingObject():  set the (essentially a) re-entrant guard so we don't infinitely send object members
+// ====================================================================================================================
+void CScriptContext::DebuggerNotifySendingObject(CObjectEntry* oe)
+{
+	if (oe != nullptr)
+	{
+		mDebuggerSendingObjectList->AddItem(*oe, oe->GetID());
+	}
+}
+
+// ====================================================================================================================
+// DebuggerSendingObjectComplete():  Remove the re-entrant guard, so from a fresh call, we can update this object
+// ====================================================================================================================
+void CScriptContext::DebuggerSendingObjectComplete(CObjectEntry* oe)
+{
+	if (oe != nullptr)
+	{
+		mDebuggerSendingObjectList->RemoveItem(oe->GetID());
+	}
+}
+
+// ====================================================================================================================
+// DebuggerClearSendingObjectList():  clear the list of all objects actively being sent to the debugger
+// ====================================================================================================================
+void CScriptContext::DebuggerClearSendingObjectList()
+{
+	mDebuggerSendingObjectList->RemoveAll();
 }
 
 // ====================================================================================================================
@@ -3018,6 +3064,8 @@ bool CScriptContext::DebuggerVarFormatValue(eVarType type, void* val_addr, char*
     if (out_value == nullptr || max_size <= 0 || val_addr == nullptr)
         return false;
 
+    // --initialize the out value so we don't return a garbage unterminated string
+    out_value[0] = '\0';
     uint32 bytes_written = 0;
     switch (type)
     {
@@ -3058,8 +3106,8 @@ bool CScriptContext::DebuggerVarFormatValue(eVarType type, void* val_addr, char*
             const char* hashed_string = GetStringTable()->FindString(string_hash);
             if (hashed_string != nullptr && hashed_string[0] != '\0')
             {
-                uint32 bytes_written = snprintf(out_value, max_size,
-                                                 "%d  [0x%x `%s`]", string_hash, string_hash, hashed_string);
+                bytes_written = snprintf(out_value, max_size,
+            							 "%d  [0x%x `%s`]", string_hash, string_hash, hashed_string);
                 // -- make sure we terminate
                 if (bytes_written >= kMaxNameLength)
                     bytes_written = kMaxNameLength - 1;
@@ -3270,7 +3318,20 @@ void CScriptContext::DebuggerSendWatchVariable(CDebuggerWatchVarEntry* watch_var
     // $$$TZA implement array of objects
     else if (watch_var_entry->mType == TYPE_object && watch_var_entry->mVarObjectID > 0)
     {
-        DebuggerSendObjectMembers(watch_var_entry, watch_var_entry->mVarObjectID);
+		// -- we don't want infinite loops if two objects have members assigned to each other
+		CObjectEntry* oe = FindObjectEntry(watch_var_entry->mVarObjectID);
+		if (oe != nullptr && !DebuggerIsSendingObject(watch_var_entry->mVarObjectID))
+		{
+            // -- note:  only the initial watch response needs to match the request ID, so it can
+            // find the root watch variable to populate...
+            // -- from this point on, we're simply sending members, and they should populate the
+            // object entries, regardless of the source
+            watch_var_entry->mWatchRequestID = 0;
+
+			DebuggerNotifySendingObject(oe);
+			DebuggerSendObjectMembers(watch_var_entry, watch_var_entry->mVarObjectID);
+			DebuggerSendingObjectComplete(oe);
+		}
     }
 }
 
@@ -3294,14 +3355,14 @@ void CScriptContext::DebuggerSendArrayEntries(const CDebuggerWatchVarEntry& watc
         return;
     }
 
-    // -- get the object if it exists
+    // -- get the object that owns this variable as a member
     void* obj_addr = nullptr;
     if (watch_var.mVarObjectID != 0)
     {
-        CObjectEntry* oe = FindObjectEntry(watch_var.mVarObjectID);
+        CObjectEntry* oe = FindObjectEntry(watch_var.mObjectID);
         if (oe == nullptr || oe->GetAddr() == nullptr)
         {
-            TinPrint(this, "Error - DebuggerSendArrayEntries():  unable to find object: %u\n", watch_var.mVarObjectID);
+            TinPrint(this, "Error - DebuggerSendArrayEntries():  unable to find object: %u\n", watch_var.mObjectID);
             return;
         }
         obj_addr = oe->GetAddr();
@@ -3502,10 +3563,13 @@ void CScriptContext::DebuggerSendObjectVarTable(CDebuggerWatchVarEntry* callingF
         // -- member name
         SafeStrcpy(member_entry.mVarName, sizeof(member_entry.mVarName), UnHash(member->GetHash()), kMaxNameLength);
 
+        // -- the value string will be formatted when the watch variable is actually sent
+        member_entry.mValue[0] = '\0';
+
         // -- fill in the cached members
         member_entry.mVarHash = member->GetHash();
         member_entry.mVarObjectID = 0;
-        if (member->GetType() == TYPE_object)
+        if (member->GetType() == TYPE_object && !member->IsArray())
         {
              member_entry.mVarObjectID = *(uint32*)(member->GetAddr(oe->GetAddr()));
         }

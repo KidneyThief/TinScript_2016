@@ -53,6 +53,8 @@ class CWatchEntry : public QTreeWidgetItem {
         TinScript::CDebuggerWatchVarEntry mDebuggerEntry;
         bool mBreakOnWrite;
         bool mRequestSent;
+
+        bool mIsTopLevel = false;
 };
 
 // ------------------------------------------------------------------------------------------------
@@ -81,7 +83,7 @@ class CDebugWatchWin : public QTreeWidget {
         void UpdateReturnValueEntry(const TinScript::CDebuggerWatchVarEntry& watch_var_entry);
         bool IsTopLevelEntry(const CWatchEntry& watch_var_entry);
         void AddTopLevelEntry(const TinScript::CDebuggerWatchVarEntry& watch_var_entry, bool update_only);
-        void AddObjectMemberEntry(const TinScript::CDebuggerWatchVarEntry& watch_var_entry, bool update_only);
+        void AddObjectMemberEntry(const TinScript::CDebuggerWatchVarEntry& watch_var_entry);
 
         CWatchEntry* FindTopLevelWatchEntry(const char* variableWatch);
 		void AddVariableWatch(const char* variableWatch, bool breakOnWrite = false);
