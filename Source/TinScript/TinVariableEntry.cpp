@@ -141,7 +141,7 @@ CVariableEntry::CVariableEntry(CScriptContext* script_context, const char* _name
     {
 		mScriptVar = true;
 		
-		// -- a negative array size means this had better be a paramter,
+		// -- a negative array size means this had better be a parameter,
         // -- which has no size of its own, but refers to the array passed
 		if (mArraySize < 0)
 		{
@@ -211,8 +211,10 @@ CVariableEntry::~CVariableEntry()
 		    TinFreeArray((char*)mAddr);
         }
 
-        // -- if this is a non-paramter hashtable, need to destroy all of its entries
-        else if (mType == TYPE_hashtable && !mIsParameter)
+        // -- if this is a non-parameter hashtable, need to destroy all of its entries
+        // note:  schedule() contexts that use hashtables, this is the one time where
+        // a hashtable is copied, therefore, the parameter uses dynamic memory and must be freed
+        else if (mType == TYPE_hashtable && (!mIsParameter || mIsDynamic))
         {
             tVarTable* ht = static_cast<tVarTable*>(mAddr);
             ht->DestroyAll();
@@ -462,6 +464,24 @@ void* CVariableEntry::GetArrayVarAddr(void* objaddr,int32 array_index) const
     // -- get the base address for this variable
     void* addr = (void*)((char*)GetAddr(objaddr) + (gRegisteredTypeSize[mType] * array_index));
     return (addr);
+}
+
+// ====================================================================================================================
+// GetHashtableAddr():  Get the address for a hashtable tVarTable...  allocate if needed - we're probably going
+// to copy another hashtable to this one (e.g.  when calling schedule(), where one of the params is a hashtable
+// note:  for now, not supporting this, if the hashtable is a member of an object
+// ====================================================================================================================
+void* CVariableEntry::GetOrAllocHashtableAddr()
+{
+    if (mAddr == nullptr)
+    {
+        // note: we rely on the scheduler, when it's executed its call, to know if it should
+        // free this memory...  if the schedule is re-queued, then it won't...
+        mAddr = (void*)TinAlloc(ALLOC_VarTable, tVarTable, kLocalVarTableSize);
+        mIsDynamic = true;
+    }
+
+    return mAddr;
 }
 
 // ====================================================================================================================

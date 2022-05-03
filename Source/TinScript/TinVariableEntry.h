@@ -139,6 +139,11 @@ public:
 
     void* GetArrayVarAddr(void* objaddr, int32 array_index) const;
 
+    // -- we have a separate addr for Hashtable type vars, as we may need to copy one ht to another
+    // e.g. when a hashtable is a param to a schedule()
+    // -- as such, we need to ensure that when the scheduled call is completed, the variable destroys hashtable mem
+    void* GetOrAllocHashtableAddr();
+
     uint32 GetOffset() const
     {
         return mOffset;

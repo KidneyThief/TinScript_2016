@@ -250,9 +250,11 @@ bool CHashtable::CopyHashtableVEToVe(const CVariableEntry* src_ve, CVariableEntr
 
     // -- clear out our internal hashtable
     // -- get the internal hashtable (the *actual* hashtable that this class wraps)
-    tVarTable* dest_vartable = (tVarTable*)dest_ve->GetAddr(nullptr);
+    tVarTable* dest_vartable = (tVarTable*)dest_ve->GetOrAllocHashtableAddr();
     if (dest_vartable == nullptr)
+    {
         return false;
+    }
     dest_vartable->DestroyAll();
 
     uint32 var_hash = 0;

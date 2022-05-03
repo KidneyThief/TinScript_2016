@@ -1930,16 +1930,6 @@ bool8 OpExecForeachIterInit(CCodeBlock* cb, eOpCode op, const uint32*& instrptr,
 }
 
 // ====================================================================================================================
-// OpExecForeachIterValid():  
-// ====================================================================================================================
-bool8 OpExecForeachIterValid(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExecStack& execstack,
-                            CFunctionCallStack& funccallstack)
-{
-    return false;
-}
-
-
-// ====================================================================================================================
 // OpExecForeachIterNext():  
 // ====================================================================================================================
 bool8 OpExecForeachIterNext(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExecStack& execstack,
@@ -4027,10 +4017,29 @@ bool8 OpExecScheduleParam(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, C
     cb->GetScriptContext()->GetScheduler()->mCurrentSchedule->mFuncContext->
         AddParameter(varnamebuf, Hash(varnamebuf), stack_valtype, 1, paramindex, 0);
 
-    // -- assign the value
+    // -- get the parameter to assign
+    // copy the entire hashtable, as deferred execution - the original may be altered/deleted)
     CVariableEntry* ve = cb->GetScriptContext()->GetScheduler()->mCurrentSchedule->
                          mFuncContext->GetParameter(paramindex);
-    ve->SetValue(NULL, stack_valaddr);
+
+    // --if the variable is a hashtable, we have to actually
+    if (ve->GetType() == TYPE_hashtable)
+    {
+        // -- we're going to copy from ve_0 to ve_1
+        // (we've already checked for is_wrap to a non-object hashtable variable
+        if (!CHashtable::CopyHashtableVEToVe(stack_ve, ve))
+        {
+            DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
+                            "Error - Failed to copy hashtable to hashtable variable\n");
+            cb->GetScriptContext()->GetScheduler()->mCurrentSchedule = nullptr;
+            return false;
+        }
+    }
+    else
+    {
+        ve->SetValue(NULL, stack_valaddr);
+    }
+
     DebugTrace(op, "Param: %d, Var: %s", paramindex, varnamebuf);
 
     // -- post increment/decrement support
