@@ -58,8 +58,8 @@
 // -- executed through their hash values...
 #define CASE_SENSITIVE 1
 
-// -- 04/29 bump... another bump coming soon, as foreach() is about to be added
-const int32 kCompilerVersion = 13;
+// -- 05/03 adding POD method calls
+const int32 kCompilerVersion = 15;
 
 // --------------------------------------------------------------------------------------------------------------------
 // -- only case_sensitive has been extensively tested, however theoretically TinScript should function as a
@@ -654,27 +654,27 @@ class CScriptContext
         // -- in case we need to differentiate - likely only the main thread
         // -- will be permitted to write out the string dictionary
         bool mIsShuttingDown = false;
-        bool mIsMainThread;
-        uint32 mObjectIDGenerator;
+        bool mIsMainThread = false;
+        uint32 mObjectIDGenerator = 0;
 
         // -- we're going to use an ID for each print message, since some
         // (e.g. errors) have a callstack associated with them
-        uint32 mDebuggerPrintMsgId;
+        uint32 mDebuggerPrintMsgId = 0;
 
         // -- assert/print handlers
         TinPrintHandler mTinPrintHandler;
         TinAssertHandler mTinAssertHandler;
-        bool8 mAssertStackSkipped;
+        bool8 mAssertStackSkipped = false;
 
         // -- global namespace for this context
-        CNamespace* mGlobalNamespace;
+        CNamespace* mGlobalNamespace = nullptr;
 
         // -- context stringtable
-        CStringTable* mStringTable;
+        CStringTable* mStringTable = nullptr;
 
         // -- context codeblock list
-        CHashTable<CCodeBlock>* mCodeBlockList;
-        CHashTable<CFunctionEntry>* mDefiningFunctionsList;
+        CHashTable<CCodeBlock>* mCodeBlockList = nullptr;
+        CHashTable<CFunctionEntry>* mDefiningFunctionsList = nullptr;
 
         int32 mCompileErrorFileCount = 0;
         uint32 mCompileErrorFileList[kDebuggerCallstackSize];
@@ -683,13 +683,13 @@ class CScriptContext
         CHashTable<CDebuggerWatchExpression> mDeferredBreakpointsList;
 
         // -- context namespace dictionaries
-        CHashTable<CNamespace>* mNamespaceDictionary;
-        CHashTable<CObjectEntry>* mObjectDictionary;
-        CHashTable<CObjectEntry>* mAddressDictionary;
-        CHashTable<CObjectEntry>* mNameDictionary;
+        CHashTable<CNamespace>* mNamespaceDictionary = nullptr;
+        CHashTable<CObjectEntry>* mObjectDictionary = nullptr;
+        CHashTable<CObjectEntry>* mAddressDictionary = nullptr;
+        CHashTable<CObjectEntry>* mNameDictionary = nullptr;
 
         // -- context scheduler
-        CScheduler* mScheduler;
+        CScheduler* mScheduler = nullptr;
 
         // -- current working directory 
         char mExecutableDirectory[kMaxNameLength];
@@ -698,18 +698,18 @@ class CScriptContext
         // -- when a script function returns (even void), a value is always pushed
         // -- if ExecF() calls a script function, we'll want to return that value to code
         char mFunctionReturnValue[kMaxTypeSize];
-        eVarType mFunctionReturnValType;
+        eVarType mFunctionReturnValType = TYPE_void;
 
         // -- used mostly for a place to do type conversions, this is a convenience
         // -- feature to avoid allocations, and to ensure that converted results
         // -- always have a reliable place to live.
         // -- if kMaxScratchBuffers is 32, then there would have to be
         // -- 32 type conversions in a single expression before we get buffer overrun...
-        int32 mScratchBufferIndex;
+        int32 mScratchBufferIndex = 0;
         char mScratchBuffers[kMaxScratchBuffers][kMaxTokenLength];
 
         // -- master object list
-        CMasterMembershipList* mMasterMembershipList;
+        CMasterMembershipList* mMasterMembershipList = nullptr;
 
         // -- buffer to store the results, when executing script commands from code
         char mExecfResultBuffer[kMaxArgLength];
@@ -718,7 +718,7 @@ class CScriptContext
         // -- which requires a thread lock
         CThreadMutex mThreadLock;
         char mThreadExecBuffer[kThreadExecBufferSize];
-        char* mThreadBufPtr;
+        char* mThreadBufPtr = nullptr;
 };
 
 }  // TinScript

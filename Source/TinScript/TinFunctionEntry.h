@@ -60,6 +60,9 @@ public:
     bool InitDefaultArgs(CFunctionEntry* fe);
     void InitStackVarOffsets(CFunctionEntry* fe);
 
+    void SetReassignPODVar(bool reassign) { m_reassignPODVar = reassign; }
+    bool GetReassignPODVar() const { return (m_reassignPODVar); }
+
     enum { eMaxParameterCount = 16,eMaxLocalVarCount = 37 };
 
     // -- for overloading, we want to hash the signature
@@ -113,6 +116,10 @@ private:
     // -- we're using an array to ensure the list stays ordered
     int32 paramcount;
     CVariableEntry* parameterlist[eMaxParameterCount];
+
+    // -- strictly for POD methods, we need to know if we should auto-reassign the result
+    // back to the original POD var
+    bool m_reassignPODVar = false;
 };
 
 // ====================================================================================================================

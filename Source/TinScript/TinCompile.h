@@ -65,6 +65,7 @@ class CWhileLoopNode;
 	CompileNodeTypeEntry(Self)       			\
 	CompileNodeTypeEntry(ObjMember) 			\
 	CompileNodeTypeEntry(PODMember) 			\
+	CompileNodeTypeEntry(PODMethod) 			\
 	CompileNodeTypeEntry(Assignment)			\
 	CompileNodeTypeEntry(BinaryOp)				\
 	CompileNodeTypeEntry(UnaryOp)				\
@@ -103,7 +104,7 @@ class CWhileLoopNode;
 	CompileNodeTypeEntry(CreateObject)  	    \
 	CompileNodeTypeEntry(DestroyObject)  	    \
 
-// enum
+// enum to mark the nodes for debug output
 enum ECompileNodeType
 {
 	#define CompileNodeTypeEntry(a) e##a,
@@ -114,6 +115,18 @@ enum ECompileNodeType
 };
 
 const char* GetNodeTypeString(ECompileNodeType nodetype);
+
+// --------------------------------------------------------------------------------------------------------------------
+// -- used when we're parsing, to determine the context of the function call
+enum class EFunctionCallType
+{
+	None,
+	Global,
+	ObjMethod,
+	PODMethod,
+	Super,
+	Count
+};
 
 // --------------------------------------------------------------------------------------------------------------------
 // operation types
@@ -191,6 +204,8 @@ const char* GetNodeTypeString(ECompileNodeType nodetype);
 	OperationEntry(FuncCall)			\
 	OperationEntry(FuncReturn)			\
 	OperationEntry(MethodCallArgs)		\
+	OperationEntry(PODCallArgs)			\
+	OperationEntry(PODCallComplete)		\
 	OperationEntry(ArrayHash)			\
 	OperationEntry(ArrayVarDecl)		\
 	OperationEntry(ArrayDecl)		    \
@@ -467,7 +482,7 @@ class CObjMemberNode : public CCompileTreeNode
 };
 
 // ====================================================================================================================
-// class CObjMemberNode:  Parse tree node, compiling to the member of a POD registered type.
+// class CPODMemberNode:  Parse tree node, compiling to the member of a POD registered type.
 // ====================================================================================================================
 class CPODMemberNode : public CCompileTreeNode
 {
@@ -485,6 +500,27 @@ class CPODMemberNode : public CCompileTreeNode
 
 	protected:
 		CPODMemberNode() { }
+};
+
+// ====================================================================================================================
+// class CPODMethodNode:  Parse tree node, compiling to the method of a POD registered type.
+// ====================================================================================================================
+class CPODMethodNode : public CCompileTreeNode
+{
+public:
+	CPODMethodNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber,
+				const char* _methodname, int32 _methodlength);
+
+	virtual int32 Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
+	virtual void Dump(char*& output, int32& length) const;
+
+	virtual bool8 CompileToC(int32 indent, char*& out_buffer, int32& max_size, bool root_node) const;
+
+protected:
+	char mPODMethodName[kMaxTokenLength];
+
+protected:
+	CPODMethodNode() { }
 };
 
 // ====================================================================================================================
@@ -708,7 +744,7 @@ class CFuncCallNode : public CCompileTreeNode
 	public:
 		CFuncCallNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber,
                       const char* _funcname, int32 _length, const char* _nsname, int32 _nslength,
-                      bool _ismethod, bool _issuper);
+                      EFunctionCallType call_type);
 
 		virtual int32 Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
 		virtual void Dump(char*& output, int32& length)const;
@@ -718,8 +754,7 @@ class CFuncCallNode : public CCompileTreeNode
 	protected:
 		char funcname[kMaxNameLength];
 		char nsname[kMaxNameLength];
-        bool8 ismethod;
-		bool8 issuper;
+		EFunctionCallType mCallType = EFunctionCallType::None;
 
 	protected:
 		CFuncCallNode() { }

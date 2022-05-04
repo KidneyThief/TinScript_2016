@@ -163,13 +163,6 @@ inline uint32 GetTypeID(bool8*)
     return GetTypeID<bool8>();
 }
 
-/*
-inline uint32 GetTypeID(CVector3f*)
-{
-    return GetTypeID<CVector3f>();
-}
-*/
-
 // ====================================================================================================================
 // IsArray():  Returns a true if the argument passed is actually an array.
 // ====================================================================================================================
@@ -216,13 +209,6 @@ inline uint32 IsArray(bool8*)
 {
     return (true);
 }
-
-/*
-inline uint32 IsArray(CVector3f*)
-{
-    return (true);
-}
-*/
 
 // ====================================================================================================================
 // GetTypeSize():  Returns the byte size for the given type.
@@ -354,6 +340,22 @@ struct tPODTypeMember
 };
 
 typedef CHashTable<tPODTypeMember> tPODTypeTable;
+class CFunctionEntry;
+
+// --------------------------------------------------------------------------------------------------------------------
+// -- we also need to register methods for POD types (e.g.  vector3f:normalized())
+// funcptr must be a global, where the first param of the type for which this method is being registered
+// reassign is used when the return type of the method should be re-assigned back to the POD variable
+#define REGISTER_TYPE_METHOD(type_name, method_name, funcptr, reassign)                                                             \
+    {                                                                                                                               \
+        static const int gArgCount_##type_name = ::TinScript::SignatureArgCount<decltype(funcptr)>::arg_count;                      \
+        static ::TinScript::CRegisterFunction<gArgCount_##type_name, decltype(funcptr)> _reg_##method_name(#method_name, funcptr);  \
+        static uint32 type_name_hash = TinScript::Hash(#type_name);                                                                 \
+        _reg_##method_name.SetTypeAsClassName(TinScript::UnHash(type_name_hash));                                                   \
+        CNamespace* type_ns = TinScript::GetContext()->FindOrCreateNamespace(#type_name);                                           \
+        _reg_##method_name.Register();                                                                                              \
+        type_ns->GetFuncTable()->FindItem(TinScript::Hash(#method_name))->GetContext()->SetReassignPODVar(reassign);                \
+    }
 
 // ====================================================================================================================
 // -- String conversion prototypes for standard types
@@ -476,8 +478,9 @@ enum eVarType : int16
 void InitializeTypes();
 void ShutdownTypes();
 
-// -- manual registration of a POD table
+// -- manual registration of POD tables for members and methods
 void RegisterPODTypeTable(eVarType var_type, tPODTypeTable* pod_table);
+void RegisterPODMethodTable(eVarType var_type, CHashTable<CFunctionEntry>* pod_methods);
 
 // -- manual registration of an operation override for a registered types
 void RegisterTypeOpOverride(eOpCode op, eVarType var_type, TypeOpOverride op_override);
@@ -505,11 +508,14 @@ enum EFunctionType {
 
 // ====================================================================================================================
 const char* GetRegisteredTypeName(eVarType vartype);
+uint32 GetRegisteredTypeHash(eVarType vartype);
+
 eVarType GetRegisteredType(const char* token, int32 length);
 eVarType GetRegisteredType(uint32 id);
 
 bool8 GetRegisteredPODMember(eVarType type_id, void* var_addr, uint32 member_hash, eVarType& out_member_type,
                              void*& out_member_addr);
+CFunctionEntry* GetRegisteredPODMethod(eVarType type_id, uint32 method_hash);
 
 TypeOpOverride GetTypeOpOverride(eOpCode op, eVarType var_type);
 

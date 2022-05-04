@@ -58,6 +58,22 @@ const char* GetRegisteredTypeName(eVarType vartype)
 }
 
 // ====================================================================================================================
+// GetRegisteredTypeName(): Return the string name for a registered type.
+// note:  this is the hash of the string TYPE_xxx, not just xxx
+// ====================================================================================================================
+uint32 gRegisteredTypeHash[TYPE_COUNT] =
+{
+    #define VarTypeEntry(a, b, c, d, e, f) TinScript::Hash("TYPE_" #a),
+    VarTypeTuple
+    #undef VarTypeEntry
+};
+
+uint32 GetRegisteredTypeHash(eVarType vartype)
+{
+    return gRegisteredTypeHash[vartype];
+}
+
+// ====================================================================================================================
 // GetRegisteredType():  Returns the enum type for an inplace string segment.
 // ====================================================================================================================
 eVarType GetRegisteredType(const char* token, int32 length)
@@ -316,7 +332,7 @@ void InitializeTypes()
     // -- initialize the manually populated tables
 	for (eVarType i = TYPE_void; i < TYPE_COUNT; i = eVarType(i + 1))
     {
-        gRegisteredPODTypeTable[i] = NULL;
+        gRegisteredPODTypeTable[i] = nullptr;
 
         // -- initialize the op override table
     	for (eOpCode op = OP_NULL; op < OP_COUNT; op = eOpCode(op + 1))
@@ -354,7 +370,7 @@ void ShutdownTypes()
     // -- clear the manaully populated tables
 	for(eVarType i = TYPE_void; i < TYPE_COUNT; i = eVarType(i + 1))
     {
-        gRegisteredPODTypeTable[i] = NULL;
+        gRegisteredPODTypeTable[i] = nullptr;
     }
 }
 

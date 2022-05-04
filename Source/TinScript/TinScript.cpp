@@ -333,6 +333,15 @@ CScriptContext::CScriptContext(TinPrintHandler printfunction, TinAssertHandler a
     mStringTable = TinAlloc(ALLOC_StringTable, CStringTable, this, kStringTableSize);
     LoadStringTable();
 
+    // -- initialize the current working directory
+    InitializeDirectory(true);
+
+    // -- initialize the namespaces dictionary, and all object dictionaries
+    InitializeDictionaries();
+
+    // -- create the global namespace for this context
+    mGlobalNamespace = FindOrCreateNamespace(NULL);
+
     // -- ensure our types have all been initialized - only from the main thread
     // -- this will set up global tables of type info... convert functions, op overrides, etc...
     if (is_main_thread)
@@ -345,20 +354,12 @@ CScriptContext::CScriptContext(TinPrintHandler printfunction, TinAssertHandler a
     mTinAssertHandler = asserthandler ? asserthandler : NullAssertHandler;
     mAssertStackSkipped = false;
 
-    // -- initialize the current working directory
-    InitializeDirectory(true);
-
-    // -- initialize the namespaces dictionary, and all object dictionaries
-    InitializeDictionaries();
-
-    // -- create the global namespace for this context
-    mGlobalNamespace = FindOrCreateNamespace(NULL);
-
     // -- register functions, each to their namespace
     CRegFunctionBase* regfunc = CRegFunctionBase::gRegistrationList;
     while (regfunc != NULL)
     {
-        if (!regfunc->Register())
+        // -- note:  manually registered functions don't need to be registered again....
+        if (!regfunc->IsRegistered() && !regfunc->Register())
         {
             if (regfunc->GetClassNameHash() != 0)
             {

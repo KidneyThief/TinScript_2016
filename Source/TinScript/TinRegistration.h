@@ -117,6 +117,10 @@ class CRegFunctionBase
         uint32 GetClassNameHash() { return m_ClassNameHash; }
         uint32 GetFunctionNameHash() { return m_FunctionNameHash; }
 
+        // -- the only registration that doesn't use the standard macros, is the (new-ish) POD method registration,
+        // where the "class name" is actually the POD type...  *nothing* else should use this
+        void SetTypeAsClassName(const char* type_name);
+
         // -- the function context is used to determine parameter lists for calling whatever is registered
         // and a function entry is what contains a function context
         CFunctionContext* CreateContext();
@@ -127,12 +131,14 @@ class CRegFunctionBase
 
         virtual void DispatchFunction(void*) = 0;
 
+        bool IsRegistered() const { return m_isRegistered;  }
         virtual bool Register() = 0;
         CRegFunctionBase* GetNext() { return (next); }
 
         static CRegFunctionBase* gRegistrationList;
 
     private:
+        bool m_isRegistered = false;
         const char* m_ClassName;
         const char* m_FunctionName;
         uint32 m_ClassNameHash;

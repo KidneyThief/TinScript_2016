@@ -2681,6 +2681,154 @@ bool8 OpExecMethodCallArgs(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, 
 }
 
 // ====================================================================================================================
+// OpExecPODCallArgs():  Preparation to call a type method after we've assigned all the arguments.
+// ====================================================================================================================
+bool8 OpExecPODCallArgs(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExecStack& execstack,
+                          CFunctionCallStack& funccallstack)
+{
+    // -- get the hash of the method name
+    uint32 methodhash = *instrptr++;
+
+    // -- peek the POD variable - we'll pop after we're sure we don't need to reassign the method call result back
+    CVariableEntry* ve_pod = NULL;
+    CObjectEntry* oe_pod = NULL;
+    eVarType valtype_pod;
+    void* val_pod = execstack.Peek(valtype_pod);
+    if (valtype_pod != TYPE__var || !GetStackValue(cb->GetScriptContext(), execstack, funccallstack, val_pod, valtype_pod, ve_pod, oe_pod))
+    {
+        DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
+                        "Error - ExecStack should a POD var\n");
+        return false;
+    }
+
+    // -- find the function to call
+    uint32 ns_hash = GetRegisteredTypeHash(valtype_pod);
+    CNamespace* type_ns = cb->GetScriptContext()->FindNamespace(ns_hash);
+    CFunctionEntry* fe = type_ns != nullptr ? type_ns->GetFuncTable()->FindItem(methodhash) : nullptr;
+    if (fe == nullptr || fe->GetType() != eFuncTypeRegistered)
+    {
+        DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
+                        "Error - no method for the given type:  %s:%s()\n",
+                        GetRegisteredTypeName(valtype_pod), UnHash(methodhash));
+        return (false);
+    }
+
+    // -- POD methods are always global functions, where the first arg is the POD value...
+    // $$$TZA PODMethod - need to enforce this!
+    // -- therefore, we need to assign the first parameter (index 1, not the _return param, as always),
+    // the value of our POD
+    CFunctionContext* fe_context = fe->GetContext();
+    CVariableEntry* param_1_ve = fe_context->GetParameter(1);
+
+    // -- if we're executing a method with _p1 being a copy of the POD, set the value directly
+    eVarType p1_type = param_1_ve != nullptr ? param_1_ve->GetType() : TYPE_void;
+    if (p1_type != valtype_pod)
+    {
+        DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
+                "Error - POD method:  %s:%s() does not take a POD value as its first parameter\n",
+                GetRegisteredTypeName(valtype_pod), UnHash(methodhash));
+        return (false);
+    }
+
+    // -- set the p1 value directly
+    param_1_ve->SetValueAddr(nullptr, val_pod, 0);
+
+    // -- before we call the function, we're going to push the method hash onto the stack
+    execstack.Push(&methodhash, TYPE_int);
+
+    // -- push the function entry onto the call stack
+    funccallstack.Push(fe, oe_pod, execstack.GetStackTop());
+
+    DebugTrace(op, "POD type: %s, func: %s", GetRegisteredTypeName(valtype_pod), UnHash(fe->GetHash()));
+    return (true);
+}
+
+// ====================================================================================================================
+// OpExecPODCallComplete():  Once the POD call has completed, we need to assign the _P1 param back to the original POD
+// ====================================================================================================================
+bool8 OpExecPODCallComplete(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExecStack& execstack,
+                            CFunctionCallStack& funccallstack)
+{
+
+    // -- the return value should be on the top of the stack...
+    // POD methods only return values (obviously)
+    // next is the method_hash, and then the POD var
+    eVarType return_val_type;
+    void* return_val = execstack.Pop(return_val_type);
+    uint32 stacktopcontent[MAX_TYPE_SIZE];
+    memcpy(stacktopcontent, return_val, MAX_TYPE_SIZE * sizeof(uint32));
+
+    eVarType valtype_method;
+    void* method_val = execstack.Pop(valtype_method);
+
+    // -- this had better be an int (hash of the method we called)
+    if (valtype_method != TYPE_int)
+    {
+        DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
+                        "Error - ExecStack should a POD method hash\n");
+        return false;
+    }
+    uint32 method_hash = *(uint32*)method_val;
+
+    // -- next on the stack we should have the POD variable for which the method was called
+    CVariableEntry* ve_pod = NULL;
+    CObjectEntry* oe_pod = NULL;
+    eVarType valtype_pod;
+    void* val_pod = execstack.Peek(valtype_pod, 0);
+    if (valtype_pod != TYPE__var || !GetStackValue(cb->GetScriptContext(), execstack, funccallstack, val_pod, valtype_pod, ve_pod, oe_pod))
+    {
+        DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
+                        "Error - ExecStack should a POD variable\n");
+        return false;
+    }
+
+    // -- find the function to call
+    uint32 ns_hash = GetRegisteredTypeHash(valtype_pod);
+    CNamespace* type_ns = cb->GetScriptContext()->FindNamespace(ns_hash);
+    CFunctionEntry* fe = type_ns != nullptr ? type_ns->GetFuncTable()->FindItem(method_hash) : nullptr;
+    if (fe == nullptr || fe->GetType() != eFuncTypeRegistered)
+    {
+        DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
+                        "Error - no method for the given type:  %s:%s()\n",
+                        GetRegisteredTypeName(valtype_pod), UnHash(method_hash));
+        return (false);
+    }
+
+    // -- get the POD method param _p1, and copy it's value back to our original POD var
+    CFunctionContext* fe_context = fe->GetContext();
+
+    // -- see if we're supposed to re-assign the return value back to the POD var
+    if (fe_context != nullptr && fe_context->GetReassignPODVar())
+    {
+        // -- we still have the POD var on top of the stack - push the return val back on and assign
+        execstack.Push(stacktopcontent, return_val_type);
+        if (!PerformAssignOp(cb->GetScriptContext(), execstack, funccallstack, OP_Assign))
+        {
+            DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
+                            "Error - failed to auto-reassign from POD method:  %s:%s() to var %s\n",
+                            GetRegisteredTypeName(valtype_pod), UnHash(method_hash), UnHash(ve_pod->GetHash()));
+            return (false);
+        }
+
+        // -- we still need to push the return value back onto the stack, since
+        // the re-assign shouldn't consume it, if we're continuing to, e.g., assign to a param
+        // in an upcoming function call
+        execstack.Push(stacktopcontent, return_val_type);
+    }
+
+    // -- no re-assignment, we need to pop the POD var off the stack, and push the return val back on
+    else
+    {
+        eVarType dummy;
+        execstack.Pop(dummy);
+
+        execstack.Push(stacktopcontent, return_val_type);
+    }
+
+    return (true);
+}
+
+// ====================================================================================================================
 // OpExecFuncCall():  Call a function.
 // ====================================================================================================================
 extern bool8 CodeBlockCallFunction(CFunctionEntry* fe, CObjectEntry* oe, CExecStack& execstack,

@@ -236,6 +236,18 @@ CRegFunctionBase::CRegFunctionBase(const char* _classname,const char* _funcname)
 }
 
 // ====================================================================================================================
+// SetTypeAsClassName():  POD methods are not actually registered classes, but they are registered methods
+// -- we use the TYPE_xxx as a namespace to find its function/var tables
+// ====================================================================================================================
+void CRegFunctionBase::SetTypeAsClassName(const char* type_name)
+{
+    // -- note:  the type_name must come from the string table, as it also won't exist in static memory
+    assert(type_name != nullptr && type_name[0] != '\0');
+    m_ClassName = type_name;
+    m_ClassNameHash = Hash(m_ClassName);
+}
+
+// ====================================================================================================================
 // CreateContext():  create the function entry and context (ie. parameter list) for a registered function
 // ====================================================================================================================
 CFunctionContext* CRegFunctionBase::CreateContext()
@@ -265,7 +277,17 @@ CFunctionContext* CRegFunctionBase::CreateContext()
 // ====================================================================================================================
 CFunctionContext* CRegFunctionBase::GetContext()
 {
-    tFuncTable* func_table = TinScript::GetContext()->FindNamespace(m_ClassNameHash)->GetFuncTable();
+    // -- set the flag - this is essentially ensuring we're registered
+    m_isRegistered = true;
+
+    // -- if we don't have a TinScript context (registering outside of the context being valid?)
+    // or if we don't have a namespace for this registered function
+    // (legit if we're manually registering as part of POD member registration)...
+    CNamespace* ns = TinScript::GetContext() ? TinScript::GetContext()->FindNamespace(m_ClassNameHash) : nullptr;
+    if (ns == nullptr)
+        return nullptr;
+
+    tFuncTable* func_table = ns->GetFuncTable();
     CFunctionEntry* fe = func_table != nullptr ? func_table->FindItem(m_FunctionNameHash) : nullptr;
     CFunctionContext* func_context = fe != nullptr ? fe->GetContext() : nullptr;
     return (func_context);

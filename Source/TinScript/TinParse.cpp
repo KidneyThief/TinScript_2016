@@ -2458,7 +2458,7 @@ bool8 TryParseExpression(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTre
         // -- otherwise if the keyword is "super", we treat it as a ns call, not a method call
         else if (reservedwordtype == KEYWORD_super)
         {
-            if (TryParseFuncCall(codeblock, filebuf, *temp_link, false))
+            if (TryParseFuncCall(codeblock, filebuf, *temp_link, EFunctionCallType::Super))
             {
                 // -- committed to function call, filebuf will have already been updated
             }
@@ -2468,7 +2468,7 @@ bool8 TryParseExpression(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTre
     }
 
     // -- function call
-    else if (TryParseFuncCall(codeblock, filebuf, *temp_link, false))
+    else if (TryParseFuncCall(codeblock, filebuf, *temp_link, EFunctionCallType::Global))
     {
         // -- committed to function call, filebuf will have already been updated
     }
@@ -2582,7 +2582,7 @@ bool8 TryParseExpression(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTre
 
             // -- determine if we actually have a method call, and not just a member
             tReadToken methodcalltoken(filebuf);
-            if (TryParseFuncCall(codeblock, methodcalltoken, *temp_link, true))
+            if (TryParseFuncCall(codeblock, methodcalltoken, *temp_link, EFunctionCallType::ObjMethod))
             {
                 // -- we're committed to a method call
                 filebuf = methodcalltoken;
@@ -2653,7 +2653,7 @@ bool8 TryParseExpression(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTre
             }
         }
 
-        // -- else if we have a colon, we're dereferrencing a member of a registered POD type
+        // -- else if we have a colon, we're dereferencing a member of a registered POD type
         else if (nexttoken.type == TOKEN_COLON &&
                  (gTernaryDepth == 0 || gTernaryStack[gTernaryDepth - 1] < gGlobalExprParenDepth))
         {
@@ -2664,7 +2664,7 @@ bool8 TryParseExpression(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTre
             // -- note:  this could still be a function call - e.g.  "GetPosition():x"
             CCompileTreeNode* templeftchild = *temp_link;
 
-            // -- ensure we've got an identifier for the member name next
+            // -- ensure we've got an identifier for the member/method name next
             tReadToken membertoken(filebuf);
             if (!GetToken(membertoken) || membertoken.type != TOKEN_IDENTIFIER)
             {
@@ -2673,24 +2673,46 @@ bool8 TryParseExpression(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTre
                 return (false);
             }
 
-            // -- we're committed to a POD variable dereference at this point
-            filebuf = membertoken;
+            // -- this must either be a member or a method
+            // see if we can parse a "function call", which will actually be a POD method call
+            if (TryParseFuncCall(codeblock, filebuf, *temp_link, EFunctionCallType::PODMethod))
+            {
+                // -- create a POD method node, the left child will resolve to the POD variable
+                // -- and the right child will be the tree handling the method call
+                CCompileTreeNode* temprightchild = *temp_link;
+		        CPODMethodNode* pod_method = TinAlloc(ALLOC_TreeNode, CPODMethodNode, codeblock, *temp_link,
+                                                      membertoken.linenumber, membertoken.tokenptr, membertoken.length);
 
-            // -- create the member node
-		    CPODMemberNode* objmember = TinAlloc(ALLOC_TreeNode, CPODMemberNode, codeblock, *temp_link,
-                                                 membertoken.linenumber, membertoken.tokenptr, membertoken.length);
+                // -- the left child is the branch that resolves to an object
+                pod_method->leftchild = templeftchild;
+                pod_method->rightchild = temprightchild;
 
-            // -- the left child is the branch that resolves to an object
-            objmember->leftchild = templeftchild;
+                // -- and because POD members do not continue to be dereferenced, this is the end of the expression
+                exprlink = expression_root;
 
-            // -- and because POD members do not continue to be dereferenced, this is the end of the expression
-            exprlink = expression_root;
+                return (true);
+            }
+            else
+            {
+                // -- we're committed to a POD variable dereference at this point
+                filebuf = membertoken;
 
-            // -- the objmember is added to the parse tree as expected, but if there's a following post-inc/dec operator
-            // -- we need to add a "deferred" operation
-            int32 post_op_adjust = TryParseUnaryPostOp(codeblock, filebuf, objmember);
-            if (post_op_adjust != 0)
-                objmember->SetPostUnaryOpDelta(post_op_adjust);
+                // -- create the member node
+		        CPODMemberNode* objmember = TinAlloc(ALLOC_TreeNode, CPODMemberNode, codeblock, *temp_link,
+                                                     membertoken.linenumber, membertoken.tokenptr, membertoken.length);
+
+                // -- the left child is the branch that resolves to POD variable
+                objmember->leftchild = templeftchild;
+
+                // -- and because POD members do not continue to be dereferenced, this is the end of the expression
+                exprlink = expression_root;
+
+                // -- the objmember is added to the parse tree as expected, but if there's a following post-inc/dec operator
+                // -- we need to add a "deferred" operation
+                int32 post_op_adjust = TryParseUnaryPostOp(codeblock, filebuf, objmember);
+                if (post_op_adjust != 0)
+                    objmember->SetPostUnaryOpDelta(post_op_adjust);
+            }
 
             // -- and we're done
             return (true);
@@ -4185,7 +4207,7 @@ bool8 TryParseFuncDefinition(CCodeBlock* codeblock, tReadToken& filebuf, CCompil
 // TryParseFuncCall():  A function call has a well defined syntax.
 // ====================================================================================================================
 bool8 TryParseFuncCall(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link,
-                      bool8 ismethod)
+                       EFunctionCallType call_type)
 {
 	// -- see if the next token is an identifier
 	tReadToken idtoken(filebuf);
@@ -4193,14 +4215,19 @@ bool8 TryParseFuncCall(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeN
 		return (false);
 
     // -- "super" is a special kind of namespace identifier in this case
-    bool is_super = false;
     if (idtoken.type == TOKEN_KEYWORD &&
         GetReservedKeywordType(idtoken.tokenptr, idtoken.length) == KEYWORD_super)
     {
-        is_super = true;
+        if (call_type != EFunctionCallType::Super && call_type != EFunctionCallType::None)
+        {
+            ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
+                          idtoken.linenumber,
+                          "Error - trying to call super::x() as a method\n");
+        }
+        call_type = EFunctionCallType::Super;
     }
 
-	if (!is_super && idtoken.type != TOKEN_IDENTIFIER)
+	if (call_type != EFunctionCallType::Super && idtoken.type != TOKEN_IDENTIFIER)
 		return (false);
 
     // -- see if this is a namespace'd function declaration
@@ -4212,7 +4239,7 @@ bool8 TryParseFuncCall(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeN
         usenamespace = true;
 
         // -- if this is a "super::" method, verify that the nsnametoken is "super"
-        if (is_super)
+        if (call_type == EFunctionCallType::Super)
         {
             if (strncmp(nsnametoken.tokenptr, "super", 5) != 0)
             {
@@ -4280,16 +4307,18 @@ bool8 TryParseFuncCall(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeN
                                            filebuf.linenumber, idtoken.tokenptr, idtoken.length,
                                            usenamespace ? nsnametoken.tokenptr : "",
                                            usenamespace ? nsnametoken.length : 0,
-                                           ismethod, is_super);
-
-    // -- $$$TZA add default args
+                                           call_type);
 
     // -- create a tree root to contain all the parameter assignments
   	funccallnode->leftchild = CCompileTreeNode::CreateTreeRoot(codeblock);
 	CCompileTreeNode* assignments = funccallnode->leftchild;
 
     // -- keep reading and assigning params, until we reach the closing parenthesis
-    int32 paramindex = 0;
+    // note:  for function and method calls, we assign parameters starting at 1... (0 is the return param)
+    // but for POD method calls, we force the first parameter to be the POD value itself, so
+    // args passed to the method begin at parameter 2
+    int32 first_param_index = call_type == EFunctionCallType::PODMethod ? 2 : 1;
+    int32 paramindex = first_param_index;
     while (true)
     {
         // -- see if we have a closing parenthesis
@@ -4310,7 +4339,7 @@ bool8 TryParseFuncCall(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeN
 
         // -- if we didn't find a closing parenthesis, and this isn't the first parameter, then
         // -- we'd better find the separating comma
-        if (paramindex >= 1)
+        if (paramindex > first_param_index)
         {
             if (!GetToken(filebuf) || filebuf.type != TOKEN_COMMA)
             {
@@ -4321,9 +4350,6 @@ bool8 TryParseFuncCall(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeN
                 return (false);
             }
         }
-
-        // -- increment the paramindex we add nodes starting with index 1, since 0 is the return
-        ++paramindex;
 
         // -- create an assignment binary op
 		CBinaryOpNode* binopnode = TinAlloc(ALLOC_TreeNode, CBinaryOpNode, codeblock,
@@ -4346,6 +4372,9 @@ bool8 TryParseFuncCall(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeN
             --gGlobalExprParenDepth;
             return (false);
         }
+
+        // -- increment the paramindex
+        ++paramindex;
     }
 
     // -- decrement the paren stack

@@ -45,7 +45,7 @@ namespace TinScript {
 
 // --------------------------------------------------------------------------------------------------------------------
 // -- vector3f POD table
-tPODTypeTable* gVector3fTable = NULL;
+tPODTypeTable* gVector3fTable = nullptr;
 
 // --------------------------------------------------------------------------------------------------------------------
 // External type - CVector3f is a POD type (aggregate, but no user-defined constructors)
@@ -298,7 +298,7 @@ bool8 Vector3fConfig(eVarType var_type, bool8 onInit)
     if (onInit)
     {
         // -- create the vector3f member lookup table (size 3 for 3x members)
-        if (gVector3fTable == NULL)
+        if (gVector3fTable == nullptr)
         {
             gVector3fTable = TinAlloc(ALLOC_HashTable, CHashTable<tPODTypeMember>, 3);
 			size_t unit_size = sizeof(Vector3fClass) / 3;
@@ -336,17 +336,33 @@ bool8 Vector3fConfig(eVarType var_type, bool8 onInit)
 		// a CVector3f successfully
 		RegisterTypeConvert(TYPE_ue_vector, TYPE_vector3f, Vector3fToFVectorConvert);
 		RegisterTypeConvert(TYPE_vector3f, TYPE_ue_vector, FVectorToVector3fConvert);
+
+        // -- in addition to POD type member initialization, we want to have types have non-hierarchical methods
+        // e.g.  float:isNan(), or vector3f:normalize(), etc...
+        if (TinScript::GetContext()->FindNamespace(Hash("TYPE_vector3f")) == nullptr)
+        {
+            // -- register methods for this type
+            // note:  this will actually create a Namespace named "Type_vector3f"
+            // note: the last param is reassign... it requires the function to return
+			// a value or the same type, to be reassigned back to the calling POD var
+            REGISTER_TYPE_METHOD(TYPE_vector3f, set, CVector3f::Init, true);
+            REGISTER_TYPE_METHOD(TYPE_vector3f, normalized, CVector3f::Normalized, false);
+            REGISTER_TYPE_METHOD(TYPE_vector3f, normalize, CVector3f::Normalized, true);
+            REGISTER_TYPE_METHOD(TYPE_vector3f, length, CVector3f::V3fLength, false);
+            REGISTER_TYPE_METHOD(TYPE_vector3f, dot, CVector3f::Dot, false);
+            REGISTER_TYPE_METHOD(TYPE_vector3f, cross, CVector3f::Cross, false);
+        }
     }
 
     // -- shutdown
     else
     {
         // -- memory cleanup for the vector3f lookup table
-        if (gVector3fTable != NULL)
+        if (gVector3fTable != nullptr)
         {
             gVector3fTable->DestroyAll();
             TinFree(gVector3fTable);
-            gVector3fTable = NULL;
+            gVector3fTable = nullptr;
         }
     }
 

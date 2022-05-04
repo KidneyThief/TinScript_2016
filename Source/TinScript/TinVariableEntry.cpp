@@ -202,13 +202,26 @@ CVariableEntry::~CVariableEntry()
         CHashtable::NotifyHashtableDestroyed(this);
     }
 
-	if (mScriptVar)
+    TryFreeAddrMem();
+}
+
+// ====================================================================================================================
+// CVariableEntry
+// ====================================================================================================================
+void CVariableEntry::TryFreeAddrMem()
+{
+    // $$$TZA clean this up - we have too many variables used to figure out if the mAddr owns the memory or not
+    if (mAddr == nullptr || mIsReference)
+        return;
+
+    if (mScriptVar)
     {
         // -- if this isn't a hashtable, and it isn't a parameter array
         // $$$TZA Array - *this* is why we require array parameters to be marked as a parameter!
         if (mType != TYPE_hashtable && (!mIsParameter || !IsArray()))
         {
-		    TinFreeArray((char*)mAddr);
+            TinFreeArray((char*)mAddr);
+            mAddr = nullptr;
         }
 
         // -- if this is a non-parameter hashtable, need to destroy all of its entries
@@ -221,13 +234,17 @@ CVariableEntry::~CVariableEntry()
 
             // -- now delete the hashtable itself
             TinFree(ht);
+
+            // -- null the pointer
+            mAddr = nullptr;
         }
-	}
+    }
 
     // -- delete the hash array, if this happened to have been a registered const char*[]
     if (mStringHashArray)
     {
         TinFreeArray(mStringHashArray);
+        mStringHashArray = nullptr;
     }
 }
 
@@ -544,7 +561,7 @@ void CVariableEntry::SetValue(void* objaddr, void* value, CExecStack* execstack,
     // -- otherwise simply copy the new value 
     else
     {
-        // -- ensure we're not assigning to an uninitialized paramter array
+        // -- ensure we're not assigning to an uninitialized parameter array
         if (IsParameter() && IsArray() && GetArraySize() < 0)
         {
             ScriptAssert_(GetScriptContext(), false, "<internal>", -1,
@@ -602,6 +619,30 @@ void CVariableEntry::SetValueAddr(void* objaddr, void* value, int32 array_index)
     // -- note:  SetValueAddr() is the external access (from code), and is never part 
     // -- of executing the VM... therefore, we have no stack
     NotifyWrite(GetScriptContext(), NULL, NULL);
+}
+
+// ====================================================================================================================
+// SetReferenceAddr():  Used only on parameters, so type methods can still modify their own values
+// ====================================================================================================================
+bool CVariableEntry::SetReferenceAddr(void* ref_addr)
+{
+    // -- we have to have a value, and this can only be performed on parameters!
+    if (ref_addr == nullptr || !mIsParameter)
+    {
+        ScriptAssert_(GetScriptContext(), false, "<internal>", -1,
+                      "Error - failed SetReferenceAddr(): %s\n",
+                      UnHash(GetHash()));
+        return false;
+    }
+
+    // -- try to free the existing memory
+    TryFreeAddrMem();
+
+    // -- mark this as a reference, and set the addr
+    mIsReference = true;
+    mAddr = ref_addr;
+
+    return (true);
 }
 
 // ====================================================================================================================

@@ -54,6 +54,9 @@ public:
 
     virtual ~CVariableEntry();
 
+    // $$$TZA Clean this up - too many variables determining if mAddr should be freed
+    void TryFreeAddrMem();
+
     CScriptContext* GetScriptContext() const
     {
         return (mContextOwner);
@@ -154,11 +157,17 @@ public:
         return (mIsParameter);
     }
 
+    bool8 IsReference() const
+    {
+        return (mIsReference);
+    }
+
     bool8 IsStackVariable(const CFunctionCallStack& funccallstack, bool allow_indexed_var = false) const;
 
     void SetValue(void* objaddr, void* value, CExecStack* execstack = NULL, CFunctionCallStack* funccallstack = NULL,
                   int32 array_index = 0);
     void SetValueAddr(void* objaddr, void* value, int32 array_index = 0);
+    bool SetReferenceAddr(void* ref_addr);
 
     // -- the equivalent of SetValue and SetValueAddr, but for variable (arrays) of Type_string
     void SetStringArrayHashValue(void* objaddr, void* value, CExecStack* execstack = NULL,
@@ -301,6 +310,7 @@ private:
     bool8 mIsParameter;
     bool8 mIsDynamic;
     bool8 mScriptVar;
+    bool mIsReference = false;
     mutable uint32 mStringValueHash;
     mutable uint32* mStringHashArray; // used only for registered string *arrays*
     uint32 mDispatchConvertFromObject;

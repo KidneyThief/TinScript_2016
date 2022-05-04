@@ -1162,6 +1162,78 @@ bool8 CPODMemberNode::CompileToC(int32 indent, char*& out_buffer, int32& max_siz
     return (true);
 }
 
+// == class CPODMethodNode ============================================================================================
+
+// ====================================================================================================================
+// Constructor
+// ====================================================================================================================
+CPODMethodNode::CPODMethodNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber,
+                               const char* _method_name, int32 _method_length)
+    : CCompileTreeNode(_codeblock, _link, ePODMethod, _linenumber)
+{
+	SafeStrcpy(mPODMethodName, sizeof(mPODMethodName), _method_name, _method_length + 1);
+}
+
+// ====================================================================================================================
+// Eval():  Generates the byte code instruction compiled from this node.
+// ====================================================================================================================
+int32 CPODMethodNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 countonly) const
+{
+	DebugEvaluateNode(*this, countonly, instrptr);
+	int32 size = 0;
+
+	// -- ensure we have a left child
+	if (!leftchild)
+    {
+        TinPrint(TinScript::GetContext(), "Error - CPODMethodNode with no left child\n");
+		return (-1);
+	}
+    // -- ensure we have a right child
+    if (!rightchild)
+    {
+        TinPrint(TinScript::GetContext(), "Error - CPODMethodNode with no left child\n");
+        return (-1);
+    }
+
+  	// -- evaluate the left child, pushing a result that is a POD variable
+    int32 tree_size = leftchild->Eval(instrptr, TYPE__var, countonly);
+    if (tree_size < 0)
+        return (-1);
+    size += tree_size;
+
+    // -- evaluate the right child, which contains the function call node
+    tree_size = rightchild->Eval(instrptr, pushresult, countonly);
+    if (tree_size < 0)
+        return (-1);
+    size += tree_size;
+
+    // -- after the function call, we want to notify the POD method is complete, so any changes to the
+    // original POD value can copied back to the variable, as per the function's reassign flag
+    size += PushInstruction(countonly, instrptr, OP_PODCallComplete, DBG_instr);
+
+	return size;
+}
+
+// ====================================================================================================================
+// Dump():  Outputs the text version of the instructions compiled from this node.
+// ====================================================================================================================
+void CPODMethodNode::Dump(char*& output, int32& length) const
+{
+    snprintf(output, length, "type: %s, %s", gCompileNodeTypes[type], mPODMethodName);
+	int32 debuglength = (int32)strlen(output);
+	output += debuglength;
+	length -= debuglength;
+}
+
+// ====================================================================================================================
+// CompileToC(): Convert the parse tree to valid C, to compile directly to the executable. 
+// ====================================================================================================================
+bool8 CPODMethodNode::CompileToC(int32 indent, char*& out_buffer, int32& max_size, bool root_node) const
+{
+    TinPrint(TinScript::GetContext(), "CPODMethodNode::CompileToC() not implemented.\n");
+    return (true);
+}
+
 // == class CBinaryOpNode =============================================================================================
 
 // ====================================================================================================================
@@ -2579,7 +2651,7 @@ bool8 CFuncDeclNode::CompileToC(int32 indent, char*& out_buffer, int32& max_size
             // -- next local var
             local_var = functionentry->GetLocalVarTable()->Next();
         }
-        
+
         // -- if we output any local vars, add a space
         if (!first_local_var)
         {
@@ -2610,14 +2682,13 @@ bool8 CFuncDeclNode::CompileToC(int32 indent, char*& out_buffer, int32& max_size
 // Constructor
 // ====================================================================================================================
 CFuncCallNode::CFuncCallNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber,
-                             const char* _funcname, int32 _length, const char* _nsname,
-                             int32 _nslength, bool8 _ismethod, bool8 _issuper)
+    const char* _funcname, int32 _length, const char* _nsname,
+    int32 _nslength, EFunctionCallType call_type)
     : CCompileTreeNode(_codeblock, _link, eFuncCall, _linenumber)
 {
     SafeStrcpy(funcname, sizeof(funcname), _funcname, _length + 1);
     SafeStrcpy(nsname, sizeof(nsname), _nsname, _nslength + 1);
-    ismethod = _ismethod;
-    issuper = _issuper;
+    mCallType = call_type;
 }
 
 // ====================================================================================================================
@@ -2625,22 +2696,31 @@ CFuncCallNode::CFuncCallNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, i
 // ====================================================================================================================
 int32 CFuncCallNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 countonly) const
 {
-	DebugEvaluateNode(*this, countonly, instrptr);
-	int32 size = 0;
+    DebugEvaluateNode(*this, countonly, instrptr);
+    int32 size = 0;
 
     // -- get the function/method hash
-	uint32 funchash = Hash(funcname);
-	uint32 nshash = Hash(nsname);
+    uint32 funchash = Hash(funcname);
+    uint32 nshash = Hash(nsname);
+
+    // -- we need a valid call type by this point
+    if (mCallType <= EFunctionCallType::None || mCallType >= EFunctionCallType::Count)
+    {
+        assert(false && "CFuncCallNode with no valid call type");
+        return (false);
+    }
 
     // -- first we push the function to the call stack
     // -- for methods, we want to find the method searching from the top of the objects hierarchy
-    if (ismethod)
+    if (mCallType == EFunctionCallType::ObjMethod)
     {
         size += PushInstruction(countonly, instrptr, OP_MethodCallArgs, DBG_instr);
         size += PushInstruction(countonly, instrptr, 0, DBG_nshash);
         size += PushInstruction(countonly, instrptr, 0, DBG_super); // unused
     }
-    else
+    // note:  a namespaced function call has a similar syntax as global function call
+    // e.g.  it's not obj.method(), but XXX::Method()...  no "object."  (including super)
+    else if (mCallType == EFunctionCallType::Global || mCallType == EFunctionCallType::Super)
     {
         // -- if this isn't a method, but we specified a namespace, then it's a
         // method from a specific namespace in an object's hierarchy.
@@ -2652,13 +2732,20 @@ int32 CFuncCallNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 countonl
             size += PushInstruction(countonly, instrptr, OP_PushSelf, DBG_self);
             size += PushInstruction(countonly, instrptr, OP_MethodCallArgs, DBG_instr);
             size += PushInstruction(countonly, instrptr, nshash, DBG_nshash);
-            size += PushInstruction(countonly, instrptr, issuper ? 1 : 0, DBG_super);
+            size += PushInstruction(countonly, instrptr, mCallType == EFunctionCallType::Super ? 1 : 0, DBG_super);
         }
         else
         {
             size += PushInstruction(countonly, instrptr, OP_FuncCallArgs, DBG_instr);
             size += PushInstruction(countonly, instrptr, nshash, DBG_nshash);
         }
+    }
+
+    // -- POD method call
+    else if (mCallType == EFunctionCallType::PODMethod)
+    {
+        // -- we need to push the POD value onto the stack
+        size += PushInstruction(countonly, instrptr, OP_PODCallArgs, DBG_instr);
     }
 
     size += PushInstruction(countonly, instrptr, funchash, DBG_func);
@@ -2673,7 +2760,7 @@ int32 CFuncCallNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 countonl
     size += PushInstruction(countonly, instrptr, OP_FuncCall, DBG_instr);
 
     // -- if we're not looking for a return value
-    if (pushresult <= TYPE_void)
+    if (mCallType != EFunctionCallType::PODMethod && pushresult <= TYPE_void)
     {
         // -- all functions will return a value - by default, a "" for void functions
         size += PushInstruction(countonly, instrptr, OP_Pop, DBG_instr);
@@ -2700,7 +2787,8 @@ bool8 CFuncCallNode::CompileToC(int32 indent, char*& out_buffer, int32& max_size
 {
     // -- output the function name, and the opening parenthesis
     // -- note:  if this is a method, preceed it by a '.'
-    if (!OutputToBuffer(indent, out_buffer, max_size, "%s%s(", ismethod ? "." : "", funcname))
+    // $$TZA fixme - this is probably broken, since super::x(), and namespace::x() are both parsed as a global function
+    if (!OutputToBuffer(indent, out_buffer, max_size, "%s%s(", mCallType != EFunctionCallType::Global ? "." : "", funcname))
         return (false);
 
     // -- the left child contains all the parameter assignments

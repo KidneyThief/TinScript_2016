@@ -310,7 +310,7 @@ CNamespace* CScriptContext::FindNamespace(uint32 nshash)
 {
     if (nshash == 0)
         nshash = Hash(kGlobalNamespace);
-    CNamespace* namespaceentry = mNamespaceDictionary->FindItem(nshash);
+    CNamespace* namespaceentry = mNamespaceDictionary != nullptr ? mNamespaceDictionary->FindItem(nshash) : nullptr;
     return (namespaceentry);
 }
 
