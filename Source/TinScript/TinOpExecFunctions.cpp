@@ -1667,7 +1667,7 @@ bool8 OpExecPushArrayValue(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, 
 }
 
 // ====================================================================================================================
-// OpExecPushMember():  Push an object member onto the exec stack.
+// OpExecPushMember():  Push an object member (value) onto the exec stack
 // ====================================================================================================================
 bool8 OpExecPushMember(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExecStack& execstack,
                        CFunctionCallStack& funccallstack)
@@ -1699,7 +1699,7 @@ bool8 OpExecPushMember(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExe
 }
 
 // ====================================================================================================================
-// OpExecPushMemberVal():  Push the value of an object member onto the exec stack.
+// OpExecPushMemberVal():  Push an object member (variable) onto the exec stack...   OP names are backwards...!
 // ====================================================================================================================
 bool8 OpExecPushMemberVal(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExecStack& execstack,
                           CFunctionCallStack& funccallstack)
@@ -2694,7 +2694,7 @@ bool8 OpExecPODCallArgs(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CEx
     CObjectEntry* oe_pod = NULL;
     eVarType valtype_pod;
     void* val_pod = execstack.Peek(valtype_pod);
-    if (valtype_pod != TYPE__var || !GetStackValue(cb->GetScriptContext(), execstack, funccallstack, val_pod, valtype_pod, ve_pod, oe_pod))
+    if (!GetStackValue(cb->GetScriptContext(), execstack, funccallstack, val_pod, valtype_pod, ve_pod, oe_pod))
     {
         DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
                         "Error - ExecStack should a POD var\n");
@@ -2721,17 +2721,28 @@ bool8 OpExecPODCallArgs(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CEx
     CVariableEntry* param_1_ve = fe_context->GetParameter(1);
 
     // -- if we're executing a method with _p1 being a copy of the POD, set the value directly
+    // note:  some POD methods (e.g. for TYPE_hashtable) will take a CVariableEntry* as its first param, since
+    // essentially there's no viable "copy by value" that we'd want to use
     eVarType p1_type = param_1_ve != nullptr ? param_1_ve->GetType() : TYPE_void;
-    if (p1_type != valtype_pod)
+    if ((!fe_context->IsPODMethod() && p1_type != valtype_pod) ||
+        (fe_context->IsPODMethod() && p1_type != valtype_pod && p1_type != TYPE__var))
     {
         DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
-                "Error - POD method:  %s:%s() does not take a POD value as its first parameter\n",
-                GetRegisteredTypeName(valtype_pod), UnHash(methodhash));
+            "Error - POD method:  %s:%s() does not take a POD value as its first parameter\n",
+            GetRegisteredTypeName(valtype_pod), UnHash(methodhash));
         return (false);
     }
 
-    // -- set the p1 value directly
-    param_1_ve->SetValueAddr(nullptr, val_pod, 0);
+    // -- set the p1 value - if it's not a TYPE__var, copy the value
+    if (p1_type != TYPE__var)
+    {
+        param_1_ve->SetValueAddr(nullptr, val_pod, 0);
+    }
+    else
+    {
+        // -- the param needs to be a reference to the POD 
+        param_1_ve->SetReferenceAddr(val_pod);
+    }
 
     // -- before we call the function, we're going to push the method hash onto the stack
     execstack.Push(&methodhash, TYPE_int);
@@ -2775,7 +2786,7 @@ bool8 OpExecPODCallComplete(CCodeBlock* cb, eOpCode op, const uint32*& instrptr,
     CObjectEntry* oe_pod = NULL;
     eVarType valtype_pod;
     void* val_pod = execstack.Peek(valtype_pod, 0);
-    if (valtype_pod != TYPE__var || !GetStackValue(cb->GetScriptContext(), execstack, funccallstack, val_pod, valtype_pod, ve_pod, oe_pod))
+    if (!GetStackValue(cb->GetScriptContext(), execstack, funccallstack, val_pod, valtype_pod, ve_pod, oe_pod))
     {
         DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
                         "Error - ExecStack should a POD variable\n");
@@ -3470,250 +3481,6 @@ bool8 OpExecMathBinaryFunc(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, 
     DebugTrace(op, "%s() result: %.4f", GetMathBinaryFuncString(math_func_type), float_result);
 
     return (true);
-}
-
-// ====================================================================================================================
-// OpExecHashtableHasKey():  Pops the hashtable variable, and pushes a bool if the given key exists.
-// ====================================================================================================================
-bool8 OpExecHashtableHasKey(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExecStack& execstack,
-	CFunctionCallStack& funccallstack)
-{
-    // -- hash value will have already been pushed
-    eVarType contenttype;
-    void* contentptr = execstack.Pop(contenttype);
-    if (contenttype != TYPE_int)
-    {
-        DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
-                        "Error - ExecStack should contain TYPE_int\n");
-        return false;
-    }
-    int32 arrayvarhash = *(int32*)contentptr;
-
-    // -- next, pop the hash table variable off the stack
-    // -- pull the hashtable variable off the stack
-    CVariableEntry* ve0 = NULL;
-    CObjectEntry* oe0 = NULL;
-    eVarType val0type;
-    void* val0 = execstack.Pop(val0type);
-    if (!GetStackValue(cb->GetScriptContext(), execstack, funccallstack, val0, val0type, ve0, oe0))
-    {
-        DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
-                        "Error - ExecStack should contain a hashtable variable\n");
-        return false;
-    }
-
-    if (!ve0 || (ve0->GetType() != TYPE_hashtable))
-    {
-        DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
-                        "Error - ExecStack should contain hashtable variable\n");
-        return false;
-    }
-
-    // -- get the var table
-    // note:  hashtable isn't a natural C++ type, so there's no such thing as
-    // -- an addr + offset to an object's registered hashtable
-    tVarTable* vartable = (tVarTable*)ve0->GetAddr(NULL);
-
-    // -- look for the entry in the vartable
-    CVariableEntry* vte = vartable->FindItem(arrayvarhash);
-
-    // -- push true if we found an entry
-    bool8 found = (vte != nullptr);
-    execstack.Push(&found, TYPE_bool);
- 
-	DebugTrace(op, "HashTable: %s[%s] %s", UnHash(ve0->GetHash()), UnHash(arrayvarhash), found ? "found" : "not found");
-
-	return (true);
-}
-
-// ====================================================================================================================
-// OpExecHashtableContains():  Pushes a bool, if the pushed hashtable contains the pushed value
-// ====================================================================================================================
-bool8 OpExecHashtableContains(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExecStack& execstack,
-	CFunctionCallStack& funccallstack)
-{
-	// -- pull the hashtable variable off the stack
-	CVariableEntry* ve_1 = NULL;
-	CObjectEntry* oe_1 = NULL;
-	eVarType valtype_1;
-	void* val_1 = execstack.Pop(valtype_1);
-	if (!GetStackValue(cb->GetScriptContext(), execstack, funccallstack, val_1, valtype_1, ve_1, oe_1))
-	{
-		DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
-					    "Error - ExecStack should contain a value\n");
-		return false;
-	}
-
-    // -- pull the hashtable "index value" off the stack
-    CVariableEntry* ve_0 = NULL;
-    CObjectEntry* oe_0 = NULL;
-    eVarType valtype_0;
-    void* val_0 = execstack.Pop(valtype_0);
-    if (!GetStackValue(cb->GetScriptContext(), execstack, funccallstack, val_0, valtype_0, ve_0, oe_0))
-    {
-        DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
-                        "Error - ExecStack should contain a hashtable variable\n");
-        return false;
-    }
-
-	// -- ensure we found an array
-    if (!ve_0 || ve_0->GetType() != TYPE_hashtable)
-    {
-        DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
-                        "Error - ExecStack should contain hashtable variable\n");
-        return false;
-    }
-
-    // -- get the var table
-    // note:  hashtable isn't a natural C++ type, so there's no such thing as
-    // -- an addr + offset to an object's registered hashtable
-    tVarTable* vartable = (tVarTable*)ve_0->GetAddr(NULL);
-    if (vartable == nullptr)
-    {
-        DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
-                        "Error - ExecStack should contain hashtable variable\n");
-        return false;
-    }
-
-    // -- iterate through the hashtable, see if the given value is there
-    bool found = false;
-    CVariableEntry* ht_ve = vartable->First();
-    while (ht_ve != nullptr)
-    {
-        void* ht_val = ht_ve->GetAddr(nullptr);
-        if (ht_val == nullptr)
-        {
-            ht_ve = vartable->Next();
-            continue;
-        }
-
-        // -- see if we can convert the given value to the type stored in the hashtable
-        void* convert_val = TypeConvert(cb->GetScriptContext(), valtype_1, val_1, ht_ve->GetType());
-        if (convert_val == nullptr)
-        {
-            ht_ve = vartable->Next();
-            continue;
-        }
-
-        TypeOpOverride compare_func = GetTypeOpOverride(OP_CompareEqual, ht_ve->GetType());
-        if (compare_func == nullptr)
-        {
-            ht_ve = vartable->Next();
-            continue;
-        }
-
-        // -- if we found an operation, see if it can be performed successfully
-        char result[MAX_TYPE_SIZE * sizeof(uint32)];
-        eVarType result_type = TYPE__resolve;
-        bool success = (compare_func(cb->GetScriptContext(), OP_CompareEqual, result_type, (void*)result,
-                                     ht_ve->GetType(), ht_val, ht_ve->GetType(), convert_val));
-        if (!success)
-        {
-            ht_ve = vartable->Next();
-            continue;
-        }
-
-        // -- note:  compare ops return -1, 0, 1 for (less than, equal, greater than), so we need a 0 return value
-        // but in the type of the original args...  the most accurate here is to convert to a float
-        void* compare_result = TypeConvert(cb->GetScriptContext(), result_type, result, TYPE_float);
-        if (compare_result != nullptr && *(float*)compare_result == 0.0f)
-        {
-            found = true;
-            break;
-        }
-
-        ht_ve = vartable->Next();
-    }
-
-    // -- push the result, if the value was found
-	execstack.Push(&found, TYPE_bool);
-
-    // -- debug trace
-    DebugTrace(op, "hashtable: %s[] %s: %s", UnHash(ve_0->GetHash()), (found ? "contains" : "not contains"),
-                    DebugPrintVar(ve_1, valtype_1));
-
-	return (true);
-}
-
-// ====================================================================================================================
-// OpExecHashtableIter():  Pops the hashtable, pushes the first key (string).
-// ====================================================================================================================
-bool8 OpExecHashtableIter(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExecStack& execstack,
-	CFunctionCallStack& funccallstack)
-{
-    // -- pop the bool, if this iter call is first() or next()
-    int32 iter_type = *instrptr++;
-
-    // -- pop the hashtable variable to get the first/next key
-    CVariableEntry* ve0 = NULL;
-    CObjectEntry* oe0 = NULL;
-    eVarType val0type;
-    void* val0 = execstack.Pop(val0type);
-
-    if (!GetStackValue(cb->GetScriptContext(), execstack, funccallstack, val0, val0type, ve0, oe0))
-    {
-        DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
-                        "Error - ExecStack should contain a hashtable variable\n");
-        return false;
-    }
-
-    if (!ve0 || ve0->GetType() != TYPE_hashtable)
-    {
-        DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
-                        "Error - ExecStack should contain hashtable variable\n");
-        return false;
-    }
-
-    // -- get the var table
-    // note:  hashtable isn't a natural C++ type, so there's no such thing as
-    // -- an addr + offset to an object's registered hashtable
-    tVarTable* vartable = (tVarTable*)ve0->GetAddr(NULL);
-    if (vartable != nullptr)
-    {
-        // -- if we're calling first() or next(), push the iteration value
-        if (iter_type == 0 || iter_type == 1)
-        {
-            CVariableEntry* hte = iter_type == 0 ? vartable->First() : vartable->Next();
-
-            // -- Push the contents of the return_ve onto *this* execstack
-            if (hte != nullptr)
-            {
-                execstack.Push(hte->GetAddr(NULL), hte->GetType());
-	            DebugTrace(op, "HashTable: %s iteration value: %s", UnHash(ve0->GetHash()), DebugPrintVar(hte, hte->GetType()), 0);
-            }
-            else
-            {
-                int32 null_val = 0;
-                execstack.Push(&null_val, TYPE_int);
-	            DebugTrace(op, "HashTable: %s, hashtable iter is at end", UnHash(ve0->GetHash()), 0);
-            }
- 
-            return true;
-        }
-
-        // -- else we're checking for the end of the hashtable
-        else
-        {
-            // -- calling Current() will see if the internal iterator is at the end
-            CVariableEntry* hte = vartable->Current();
-
-            bool8 at_end = (hte == nullptr);
-            execstack.Push(&at_end, TYPE_bool);
-            if (at_end)
-	            DebugTrace(op, "HashTable: %s, iterator is at end", UnHash(ve0->GetHash()), 0);
-            else
-	            DebugTrace(op, "HashTable: %s, iterator is at valid entry", UnHash(ve0->GetHash()), 0);
-        }
-
-        // -- success
-        return true;
-    }
- 
-    // -- this should be impossible - to have successfully resolved a hashtable variable with no tVarTable...
-    DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
-                    "Error - invalid hashtable \n");
-
-	return (false);
 }
 
 // ====================================================================================================================

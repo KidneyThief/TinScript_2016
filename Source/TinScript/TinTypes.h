@@ -377,6 +377,7 @@ bool8 StringConfig(eVarType var_type, bool8 onInit);
 bool8 FloatConfig(eVarType var_type, bool8 onInit);
 bool8 IntegerConfig(eVarType var_type, bool8 onInit);
 bool8 BoolConfig(eVarType var_type, bool8 onInit);
+bool8 HashtableConfig(eVarType var_type, bool8 onInit);
 
 // -- external type configuration
 bool8 Vector3fToString(TinScript::CScriptContext* script_context, void* value, char* buf, int32 bufsize);
@@ -452,7 +453,7 @@ typedef void* (*TypeConvertFunction)(CScriptContext* script_context, eVarType fr
 	VarTypeEntry(_member,       8,			IntToString,		StringToInt,        sMember,        nullptr)           	\
 	VarTypeEntry(_podmember,    POD_SIZE,	IntToString,		StringToInt,        sPODMember,     nullptr)           	\
 	VarTypeEntry(_hashvarindex, 16,			IntToString,		StringToInt,        sHashVarIndex,  nullptr)           	\
-    VarTypeEntry(hashtable,     HT_SIZE,    IntToString,        StringToInt,        sHashTable,     nullptr)            \
+    VarTypeEntry(hashtable,     HT_SIZE,    IntToString,        StringToInt,        sHashTable,     HashtableConfig)    \
 	VarTypeEntry(object,        4,			IntToString,		StringToInt,        uint32,         ObjectConfig)       \
     VarTypeEntry(string,        4,			STEToString,        StringToSTE,        const char*,    StringConfig)       \
 	VarTypeEntry(float,		    4,			FloatToString,		StringToFloat,      float32,        FloatConfig)        \

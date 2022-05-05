@@ -244,13 +244,8 @@ enum eMathBinaryFunctionType
 	ReservedKeywordEntry(array_count)           \
 	ReservedKeywordEntry(array_copy)            \
 	ReservedKeywordEntry(array_contains)        \
-	ReservedKeywordEntry(hashtable_haskey)      \
-	ReservedKeywordEntry(hashtable_contains)    \
 	ReservedKeywordEntry(hashtable_copy)        \
 	ReservedKeywordEntry(hashtable_wrap)        \
-	ReservedKeywordEntry(hashtable_first)       \
-	ReservedKeywordEntry(hashtable_next)        \
-	ReservedKeywordEntry(hashtable_end)         \
 	ReservedKeywordEntry(type)                  \
 	ReservedKeywordEntry(ensure)                \
 	ReservedKeywordEntry(super)                 \
@@ -369,10 +364,7 @@ bool8 TryParseMathUnaryFunction(CCodeBlock* codeblock, tReadToken& filebuf, CCom
 bool8 TryParseMathBinaryFunction(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link);
 bool8 TryParseCreateObject(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link);
 bool8 TryParseDestroyObject(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link);
-bool8 TryParseHashtableHasKey(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link);
-bool8 TryParseHashtableContains(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link); 
 bool8 TryParseHashtableCopy(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link);
-bool8 TryParseHashtableIter(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link);
 bool8 TryParseType(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link);
 bool8 TryParseEnsure(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link);
 bool8 TryParseEnsureInterface(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeNode*& link);

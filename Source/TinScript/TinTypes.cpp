@@ -152,6 +152,11 @@ eVarType GetRegisteredType(uint32 id)
 		}
 	}
 
+    // -- see if this is explicitly a CVariableEntry* or a tVarTable*
+    // -- TYPE_hashtable "values" are tVarTable...  this is only used OP_PODCallArgs, which can resolve
+    if (id == GetTypeID<CVariableEntry*>() || id == GetTypeID<tVarTable*>())
+        return TYPE__var;
+
     // -- not found - see if this type is a registered class
     CScriptContext* script_context = GetContext();
     if (script_context)
@@ -1301,6 +1306,114 @@ bool8 BoolConfig(eVarType var_type, bool8 onInit)
         RegisterTypeConvert(TYPE_bool, TYPE_float, BoolConvert);
         RegisterTypeConvert(TYPE_bool, TYPE_int, BoolConvert);
         RegisterTypeConvert(TYPE_bool, TYPE_object, BoolConvert);
+    }
+
+    // -- success
+    return (true);
+}
+
+// --------------------------------------------------------------------------------------------------------------------
+// -- hashtable POD methods (not actually a POD) are more complicated, in that they don't have a "value"
+
+void TypeHashtable_Clear(tVarTable* ht_vartable)
+{
+    if (ht_vartable != nullptr)
+    {
+        ht_vartable->DestroyAll();
+    }
+}
+
+int32 TypeHashtable_Count(tVarTable* ht_vartable)
+{
+    int32 count = ht_vartable != nullptr ? ht_vartable->Used() : 0;
+    return count;
+}
+
+bool TypeHashtable_HasKey(tVarTable* ht_vartable, const char* key0, const char* key1, const char* key2,
+                          const char* key3, const char* key4, const char* key5, const char* key6, const char* key7)
+{
+    // -- the hashtable key is an appended string, pushed in reverse order (since we use a stack)
+    const char* key_table[8] =
+    {
+        key7 ? key7 : "",
+        key6 ? key6 : "",
+        key5 ? key5 : "",
+        key4 ? key4 : "",
+        key3 ? key3 : "",
+        key2 ? key2 : "",
+        key1 ? key1 : "",
+        key0 ? key0 : "",
+    };
+
+    // -- append all of our keys together
+    uint32 key_hash = 0;
+    for (int i = 0; i < 8; ++i)
+    {
+        if (key_table[i][0] == '\0')
+            continue;
+        if (key_hash != 0)
+        {
+            key_hash = HashAppend(key_hash, "_");
+            key_hash = HashAppend(key_hash, key_table[i]);
+        }
+        else
+        {
+            key_hash = Hash(key_table[i], -1, false);
+        }
+    }
+
+    if (ht_vartable != nullptr)
+    {
+        return (ht_vartable->FindItem(key_hash) != nullptr);
+    }
+
+    // -- not found
+    return (false);
+}
+
+// -- $$$TZA fixme - need a way to compare values of different types, without converting to a string
+bool TypeHashtable_Contains(tVarTable* ht_vartable, const char* value)
+{
+    if (ht_vartable != nullptr)
+    {
+        uint32 in_value_hash = TinScript::Hash(value, -1, false);
+        CVariableEntry* ht_ve = ht_vartable->First();
+        while (ht_ve != nullptr)
+        {
+            // -- see if we can convert the hashtable value to a string
+            void* converted_val = TypeConvert(TinScript::GetContext(), ht_ve->GetType(), ht_ve->GetAddr(nullptr),
+                                              TYPE_string);
+            if (converted_val != nullptr)
+            {
+                uint32 val_hash = *(uint32*)converted_val;
+                if (val_hash == in_value_hash)
+                {
+                    // -- found
+                    return true;
+                }
+            }
+
+            ht_ve = ht_vartable->Next();
+        }
+    }
+
+    // -- not found
+    return (false);
+}
+
+// ====================================================================================================================
+// HashtableConfig():  Called from InitializeTypes(), in this case to add type methods
+// ====================================================================================================================
+bool8 HashtableConfig(eVarType var_type, bool8 onInit)
+{
+    // -- see if this is the initialization or the shutdown
+    if (onInit)
+    {
+        // -- register the POD methods
+        REGISTER_TYPE_METHOD(TYPE_hashtable, clear, TypeHashtable_Clear, false);
+        REGISTER_TYPE_METHOD(TYPE_hashtable, count, TypeHashtable_Count, false);
+        REGISTER_TYPE_METHOD(TYPE_hashtable, haskey, TypeHashtable_HasKey, false);
+        REGISTER_TYPE_METHOD(TYPE_hashtable, contains, TypeHashtable_Contains, false);
     }
 
     // -- success

@@ -139,6 +139,7 @@ class CRegFunctionBase
 
     private:
         bool m_isRegistered = false;
+        bool m_isPODMethod = false;
         const char* m_ClassName;
         const char* m_FunctionName;
         uint32 m_ClassNameHash;

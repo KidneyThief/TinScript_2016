@@ -60,6 +60,8 @@ public:
     bool InitDefaultArgs(CFunctionEntry* fe);
     void InitStackVarOffsets(CFunctionEntry* fe);
 
+    void SetIsPODMethod() { m_isPODMethod = true; }
+    bool IsPODMethod() const { return (m_isPODMethod); }
     void SetReassignPODVar(bool reassign) { m_reassignPODVar = reassign; }
     bool GetReassignPODVar() const { return (m_reassignPODVar); }
 
@@ -119,6 +121,7 @@ private:
 
     // -- strictly for POD methods, we need to know if we should auto-reassign the result
     // back to the original POD var
+    bool m_isPODMethod = false;
     bool m_reassignPODVar = false;
 };
 

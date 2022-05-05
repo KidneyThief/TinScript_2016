@@ -245,6 +245,7 @@ void CRegFunctionBase::SetTypeAsClassName(const char* type_name)
     assert(type_name != nullptr && type_name[0] != '\0');
     m_ClassName = type_name;
     m_ClassNameHash = Hash(m_ClassName);
+    m_isPODMethod = true;
 }
 
 // ====================================================================================================================
@@ -267,6 +268,11 @@ CFunctionContext* CRegFunctionBase::CreateContext()
         tFuncTable* methodtable = TinScript::GetContext()->FindNamespace(m_ClassNameHash)->GetFuncTable();
         methodtable->AddItem(*fe, m_FunctionNameHash);
         found = fe->GetContext();
+
+        // -- mark this context as a POD method, if applicable -
+        // allows us to register methods that use CVariableEntry* parameters
+        if (m_isPODMethod)
+            found->SetIsPODMethod();
     }
 
     return (found);

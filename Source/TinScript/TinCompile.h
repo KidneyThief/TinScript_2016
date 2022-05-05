@@ -94,10 +94,7 @@ class CWhileLoopNode;
 	CompileNodeTypeEntry(ArrayContains)	        \
 	CompileNodeTypeEntry(MathUnaryFunc)			\
 	CompileNodeTypeEntry(MathBinaryFunc)		\
-	CompileNodeTypeEntry(HashtableHasKey)		\
-	CompileNodeTypeEntry(HashtableContains)    	\
 	CompileNodeTypeEntry(HashtableCopy)	    	\
-	CompileNodeTypeEntry(HashtableIter)		    \
 	CompileNodeTypeEntry(SelfVarDecl)			\
 	CompileNodeTypeEntry(ObjMemberDecl)			\
 	CompileNodeTypeEntry(Schedule)			    \
@@ -214,10 +211,7 @@ enum class EFunctionCallType
 	OperationEntry(ArrayContains)	    \
 	OperationEntry(MathUnaryFunc)		\
 	OperationEntry(MathBinaryFunc)		\
-	OperationEntry(HashtableHasKey)		\
 	OperationEntry(HashtableCopy)		\
-	OperationEntry(HashtableContains)   \
-	OperationEntry(HashtableIter)		\
 	OperationEntry(SelfVarDecl)		    \
 	OperationEntry(ObjMemberDecl)       \
 	OperationEntry(ScheduleBegin)       \
@@ -928,36 +922,6 @@ protected:
 };
 
 // ====================================================================================================================
-// class CHashtableHasKey:  Parse tree node, pushes a bool for the left node having the given key.
-// ====================================================================================================================
-class CHashtableHasKey : public CCompileTreeNode
-{
-	public:
-		CHashtableHasKey(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber);
-		virtual int32 Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
-
-        virtual bool8 CompileToC(int32 indent, char*& out_buffer, int32& max_size, bool root_node) const;
-
-	protected:
-		CHashtableHasKey() { }
-};
-
-// ====================================================================================================================
-// class CHashtableContainsNode:  Parse tree node, pushes the bool if the left hashtable var contains the right value
-// ====================================================================================================================
-class CHashtableContainsNode : public CCompileTreeNode
-{
-public:
-	CHashtableContainsNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber);
-	virtual int32 Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
-
-	virtual bool8 CompileToC(int32 indent, char*& out_buffer, int32& max_size, bool root_node) const;
-
-protected:
-	CHashtableContainsNode() { }
-};
-
-// ====================================================================================================================
 // class CHashtableCopyNode:  Parse tree node, copies the left hashtable var to the right hashtable or CHashtable
 // ====================================================================================================================
 class CHashtableCopyNode : public CCompileTreeNode
@@ -971,22 +935,6 @@ public:
 protected:
 	CHashtableCopyNode() { }
 	bool mIsWrap = false;
-};
-
-// ====================================================================================================================
-// class CHashtableIter:  Parse tree node, pushes the string of the first/next hashtable key.
-// ====================================================================================================================
-class CHashtableIter : public CCompileTreeNode
-{
-	public:
-		CHashtableIter(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber, int32 iter_type);
-		virtual int32 Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
-
-        virtual bool8 CompileToC(int32 indent, char*& out_buffer, int32& max_size, bool root_node) const;
-
-	protected:
-		CHashtableIter() { }
-        int32 m_iterType;
 };
 
 // ====================================================================================================================

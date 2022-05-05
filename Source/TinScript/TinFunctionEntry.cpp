@@ -77,8 +77,10 @@ CVariableEntry* CFunctionContext::AddParameter(const char* varname, uint32 varha
         return (nullptr);
     }
 
-    // -- if the parameter type is invalid,
-    if (paramindex >= 1 && type < FIRST_VALID_TYPE)
+    // -- if the parameter type is invalid...
+    // note:  some POD methods use CVariableEntry* (e.g. for hashtable methods), and since they are registered
+    // internally, we don't need the extra validation
+    if (!m_isPODMethod && paramindex >= 1 && type < FIRST_VALID_TYPE)
     {
         TinPrint(TinScript::GetContext(), "Error - invalid parameter %d", paramindex);
         return (nullptr);
@@ -234,6 +236,10 @@ void CFunctionContext::ClearParameters()
     {
         CVariableEntry* param_ve = parameterlist[i];
 
+        // -- do *not* touch reference parameters, obviously
+        if (param_ve->IsReference())
+            continue;
+
         if (param_ve->GetType() == TYPE_hashtable || param_ve->IsArray())
             param_ve->ClearArrayParameter();
         else
@@ -281,6 +287,10 @@ bool CFunctionContext::InitDefaultArgs(CFunctionEntry* fe)
     {
         // -- subsequent params need commas...
         CVariableEntry* ve = GetParameter(i);
+
+        // -- this can never happen, but still...
+        if (ve->IsReference())
+            continue;
 
         bool has_default_value = false;
         const char* default_arg_name = nullptr;
