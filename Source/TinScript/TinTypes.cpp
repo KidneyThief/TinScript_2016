@@ -1160,9 +1160,30 @@ bool8 BooleanBinaryOp(CScriptContext* script_context, eOpCode op, eVarType& resu
     return (false);
 }
 
+// -- POD method(s) for all first-class types ---------------------------------------------------------------------------
+
+int32 TypeVariable_Count(CVariableEntry* ve)
+{
+    int32 count = ve != nullptr ? ve->GetArraySize() : 0;
+    return count;
+}
+
 // ====================================================================================================================
 // ObjectConfig():  Called from InitializeTypes() to register object operations and conversions
 // ====================================================================================================================
+bool TypeObject_Contains(CVariableEntry* ve, uint32 obj_id)
+{
+    int32 count = ve != nullptr ? ve->GetArraySize() : 0;
+    for (int i = 0; i < count; ++i)
+    {
+        void* array_val = ve->GetArrayVarAddr(nullptr, i);
+        if (array_val != nullptr && *(uint32*)array_val == obj_id)
+            return true;
+    }
+
+    return false;
+}
+
 bool8 ObjectConfig(eVarType var_type, bool8 onInit)
 {
     // -- see if this is the initialization or the shutdown
@@ -1178,6 +1199,10 @@ bool8 ObjectConfig(eVarType var_type, bool8 onInit)
         // -- allow BooleanBinaryOp to perform the operation
         RegisterTypeOpOverride(OP_BooleanAnd, TYPE_object, BooleanBinaryOp);
         RegisterTypeOpOverride(OP_BooleanOr, TYPE_object, BooleanBinaryOp);
+
+        // -- register the POD methods
+        REGISTER_TYPE_METHOD(TYPE_object, count, TypeVariable_Count, false);
+        REGISTER_TYPE_METHOD(TYPE_object, contains, TypeObject_Contains, false);
     }
 
     // -- success
@@ -1188,6 +1213,24 @@ bool8 ObjectConfig(eVarType var_type, bool8 onInit)
 // StringConfig():  Called from InitializeTypes() to populate the override table to perform numerical ops
 // where one or both arguments are represented as strings
 // ====================================================================================================================
+bool TypeString_Contains(CVariableEntry* ve, const char* string_val)
+{
+    if (string_val == nullptr)
+        return false;
+
+    uint32 string_val_hash = TinScript::Hash(string_val, -1, false);
+    int32 count = ve != nullptr ? ve->GetArraySize() : 0;
+    for (int i = 0; i < count; ++i)
+    {
+        // -- string "values" are stored by hash
+        void* array_val = ve->GetStringArrayHashAddr(nullptr, i);
+        if (array_val != nullptr && *(uint32*)array_val == string_val_hash)
+            return true;
+    }
+
+    return false;
+}
+
 bool8 StringConfig(eVarType var_type, bool8 onInit)
 {
     // -- see if this is the initialization or the shutdown
@@ -1202,6 +1245,10 @@ bool8 StringConfig(eVarType var_type, bool8 onInit)
 
         RegisterTypeOpOverride(OP_CompareEqual, TYPE_string, StringBinaryOp);
         RegisterTypeOpOverride(OP_CompareNotEqual, TYPE_string, StringBinaryOp);
+
+        // -- register the POD methods
+        REGISTER_TYPE_METHOD(TYPE_string, count, TypeVariable_Count, false);
+        REGISTER_TYPE_METHOD(TYPE_string, contains, TypeString_Contains, false);
     }
 
     // -- success
@@ -1211,6 +1258,19 @@ bool8 StringConfig(eVarType var_type, bool8 onInit)
 // ====================================================================================================================
 // FloatConfig():  Called from InitializeTypes() to register float operations and conversions
 // ====================================================================================================================
+bool TypeFloat_Contains(CVariableEntry* ve, float float_val)
+{
+    int32 count = ve != nullptr ? ve->GetArraySize() : 0;
+    for (int i = 0; i < count; ++i)
+    {
+        void* array_val = ve->GetArrayVarAddr(nullptr, i);
+        if (array_val != nullptr && *(float*)array_val == float_val)
+            return true;
+    }
+
+    return false;
+}
+
 bool8 FloatConfig(eVarType var_type, bool8 onInit)
 {
     // -- see if this is the initialization or the shutdown
@@ -1238,6 +1298,10 @@ bool8 FloatConfig(eVarType var_type, bool8 onInit)
         // -- register the conversion methods
         RegisterTypeConvert(TYPE_float, TYPE_int, FloatConvert);
         RegisterTypeConvert(TYPE_float, TYPE_bool, FloatConvert);
+
+        // -- register the POD methods
+        REGISTER_TYPE_METHOD(TYPE_float, count, TypeVariable_Count, false);
+        REGISTER_TYPE_METHOD(TYPE_float, contains, TypeFloat_Contains, false);
     }
 
     // -- success
@@ -1247,6 +1311,19 @@ bool8 FloatConfig(eVarType var_type, bool8 onInit)
 // ====================================================================================================================
 // IntegerConfig():  Called from InitializeTypes() to register integer operations and conversions
 // ====================================================================================================================
+bool TypeInt_Contains(CVariableEntry* ve, int32 int_val)
+{
+    int32 count = ve != nullptr ? ve->GetArraySize() : 0;
+    for (int i = 0; i < count; ++i)
+    {
+        void* array_val = ve->GetArrayVarAddr(nullptr, i);
+        if (array_val != nullptr && *(int32*)array_val == int_val)
+            return true;
+    }
+
+    return false;
+}
+
 bool8 IntegerConfig(eVarType var_type, bool8 onInit)
 {
     // -- see if this is the initialization or the shutdown
@@ -1282,6 +1359,10 @@ bool8 IntegerConfig(eVarType var_type, bool8 onInit)
         RegisterTypeConvert(TYPE_int, TYPE_float, IntegerConvert);
         RegisterTypeConvert(TYPE_int, TYPE_bool, IntegerConvert);
         RegisterTypeConvert(TYPE_int, TYPE_object, IntegerConvert);
+
+        // -- register the POD methods
+        REGISTER_TYPE_METHOD(TYPE_int, count, TypeVariable_Count, false);
+        REGISTER_TYPE_METHOD(TYPE_int, contains, TypeInt_Contains, false);
     }
 
     // -- success
@@ -1291,6 +1372,19 @@ bool8 IntegerConfig(eVarType var_type, bool8 onInit)
 // ====================================================================================================================
 // BoolConfig():  Called from InitializeTypes() to register bool operations and conversions
 // ====================================================================================================================
+bool TypeBool_Contains(CVariableEntry* ve, bool bool_val)
+{
+    int32 count = ve != nullptr ? ve->GetArraySize() : 0;
+    for (int i = 0; i < count; ++i)
+    {
+        void* array_val = ve->GetArrayVarAddr(nullptr, i);
+        if (array_val != nullptr && *(bool*)array_val == bool_val)
+            return true;
+    }
+
+    return false;
+}
+
 bool8 BoolConfig(eVarType var_type, bool8 onInit)
 {
     // -- see if this is the initialization or the shutdown
@@ -1306,6 +1400,10 @@ bool8 BoolConfig(eVarType var_type, bool8 onInit)
         RegisterTypeConvert(TYPE_bool, TYPE_float, BoolConvert);
         RegisterTypeConvert(TYPE_bool, TYPE_int, BoolConvert);
         RegisterTypeConvert(TYPE_bool, TYPE_object, BoolConvert);
+
+        // -- register the POD methods
+        REGISTER_TYPE_METHOD(TYPE_bool, count, TypeVariable_Count, false);
+        REGISTER_TYPE_METHOD(TYPE_bool, contains, TypeBool_Contains, false);
     }
 
     // -- success

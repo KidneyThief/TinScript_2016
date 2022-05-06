@@ -1312,7 +1312,7 @@ void TestDefaults(float testFName, int testIName, const char* testSName)
 REGISTER_FUNCTION(TestDefaults, TestDefaults);
 REGISTER_FUNCTION_DEFAULT_ARGS_P3(TestDefaults, "return", "in_float", 67.0f, "in_int", 49, "in_str", "foobar", "This is the help string for my function!");
 
-class TestFoo
+class TestFooDefaults
 {
 public:
     void TestDefaults(float testFName, int testIName, const char* testSName)
@@ -1321,11 +1321,11 @@ public:
     }
 };
 
-REGISTER_SCRIPT_CLASS_BEGIN(TestFoo, VOID)
+REGISTER_SCRIPT_CLASS_BEGIN(TestFooDefaults, VOID)
 REGISTER_SCRIPT_CLASS_END()
 
-REGISTER_METHOD(TestFoo, TestDefaults, TestDefaults);
-REGISTER_METHOD_DEFAULT_ARGS_P3(TestFoo, TestDefaults, "return", "in_float", 67.0f, "in_int", 49, "in_str", "foobar", "This is the help string for my function!");
+REGISTER_METHOD(TestFooDefaults, TestDefaults, TestDefaults);
+REGISTER_METHOD_DEFAULT_ARGS_P3(TestFooDefaults, TestDefaults, "return", "in_float", 67.0f, "in_int", 49, "in_str", "foobar", "This is the help string for my function!");
 
 void TestCppHashTable(TinScript::CHashtable* ht_param)
 {

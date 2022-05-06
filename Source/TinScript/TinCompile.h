@@ -89,9 +89,7 @@ class CWhileLoopNode;
 	CompileNodeTypeEntry(ArrayVar)			    \
 	CompileNodeTypeEntry(ArrayVarDecl)			\
 	CompileNodeTypeEntry(ArrayDecl)			    \
-	CompileNodeTypeEntry(ArrayCount)		    \
 	CompileNodeTypeEntry(ArrayCopy)		        \
-	CompileNodeTypeEntry(ArrayContains)	        \
 	CompileNodeTypeEntry(MathUnaryFunc)			\
 	CompileNodeTypeEntry(MathBinaryFunc)		\
 	CompileNodeTypeEntry(HashtableCopy)	    	\
@@ -206,9 +204,7 @@ enum class EFunctionCallType
 	OperationEntry(ArrayHash)			\
 	OperationEntry(ArrayVarDecl)		\
 	OperationEntry(ArrayDecl)		    \
-	OperationEntry(ArrayCount)		    \
 	OperationEntry(ArrayCopy)		    \
-	OperationEntry(ArrayContains)	    \
 	OperationEntry(MathUnaryFunc)		\
 	OperationEntry(MathBinaryFunc)		\
 	OperationEntry(HashtableCopy)		\
@@ -855,36 +851,6 @@ class CArrayDeclNode : public CCompileTreeNode
 	protected:
 		CArrayDeclNode() { }
         int32 mSize;
-};
-
-// ====================================================================================================================
-// class CArrayCountNode:  Parse tree node, pushes the array count of the left child array var.
-// ====================================================================================================================
-class CArrayCountNode : public CCompileTreeNode
-{
-	public:
-		CArrayCountNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber);
-		virtual int32 Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
-
-        virtual bool8 CompileToC(int32 indent, char*& out_buffer, int32& max_size, bool root_node) const;
-
-	protected:
-		CArrayCountNode() { }
-};
-
-// ====================================================================================================================
-// class CArrayContainsNode:  Parse tree node, pushes the bool if the left array var contains the right value
-// ====================================================================================================================
-class CArrayContainsNode : public CCompileTreeNode
-{
-public:
-	CArrayContainsNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber);
-	virtual int32 Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
-
-	virtual bool8 CompileToC(int32 indent, char*& out_buffer, int32& max_size, bool root_node) const;
-
-protected:
-	CArrayContainsNode() { }
 };
 
 // ====================================================================================================================

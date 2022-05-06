@@ -446,7 +446,7 @@ void* CVariableEntry::GetAddr(void* objaddr) const
 void* CVariableEntry::GetArrayVarAddr(void* objaddr,int32 array_index) const
 {
     // -- strings are special
-    if(mType == TYPE_string)
+    if (mType == TYPE_string)
     {
         return  (GetStringArrayHashAddr(objaddr,array_index));
     }
