@@ -1410,6 +1410,10 @@ bool8 TryParseVarDeclaration(CCodeBlock* codeblock, tReadToken& filebuf, CCompil
     // -- see if we're declaring an array of the given type
     if (array_decl_token.type == TOKEN_SQUARE_OPEN)
     {
+        // -- this var is an array, but until a size is specified, it's
+        // "uninitialized/unallocated"
+        array_size = -1;
+
         if (registeredtype == TYPE_hashtable)
         {
 			ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), array_decl_token.linenumber,
@@ -1431,11 +1435,10 @@ bool8 TryParseVarDeclaration(CCodeBlock* codeblock, tReadToken& filebuf, CCompil
             nexttoken = array_size_token;
             array_size = Atoi(array_size_token.tokenptr, array_size_token.length);
         }
-
-        // -- ensure we have a valid array
-        if (array_size <= 0)
+        // -- ensure we have a valid array... a size of -1 is essentially uninitialized, but can be copied to
+        if (array_size == 0 || array_size < -1)
         {
-			ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), array_size_token.linenumber,
+            ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), array_size_token.linenumber,
                           "Error - expecting array size integer value, between 1 and %d\n", kMaxVariableArraySize);
             return (false);
         }
@@ -4288,6 +4291,8 @@ bool8 TryParseFuncCall(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeN
                                            usenamespace ? nsnametoken.tokenptr : "",
                                            usenamespace ? nsnametoken.length : 0,
                                            call_type);
+    uint32 func_call_hash = Hash(idtoken.tokenptr, idtoken.length);
+    uint32 ns_hash = usenamespace ? Hash(nsnametoken.tokenptr, nsnametoken.length) : CScriptContext::kGlobalNamespaceHash;
 
     // -- create a tree root to contain all the parameter assignments
   	funccallnode->leftchild = CCompileTreeNode::CreateTreeRoot(codeblock);
@@ -4340,7 +4345,7 @@ bool8 TryParseFuncCall(CCodeBlock* codeblock, tReadToken& filebuf, CCompileTreeN
 		CValueNode* valuenode = TinAlloc(ALLOC_TreeNode, CValueNode, codeblock,
                                          binopnode->leftchild, filebuf.linenumber, paramindex,
                                          TYPE__var);
-        Unused_(valuenode);
+        valuenode->InitVariableEntry(ns_hash, func_call_hash);
 
         bool8 result = TryParseStatement(codeblock, filebuf, binopnode->rightchild, true);
         if (!result)

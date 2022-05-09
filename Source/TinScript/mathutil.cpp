@@ -76,17 +76,6 @@ float32 CVector3f::Normalize()
 }
 
 // ====================================================================================================================
-// Init():  returns a vector initialized with the given values...
-// this is specifically used for the "set" POD method, which is registered to re-assign the
-// return value back to the POD variable calling this method... (registered as "set" actually)
-// ====================================================================================================================
-CVector3f CVector3f::Init(CVector3f v0, float32 _x, float32 _y, float32 _z)
-{
-    v0.Set(_x, _y, _z);
-    return v0;
-}
-
-// ====================================================================================================================
 // Cross():  Returns the cross product of two vectors
 // ====================================================================================================================
 CVector3f CVector3f::Cross(CVector3f v0, CVector3f v1)

@@ -55,7 +55,7 @@ public:
     virtual ~CVariableEntry();
 
     // $$$TZA Clean this up - too many variables determining if mAddr should be freed
-    void TryFreeAddrMem();
+    bool TryFreeAddrMem();
 
     CScriptContext* GetScriptContext() const
     {
@@ -112,7 +112,7 @@ public:
 
     bool8 IsArray() const
     {
-        return ((mArraySize > 1) || (mArraySize == -1 && mIsParameter && mType != TYPE_hashtable));
+        return ((mArraySize > 1) || (mArraySize == -1 && mType != TYPE_hashtable));
     }
 
     // -- strings being special...
@@ -160,6 +160,11 @@ public:
     bool8 IsReference() const
     {
         return (mIsReference);
+    }
+
+    bool IsScriptVar() const
+    {
+        return (mScriptVar);
     }
 
     bool8 IsStackVariable(const CFunctionCallStack& funccallstack, bool allow_indexed_var = false) const;

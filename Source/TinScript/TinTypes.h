@@ -346,7 +346,7 @@ class CFunctionEntry;
 // -- we also need to register methods for POD types (e.g.  vector3f:normalized())
 // funcptr must be a global, where the first param of the type for which this method is being registered
 // reassign is used when the return type of the method should be re-assigned back to the POD variable
-#define REGISTER_TYPE_METHOD(type_name, method_name, funcptr, reassign)                                                             \
+#define REGISTER_TYPE_METHOD(type_name, method_name, funcptr)                                                             \
     {                                                                                                                               \
         static const int gArgCount_##type_name = ::TinScript::SignatureArgCount<decltype(funcptr)>::arg_count;                      \
         static ::TinScript::CRegisterFunction<gArgCount_##type_name, decltype(funcptr)> _reg_##method_name(#method_name, funcptr);  \
@@ -354,7 +354,6 @@ class CFunctionEntry;
         _reg_##method_name.SetTypeAsClassName(TinScript::UnHash(type_name_hash));                                                   \
         CNamespace* type_ns = TinScript::GetContext()->FindOrCreateNamespace(#type_name);                                           \
         _reg_##method_name.Register();                                                                                              \
-        type_ns->GetFuncTable()->FindItem(TinScript::Hash(#method_name))->GetContext()->SetReassignPODVar(reassign);                \
     }
 
 // ====================================================================================================================
@@ -491,7 +490,7 @@ void RegisterTypeConvert(eVarType to_type, eVarType from_type, TypeConvertFuncti
 
 // ====================================================================================================================
 void* TypeConvert(CScriptContext* script_context, eVarType fromtype, void* fromaddr, eVarType totype);
-const char* DebugPrintVar(void* addr, eVarType vartype);
+const char* DebugPrintVar(void* addr, eVarType vartype, bool dump_stack = false);
 
 // ====================================================================================================================
 // -- only two types of functions: registered (from code), and script

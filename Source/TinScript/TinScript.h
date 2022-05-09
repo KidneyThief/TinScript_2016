@@ -618,6 +618,7 @@ class CScriptContext
         static bool8 gDebugParseTree;
         static bool8 gDebugCodeBlock;
         static bool8 gDebugTrace;
+        static bool gDebugExecStack;
 
         // -- force compile is a bit different - if/when enabled, we capture the current system time
         // and *then*, any file executed that hasn't been saved since that time is force compiled...

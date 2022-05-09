@@ -291,6 +291,94 @@ void* FVectorToVector3fConvert(CScriptContext* script_context, eVarType from_typ
 }
 
 // --------------------------------------------------------------------------------------------------------------------
+CVector3f TypeVector3f_Set(CVariableEntry* ve_src, float _x, float _y, float _z)
+{
+    // -- sanity check
+    if (ve_src == nullptr || ve_src->GetType() != TYPE_vector3f || ve_src->IsArray())
+        return CVector3f::zero;
+
+    CVector3f* value = (CVector3f*)ve_src->GetAddr(nullptr);
+    value->Set(_x, _y, _z);
+    return *value;
+}
+
+// --------------------------------------------------------------------------------------------------------------------
+CVector3f TypeVector3f_Normalized(CVariableEntry* ve_src)
+{
+    // -- sanity check
+    if (ve_src == nullptr || ve_src->GetType() != TYPE_vector3f || ve_src->IsArray())
+        return CVector3f::zero;
+
+    // -- returns the normalized vector, without modifying the original
+    CVector3f* value = (CVector3f*)ve_src->GetAddr(nullptr);
+    if (value == nullptr)
+        return (CVector3f::zero);
+
+    CVector3f result = CVector3f::Normalized(*value);
+    return result;
+}
+
+// --------------------------------------------------------------------------------------------------------------------
+float TypeVector3f_Normalize(CVariableEntry* ve_src)
+{
+    // -- sanity check
+    if (ve_src == nullptr || ve_src->GetType() != TYPE_vector3f || ve_src->IsArray())
+        return (0.0f);
+
+    // -- normalizes the given vector and returns the length
+    CVector3f* value = (CVector3f*)ve_src->GetAddr(nullptr);
+    if (value == nullptr)
+        return (0.0f);
+
+    float length = value->Normalize();
+    return length;
+}
+
+// --------------------------------------------------------------------------------------------------------------------
+float TypeVector3f_Length(CVariableEntry* ve_src)
+{
+    // -- sanity check
+    if (ve_src == nullptr || ve_src->GetType() != TYPE_vector3f || ve_src->IsArray())
+        return 0.0f;
+
+    CVector3f* value = (CVector3f*)ve_src->GetAddr(nullptr);
+    if (value == nullptr)
+        return (0.0f);
+
+    return (value->Length());
+}
+
+// --------------------------------------------------------------------------------------------------------------------
+float TypeVector3f_Dot(CVariableEntry* ve_src, CVector3f v)
+{
+    // -- sanity check
+    if (ve_src == nullptr || ve_src->GetType() != TYPE_vector3f || ve_src->IsArray())
+        return (0.0f);
+
+    CVector3f* value = (CVector3f*)ve_src->GetAddr(nullptr);
+    if (value == nullptr)
+        return (0.0f);
+
+    float result = CVector3f::Dot(*value, v);
+    return result;
+}
+
+// --------------------------------------------------------------------------------------------------------------------
+CVector3f TypeVector3f_Cross(CVariableEntry* ve_src, CVector3f v)
+{
+    // -- sanity check
+    if (ve_src == nullptr || ve_src->GetType() != TYPE_vector3f || ve_src->IsArray())
+        return 0.0f;
+
+    CVector3f* value = (CVector3f*)ve_src->GetAddr(nullptr);
+    if (value == nullptr)
+        return (CVector3f::zero);
+
+    CVector3f result = CVector3f::Cross(*value, v);
+    return result;
+}
+
+// --------------------------------------------------------------------------------------------------------------------
 // -- Configure the registered Vector3f type, by registering the POD table and op functions
 bool8 Vector3fConfig(eVarType var_type, bool8 onInit)
 {
@@ -345,12 +433,12 @@ bool8 Vector3fConfig(eVarType var_type, bool8 onInit)
             // note:  this will actually create a Namespace named "Type_vector3f"
             // note: the last param is reassign... it requires the function to return
 			// a value or the same type, to be reassigned back to the calling POD var
-            REGISTER_TYPE_METHOD(TYPE_vector3f, set, CVector3f::Init, true);
-            REGISTER_TYPE_METHOD(TYPE_vector3f, normalized, CVector3f::Normalized, false);
-            REGISTER_TYPE_METHOD(TYPE_vector3f, normalize, CVector3f::Normalized, true);
-            REGISTER_TYPE_METHOD(TYPE_vector3f, length, CVector3f::V3fLength, false);
-            REGISTER_TYPE_METHOD(TYPE_vector3f, dot, CVector3f::Dot, false);
-            REGISTER_TYPE_METHOD(TYPE_vector3f, cross, CVector3f::Cross, false);
+            REGISTER_TYPE_METHOD(TYPE_vector3f, set, TypeVector3f_Set);
+            REGISTER_TYPE_METHOD(TYPE_vector3f, normalized, TypeVector3f_Normalized);
+            REGISTER_TYPE_METHOD(TYPE_vector3f, normalize, TypeVector3f_Normalize);
+            REGISTER_TYPE_METHOD(TYPE_vector3f, length, TypeVector3f_Length);
+            REGISTER_TYPE_METHOD(TYPE_vector3f, dot, TypeVector3f_Dot);
+            REGISTER_TYPE_METHOD(TYPE_vector3f, cross, TypeVector3f_Cross);
         }
     }
 

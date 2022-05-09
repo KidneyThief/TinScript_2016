@@ -904,7 +904,30 @@ bool8 CreateUnitTests()
     return (success);
 }
 
-void BeginUnitTests(bool8 results_only = false, const char* specific_test = NULL)
+void ReloadUnitTests(bool recompile)
+{
+    TinScript::CScriptContext* script_context = TinScript::GetContext();
+    if (recompile)
+    {
+        MTPrint("Compiling/Executing unittest.ts\n");
+    }
+    else
+    {
+        MTPrint("Executing unittest.ts\n");
+    }
+    if (recompile && !script_context->CompileScript(kUnitTestScriptName))
+    {
+        MTPrint("Error - unable to compile file: %s\n", kUnitTestScriptName);
+        return;
+    }
+    if (!script_context->ExecScript(kUnitTestScriptName, true, true))
+    {
+        MTPrint("Error - unable to execute file: %s\n", kUnitTestScriptName);
+        return;
+    }
+}
+
+void BeginUnitTests(const char* specific_test = "", bool8 results_only = false)
 {
     // -- required to ensure registered functions from memory.cpp are linked, even if the memory tracker is not enabled
     REGISTER_FILE(tinmemory_cpp);
@@ -947,29 +970,6 @@ void BeginUnitTests(bool8 results_only = false, const char* specific_test = NULL
     }
 }
 
-void ReloadUnitTests(bool recompile)
-{
-    TinScript::CScriptContext* script_context = TinScript::GetContext();
-    if (recompile)
-    {
-        MTPrint("Compiling/Executing unittest.ts\n");
-    }
-    else
-    {
-        MTPrint("Executing unittest.ts\n");
-    }
-    if (recompile && !script_context->CompileScript(kUnitTestScriptName))
-    {
-        MTPrint("Error - unable to compile file: %s\n", kUnitTestScriptName);
-        return;
-    }
-    if (!script_context->ExecScript(kUnitTestScriptName, true, true))
-    {
-        MTPrint("Error - unable to execute file: %s\n", kUnitTestScriptName);
-        return;
-    }
-}
-
 #if TS_PLATFORM_WINDOWS
 DWORD WINAPI MyThreadFunction(LPVOID lpParam)
 {
@@ -990,7 +990,7 @@ DWORD WINAPI MyThreadFunction(LPVOID lpParam)
     TinScript::CScriptContext* thread_context = TinScript::CScriptContext::Create(ThreadPrintf, NULL, false);
 
     MTPrint("ALT THREAD:  Executing unit tests (results only) in a separate thread with its own context\n");
-    BeginUnitTests(true);
+    BeginUnitTests();
 
     // -- create a thread object
     MTPrint("ALT THREAD:  Creating an AltThreadObject\n");
@@ -1052,7 +1052,7 @@ void BeginMultiThreadTest()
 
 
     MTPrint("MAIN THREAD:  Executing unit tests (results only)\n");
-    BeginUnitTests(true);
+    BeginUnitTests();
 
     // -- create an object on the main thread
     MTPrint("MAIN THREAD:  Creating a MainThreadObject");

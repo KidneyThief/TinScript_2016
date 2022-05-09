@@ -62,10 +62,8 @@ public:
 
     void SetIsPODMethod() { m_isPODMethod = true; }
     bool IsPODMethod() const { return (m_isPODMethod); }
-    void SetReassignPODVar(bool reassign) { m_reassignPODVar = reassign; }
-    bool GetReassignPODVar() const { return (m_reassignPODVar); }
 
-    enum { eMaxParameterCount = 16,eMaxLocalVarCount = 37 };
+    enum { eMaxParameterCount = 16, eMaxLocalVarCount = 37 };
 
     // -- for overloading, we want to hash the signature
     uint32 CalcHash();
@@ -122,7 +120,6 @@ private:
     // -- strictly for POD methods, we need to know if we should auto-reassign the result
     // back to the original POD var
     bool m_isPODMethod = false;
-    bool m_reassignPODVar = false;
 };
 
 // ====================================================================================================================

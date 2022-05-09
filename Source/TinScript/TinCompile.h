@@ -362,6 +362,8 @@ class CValueNode : public CCompileTreeNode
         CValueNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _linenumber, int32 _paramindex,
                    eVarType _valtype);
 
+		void InitVariableEntry(uint32 ns_hash, uint32 func_hash);
+        CVariableEntry* GetVariableEntry() const;
 		virtual int32 Eval(uint32*& instrptr, eVarType pushresult, bool countonly) const;
 		virtual void Dump(char*& output, int32& length) const;
 
@@ -369,12 +371,18 @@ class CValueNode : public CCompileTreeNode
 
         virtual bool8 CompileToC(int32 indent, char*& out_buffer, int32& max_size, bool root_node) const;
 
+
 	protected:
 		bool8 isvariable;
         bool8 isparam;
         int32 paramindex;
 		char value[kMaxTokenLength];
         eVarType valtype;
+
+		// -- we need to be able to find the variable entry during compilation
+		mutable uint32 mVarHash = 0;
+        mutable uint32 mVarFuncHash = 0;
+        mutable uint32 mVarNSHash = 0;
 
 	protected:
 		CValueNode() { }

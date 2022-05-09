@@ -386,13 +386,13 @@ void CFunctionContext::InitStackVarOffsets(CFunctionEntry* fe)
 // ====================================================================================================================
 uint32 CFunctionContext::CalcHash()
 {
-    // -- the strategy here is, each paremeter causes the current hash to be multiplied
+    // -- the strategy here is, each parameter causes the current hash to be multiplied
     // -- by 3x the number of valid types...  then we add the current type, multiplied by 2 if
     // -- it's an array...  there should be no numerical collisions based on this
     const uint32 next_hash_multiplier = 3 * (uint32)TYPE_COUNT;
     uint32 param_hash = 0;
 
-    // -- note:  we don't inclue the return value
+    // -- note:  we don't include the return value
     int param_count = GetParameterCount();
     for(int i = 1; i < param_count; ++i)
     {

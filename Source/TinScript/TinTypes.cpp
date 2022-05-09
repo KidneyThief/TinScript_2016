@@ -516,9 +516,9 @@ void* TypeConvert(CScriptContext* script_context, eVarType fromtype, void* froma
 // ====================================================================================================================
 // DebugPrintVar():  Convert the given address to a variable type, and print the value to std out.
 // ====================================================================================================================
-const char* DebugPrintVar(void* addr, eVarType vartype)
+const char* DebugPrintVar(void* addr, eVarType vartype, bool dump_stack)
 {
-    if (!CScriptContext::gDebugTrace)
+    if (!CScriptContext::gDebugTrace && !dump_stack)
         return ("");
 
     static int32 bufferindex = 0;
@@ -526,11 +526,51 @@ const char* DebugPrintVar(void* addr, eVarType vartype)
 
     if (!addr)
         return "";
+
+    // -- we need to "unpack" different types, just like getting stack entries
+    CScriptContext* script_context = TinScript::GetContext();
+    if (vartype == TYPE__var || vartype == TYPE__hashvarindex)
+    {
+        uint32 val1ns = ((uint32*)addr)[0];
+        uint32 val1func = ((uint32*)addr)[1];
+        uint32 val1hash = ((uint32*)addr)[2];
+
+        // -- one more level of dereference for variables that are actually hashtables or arrays
+        bool val_is_hash_index = (vartype == TYPE__hashvarindex);
+        int32 ve_array_hash_index = (vartype == TYPE__hashvarindex) ? ((int32*)addr)[3] : 0;
+
+        // -- this method will return the object, if the 4x parameters resolve to an object member
+        CObjectEntry* oe = nullptr;
+        CVariableEntry* ve = GetObjectMember(script_context, oe, val1ns, val1func, val1hash, ve_array_hash_index);
+
+        // -- if not, search for a global/local variable
+        if (ve == nullptr)
+        {
+            ve = GetVariable(script_context, script_context->GetGlobalNamespace()->GetVarTable(), val1ns, val1func,
+                             val1hash, ve_array_hash_index);
+        }
+
+        if (ve != nullptr)
+        {
+            char* destbuf = TinScript::GetContext()->GetScratchBuffer();
+            void* var_addr = ve->GetAddr(oe ? oe->GetAddr() : nullptr);
+            char* val_hash = (char*)TypeConvert(script_context, ve->GetType(), var_addr, TYPE_string);
+            if (val_hash != nullptr)
+            {
+                uint32 hash = *(uint32*)val_hash;
+
+                snprintf(destbuf, kMaxTokenLength, "[%s] %s: %s", GetRegisteredTypeName(TYPE__var),
+                         UnHash(ve->GetHash()), UnHash(hash));
+                return destbuf;
+            }
+        }
+    }
+
     char* convertbuf = TinScript::GetContext()->GetScratchBuffer();
     char* destbuf = TinScript::GetContext()->GetScratchBuffer();
-	gRegisteredTypeToString[vartype](TinScript::GetContext(), addr, convertbuf, kMaxTokenLength);
-    snprintf(destbuf, kMaxTokenLength, "[%s] %s", GetRegisteredTypeName(vartype), convertbuf);
-    return convertbuf;
+    bool result = gRegisteredTypeToString[vartype](TinScript::GetContext(), addr, convertbuf, kMaxTokenLength);
+    snprintf(destbuf, kMaxTokenLength, "[%s] %s", GetRegisteredTypeName(vartype), result ? convertbuf : "");
+    return destbuf;
 }
 
 
@@ -1164,8 +1204,90 @@ bool8 BooleanBinaryOp(CScriptContext* script_context, eOpCode op, eVarType& resu
 
 int32 TypeVariable_Count(CVariableEntry* ve)
 {
+    if (ve == nullptr)
+    {
+        TinPrint(TinScript::GetContext(), "Error - TypeVariable_Count(): invalid variable");
+        return 0;
+    }
+
     int32 count = ve != nullptr ? ve->GetArraySize() : 0;
+    if (count == -1)
+    {
+        TinWarning(TinScript::GetContext(), "Warning - array variable `%s` has not been initialized - \n"
+                                          "you must (e.g.) array:copy(%s) from a valid array before derferrencing\n",
+                                          UnHash(ve->GetHash()), UnHash(ve->GetHash()));
+    }
     return count;
+}
+
+bool TypeVariableArray_Copy(CVariableEntry* ve_src, CVariableEntry* ve_dst)
+{
+    // -- the source and dest must be an arrays of the same type
+    if (ve_src == nullptr || ve_dst == nullptr || !ve_src->IsArray() || !ve_dst->IsArray() ||
+        ve_src->GetArraySize() < 1 || ve_src->GetType() != ve_dst->GetType())
+    {
+        TinPrint(TinScript::GetContext(), "Error - array:copy() failed from copying %s to %s\n",
+                                           (ve_src ? UnHash(ve_src->GetHash()) : "<unkown>"),
+                                           (ve_dst ? UnHash(ve_dst->GetHash()) : "<unkown>"));
+        return false;
+    }
+
+    // -- an extra check to ensure we're not trying to copy to a C++ registered member
+    // (resizing and moving address pointers around - is not yet supported...  likely
+    // we'll allow a direct copy if'f the dst address is already the right type and size)
+    if (!ve_src->IsScriptVar() || !ve_dst->IsScriptVar())
+    {
+        TinPrint(TinScript::GetContext(), "Error - array:copy() failed from '%s' to '%s'-\n"
+                                          "only script variables are currently supported\n",
+                                          UnHash(ve_src->GetHash()), UnHash(ve_dst->GetHash()));
+        return (false);
+    }
+
+    // -- if array is already the right type/size to copy to, we don't need to free/resize
+    int32 count = ve_src->GetArraySize();
+    if (ve_dst->GetArraySize() != count)
+    {
+        // -- try to free the memory of the dest
+        if (!ve_dst->TryFreeAddrMem())
+            return (false);
+
+        if (!ve_dst->ConvertToArray(count))
+            return false;
+    }
+
+    // -- simple memcpy
+    void* src_addr = ve_src->GetAddr(nullptr);
+    void* dst_addr = ve_dst->GetAddr(nullptr);
+    if (src_addr == nullptr || dst_addr == nullptr)
+    {
+        TinPrint(TinScript::GetContext(), "Error - array:copy() null address copying %s to %s\n",
+                                           (ve_src ? UnHash(ve_src->GetHash()) : "<unkown>"),
+                                           (ve_dst ? UnHash(ve_dst->GetHash()) : "<unkown>"));
+         return (false);
+    }
+
+    // -- check for the "special" string case first, so if this fails, we return having done
+    // nothing to the either variable
+    if (ve_src->GetType() == TYPE_string)
+    {
+        void* src_str_addr = ve_src->GetStringHashArray();
+        void* dst_str_addr = ve_dst->GetStringHashArray();
+        if (src_str_addr == nullptr || dst_str_addr == nullptr)
+        {
+            TinPrint(TinScript::GetContext(), "Error - array:copy() failed from copying string array %s to %s\n",
+                                              (ve_src ? UnHash(ve_src->GetHash()) : "<unkown>"),
+                                              (ve_dst ? UnHash(ve_dst->GetHash()) : "<unkown>"));
+            return (false);
+        }
+        memcpy(dst_addr, src_addr, sizeof(const char*) * count);
+    }
+
+
+    // -- copy the memory
+    memcpy(dst_addr, src_addr, gRegisteredTypeSize[ve_src->GetType()] * count);
+
+    // -- return success
+    return (true);
 }
 
 // ====================================================================================================================
@@ -1201,8 +1323,9 @@ bool8 ObjectConfig(eVarType var_type, bool8 onInit)
         RegisterTypeOpOverride(OP_BooleanOr, TYPE_object, BooleanBinaryOp);
 
         // -- register the POD methods
-        REGISTER_TYPE_METHOD(TYPE_object, count, TypeVariable_Count, false);
-        REGISTER_TYPE_METHOD(TYPE_object, contains, TypeObject_Contains, false);
+        REGISTER_TYPE_METHOD(TYPE_object, count, TypeVariable_Count);
+        REGISTER_TYPE_METHOD(TYPE_object, contains, TypeObject_Contains);
+        REGISTER_TYPE_METHOD(TYPE_object, copy, TypeVariableArray_Copy);
     }
 
     // -- success
@@ -1247,8 +1370,9 @@ bool8 StringConfig(eVarType var_type, bool8 onInit)
         RegisterTypeOpOverride(OP_CompareNotEqual, TYPE_string, StringBinaryOp);
 
         // -- register the POD methods
-        REGISTER_TYPE_METHOD(TYPE_string, count, TypeVariable_Count, false);
-        REGISTER_TYPE_METHOD(TYPE_string, contains, TypeString_Contains, false);
+        REGISTER_TYPE_METHOD(TYPE_string, count, TypeVariable_Count);
+        REGISTER_TYPE_METHOD(TYPE_string, contains, TypeString_Contains);
+        REGISTER_TYPE_METHOD(TYPE_string, copy, TypeVariableArray_Copy);
     }
 
     // -- success
@@ -1300,8 +1424,9 @@ bool8 FloatConfig(eVarType var_type, bool8 onInit)
         RegisterTypeConvert(TYPE_float, TYPE_bool, FloatConvert);
 
         // -- register the POD methods
-        REGISTER_TYPE_METHOD(TYPE_float, count, TypeVariable_Count, false);
-        REGISTER_TYPE_METHOD(TYPE_float, contains, TypeFloat_Contains, false);
+        REGISTER_TYPE_METHOD(TYPE_float, count, TypeVariable_Count);
+        REGISTER_TYPE_METHOD(TYPE_float, contains, TypeFloat_Contains);
+        REGISTER_TYPE_METHOD(TYPE_float, copy, TypeVariableArray_Copy);
     }
 
     // -- success
@@ -1361,8 +1486,9 @@ bool8 IntegerConfig(eVarType var_type, bool8 onInit)
         RegisterTypeConvert(TYPE_int, TYPE_object, IntegerConvert);
 
         // -- register the POD methods
-        REGISTER_TYPE_METHOD(TYPE_int, count, TypeVariable_Count, false);
-        REGISTER_TYPE_METHOD(TYPE_int, contains, TypeInt_Contains, false);
+        REGISTER_TYPE_METHOD(TYPE_int, count, TypeVariable_Count);
+        REGISTER_TYPE_METHOD(TYPE_int, contains, TypeInt_Contains);
+        REGISTER_TYPE_METHOD(TYPE_int, copy, TypeVariableArray_Copy);
     }
 
     // -- success
@@ -1402,8 +1528,9 @@ bool8 BoolConfig(eVarType var_type, bool8 onInit)
         RegisterTypeConvert(TYPE_bool, TYPE_object, BoolConvert);
 
         // -- register the POD methods
-        REGISTER_TYPE_METHOD(TYPE_bool, count, TypeVariable_Count, false);
-        REGISTER_TYPE_METHOD(TYPE_bool, contains, TypeBool_Contains, false);
+        REGISTER_TYPE_METHOD(TYPE_bool, count, TypeVariable_Count);
+        REGISTER_TYPE_METHOD(TYPE_bool, contains, TypeBool_Contains);
+        REGISTER_TYPE_METHOD(TYPE_bool, copy, TypeVariableArray_Copy);
     }
 
     // -- success
@@ -1508,10 +1635,10 @@ bool8 HashtableConfig(eVarType var_type, bool8 onInit)
     if (onInit)
     {
         // -- register the POD methods
-        REGISTER_TYPE_METHOD(TYPE_hashtable, clear, TypeHashtable_Clear, false);
-        REGISTER_TYPE_METHOD(TYPE_hashtable, count, TypeHashtable_Count, false);
-        REGISTER_TYPE_METHOD(TYPE_hashtable, haskey, TypeHashtable_HasKey, false);
-        REGISTER_TYPE_METHOD(TYPE_hashtable, contains, TypeHashtable_Contains, false);
+        REGISTER_TYPE_METHOD(TYPE_hashtable, clear, TypeHashtable_Clear);
+        REGISTER_TYPE_METHOD(TYPE_hashtable, count, TypeHashtable_Count);
+        REGISTER_TYPE_METHOD(TYPE_hashtable, haskey, TypeHashtable_HasKey);
+        REGISTER_TYPE_METHOD(TYPE_hashtable, contains, TypeHashtable_Contains);
     }
 
     // -- success

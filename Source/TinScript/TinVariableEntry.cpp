@@ -141,35 +141,23 @@ CVariableEntry::CVariableEntry(CScriptContext* script_context, const char* _name
     {
 		mScriptVar = true;
 		
-		// -- a negative array size means this had better be a parameter,
-        // -- which has no size of its own, but refers to the array passed
-		if (mArraySize < 0)
+		// -- a negative array size means this is unassigned/unallocated
+        // -- e.g. an array parameter, or a var intended to be copied to...
+        // (e.g. hashtable:keys(var)...)
+		if (mArraySize > 0)
 		{
-            ScriptAssert_(GetScriptContext(), mIsParameter, "<internal>", -1,
-                          "Error - creating an array reference\non a non-parameter (%s)\n", UnHash(GetHash()));
-			mAddr = NULL;
-		}
-		else
-		{
-			if (mArraySize == 0)
-				mArraySize = 1;
-		
             // -- if we know the size of the array already, we can allocate it now
-            if (mArraySize > 0)
+			mAddr = (void*)TinAllocArray(ALLOC_VarStorage, char, gRegisteredTypeSize[_type] * mArraySize);
+            if (mAddr != nullptr)
             {
-			    mAddr = (void*)TinAllocArray(ALLOC_VarStorage, char, gRegisteredTypeSize[_type] * mArraySize);
-                if (mAddr != nullptr)
-                {
-			        memset(mAddr, 0, gRegisteredTypeSize[_type] * mArraySize);
-                }
-            }
-
-            // -- otherwise the size is being determined dynamically - we'll allocate when we execute an OP_ArrayDecl
-            else
-            {
-                mAddr = NULL;
+			    memset(mAddr, 0, gRegisteredTypeSize[_type] * mArraySize);
             }
 		}
+        // -- otherwise the size is being determined dynamically - we'll allocate when we execute an OP_ArrayDecl
+        else
+        {
+            mAddr = NULL;
+        }
     }
 
     // -- a special case for registered arrays of strings - they have to have a matching array of hashes
@@ -208,36 +196,33 @@ CVariableEntry::~CVariableEntry()
 // ====================================================================================================================
 // CVariableEntry
 // ====================================================================================================================
-void CVariableEntry::TryFreeAddrMem()
+bool CVariableEntry::TryFreeAddrMem()
 {
     // $$$TZA clean this up - we have too many variables used to figure out if the mAddr owns the memory or not
-    if (mAddr == nullptr || mIsReference)
-        return;
+    if (mAddr == nullptr || mIsReference || !mScriptVar)
+        return (!mIsReference);
 
-    if (mScriptVar)
+    // -- if this isn't a hashtable, and it isn't a parameter array
+    // $$$TZA Array - *this* is why we require array parameters to be marked as a parameter!
+    if (mType != TYPE_hashtable && (!mIsParameter || !IsArray()))
     {
-        // -- if this isn't a hashtable, and it isn't a parameter array
-        // $$$TZA Array - *this* is why we require array parameters to be marked as a parameter!
-        if (mType != TYPE_hashtable && (!mIsParameter || !IsArray()))
-        {
-            TinFreeArray((char*)mAddr);
-            mAddr = nullptr;
-        }
+        TinFreeArray((char*)mAddr);
+        mAddr = nullptr;
+    }
 
-        // -- if this is a non-parameter hashtable, need to destroy all of its entries
-        // note:  schedule() contexts that use hashtables, this is the one time where
-        // a hashtable is copied, therefore, the parameter uses dynamic memory and must be freed
-        else if (mType == TYPE_hashtable && (!mIsParameter || mIsDynamic))
-        {
-            tVarTable* ht = static_cast<tVarTable*>(mAddr);
-            ht->DestroyAll();
+    // -- if this is a non-parameter hashtable, need to destroy all of its entries
+    // note:  schedule() contexts that use hashtables, this is the one time where
+    // a hashtable is copied, therefore, the parameter uses dynamic memory and must be freed
+    else if (mType == TYPE_hashtable && (!mIsParameter || mIsDynamic))
+    {
+        tVarTable* ht = static_cast<tVarTable*>(mAddr);
+        ht->DestroyAll();
 
-            // -- now delete the hashtable itself
-            TinFree(ht);
+        // -- now delete the hashtable itself
+        TinFree(ht);
 
-            // -- null the pointer
-            mAddr = nullptr;
-        }
+        // -- null the pointer
+        mAddr = nullptr;
     }
 
     // -- delete the hash array, if this happened to have been a registered const char*[]
@@ -246,6 +231,12 @@ void CVariableEntry::TryFreeAddrMem()
         TinFreeArray(mStringHashArray);
         mStringHashArray = nullptr;
     }
+
+    // -- calling TryFreeAddrMem() outside of the destructor is only ever performmed on arrays
+    mArraySize = -1;
+
+    // -- return success, if we no longer have any allocated memory
+    return (mAddr == nullptr && mStringHashArray == nullptr);
 }
 
 // ====================================================================================================================
@@ -288,6 +279,16 @@ bool8 CVariableEntry::ConvertToArray(int32 array_size)
         mArraySize = array_size;
     	mAddr = (void*)TinAllocArray(ALLOC_VarStorage, char, gRegisteredTypeSize[mType] * mArraySize);
 		memset(mAddr, 0, gRegisteredTypeSize[mType] * mArraySize);
+
+        if (mType == TYPE_string)
+        {
+            if (mArraySize > 1 && mType == TYPE_string)
+            {
+                mStringHashArray = (uint32*)TinAllocArray(ALLOC_VarStorage, char,
+                                                          sizeof(const char*) * mArraySize);
+                memset(mStringHashArray, 0, sizeof(const char*) * mArraySize);
+            }
+        }
     }
 
     // -- success
@@ -570,7 +571,10 @@ void CVariableEntry::SetValue(void* objaddr, void* value, CExecStack* execstack,
         }
 
         // -- copy the new value
-	    memcpy(varaddr, value, size);
+        if (varaddr != nullptr)
+        {
+            memcpy(varaddr, value, size);
+        }
     }
 
 	// -- if we've been requested to break on write

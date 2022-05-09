@@ -61,6 +61,7 @@ static const char* gStringTableFileName = "stringtable.txt";
 bool8 CScriptContext::gDebugParseTree = false;
 bool8 CScriptContext::gDebugCodeBlock = false;
 bool8 CScriptContext::gDebugTrace = false;
+bool8 CScriptContext::gDebugExecStack = false;
 
 bool8 CScriptContext::gDebugForceCompile = false;
 std::time_t CScriptContext::gDebugForceCompileTime;

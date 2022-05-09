@@ -55,17 +55,29 @@ class CExecStack
 
         CScriptContext* GetContextOwner() const { return (mContextOwner); }
 
-		void Push(void* content, eVarType contenttype)
+		bool Push(void* content, eVarType contenttype)
 		{
-			Assert_(content != NULL);
+            if (CScriptContext::gDebugExecStack)
+            {
+                // -- Print out whatever it was we found
+                TinPrint(mContextOwner, "    >>> Stack PUSH: %s\n", DebugPrintVar(content, contenttype, true));
+            }
+
+            // -- note:  this can happen if, e.g., you try to push an array value, where the index is
+            // out of scope...  asserts/recovery needs to happen in the VM
+            if (content == NULL)
+            {
+                TinPrint(TinScript::GetContext(), "Error - CExecStack::Push() null content\n");
+                return (false);
+            }
+
 			uint32 contentsize = kBytesToWordCount(gRegisteredTypeSize[contenttype]);
 
             uint32 stacksize = kPointerDiffUInt32(mStackTop, mStack) / sizeof(uint32);
             if (stacksize + contentsize > kExecStackSize)
             {
-                ScriptAssert_(TinScript::GetContext(), 0, "<internal>", -1,
-                              "Error - stack overflow (size: %d) - unrecoverable\n", kExecStackSize);
-                return;
+                TinPrint(TinScript::GetContext(), "Error - stack overflow (size: %d) - unrecoverable\n", kExecStackSize);
+                return (false);
             }
 
             // -- if we're pushing a hash table, we don't want to dereference the pointer
@@ -89,7 +101,8 @@ class CExecStack
             }
 
 			// -- push the type of the content as well, so we know what to pull
-			*mStackTop++ = (uint32)contenttype;
+			*mStackTop = (uint32)contenttype;
+            mStackTop++;
 
             // -- pushing and popping strings onto the execstack need to be refcounted
             if (contenttype == TYPE_string)
@@ -97,10 +110,21 @@ class CExecStack
                 uint32 string_hash = *(uint32*)content;
                 mContextOwner->GetStringTable()->RefCountIncrement(string_hash);
             }
+
+            // -- success
+            return (true);
 		}
 
 		void* Pop(eVarType& contenttype)
         {
+            if (CScriptContext::gDebugExecStack)
+            {
+                // -- Print the stack top, before we pop
+                eVarType dbg_content_type;
+                void* dbg_content = Peek(dbg_content_type);
+                TinPrint(mContextOwner, "    <<< Stack POP: %s\n", DebugPrintVar(dbg_content, dbg_content_type, true));
+            }
+
 			uint32 stacksize = kPointerDiffUInt32(mStackTop, mStack) / sizeof(uint32);
             Unused_(stacksize);
             if (stacksize == 0)
@@ -110,14 +134,15 @@ class CExecStack
                 return (NULL);
             }
 
-            contenttype = (eVarType)(*(--mStackTop));
+            --mStackTop;
+            contenttype = (eVarType)(*mStackTop);
 
             // -- if what's on the stack isn't a valid content type, leave the stack alone, but
             // -- return NULL - the calling operation should catch the NULL and assert
             if (contenttype < 0 || contenttype >= TYPE_COUNT)
             {
                 ++mStackTop;
-                return (NULL);
+                return (nullptr);
             }
 
 			// -- ensure we have enough data on the stack, both the content, and the type
@@ -176,7 +201,7 @@ class CExecStack
                 // -- pushing and popping strings onto the execstack need to be refcounted
                 // -- peeking, however, does not alter either the stack, or the string table
 
-                // -- if we're digging past the top of the stack, keep loopoing
+                // -- if we're digging past the top of the stack, keep looping
                 --depth;
             }
 

@@ -94,7 +94,6 @@ public:
     float32 Length();
     float32 Normalize();
 
-    static CVector3f Init(CVector3f v0, float32 _x, float32 _y, float32 _z);
     static CVector3f Cross(CVector3f v0, CVector3f v1);
     static float32 Dot(CVector3f v0, CVector3f v1);
     static float32 V3fLength(CVector3f v0);

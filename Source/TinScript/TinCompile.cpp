@@ -730,6 +730,7 @@ CValueNode::CValueNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _
 	isvariable = _isvar;
     isparam = false;
     valtype = _valtype;
+    mVarHash = isvariable ? Hash(value) : 0;
 }
 
 // ====================================================================================================================
@@ -739,11 +740,37 @@ CValueNode::CValueNode(CCodeBlock* _codeblock, CCompileTreeNode*& _link, int32 _
                        eVarType _valtype)
     : CCompileTreeNode(_codeblock, _link, eValue, _linenumber)
 {
-    value[0] = '\0';
+    snprintf(value, sizeof(value), "_p%d", _paramindex);
 	isvariable = false;
     isparam = true;
     paramindex = _paramindex;
     valtype = _valtype;
+    mVarHash = Hash(value);
+}
+
+// ====================================================================================================================
+// InitVariableEntry():  At parse time, this node may be part of a function call, in which case, provide the
+// hash values to retrieve the CVariableEntry
+// ====================================================================================================================
+void CValueNode::InitVariableEntry(uint32 ns_hash, uint32 func_hash)
+{
+    mVarNSHash = ns_hash;
+    mVarFuncHash = func_hash;
+}
+
+// ====================================================================================================================
+// GetVarEntry():  Used to "post process" a node during compile time - helps (e.g.) a BinOpNode know what
+// it's children are, if it's doing an assignment
+// ====================================================================================================================
+CVariableEntry* CValueNode::GetVariableEntry() const
+{
+    // -- sanity check
+    if (!isvariable || mVarHash == 0)
+        return (nullptr);
+
+    CVariableEntry* ve = GetVariable(codeblock->GetScriptContext(), codeblock->smCurrentGlobalVarTable,
+                                     mVarNSHash, mVarFuncHash, mVarHash, 0);
+    return (ve);
 }
 
 // ====================================================================================================================
@@ -757,23 +784,27 @@ int32 CValueNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 countonly) 
 	// -- if the value is being used, push it on the stack
 	if (pushresult > TYPE_void || m_unaryDelta != 0)
     {
+        int32 stacktopdummy = 0;
+        CObjectEntry* dummy = NULL;
+        CFunctionEntry* curfunction = (isvariable || isparam)
+                                      ? codeblock->smFuncDefinitionStack->GetTop(dummy, stacktopdummy)
+                                      : nullptr;
+
+        // -- cache the details needed to retrieve the variable
+        if (curfunction != nullptr)
+        {
+            mVarFuncHash = curfunction->GetHash();
+            mVarNSHash = curfunction->GetNamespaceHash();
+        }
+
         if (isparam)
         {
-			size += PushInstruction(countonly, instrptr, OP_PushParam, DBG_instr);
+            size += PushInstruction(countonly, instrptr, OP_PushParam, DBG_instr);
 			size += PushInstruction(countonly, instrptr, paramindex, DBG_hash);
         }
 		else if (isvariable)
         {
-            int32 stacktopdummy = 0;
-            CObjectEntry* dummy = NULL;
-            CFunctionEntry* curfunction = codeblock->smFuncDefinitionStack->GetTop(dummy, stacktopdummy);
-
-			// -- ensure we can find the variable
-			uint32 varhash = Hash(value);
-            uint32 funchash = curfunction ? curfunction->GetHash() : 0;
-            uint32 nshash = curfunction ? curfunction->GetNamespaceHash() : CScriptContext::kGlobalNamespaceHash;
-            CVariableEntry* var = GetVariable(codeblock->GetScriptContext(), codeblock->smCurrentGlobalVarTable,
-                                              nshash, funchash, varhash, 0);
+            CVariableEntry* var = GetVariableEntry();
 			if (!var)
             {
                 ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(), linenumber,
@@ -784,9 +815,10 @@ int32 CValueNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 countonly) 
 
 			// -- if we're supposed to be pushing a var (e.g. for an assign...)
             // -- (note:  there is no such thing as the "value" of a hashtable)
-            // -- we also pus the variable, if we are planning to perform a post increment/decrement unary op
-            bool8 push_value = (m_unaryDelta == 0 && pushresult != TYPE__var && pushresult != TYPE_hashtable &&
-                                var->GetType() != TYPE_hashtable && !var->IsArray());
+            // -- we also push the variable, if we are planning to perform a post increment/decrement unary op
+            // for array:copy() PODMethod, we need this to push the variable, since we're assigning to that variable
+            bool8 push_value = (m_unaryDelta == 0 && pushresult != TYPE__var &&
+                                pushresult != TYPE_hashtable && var->GetType() != TYPE_hashtable && !var->IsArray());
 
             // -- if this isn't a func var, make sure we push the global namespace
             if (var->GetFunctionEntry() == NULL)
@@ -1210,6 +1242,13 @@ int32 CPODMethodNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 counton
     // -- after the function call, we want to notify the POD method is complete, so any changes to the
     // original POD value can copied back to the variable, as per the function's reassign flag
     size += PushInstruction(countonly, instrptr, OP_PODCallComplete, DBG_instr);
+
+    // -- if we're not looking for a return value
+    if (pushresult <= TYPE_void)
+    {
+        // -- all functions will return a value - by default, a "" for void functions
+        size += PushInstruction(countonly, instrptr, OP_Pop, DBG_instr);
+    }
 
 	return size;
 }
@@ -2759,14 +2798,14 @@ int32 CFuncCallNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 countonl
     // -- then call the function
     size += PushInstruction(countonly, instrptr, OP_FuncCall, DBG_instr);
 
-    // -- if we're not looking for a return value
+    // -- if we're not looking for a return value (PODCallComplete will pop if we don't use the result)
     if (mCallType != EFunctionCallType::PODMethod && pushresult <= TYPE_void)
     {
         // -- all functions will return a value - by default, a "" for void functions
         size += PushInstruction(countonly, instrptr, OP_Pop, DBG_instr);
     }
 
-	return size;
+    return size;
 }
 
 // ====================================================================================================================
