@@ -189,7 +189,13 @@ int32 CFunctionContext::CalculateLocalVarStackSize()
     while (ve)
     {
         if (ve->IsArray() && !ve->IsParameter())
-            count += ve->GetArraySize();
+        {
+            // -- this must match InitStackVarOffsets()
+            // an uninitialized array will use its own memory... if it's already been converted (mIsDynamic)
+            // or is uninitialized (array size == -1), then it takes only 1x uint32 on the stack to avoid collision
+            int32 array_size = !ve->IsDynamic() && ve->GetArraySize() >= 1 ? ve->GetArraySize() : 1;
+            count += array_size;
+        }
         else
             ++count;
         ve = localvartable->Next();
@@ -372,7 +378,13 @@ void CFunctionContext::InitStackVarOffsets(CFunctionEntry* fe)
 
                 // -- if the variable is an array, we need to account for the size
                 if (ve->IsArray())
-                    stackoffset += ve->GetArraySize();
+                {
+                    // -- this must match CalculateLocalVarStackSize()
+                    // an uninitialized array will use its own memory... if it's already been converted (mIsDynamic)
+                    // or is uninitialized (array size == -1), then it takes only 1x uint32 on the stack to avoid collision
+                    int32 array_size = !ve->IsDynamic() && ve->GetArraySize() >= 1 ? ve->GetArraySize() : 1;
+                    stackoffset += array_size;
+                }
                 else
                     ++stackoffset;
             }

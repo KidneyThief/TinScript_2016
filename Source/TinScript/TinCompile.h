@@ -89,7 +89,6 @@ class CWhileLoopNode;
 	CompileNodeTypeEntry(ArrayVar)			    \
 	CompileNodeTypeEntry(ArrayVarDecl)			\
 	CompileNodeTypeEntry(ArrayDecl)			    \
-	CompileNodeTypeEntry(ArrayCopy)		        \
 	CompileNodeTypeEntry(MathUnaryFunc)			\
 	CompileNodeTypeEntry(MathBinaryFunc)		\
 	CompileNodeTypeEntry(HashtableCopy)	    	\
@@ -204,7 +203,6 @@ enum class EFunctionCallType
 	OperationEntry(ArrayHash)			\
 	OperationEntry(ArrayVarDecl)		\
 	OperationEntry(ArrayDecl)		    \
-	OperationEntry(ArrayCopy)		    \
 	OperationEntry(MathUnaryFunc)		\
 	OperationEntry(MathBinaryFunc)		\
 	OperationEntry(HashtableCopy)		\

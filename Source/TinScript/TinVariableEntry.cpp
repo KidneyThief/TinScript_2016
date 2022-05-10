@@ -70,6 +70,8 @@ CVariableEntry::CVariableEntry(CScriptContext* script_context, const char* _name
     // -- validate the array size
     if (mArraySize == 0)
         mArraySize = 1;
+    else if (mArraySize != 1)
+        mIsArray = true;
 
     // -- a special case for arrays of strings - they have to have a matching array of hashes
     if (mArraySize > 1 && mType == TYPE_string)
@@ -133,6 +135,7 @@ CVariableEntry::CVariableEntry(CScriptContext* script_context, const char* _name
     {
         mAddr = NULL;
         mOffset = _offset;
+        mIsArray = (mArraySize > 1);
     }
 
     // -- not an offset (e.g not a class member)
@@ -140,6 +143,10 @@ CVariableEntry::CVariableEntry(CScriptContext* script_context, const char* _name
     else
     {
 		mScriptVar = true;
+
+        // -- any variable declared with an initial array size as > 1, or -1 (uninitialized array)
+        // is forever an array...
+        mIsArray = (mArraySize < 0 || mArraySize > 1);
 		
 		// -- a negative array size means this is unassigned/unallocated
         // -- e.g. an array parameter, or a var intended to be copied to...
@@ -199,12 +206,12 @@ CVariableEntry::~CVariableEntry()
 bool CVariableEntry::TryFreeAddrMem()
 {
     // $$$TZA clean this up - we have too many variables used to figure out if the mAddr owns the memory or not
-    if (mAddr == nullptr || mIsReference || !mScriptVar)
-        return (!mIsReference);
+    if (mAddr == nullptr || mIsParameter || mIsReference || !mScriptVar)
+        return (!mIsReference && !mIsParameter);
 
     // -- if this isn't a hashtable, and it isn't a parameter array
     // $$$TZA Array - *this* is why we require array parameters to be marked as a parameter!
-    if (mType != TYPE_hashtable && (!mIsParameter || !IsArray()))
+    if (mType != TYPE_hashtable && (!mIsParameter || !IsArray() || mIsDynamic))
     {
         TinFreeArray((char*)mAddr);
         mAddr = nullptr;
@@ -234,6 +241,7 @@ bool CVariableEntry::TryFreeAddrMem()
 
     // -- calling TryFreeAddrMem() outside of the destructor is only ever performmed on arrays
     mArraySize = -1;
+    mIsDynamic = false;
 
     // -- return success, if we no longer have any allocated memory
     return (mAddr == nullptr && mStringHashArray == nullptr);
@@ -246,17 +254,16 @@ bool8 CVariableEntry::ConvertToArray(int32 array_size)
 {
     if (!mScriptVar || mIsParameter || mOffset != 0)
     {
-        ScriptAssert_(GetScriptContext(), false, "<internal>", -1,
-                        "Error - calling ConvertToArray() on an\ninvalid variable (%s)\n", UnHash(GetHash()));
+        TinPrint(GetScriptContext(), "Error - calling ConvertToArray() on an\ninvalid variable (%s)\n",
+                                     UnHash(GetHash()));
         return (false);
     }
 
     // -- validate the array size
     if (array_size < 1 || array_size > kMaxVariableArraySize)
     {
-        ScriptAssert_(GetScriptContext(), false, "<internal>", -1,
-                      "Error - calling ConvertToArray() with an\ninvalid size %d, variable (%s)\n", array_size,
-                      UnHash(GetHash()));
+        TinPrint(GetScriptContext(), "Error - calling ConvertToArray() with an\ninvalid size %d, variable (%s)\n",
+                                     array_size, UnHash(GetHash()));
         return (false);
     }
 
@@ -265,9 +272,9 @@ bool8 CVariableEntry::ConvertToArray(int32 array_size)
     {
         if (mArraySize != array_size)
         {
-            ScriptAssert_(GetScriptContext(), false, "<internal>", -1,
-                          "Error - calling ConvertToArray() on a variable\nthat has already been allocated (%s)\n",
-                          UnHash(GetHash()));
+            TinPrint(GetScriptContext(),
+                     "Error - calling ConvertToArray() on a variable\nthat has already been allocated (%s)\n",
+                     UnHash(GetHash()));
             return (false);
         }
     }
@@ -275,10 +282,12 @@ bool8 CVariableEntry::ConvertToArray(int32 array_size)
     // -- this only works with *certain* types of variables
     else
     {
-        // -- set the size and allocate
+        // -- set the size and allocate, and mark as dynamic
         mArraySize = array_size;
     	mAddr = (void*)TinAllocArray(ALLOC_VarStorage, char, gRegisteredTypeSize[mType] * mArraySize);
 		memset(mAddr, 0, gRegisteredTypeSize[mType] * mArraySize);
+        mIsDynamic = true;
+        mIsArray = true;
 
         if (mType == TYPE_string)
         {
@@ -301,9 +310,11 @@ bool8 CVariableEntry::ConvertToArray(int32 array_size)
 void CVariableEntry::ClearArrayParameter()
 {
     // -- ensure we have an array parameter
-    ScriptAssert_(GetScriptContext(), mIsParameter, "<internal>", -1,
-                    "Error - calling ClearArrayParameter() on an invalid variable (%s)\n",
-                    UnHash(GetHash()));
+    if (!mIsParameter)
+    {
+        TinPrint(GetScriptContext(), "Error - calling ClearArrayParameter() on an invalid variable (%s)\n",
+                                      UnHash(GetHash()));
+    }
 
     // -- we're going to rely on InitializeArrayParameter to set these correctly...
     // -- if we call a function recursively, using an array param, we need the previous iteration's
@@ -327,9 +338,8 @@ void CVariableEntry::InitializeArrayParameter(CVariableEntry* assign_from_ve, CO
     // assigned as references (and parameters)
     if (!assign_from_ve)
     {
-        ScriptAssert_(GetScriptContext(), 0, "<internal>", -1,
-                      "Error - calling InitializeArrayParameter() on an invalid variable (%s)\n",
-                      UnHash(GetHash()));
+        TinPrint(GetScriptContext(), "Error - calling InitializeArrayParameter() on an invalid variable (%s)\n",
+                                      UnHash(GetHash()));
         return;
     }
 
@@ -376,9 +386,10 @@ void* CVariableEntry::GetStringArrayHashAddr(void* objaddr,int32 array_index) co
     if(GetType() != TYPE_string || array_index < 0 || (array_index > 0 && !IsArray()) ||
         (mArraySize >= 0 && array_index > mArraySize))
     {
-        ScriptAssert_(GetScriptContext(),false,"<internal>",-1,
-                      "Error - GetStringAddr() called with an invalid array index: %s\n",UnHash(GetHash()));
-        return (NULL);
+        TinPrint(GetScriptContext(),"Error - GetStringAddr() called with an invalid array index "
+                                    "or mis-matched array types: %s\n",
+                                    UnHash(GetHash()));
+        return (nullptr);
     }
 
     // -- if this is an array with a size > 1, then mStringValueHash is actually an array of hashes
@@ -455,27 +466,28 @@ void* CVariableEntry::GetArrayVarAddr(void* objaddr,int32 array_index) const
     // -- can only call this if this actually is an array
     if(!IsArray())
     {
-        ScriptAssert_(GetScriptContext(),false,"<internal>",-1,
-                      "Error - GetArrayVarAddr() called on a non-array variable: %s\n",UnHash(GetHash()));
+        TinPrint(GetScriptContext(), "Error - GetArrayVarAddr() called on a non-array variable: %s\n",
+                                      UnHash(GetHash()));
         return (NULL);
     }
 
     // -- if the array hasn't yet been allocated (e.g. during declaration), return NULL
-    if(mArraySize < 0)
+    if (mArraySize < 0)
     {
         // -- this had better be a parameter, otherwise we're trying to access an uninitialized array
-        ScriptAssert_(GetScriptContext(),mIsParameter,"<internal>",-1,
-                      "Error - GetArrayVarAddr() called on an uninitialized array variable: %s\n",
-                      UnHash(GetHash()));
+        if (!mIsParameter)
+        {
+            TinPrint(GetScriptContext(), "Error - GetArrayVarAddr() called on an uninitialized array variable: %s\n",
+                                         UnHash(GetHash()));
+        }
         return (NULL);
     }
 
     // -- ensure we're within range
-    if(array_index < 0 || array_index >= mArraySize)
+    if (array_index < 0 || array_index >= mArraySize)
     {
-        ScriptAssert_(GetScriptContext(),false,"<internal>",-1,
-                      "Error - GetArrayVarAddr() index %d out of range [%d],\nvariable: %s\n",array_index,
-                      mArraySize,UnHash(GetHash()));
+        TinPrint(GetScriptContext(), "Error - GetArrayVarAddr() index %d out of range [%d],\nvariable: %s\n",
+                                     array_index, mArraySize, UnHash(GetHash()));
         return (NULL);
     }
 
@@ -547,9 +559,8 @@ void CVariableEntry::SetValue(void* objaddr, void* value, CExecStack* execstack,
     {
         if (!mIsParameter)
         {
-            ScriptAssert_(GetScriptContext(), false, "<internal>", -1,
-                            "Error - calling SetValue() on a non-parameter HashTable/Array variable (%s)\n",
-                            UnHash(GetHash()));
+            TinPrint(GetScriptContext(), "Error - calling SetValue() on a non-parameter HashTable/Array variable (%s)\n",
+                                         UnHash(GetHash()));
         }
 
         // -- otherwise simply assign the new hash table
@@ -565,9 +576,8 @@ void CVariableEntry::SetValue(void* objaddr, void* value, CExecStack* execstack,
         // -- ensure we're not assigning to an uninitialized parameter array
         if (IsParameter() && IsArray() && GetArraySize() < 0)
         {
-            ScriptAssert_(GetScriptContext(), false, "<internal>", -1,
-                            "Error - calling SetValue() on an uninitialized array parameter (%s)\n",
-                            UnHash(GetHash()));
+            TinPrint(GetScriptContext(), "Error - calling SetValue() on an uninitialized array parameter (%s)\n",
+                                         UnHash(GetHash()));
         }
 
         // -- copy the new value
@@ -605,9 +615,8 @@ void CVariableEntry::SetValueAddr(void* objaddr, void* value, int32 array_index)
     {
         if (!mIsParameter)
         {
-            ScriptAssert_(GetScriptContext(), false, "<internal>", -1,
-                            "Error - calling SetValue() on a non-parameter HashTable variable (%s)\n",
-                            UnHash(GetHash()));
+            TinPrint(GetScriptContext(), "Error - calling SetValue() on a non-parameter HashTable variable (%s)\n",
+                                         UnHash(GetHash()));
         }
 
         // -- otherwise simply assign the new hash table
@@ -628,14 +637,13 @@ void CVariableEntry::SetValueAddr(void* objaddr, void* value, int32 array_index)
 // ====================================================================================================================
 // SetReferenceAddr():  Used only on parameters, so type methods can still modify their own values
 // ====================================================================================================================
-bool CVariableEntry::SetReferenceAddr(void* ref_addr)
+bool CVariableEntry::SetReferenceAddr(void* ref_addr, uint32* string_hash_array)
 {
     // -- we have to have a value, and this can only be performed on parameters!
     if (ref_addr == nullptr || !mIsParameter)
     {
-        ScriptAssert_(GetScriptContext(), false, "<internal>", -1,
-                      "Error - failed SetReferenceAddr(): %s\n",
-                      UnHash(GetHash()));
+        TinPrint(GetScriptContext(), "Error - failed SetReferenceAddr(): %s\n",
+                                     UnHash(GetHash()));
         return false;
     }
 
@@ -645,6 +653,9 @@ bool CVariableEntry::SetReferenceAddr(void* ref_addr)
     // -- mark this as a reference, and set the addr
     mIsReference = true;
     mAddr = ref_addr;
+
+    // -- set the string hash array as well
+    mStringHashArray = string_hash_array;
 
     return (true);
 }
@@ -658,15 +669,20 @@ bool CVariableEntry::SetReferenceAddr(void* ref_addr)
     // -- ensure we have type string, etc...
     if (!value || mType != TYPE_string)
     {
-        ScriptAssert_(GetScriptContext(), false, "<internal>", -1,
-                      "Error - call to SetStringArrayValue() is invalid for variable %s\n",
-                      UnHash(GetHash()));
+        TinPrint(GetScriptContext(), "Error - call to SetStringArrayValue() is invalid for variable %s\n",
+                                     UnHash(GetHash()));
         return;
     }
 
     // -- if the value type is a TYPE_string, then the void* value contains a hash value
 	int32 size = gRegisteredTypeSize[mType];
     void* hash_addr = GetStringArrayHashAddr(objaddr, array_index);
+    if (hash_addr == nullptr)
+    {
+        TinPrint(GetScriptContext(), "Error - call to SetStringArrayValue(): null string hash addr %s\n",
+                                     UnHash(GetHash()));
+        return;
+    }
 
     // -- decrement the ref count for the current value
     uint32 current_hash_value = *(uint32*)hash_addr;
@@ -708,9 +724,8 @@ bool CVariableEntry::SetReferenceAddr(void* ref_addr)
     // -- ensure we have type string, etc...
     if (!value || mType != TYPE_string)
     {
-        ScriptAssert_(GetScriptContext(), false, "<internal>", -1,
-                      "Error - call to SetStringArrayValue() is invalid for variable %s\n",
-                      UnHash(GetHash()));
+        TinPrint(GetScriptContext(), "Error - call to SetStringArrayValue() is invalid for variable %s\n",
+                                     UnHash(GetHash()));
         return;
     }
 

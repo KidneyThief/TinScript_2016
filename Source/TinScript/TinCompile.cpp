@@ -861,7 +861,6 @@ int32 CValueNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 countonly) 
             if (m_unaryDelta != 0)
             {
                 size += PushInstruction(countonly, instrptr, m_unaryDelta > 0 ? OP_UnaryPostInc : OP_UnaryPostDec, DBG_instr);
-                size += PushInstruction(countonly, instrptr, 0, DBG_value, "non-array var");
 
                 // -- in addition, if the value isn't actually going to be used, issue an immediate pop
                 if (pushresult == TYPE_void)
@@ -1067,7 +1066,6 @@ int32 CObjMemberNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 counton
         if (m_unaryDelta != 0)
         {
             size += PushInstruction(countonly, instrptr, m_unaryDelta > 0 ? OP_UnaryPostInc : OP_UnaryPostDec, DBG_instr);
-            size += PushInstruction(countonly, instrptr, 0, DBG_value, "non-array var");
         }
     }
 
@@ -1161,14 +1159,13 @@ int32 CPODMemberNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 counton
         if (m_unaryDelta != 0)
         {
             size += PushInstruction(countonly, instrptr, m_unaryDelta > 0 ? OP_UnaryPostInc : OP_UnaryPostDec, DBG_instr);
-            size += PushInstruction(countonly, instrptr, 0, DBG_value, "POD var");
         }
-    }
 
-    // -- otherwise, we're referencing a member without actually doing anything - pop the stack
-    if (pushresult == TYPE_void)
-    {
-        size += PushInstruction(countonly, instrptr, OP_Pop, DBG_instr);
+        // -- if we're not using using the value (after possible post-unary-op), pop it
+        if (pushresult <= TYPE_void)
+        {
+            size += PushInstruction(countonly, instrptr, OP_Pop, DBG_instr);
+        }
     }
 
 	return size;
@@ -2886,6 +2883,7 @@ int32 CFuncReturnNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 counto
         tree_size = leftchild->Eval(instrptr, TYPE_int, countonly);
     else
         tree_size = leftchild->Eval(instrptr, returntype->GetType(), countonly);
+
     if (tree_size < 0)
         return (-1);
     size += tree_size;
@@ -3112,24 +3110,21 @@ int32 CArrayVarNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 countonl
         return (-1);
     size += tree_size;
 
+    // -- see if we're supposed to be pushing a var (e.g. for an assign...)
+    bool8 push_value = (pushresult != TYPE__var && pushresult != TYPE_hashtable && m_unaryDelta == 0);  // && pushresult != TYPE_void
+    size += PushInstruction(countonly, instrptr, push_value ? OP_PushArrayValue : OP_PushArrayVar, DBG_instr);
+
     // -- if we're applying a post increment/decrement, we also need to push the post-op instruction
     if (m_unaryDelta != 0)
     {
         size += PushInstruction(countonly, instrptr, m_unaryDelta > 0 ? OP_UnaryPostInc : OP_UnaryPostDec, DBG_instr);
-        size += PushInstruction(countonly, instrptr, 1, DBG_value, "array var");
-
-        // -- in addition, if the value isn't actually going to be used, issue an immediate pop
-        //if (pushresult == TYPE_void)
-        //    size += PushInstruction(countonly, instrptr, OP_Pop, DBG_instr, "post unary op");
     }
 
-    // -- see if we're supposed to be pushing a var (e.g. for an assign...)
-    bool8 push_value = (pushresult != TYPE__var && pushresult != TYPE_hashtable && pushresult != TYPE_void);
-    size += PushInstruction(countonly, instrptr, push_value ? OP_PushArrayValue : OP_PushArrayVar, DBG_instr);
-
-    // -- if the return type is void, and we're performing a unary post op, then pop the array var back off
-    if (pushresult == TYPE_void && m_unaryDelta != 0)
-        size += PushInstruction(countonly, instrptr, OP_Pop, DBG_instr, "post unary op");
+    // -- if the return type is void, pop the unused var/value
+    if (pushresult <= TYPE_void)
+    {
+        size += PushInstruction(countonly, instrptr, OP_Pop, DBG_instr, "unused array var");
+    }
 
 	return size;
 }
@@ -3963,7 +3958,9 @@ int32 CCreateObjectNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 coun
 
     // -- if we're not looking to assign the new object ID to anything, pop the stack
     if (pushresult <= TYPE_void)
+    {
         size += PushInstruction(countonly, instrptr, OP_Pop, DBG_instr);
+    }
 
 	return size;
 }

@@ -105,14 +105,15 @@ public:
 
     int32 GetArraySize() const
     {
-        // -- note:  0 or 1 means this is not an array...
-        // -- positive value < kMaxVariableArraySize is the size, and -1 is an array, but an undetermined size
+        // -- note:  -1 means the array is uninitialized,
+        // 0 should never exist (uninitialized or non-zero)
+        // 1 is technically just a value, but the var would have been declared as an array var
         return (mArraySize);
     }
 
     bool8 IsArray() const
     {
-        return ((mArraySize > 1) || (mArraySize == -1 && mType != TYPE_hashtable));
+        return (mType != TYPE_hashtable && mIsArray);
     }
 
     // -- strings being special...
@@ -167,12 +168,17 @@ public:
         return (mScriptVar);
     }
 
+    bool IsDynamic() const
+    {
+        return (mIsDynamic);
+    }
+
     bool8 IsStackVariable(const CFunctionCallStack& funccallstack, bool allow_indexed_var = false) const;
 
     void SetValue(void* objaddr, void* value, CExecStack* execstack = NULL, CFunctionCallStack* funccallstack = NULL,
                   int32 array_index = 0);
     void SetValueAddr(void* objaddr, void* value, int32 array_index = 0);
-    bool SetReferenceAddr(void* ref_addr);
+    bool SetReferenceAddr(void* ref_addr, uint32* string_hash_array = nullptr);
 
     // -- the equivalent of SetValue and SetValueAddr, but for variable (arrays) of Type_string
     void SetStringArrayHashValue(void* objaddr, void* value, CExecStack* execstack = NULL,
@@ -306,25 +312,26 @@ private:
     CScriptContext* mContextOwner;
 
     char mName[kMaxNameLength];
-    uint32 mHash;
-    eVarType mType;
-    int32 mArraySize;
-    void* mAddr;
-    uint32 mOffset;
-    int32 mStackOffset;
-    bool8 mIsParameter;
-    bool8 mIsDynamic;
-    bool8 mScriptVar;
+    uint32 mHash = 0;
+    eVarType mType = TYPE_void;
+    int32 mArraySize = -1;
+    bool mIsArray = false;
+    void* mAddr = nullptr;
+    uint32 mOffset = 0;
+    int32 mStackOffset = -1;
+    bool8 mIsParameter = false;
+    bool8 mIsDynamic = false;
+    bool8 mScriptVar = false;
     bool mIsReference = false;
-    mutable uint32 mStringValueHash;
-    mutable uint32* mStringHashArray; // used only for registered string *arrays*
-    uint32 mDispatchConvertFromObject;
-    CFunctionEntry* mFuncEntry;
+    mutable uint32 mStringValueHash = 0;
+    mutable uint32* mStringHashArray = nullptr; // used only for registered string *arrays*
+    uint32 mDispatchConvertFromObject = 0;
+    CFunctionEntry* mFuncEntry = nullptr;
 
 	// -- a debugger hook to break if the variable changes
-	CDebuggerWatchExpression* mBreakOnWrite;
-	int32 mWatchRequestID;
-	int32 mDebuggerSession;
+	CDebuggerWatchExpression* mBreakOnWrite = nullptr;
+	int32 mWatchRequestID = -1;
+	int32 mDebuggerSession = -1;
 };
 
 // ====================================================================================================================

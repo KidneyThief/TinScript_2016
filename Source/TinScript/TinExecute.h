@@ -36,6 +36,11 @@ namespace TinScript
 {
 
 // ====================================================================================================================
+//  DebugPrintVar(): helper function for dumping variables/values during execution
+// ====================================================================================================================
+const char* DebugPrintVar(void* addr, eVarType vartype, bool dump_stack = false);
+
+// ====================================================================================================================
 // class CExecStack: The class used to push and pop entries (values, variables, etc...) during VM execution.
 // ====================================================================================================================
 class CExecStack
@@ -59,8 +64,11 @@ class CExecStack
 		{
             if (CScriptContext::gDebugExecStack)
             {
+                // -- get the depth only
+                int depth = DebugPrintStack(true);
+
                 // -- Print out whatever it was we found
-                TinPrint(mContextOwner, "    >>> Stack PUSH: %s\n", DebugPrintVar(content, contenttype, true));
+                TinPrint(mContextOwner, "    >>> [%d] Stack PUSH: %s\n", depth + 1, DebugPrintVar(content, contenttype, true));
             }
 
             // -- note:  this can happen if, e.g., you try to push an array value, where the index is
@@ -77,6 +85,7 @@ class CExecStack
             if (stacksize + contentsize > kExecStackSize)
             {
                 TinPrint(TinScript::GetContext(), "Error - stack overflow (size: %d) - unrecoverable\n", kExecStackSize);
+                assert(0);
                 return (false);
             }
 
@@ -119,19 +128,22 @@ class CExecStack
         {
             if (CScriptContext::gDebugExecStack)
             {
+                // -- get the depth only
+                int depth = DebugPrintStack(true);
+
                 // -- Print the stack top, before we pop
                 eVarType dbg_content_type;
                 void* dbg_content = Peek(dbg_content_type);
-                TinPrint(mContextOwner, "    <<< Stack POP: %s\n", DebugPrintVar(dbg_content, dbg_content_type, true));
+                TinPrint(mContextOwner, "    <<< [%d] Stack POP: %s\n", depth - 1, DebugPrintVar(dbg_content, dbg_content_type, true));
             }
 
-			uint32 stacksize = kPointerDiffUInt32(mStackTop, mStack) / sizeof(uint32);
+			uint32 stacksize = kPointerDiffUInt32(mStackTop, mStackTopReserve) / sizeof(uint32);
             Unused_(stacksize);
             if (stacksize == 0)
             {
                 ScriptAssert_(TinScript::GetContext(), 0, "<internal>", -1,
                               "Error - attempting to pop a value off an empty stack\n");
-                return (NULL);
+                return (nullptr);
             }
 
             --mStackTop;
@@ -147,8 +159,19 @@ class CExecStack
 
 			// -- ensure we have enough data on the stack, both the content, and the type
             uint32 contentsize = kBytesToWordCount(gRegisteredTypeSize[contenttype]);
+            if (stacksize < contentsize + 1)
+            {
+                // -- assert, and leave the stack untouched (possibly we're "popping" into
+                // local var storage???
+                ++mStackTop;
+                TinWarning(mContextOwner, "Pop(): Error - the stack doens't contain data to pop content type %s\n",
+                                          GetRegisteredTypeName(contenttype));
+                return (nullptr);
+            }
+
             Assert_(stacksize >= contentsize + 1);
 			mStackTop -= contentsize;
+            assert(mStackTop >= mStack);
 
             // -- pushing and popping strings onto the execstack need to be refcounted
             if (contenttype == TYPE_string)
@@ -182,20 +205,26 @@ class CExecStack
             uint32* cur_stack_top = mStackTop;
             while (depth >= 0)
             {
-			    uint32 stacksize = kPointerDiffUInt32(mStackTop, mStack) / sizeof(uint32);
+			    uint32 stacksize = kPointerDiffUInt32(cur_stack_top, mStackTopReserve) / sizeof(uint32);
                 if (stacksize == 0)
-                    return (NULL);
+                    return (nullptr);
 
 			    contenttype = (eVarType)(*(--cur_stack_top));
 
                 // -- if what's on the stack isn't a valid content type, leave the stack alone, but
                 // -- return NULL - the calling operation should catch the NULL and assert
                 if (contenttype < 0 || contenttype >= TYPE_COUNT)
-                    return (NULL);
+                    return (nullptr);
 
 			    // -- ensure we have enough data on the stack, both the content, and the type
                 uint32 contentsize = kBytesToWordCount(gRegisteredTypeSize[contenttype]);
-                Assert_(stacksize >= contentsize + 1);
+                if (stacksize < contentsize + 1)
+                {
+                    TinWarning(mContextOwner, "Peek(): Error - the stack doens't contain data to pop content type %s\n",
+                                              GetRegisteredTypeName(contenttype));
+                    return (nullptr);
+                }
+
 			    cur_stack_top -= contentsize;
 
                 // -- pushing and popping strings onto the execstack need to be refcounted
@@ -216,11 +245,13 @@ class CExecStack
             {
                 memset(cur_stack_top, 0, sizeof(uint32) * wordcount);
             }
+            mStackTopReserve = mStackTop;
         }
 
-        void UnReserve(int32 wordcount)
+        void UnReserve(int32 wordcount, int32 prev_stack_top_count)
         {
             mStackTop -= wordcount;
+            mStackTopReserve = mStack + prev_stack_top_count;
         }
 
         // -- this method is for recovery only...  the VM will probably continue correctly,
@@ -238,6 +269,7 @@ class CExecStack
             mStackTop = mStack + new_stack_top;
         }
 
+        // -- this includes the space reserved for local vars, including reserved local space
         int32 GetStackTop()
         {
             return (kPointerDiffUInt32(mStackTop, mStack) / sizeof(uint32));
@@ -261,31 +293,40 @@ class CExecStack
             return (varaddr);
         }
 
-        void DebugDump(CScriptContext* script_context)
+        int DebugPrintStack(bool depth_only = false)
         {
-            uint32* stacktop_ptr = mStackTop;
-            while (stacktop_ptr > mStack)
+            // -- this should be using GetStackEntry, so we can dereference stack vars
+            //tStackEntry stack_entry;
+            //bool8 GetStackEntry(CScriptContext * script_context, CExecStack & execstack,
+            //    CFunctionCallStack & funccallstack, tStackEntry & stack_entry, bool peek, int depth)
+
+            int32 depth = 0;
+            eVarType content_type = TYPE_void;
+            void* content_ptr = Peek(content_type);
+            while (content_ptr != nullptr)
             {
-                eVarType contenttype = (eVarType)(*(--stacktop_ptr));
-                assert(contenttype >= 0 && contenttype < TYPE_COUNT);
-                uint32 contentsize = kBytesToWordCount(gRegisteredTypeSize[contenttype]);
-
-                // -- ensure we have enough data on the stack, both the content, and the type
-                stacktop_ptr -= contentsize;
-
                 // -- Print out whatever it was we found
-                TinPrint(script_context, "STACK: %s\n", DebugPrintVar(stacktop_ptr, contenttype));
+                if (!depth_only)
+                {
+                    TinPrint(GetContext(), "STACK: %s\n", DebugPrintVar(content_ptr, content_type, true));
+                }
+
+                // -- next
+                content_ptr = Peek(content_type, ++depth);
             }
+
+            return depth;
         }
 
 	private:
         CScriptContext* mContextOwner;
 
         uint32 mStackStorage[kExecStackSize];
-		uint32* mStack;
-		uint32 mSize;
+		uint32* mStack = nullptr;
+		uint32 mSize = 0;
 
-		uint32* mStackTop;
+		uint32* mStackTop = nullptr;
+        uint32* mStackTopReserve = nullptr;
 };
 
 // ====================================================================================================================
@@ -409,6 +450,9 @@ class CFunctionCallStack
         static int32 GetExecutionStackDepth();
         static int32 GetDepthOfFunctionCallStack(CFunctionCallStack* in_func_callstack);
         static void NotifyFunctionDeleted(CFunctionEntry* deleted_fe);
+
+        static CFunctionCallStack* GetExecutionStackAtDepth(int32 depth, CExecStack*& out_execstack,
+                                                            int32& out_var_stack_offset);
 
 	private:
         CExecStack* m_varExecStack = nullptr;

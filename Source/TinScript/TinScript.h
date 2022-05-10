@@ -58,8 +58,8 @@
 // -- executed through their hash values...
 #define CASE_SENSITIVE 1
 
-// -- 05/05 adding hashtable POD method calls, removing hashtable_haskey() etc... keywords
-const int32 kCompilerVersion = 16;
+// -- 05/12 reworked the "stack top reserve", asserting if we ever pop into local var space
+const int32 kCompilerVersion = 18;
 
 // --------------------------------------------------------------------------------------------------------------------
 // -- only case_sensitive has been extensively tested, however theoretically TinScript should function as a

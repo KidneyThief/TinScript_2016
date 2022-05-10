@@ -58,6 +58,108 @@ OpExecuteFunction gOpExecFunctions[OP_COUNT] =
 };
 
 // ====================================================================================================================
+// DebugPrintVar():  Convert the given address to a variable type, and print the value to std out.
+// ====================================================================================================================
+const char* DebugPrintVar(void* addr, eVarType vartype, bool dump_stack)
+{
+    if (!CScriptContext::gDebugTrace && !dump_stack)
+        return ("");
+
+    static int32 bufferindex = 0;
+    static char buffers[8][kMaxTokenLength];
+
+    if (!addr)
+        return "";
+
+    // -- we need to "unpack" different types, just like getting stack entries
+    CScriptContext* script_context = TinScript::GetContext();
+    if (vartype == TYPE__var || vartype == TYPE__hashvarindex)
+    {
+        uint32 val1ns = ((uint32*)addr)[0];
+        uint32 val1func = ((uint32*)addr)[1];
+        uint32 val1hash = ((uint32*)addr)[2];
+
+        // -- one more level of dereference for variables that are actually hashtables or arrays
+        bool val_is_hash_index = (vartype == TYPE__hashvarindex);
+        int32 ve_array_hash_index = (vartype == TYPE__hashvarindex) ? ((int32*)addr)[3] : 0;
+
+        // -- this method will return the object, if the 4x parameters resolve to an object member
+        CObjectEntry* oe = nullptr;
+        CVariableEntry* ve = GetObjectMember(script_context, oe, val1ns, val1func, val1hash, ve_array_hash_index);
+
+        // -- if not, search for a global/local variable
+        if (ve == nullptr)
+        {
+            ve = GetVariable(script_context, script_context->GetGlobalNamespace()->GetVarTable(), val1ns, val1func,
+                             val1hash, ve_array_hash_index);
+        }
+
+        if (ve != nullptr)
+        {
+            char* destbuf = TinScript::GetContext()->GetScratchBuffer();
+            void* var_addr = ve->GetAddr(oe ? oe->GetAddr() : nullptr);
+            char* val_hash = (char*)TypeConvert(script_context, ve->GetType(), var_addr, TYPE_string);
+            if (val_hash != nullptr)
+            {
+                uint32 hash = *(uint32*)val_hash;
+
+                snprintf(destbuf, kMaxTokenLength, "[%s] %s: %s", GetRegisteredTypeName(TYPE__var),
+                         UnHash(ve->GetHash()), UnHash(hash));
+                return destbuf;
+            }
+        }
+    }
+    else if (vartype == TYPE__stackvar)
+    {
+        char* destbuf = TinScript::GetContext()->GetScratchBuffer();
+
+        // -- we already know to do a stackvar lookup - replace the var with the actual value type
+        eVarType valtype = (eVarType)((uint32*)addr)[0];
+        int32 stackvaroffset = ((uint32*)addr)[1];
+        int32 local_var_index = ((uint32*)addr)[2];
+
+        // -- lets assume we're printing for the currently executing stack...
+        // clear the addr since it's only the info of where to find the variable content
+        addr = nullptr;
+        int32 var_stack_offset = -1;
+        CExecStack* execstack;
+        CFunctionCallStack* funccallstack =
+            CFunctionCallStack::GetExecutionStackAtDepth(0, execstack, var_stack_offset);
+        if (funccallstack)
+        {
+            // -- get the corresponding stack variable
+            int32 stacktop = 0;
+            CObjectEntry* stack_oe = NULL;
+            uint32 stack_oe_id = 0;
+            CFunctionEntry* fe = funccallstack->GetExecuting(stack_oe_id, stack_oe, stacktop);
+            if (fe)
+            {
+                // $$$TZA add support for HT, arrays...
+                tVarTable* var_table = fe->GetContext()->GetLocalVarTable();
+                CVariableEntry* ve = var_table->FindItemByIndex(local_var_index);
+                vartype = ve != nullptr ? ve->GetType() : TYPE_void;
+                addr = ve != nullptr
+                       ? GetStackVarAddr(script_context, *execstack, *funccallstack, ve->GetStackOffset())
+                       : nullptr;
+             }
+        }
+
+        // -- if we weren't able to find the address of a stack variable, just print that we have one...
+        if (addr == nullptr)
+        {
+            snprintf(destbuf, kMaxTokenLength, "[%s]", GetRegisteredTypeName(TYPE__stackvar));
+            return destbuf;
+        }
+    }
+
+    char* convertbuf = TinScript::GetContext()->GetScratchBuffer();
+    char* destbuf = TinScript::GetContext()->GetScratchBuffer();
+    bool result = gRegisteredTypeToString[vartype](TinScript::GetContext(), addr, convertbuf, kMaxTokenLength);
+    snprintf(destbuf, kMaxTokenLength, "[%s] %s", GetRegisteredTypeName(vartype), result ? convertbuf : "");
+    return destbuf;
+}
+
+// ====================================================================================================================
 // CopyStackParameters():  At the start of a function call, copy the argument values onto the stack.
 // ====================================================================================================================
 bool8 CopyStackParameters(CFunctionEntry* fe, CExecStack& execstack, CFunctionCallStack& funccallstack)
@@ -456,6 +558,45 @@ void CFunctionCallStack::NotifyFunctionDeleted(CFunctionEntry* deleted_fe)
 
         walk = walk->m_ExecutionNext;
     }
+}
+
+// ====================================================================================================================
+// GetExecutionStackTop(): returns the function call stack, and exec stack, for use by POD Methods()
+// ====================================================================================================================
+CFunctionCallStack* CFunctionCallStack::GetExecutionStackAtDepth(int32 depth, CExecStack*& out_execstack,
+                                                                 int32& out_var_stack_offset)
+{
+
+    CFunctionCallStack* walk = g_ExecutionHead;
+    out_execstack = nullptr;
+    out_var_stack_offset = 0;
+    while (walk != nullptr && depth >= 0)
+    {
+        int32 walk_depth = walk->GetStackDepth();
+        for (int32 walk_index = 0; walk_index < walk_depth; ++walk_index)
+        {
+            const tFunctionCallEntry* fce = walk->GetExecutingCallByIndex(walk_index);
+            if (fce != nullptr)
+            {
+                // -- if we're at our depth, retrieve the out params
+                if (depth == 0)
+                {
+                    out_execstack = walk->GetVariableExecStack();
+                    out_var_stack_offset = fce->stackvaroffset;
+                    return (walk);
+                }
+                else
+                {
+                    --depth;
+                }
+            }
+        }
+
+        walk = walk->m_ExecutionNext;
+    }
+
+    // -- not found
+    return (nullptr);
 }
 
 // ====================================================================================================================

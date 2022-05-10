@@ -513,65 +513,6 @@ void* TypeConvert(CScriptContext* script_context, eVarType fromtype, void* froma
     return (NULL);
 }
 
-// ====================================================================================================================
-// DebugPrintVar():  Convert the given address to a variable type, and print the value to std out.
-// ====================================================================================================================
-const char* DebugPrintVar(void* addr, eVarType vartype, bool dump_stack)
-{
-    if (!CScriptContext::gDebugTrace && !dump_stack)
-        return ("");
-
-    static int32 bufferindex = 0;
-    static char buffers[8][kMaxTokenLength];
-
-    if (!addr)
-        return "";
-
-    // -- we need to "unpack" different types, just like getting stack entries
-    CScriptContext* script_context = TinScript::GetContext();
-    if (vartype == TYPE__var || vartype == TYPE__hashvarindex)
-    {
-        uint32 val1ns = ((uint32*)addr)[0];
-        uint32 val1func = ((uint32*)addr)[1];
-        uint32 val1hash = ((uint32*)addr)[2];
-
-        // -- one more level of dereference for variables that are actually hashtables or arrays
-        bool val_is_hash_index = (vartype == TYPE__hashvarindex);
-        int32 ve_array_hash_index = (vartype == TYPE__hashvarindex) ? ((int32*)addr)[3] : 0;
-
-        // -- this method will return the object, if the 4x parameters resolve to an object member
-        CObjectEntry* oe = nullptr;
-        CVariableEntry* ve = GetObjectMember(script_context, oe, val1ns, val1func, val1hash, ve_array_hash_index);
-
-        // -- if not, search for a global/local variable
-        if (ve == nullptr)
-        {
-            ve = GetVariable(script_context, script_context->GetGlobalNamespace()->GetVarTable(), val1ns, val1func,
-                             val1hash, ve_array_hash_index);
-        }
-
-        if (ve != nullptr)
-        {
-            char* destbuf = TinScript::GetContext()->GetScratchBuffer();
-            void* var_addr = ve->GetAddr(oe ? oe->GetAddr() : nullptr);
-            char* val_hash = (char*)TypeConvert(script_context, ve->GetType(), var_addr, TYPE_string);
-            if (val_hash != nullptr)
-            {
-                uint32 hash = *(uint32*)val_hash;
-
-                snprintf(destbuf, kMaxTokenLength, "[%s] %s: %s", GetRegisteredTypeName(TYPE__var),
-                         UnHash(ve->GetHash()), UnHash(hash));
-                return destbuf;
-            }
-        }
-    }
-
-    char* convertbuf = TinScript::GetContext()->GetScratchBuffer();
-    char* destbuf = TinScript::GetContext()->GetScratchBuffer();
-    bool result = gRegisteredTypeToString[vartype](TinScript::GetContext(), addr, convertbuf, kMaxTokenLength);
-    snprintf(destbuf, kMaxTokenLength, "[%s] %s", GetRegisteredTypeName(vartype), result ? convertbuf : "");
-    return destbuf;
-}
 
 
 // ====================================================================================================================
@@ -1626,6 +1567,52 @@ bool TypeHashtable_Contains(tVarTable* ht_vartable, const char* value)
     return (false);
 }
 
+bool TypeHashtable_Keys(tVarTable* ht_vartable, CVariableEntry* ve_keys_array)
+{
+    // -- the source and dest must be an arrays of the same type
+    if (ht_vartable == nullptr || ve_keys_array == nullptr || !ve_keys_array->IsArray() ||
+        !ve_keys_array->IsScriptVar() || ve_keys_array->GetType() != TYPE_string)
+    {
+        if (ve_keys_array != nullptr)
+        {
+            TinPrint(TinScript::GetContext(), "Error - hashtable:keys(`%s`) failed\n"
+                                              "Be sure %s is a script variable, an array of type string\n",
+                                               UnHash(ve_keys_array->GetHash()), UnHash(ve_keys_array->GetHash()));
+        }
+        else
+        {
+            TinPrint(TinScript::GetContext(), "Error - hashtable:keys() failed\n");
+        }
+        return false;
+    }
+
+    // -- get the count of how many keys we'll need - resize the keys array if required
+    int count = ht_vartable->Used();
+    if (ve_keys_array->GetArraySize() != count)
+    {
+        // -- try to free the memory of the dest
+        if (!ve_keys_array->TryFreeAddrMem())
+            return (false);
+
+        if (!ve_keys_array->ConvertToArray(count))
+            return false;
+    }
+    
+    // -- using raw entries, because we need the hash key (to unhash into a string)
+    TinScript::CHashTable<CVariableEntry>::CHashTableEntry* hte = nullptr;
+    for (int i = 0; i < count; ++i)
+    {
+        hte = ht_vartable->FindRawEntryByIndex(i, hte);
+        if (hte != nullptr)
+        {
+            ve_keys_array->SetStringArrayHashValue(nullptr, &hte->hash, nullptr, nullptr, i);
+        }
+    }
+
+    // -- return success
+    return (true);
+}
+
 // ====================================================================================================================
 // HashtableConfig():  Called from InitializeTypes(), in this case to add type methods
 // ====================================================================================================================
@@ -1639,6 +1626,7 @@ bool8 HashtableConfig(eVarType var_type, bool8 onInit)
         REGISTER_TYPE_METHOD(TYPE_hashtable, count, TypeHashtable_Count);
         REGISTER_TYPE_METHOD(TYPE_hashtable, haskey, TypeHashtable_HasKey);
         REGISTER_TYPE_METHOD(TYPE_hashtable, contains, TypeHashtable_Contains);
+        REGISTER_TYPE_METHOD(TYPE_hashtable, keys, TypeHashtable_Keys);
     }
 
     // -- success

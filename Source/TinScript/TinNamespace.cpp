@@ -1210,6 +1210,7 @@ const char* CScriptContext::ExportFormattedValue(eVarType type, void* addr)
 bool8 CScriptContext::ExportObjectMember(CObjectEntry* oe, CVariableEntry* ve, FILE* filehandle)
 {
     // -- write the variable
+    // $$$TZA Arrays!  Verify if an object has an uninitialized int[] array member
     if (ve->IsArray())
     {
         if (!FileWritef(filehandle, "    %s[%d] obj_%d.%s;", GetRegisteredTypeName(ve->GetType()),

@@ -241,7 +241,6 @@ enum eMathBinaryFunctionType
 	ReservedKeywordEntry(create_local)          \
 	ReservedKeywordEntry(destroy) 		        \
 	ReservedKeywordEntry(self)   		        \
-	ReservedKeywordEntry(array_copy)            \
 	ReservedKeywordEntry(hashtable_copy)        \
 	ReservedKeywordEntry(hashtable_wrap)        \
 	ReservedKeywordEntry(type)                  \

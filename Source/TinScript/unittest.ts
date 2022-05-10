@@ -422,6 +422,270 @@ void UnitTest_CodeMemberStringArray()
     destroy test_obj;
 }
 
+// -- array:copy tests -----------------------------------------------------------------------------
+
+int[10] g_UT_IntArray_0;
+g_UT_IntArray_0[0] = 37;
+g_UT_IntArray_0[1] = 19;
+g_UT_IntArray_0[2] = 63;
+g_UT_IntArray_0[3] = 12;
+
+int[10] g_UT_IntArray_1;
+g_UT_IntArray_1[0] = 23;
+g_UT_IntArray_1[1] = 34;
+g_UT_IntArray_1[2] = 45;
+g_UT_IntArray_1[3] = 56;
+
+int[] g_UT_IntArrayRef;
+
+void UnitTest_IntArrayCopyG2G()
+{
+    // -- we're going through two copies - through a global initialized with different values, and then through a ref array
+    g_UT_IntArray_0:copy(g_UT_IntArray_1);
+    g_UT_IntArray_1:copy(g_UT_IntArrayRef);
+    gUnitTestScriptResult = StringCat(g_UT_IntArrayRef:count(), " ", g_UT_IntArrayRef[1], " ", g_UT_IntArrayRef[2], " ", g_UT_IntArrayRef[3]);
+}
+
+void UnitTest_IntArrayCopyG2L()
+{
+    int[] local_array;
+    g_UT_IntArray_0:copy(local_array);
+    gUnitTestScriptResult = StringCat(local_array:count(), " ", local_array[1], " ", local_array[2], " ", local_array[3]);
+}
+
+void UnitTest_IntArrayCopyL2G()
+{
+    int[7] local_array;
+    local_array[0] = 98;
+    local_array[1] = 87;
+    local_array[2] = 76;
+    local_array[3] = 65;
+
+    local_array:copy(g_UT_IntArrayRef);
+    gUnitTestScriptResult = StringCat(g_UT_IntArrayRef:count(), " ", g_UT_IntArrayRef[1], " ", g_UT_IntArrayRef[2], " ", g_UT_IntArrayRef[3]);
+}
+
+
+void UnitTest_IntArrayParamCopy(int[] in_int_array, int[] out_int_array)
+{
+    // $$$TZA this will fail - we can't use a array parameter to write to (yet!)
+    //in_int_array:copy(out_int_array);
+
+    in_int_array:copy(g_UT_IntArrayRef);
+}
+
+void UnitTest_IntArrayCopyP2G()
+{
+    int[4] local_array;
+    local_array[0] = 34;
+    local_array[1] = 45;
+    local_array[2] = 56;
+    local_array[3] = 67;
+
+    // -- they're both passed by reference, but the copied result is to the global ref 
+    UnitTest_IntArrayParamCopy(local_array, g_UT_IntArrayRef);
+    gUnitTestScriptResult = StringCat(g_UT_IntArrayRef:count(), " ", g_UT_IntArrayRef[1], " ", g_UT_IntArrayRef[2], " ", g_UT_IntArrayRef[3]);
+}
+
+void UnitTest_IntArrayCopyG2M()
+{
+    object foo = create_local CScriptObject("UnitTest_foo");
+    int[] foo.member_array;
+    g_UT_IntArray_0:copy(foo.member_array);
+
+    gUnitTestScriptResult = StringCat(foo.member_array:count(), " ", foo.member_array[1], " ", foo.member_array[2], " ", foo.member_array[3]);
+}
+
+void UnitTest_IntArrayCopyM2G()
+{
+    object foo = create_local CScriptObject("UnitTest_foo");
+    int[5] foo.member_array;
+    foo.member_array[0] = 13;
+    foo.member_array[1] = 24;
+    foo.member_array[2] = 35;
+    foo.member_array[3] = 46;
+    foo.member_array[4] = 57;
+
+    foo.member_array:copy(g_UT_IntArrayRef);
+
+    gUnitTestScriptResult = StringCat(g_UT_IntArrayRef:count(), " ", g_UT_IntArrayRef[1], " ", g_UT_IntArrayRef[2], " ", g_UT_IntArrayRef[3]);
+}
+
+void UnitTest_IntArrayCopyM2L()
+{
+    object foo = create_local CScriptObject("UnitTest_foo");
+    int[5] foo.member_array;
+    foo.member_array[0] = 13;
+    foo.member_array[1] = 24;
+    foo.member_array[2] = 35;
+    foo.member_array[3] = 46;
+    foo.member_array[4] = 57;
+
+    int[] local_array;
+
+    foo.member_array:copy(local_array);
+
+    gUnitTestScriptResult = StringCat(local_array:count(), " ", local_array[1], " ", local_array[2], " ", local_array[3]);
+}
+
+void IntArrayCopyP2M(int[] in_array, object obj)
+{
+    if (obj.HasMember("member_array"))
+    {
+        in_array:copy(obj.member_array);
+    }
+}
+
+void UnitTest_IntArrayCopyP2M()
+{
+    object foo = create_local CScriptObject("UnitTest_foo");
+    int[] foo.member_array;
+
+    int[9] local_array;
+    local_array[0] = 19;
+    local_array[1] = 28;
+    local_array[2] = 37;
+    local_array[3] = 46;
+
+    IntArrayCopyP2M(local_array, foo);
+
+    gUnitTestScriptResult = StringCat(foo.member_array:count(), " ", foo.member_array[1], " ", foo.member_array[2], " ", foo.member_array[3]);
+}
+
+// -- string versions of all of the above
+
+string[10] g_UT_StrArray_0;
+g_UT_StrArray_0[0] = "cat";
+g_UT_StrArray_0[1] = "dog";
+g_UT_StrArray_0[2] = "mouse";
+g_UT_StrArray_0[3] = "snake";
+
+string[10] g_UT_StrArray_1;
+g_UT_StrArray_1[0] = "pig";
+g_UT_StrArray_1[1] = "horse";
+g_UT_StrArray_1[2] = "cow";
+g_UT_StrArray_1[3] = "bull";
+
+string[] g_UT_StrArrayRef;
+
+void UnitTest_StrArrayCopyG2G()
+{
+    // -- we're going through two copies - through a global initialized with different values, and then through a ref array
+    g_UT_StrArray_0:copy(g_UT_StrArray_1);
+    g_UT_StrArray_1:copy(g_UT_StrArrayRef);
+    gUnitTestScriptResult = StringCat(g_UT_StrArrayRef:count(), " ", g_UT_StrArrayRef[1], " ", g_UT_StrArrayRef[2], " ", g_UT_StrArrayRef[3]);
+}
+
+void UnitTest_StrArrayCopyG2L()
+{
+    string[] local_array;
+    g_UT_StrArray_0:copy(local_array);
+    gUnitTestScriptResult = StringCat(local_array:count(), " ", local_array[1], " ", local_array[2], " ", local_array[3]);
+}
+
+void UnitTest_StrArrayCopyL2G()
+{
+    string[7] local_array;
+    local_array[0] = "chick";
+    local_array[1] = "zebra";
+    local_array[2] = "giraffe";
+    local_array[3] = "whale";
+
+    local_array:copy(g_UT_StrArrayRef);
+    gUnitTestScriptResult = StringCat(g_UT_StrArrayRef:count(), " ", g_UT_StrArrayRef[1], " ", g_UT_StrArrayRef[2], " ", g_UT_StrArrayRef[3]);
+}
+
+
+void UnitTest_StrArrayParamCopy(string[] in_int_array, string[] out_int_array)
+{
+    // $$$TZA FIXME - this will fail - we can't use a array parameter to write to (yet!)
+    //in_int_array:copy(out_int_array);
+    in_int_array:copy(g_UT_StrArrayRef);
+}
+
+void UnitTest_StrArrayCopyP2G()
+{
+    string[4] local_array;
+    local_array[0] = "hen";
+    local_array[1] = "mongoose";
+    local_array[2] = "spider";
+    local_array[3] = "monkey";
+
+    // -- they're both passed by reference, but the copied result is to the global ref 
+    UnitTest_StrArrayParamCopy(local_array, g_UT_StrArrayRef);
+    gUnitTestScriptResult = StringCat(g_UT_StrArrayRef:count(), " ", g_UT_StrArrayRef[1], " ", g_UT_StrArrayRef[2], " ", g_UT_StrArrayRef[3]);
+}
+
+void UnitTest_StrArrayCopyG2M()
+{
+    object foo = create_local CScriptObject("UnitTest_foo");
+    string[] foo.member_array;
+    g_UT_StrArray_0:copy(foo.member_array);
+
+    gUnitTestScriptResult = StringCat(foo.member_array:count(), " ", foo.member_array[1], " ", foo.member_array[2], " ", foo.member_array[3]);
+}
+
+void UnitTest_StrArrayCopyM2G()
+{
+    object foo = create_local CScriptObject("UnitTest_foo");
+    string[5] foo.member_array;
+    foo.member_array[0] = "moose";
+    foo.member_array[1] = "beaver";
+    foo.member_array[2] = "turkey";
+    foo.member_array[3] = "swan";
+    foo.member_array[4] = "duck";
+
+    foo.member_array:copy(g_UT_StrArrayRef);
+
+    gUnitTestScriptResult = StringCat(g_UT_StrArrayRef:count(), " ", g_UT_StrArrayRef[1], " ", g_UT_StrArrayRef[2], " ", g_UT_StrArrayRef[3]);
+}
+
+void UnitTest_StrArrayCopyM2L()
+{
+    object foo = create_local CScriptObject("UnitTest_foo");
+    string[6] foo.member_array;
+    foo.member_array[0] = "moose";
+    foo.member_array[1] = "beaver";
+    foo.member_array[2] = "turkey";
+    foo.member_array[3] = "swan";
+    foo.member_array[4] = "duck";
+
+    string[] local_array;
+
+    foo.member_array:copy(local_array);
+
+    gUnitTestScriptResult = StringCat(local_array:count(), " ", local_array[1], " ", local_array[2], " ", local_array[3]);
+}
+
+void StrArrayCopyP2M(string[] in_array, object obj)
+{
+    if (obj.HasMember("member_array"))
+    {
+        in_array:copy(obj.member_array);
+    }
+}
+
+void UnitTest_StrArrayCopyP2M()
+{
+    object foo = create_local CScriptObject("UnitTest_foo");
+    string[] foo.member_array;
+
+    string[9] local_array;
+    local_array[0] = "moose";
+    local_array[1] = "beaver";
+    local_array[2] = "turkey";
+    local_array[3] = "swan";
+    local_array[4] = "duck";
+
+    StrArrayCopyP2M(local_array, foo);
+
+    gUnitTestScriptResult = StringCat(foo.member_array:count(), " ", foo.member_array[1], " ", foo.member_array[2], " ", foo.member_array[3]);
+}
+
+// -------------------------------------------------------------------------------------------------
+// -- most implementations beyond this point are executed manually ---------------------------------
+// -------------------------------------------------------------------------------------------------
+
 // -- MultiThread test -----------------------------------------------------------------------------
 // -- declaring a global script variable - this must be unique to each thead
 string gMultiThreadVariable = "<uninitialized>";

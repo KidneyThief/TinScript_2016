@@ -36,6 +36,7 @@
 #include "TinTypes.h"
 #include "TinScript.h"
 #include "TinStringTable.h"
+#include "TinOpExecFunctions.h"
 
 #if PLATFORM_UE4
 	#include "math/Vector.h"
@@ -297,7 +298,26 @@ CVector3f TypeVector3f_Set(CVariableEntry* ve_src, float _x, float _y, float _z)
     if (ve_src == nullptr || ve_src->GetType() != TYPE_vector3f || ve_src->IsArray())
         return CVector3f::zero;
 
-    CVector3f* value = (CVector3f*)ve_src->GetAddr(nullptr);
+    // -- resolve the storage for the variable
+    CVector3f* value = nullptr;
+
+    // -- if this is a stack variable, if it's owned by a function
+    // -- by definition, we're executing a function call for this method, so we want the
+    // calling function's stack offset, which will be 1 below us on the stack
+    if (ve_src->GetFunctionEntry() != nullptr)
+    {
+        value = GetPODStackVarAddr<CVector3f>(ve_src, 1);
+    }
+    //-- if this isn't a stack variable, get the value addr directly
+    else
+    {
+        value = (CVector3f*)ve_src->GetAddr(nullptr);
+    }
+
+    if (value == nullptr)
+        return (CVector3f::zero);
+
+    // -- modify the given variable, initializing to the new value
     value->Set(_x, _y, _z);
     return *value;
 }
@@ -309,11 +329,26 @@ CVector3f TypeVector3f_Normalized(CVariableEntry* ve_src)
     if (ve_src == nullptr || ve_src->GetType() != TYPE_vector3f || ve_src->IsArray())
         return CVector3f::zero;
 
-    // -- returns the normalized vector, without modifying the original
-    CVector3f* value = (CVector3f*)ve_src->GetAddr(nullptr);
+    // -- resolve the storage for the variable
+    CVector3f* value = nullptr;
+
+    // -- if this is a stack variable, if it's owned by a function
+    // -- by definition, we're executing a function call for this method, so we want the
+    // calling function's stack offset, which will be 1 below us on the stack
+    if (ve_src->GetFunctionEntry() != nullptr)
+    {
+        value = GetPODStackVarAddr<CVector3f>(ve_src, 1);
+    }
+    //-- if this isn't a stack variable, get the value addr directly
+    else
+    {
+        value = (CVector3f*)ve_src->GetAddr(nullptr);
+    }
+
     if (value == nullptr)
         return (CVector3f::zero);
 
+    // -- returns the normalized vector, without modifying the original
     CVector3f result = CVector3f::Normalized(*value);
     return result;
 }
@@ -325,11 +360,26 @@ float TypeVector3f_Normalize(CVariableEntry* ve_src)
     if (ve_src == nullptr || ve_src->GetType() != TYPE_vector3f || ve_src->IsArray())
         return (0.0f);
 
-    // -- normalizes the given vector and returns the length
-    CVector3f* value = (CVector3f*)ve_src->GetAddr(nullptr);
+    // -- resolve the storage for the variable
+    CVector3f* value = nullptr;
+
+    // -- if this is a stack variable, if it's owned by a function
+    // -- by definition, we're executing a function call for this method, so we want the
+    // calling function's stack offset, which will be 1 below us on the stack
+    if (ve_src->GetFunctionEntry() != nullptr)
+    {
+        value = GetPODStackVarAddr<CVector3f>(ve_src, 1);
+    }
+    //-- if this isn't a stack variable, get the value addr directly
+    else
+    {
+        value = (CVector3f*)ve_src->GetAddr(nullptr);
+    }
+
     if (value == nullptr)
         return (0.0f);
 
+    // -- modify the given var by normalizing, return the length
     float length = value->Normalize();
     return length;
 }
@@ -341,7 +391,22 @@ float TypeVector3f_Length(CVariableEntry* ve_src)
     if (ve_src == nullptr || ve_src->GetType() != TYPE_vector3f || ve_src->IsArray())
         return 0.0f;
 
-    CVector3f* value = (CVector3f*)ve_src->GetAddr(nullptr);
+    // -- resolve the storage for the variable
+    CVector3f* value = nullptr;
+
+    // -- if this is a stack variable, if it's owned by a function
+    // -- by definition, we're executing a function call for this method, so we want the
+    // calling function's stack offset, which will be 1 below us on the stack
+    if (ve_src->GetFunctionEntry() != nullptr)
+    {
+        value = GetPODStackVarAddr<CVector3f>(ve_src, 1);
+    }
+    //-- if this isn't a stack variable, get the value addr directly
+    else
+    {
+        value = (CVector3f*)ve_src->GetAddr(nullptr);
+    }
+
     if (value == nullptr)
         return (0.0f);
 
@@ -355,7 +420,22 @@ float TypeVector3f_Dot(CVariableEntry* ve_src, CVector3f v)
     if (ve_src == nullptr || ve_src->GetType() != TYPE_vector3f || ve_src->IsArray())
         return (0.0f);
 
-    CVector3f* value = (CVector3f*)ve_src->GetAddr(nullptr);
+    // -- resolve the storage for the variable
+    CVector3f* value = nullptr;
+
+    // -- if this is a stack variable, if it's owned by a function
+    // -- by definition, we're executing a function call for this method, so we want the
+    // calling function's stack offset, which will be 1 below us on the stack
+    if (ve_src->GetFunctionEntry() != nullptr)
+    {
+        value = GetPODStackVarAddr<CVector3f>(ve_src, 1);
+    }
+    //-- if this isn't a stack variable, get the value addr directly
+    else
+    {
+        value = (CVector3f*)ve_src->GetAddr(nullptr);
+    }
+
     if (value == nullptr)
         return (0.0f);
 
@@ -370,7 +450,22 @@ CVector3f TypeVector3f_Cross(CVariableEntry* ve_src, CVector3f v)
     if (ve_src == nullptr || ve_src->GetType() != TYPE_vector3f || ve_src->IsArray())
         return 0.0f;
 
-    CVector3f* value = (CVector3f*)ve_src->GetAddr(nullptr);
+    // -- resolve the storage for the variable
+    CVector3f* value = nullptr;
+
+    // -- if this is a stack variable, if it's owned by a function
+    // -- by definition, we're executing a function call for this method, so we want the
+    // calling function's stack offset, which will be 1 below us on the stack
+    if (ve_src->GetFunctionEntry() != nullptr)
+    {
+        value = GetPODStackVarAddr<CVector3f>(ve_src, 1);
+    }
+    //-- if this isn't a stack variable, get the value addr directly
+    else
+    {
+        value = (CVector3f*)ve_src->GetAddr(nullptr);
+    }
+
     if (value == nullptr)
         return (CVector3f::zero);
 

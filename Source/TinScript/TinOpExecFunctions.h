@@ -42,6 +42,17 @@ extern OpExecuteFunction gOpExecFunctions[OP_COUNT];
 
 void DebugTrace(eOpCode opcode, const char* fmt, ...);
 
+struct tStackEntry
+{
+    CVariableEntry* ve = nullptr;
+    CObjectEntry* oe = nullptr;
+    void* valaddr = nullptr;
+    eVarType valtype = TYPE_void;
+};
+
+bool8 GetStackEntry(CScriptContext* script_context, CExecStack& execstack,
+                    CFunctionCallStack& funccallstack, tStackEntry& stack_entry, bool peek = false, int depth = 0);
+
 void* GetStackVarAddr(CScriptContext* script_context, const CExecStack& execstack,
                       const CFunctionCallStack& funccallstack, int32 stackvaroffset);
 

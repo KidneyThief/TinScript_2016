@@ -275,18 +275,10 @@ void* GetStackVarAddr(CScriptContext* script_context, const CExecStack& execstac
 }
 
 // ====================================================================================================================
-// PopStackValue():  From an exec stack entry, extract the type, value, variable, and/or object values. 
+// GetStackEntry():  Peeks/Pops an entry from the stack, and fills in ve, oe, content ptr, type (if possible) 
 // ====================================================================================================================
-struct tStackEntry
-{
-    CVariableEntry* ve = nullptr;
-    CObjectEntry* oe = nullptr;
-    void* valaddr = nullptr;
-    eVarType valtype = TYPE_void;
-};
-
 bool8 GetStackEntry(CScriptContext* script_context, CExecStack& execstack,
-                    CFunctionCallStack& funccallstack, tStackEntry& stack_entry, bool peek = false, int depth = 0)
+                    CFunctionCallStack& funccallstack, tStackEntry& stack_entry, bool peek, int depth)
 {
         // -- next, pop the hash table variable off the stack
     // -- pull the hashtable variable off the stack
@@ -420,37 +412,41 @@ bool8 GetStackValue(CScriptContext* script_context, CExecStack& execstack,
         // -- as part of "ClearParameters"
         if (valtype != TYPE_hashtable)
         {
-            valaddr = GetStackVarAddr(script_context, execstack, funccallstack, ve->GetStackOffset());
-            if (!valaddr)
+            // lets make sure we're not trying to get the address of an uninitialized array var
+            if (!ve->IsArray() || ve->GetArraySize() > 0)
             {
-                TinPrint(script_context, "Error - Unable to find stack var\n");
-                return false;
-            }
+                valaddr = GetStackVarAddr(script_context, execstack, funccallstack, ve->GetStackOffset());
+                if (!valaddr)
+                {
+                    TinPrint(script_context, "Error - Unable to find stack var\n");
+                    return false;
+                }
 
-		    // -- if we have a debugger attached, also find the variable entry associated with the stack var
-		    int32 debugger_session = 0;
-		    if (script_context->IsDebuggerConnected(debugger_session))
-		    {
-			    stacktop = 0;
-			    stack_oe = NULL;
-                stack_oe_id = 0;
-			    fe = funccallstack.GetExecuting(stack_oe_id, stack_oe, stacktop);
-			    if (fe && fe->GetLocalVarTable())
-			    {
-				    // -- find the variable with the matching stackvaroffset
-				    tVarTable* vartable = fe->GetLocalVarTable();
-				    CVariableEntry* test_ve = vartable->First();
-				    while (test_ve)
-				    {
-					    if (test_ve->GetStackOffset() == stackvaroffset)
-					    {
-						    ve = test_ve;
-						    break;
-					    }
-					    test_ve = vartable->Next();
-				    }
-			    }
-		    }
+                // -- if we have a debugger attached, also find the variable entry associated with the stack var
+                int32 debugger_session = 0;
+                if (script_context->IsDebuggerConnected(debugger_session))
+                {
+                    stacktop = 0;
+                    stack_oe = NULL;
+                    stack_oe_id = 0;
+                    fe = funccallstack.GetExecuting(stack_oe_id, stack_oe, stacktop);
+                    if (fe && fe->GetLocalVarTable())
+                    {
+                        // -- find the variable with the matching stackvaroffset
+                        tVarTable* vartable = fe->GetLocalVarTable();
+                        CVariableEntry* test_ve = vartable->First();
+                        while (test_ve)
+                        {
+                            if (test_ve->GetStackOffset() == stackvaroffset)
+                            {
+                                ve = test_ve;
+                                break;
+                            }
+                            test_ve = vartable->Next();
+                        }
+                    }
+                }
+            }
         }
 
         // -- else it is a hash table... find the ve in the function context
@@ -801,7 +797,9 @@ bool8 PerformAssignOp(CScriptContext* script_context, CExecStack& execstack, CFu
             return (false);
         }
         memcpy(stack_entry_0.valaddr, val1_convert, gRegisteredTypeSize[stack_entry_0.valtype]);
-        DebugTrace(op, is_stack_var ? "StackVar: %s" : "PODMember: %s", DebugPrintVar(stack_entry_0.valaddr, stack_entry_0.valtype));
+        DebugTrace(op, is_stack_var ? "StackVar: %s" :
+                       is_pod_member ? "PodMember: %s" :
+                       "Var : % s", DebugPrintVar(stack_entry_0.valaddr, stack_entry_0.valtype));
 
         // -- apply any post-unary ops (increment/decrement)
         ApplyPostUnaryOpEntry(stack_entry_1.valtype, stack_entry_1.valaddr);
@@ -826,7 +824,7 @@ bool8 PerformAssignOp(CScriptContext* script_context, CExecStack& execstack, CFu
         {
             if (stack_entry_0.ve != nullptr)
             {
-                stack_entry_0.ve->SetReferenceAddr(stack_entry_1.ve);
+                stack_entry_0.ve->SetReferenceAddr(stack_entry_1.ve, stack_entry_1.ve->GetStringHashArray());
             }
             return (true);
         }
@@ -1211,42 +1209,18 @@ bool8 OpExecUnaryPreDec(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CEx
 bool8 PerformUnaryPostOp(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExecStack& execstack,
                          CFunctionCallStack& funccallstack)
 {
-    bool is_array_var = *instrptr++ != 0;
-
-    // -- these are the details we need to find out where to apply the post inc
-    CVariableEntry* ve = NULL;
-    CObjectEntry* oe = NULL;
-    eVarType valtype;
-    void* valaddr;
-    
-    // -- if we're incrementing a hashtable or array element, we need to peek at the top two stack entries
-    if (is_array_var)
+    // -- pop the value
+    tStackEntry stack_entry;
+    if (!GetStackEntry(cb->GetScriptContext(), execstack, funccallstack, stack_entry, true))
     {
-        if (!GetStackArrayVarAddr(cb->GetScriptContext(), execstack, funccallstack, valaddr, valtype, ve, oe))
-        {
-            DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
-                            "Error - no hashtable/array, index on the stack for op: %s\n", GetOperationString(op));
-            return false;
-
-        }
+        DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
+                        "Error - Failed peek value for op: %s\n", GetOperationString(op));
+        return false;
     }
 
-    // -- otherwise, the top entry is the variable to be incremented
-    else
-    {
-        valaddr = execstack.Peek(valtype);
-        if (!GetStackValue(cb->GetScriptContext(), execstack, funccallstack, valaddr, valtype, ve, oe))
-        {
-            DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
-                            "Error - no variable on the stack for op: %s\n", GetOperationString(op));
-            return false;
-        }
-    }
+    AddPostUnaryOpEntry(stack_entry.valtype, stack_entry.valaddr, op == OP_UnaryPostInc ? 1 : -1);
 
-    // -- add a post op adjust (OP_UnaryPostInc == 1) to the specific address peek'd from the stack
-    AddPostUnaryOpEntry(valtype, valaddr, op == OP_UnaryPostInc ? 1 : -1);
-
-    DebugTrace(op, "%s", DebugPrintVar((void*)valaddr, valtype));
+    DebugTrace(op, "%s", DebugPrintVar((void*)stack_entry.valaddr, stack_entry.valtype));
 
     // -- success
     return (true);
@@ -2021,11 +1995,10 @@ bool8 OpExecForeachIterNext(CCodeBlock* cb, eOpCode op, const uint32*& instrptr,
     }
 
     // -- we support three types of containers to iterate through with a foreach() loop
-    bool container_is_array = stack_entry_container.ve != nullptr && stack_entry_container.ve->IsArray();
     bool container_is_hashtable = stack_entry_container.ve != nullptr && !stack_entry_container.ve->IsArray() &&
                                   stack_entry_container.ve->GetType() == TYPE_hashtable;
     CObjectSet* container_set = nullptr;
-    if (!container_is_array && !container_is_hashtable && stack_entry_container.ve != nullptr &&
+    if (!container_is_hashtable && stack_entry_container.ve != nullptr &&
         stack_entry_container.ve->GetType() == TYPE_object)
     {
         // -- TYPE_object is actually just an uint32 ID
@@ -2040,6 +2013,12 @@ bool8 OpExecForeachIterNext(CCodeBlock* cb, eOpCode op, const uint32*& instrptr,
             container_set = static_cast<CObjectSet*>(obj_addr);
         }
     }
+
+    // -- by default, even if this isn't actually an array, we can treat a variable as an array of size 1
+    // $$$TZA Arrays!  iterate over an array of CObjectSets?
+    bool container_is_array = !container_is_hashtable && container_set == nullptr &&
+                              stack_entry_container.ve != nullptr &&
+                              stack_entry_container.ve->GetArraySize() >= 1;
 
     // -- make sure we got a valid address for the container entry value
     if (!container_is_array && !container_is_hashtable && container_set == nullptr)
@@ -2766,7 +2745,7 @@ bool8 OpExecPODCallArgs(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CEx
     if (fe == nullptr || fe->GetType() != eFuncTypeRegistered)
     {
         DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
-                        "Error - no method for the given type:  %s:%s()\n",
+                        "Error - no c++ registered method for the given type:  %s:%s()\n",
                         GetRegisteredTypeName(stack_entry_pod.valtype), UnHash(methodhash));
         return (false);
     }
@@ -2807,7 +2786,7 @@ bool8 OpExecPODCallArgs(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CEx
         }
         else if (stack_entry_pod.ve != nullptr)
         {
-            param_1_ve->SetReferenceAddr(stack_entry_pod.ve);
+            param_1_ve->SetReferenceAddr(stack_entry_pod.ve, stack_entry_pod.ve->GetStringHashArray());
         }
         else
         {
@@ -2933,23 +2912,37 @@ bool8 OpExecFuncReturn(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExe
     void* content = execstack.Pop(contenttype);
     memcpy(stacktopcontent, content, MAX_TYPE_SIZE * sizeof(uint32));
 
-    // -- unreserve space from the exec stack
-    int32 localvarcount = fe->GetContext()->CalculateLocalVarStackSize();
-    execstack.UnReserve(localvarcount * MAX_TYPE_SIZE);
+    // -- determine how much local variable space was reserved for the current function call
+    int32 local_var_space = fe->GetContext()->CalculateLocalVarStackSize() * MAX_TYPE_SIZE;
 
-    // -- ensure our current stack top is what it was before we reserved
+    // -- ideally, what should be left on the stack is just the reserved storage
     int32 cur_stack_top = execstack.GetStackTop();
-    if (cur_stack_top != var_offset)
+    int32 reserved_space = cur_stack_top - var_offset;
+    if (reserved_space < local_var_space)
     {
-        // -- this is somewhat bad - it means there's a leak - some combination of
-        // -- operations is pushing without matching pops.
-        // -- however, forcing the "excess" to be popped to reset the stack to the state it
-        // -- was when the function was called is relatively safe.
-        execstack.DebugDump(cb->GetScriptContext());
+        // -- this is serious - we've somehow Pop()'d into reserved space
         ScriptAssert_(cb->GetScriptContext(), 0, cb->GetFileName(), cb->CalcLineNumber(instrptr),
                       "Error - The stack has not been balanced - forcing Pops\n");
-        execstack.ForceStackTop(var_offset);
     }
+
+    // -- we need to restore the previous function's mStackTopReserve as well...
+    // -- the var_offset is essentially where the exec stack "starts" for this function call
+    // -- first we reserve local var space, then we push/pop
+    // -- we *never* pop below the "var_offset + local_var_space" (obviously)
+    // -- this is the mStackTopReserve value in the execstack
+    CObjectEntry* prev_oe = nullptr;
+    int32 prev_var_offset = 0;
+    int32 prev_stack_top_reserve = 0;
+    CFunctionEntry* prev_function = funccallstack.GetTop(prev_oe, prev_var_offset);
+    if (prev_function != nullptr && prev_function->GetContext() != nullptr)
+    {
+        int32 prev_local_space = prev_function->GetContext()->CalculateLocalVarStackSize();
+        prev_stack_top_reserve = prev_var_offset + (prev_local_space * MAX_TYPE_SIZE);
+    }
+
+    // -- ideally, we want nothing left on the stack - but there are statements that push
+    // values, that are never used... (e.g..   simply de-refencing an array[3], without assigning it)
+    execstack.UnReserve(reserved_space, prev_stack_top_reserve);
 
     // -- re-push the stack top contents
     execstack.Push((void*)stacktopcontent, contenttype);
@@ -3222,16 +3215,6 @@ bool8 OpExecArrayDecl(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExec
     DebugTrace(op, "Array: %s[%d]", UnHash(ve0->GetHash()), array_size);
 
     return (result);
-}
-
-// ====================================================================================================================
-// OpExecArrayCopy():  implement me!
-// ====================================================================================================================
-bool8 OpExecArrayCopy(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExecStack& execstack,
-	CFunctionCallStack& funccallstack)
-{
-    // $$$TZA implement me!
-	return (false);
 }
 
 // ====================================================================================================================

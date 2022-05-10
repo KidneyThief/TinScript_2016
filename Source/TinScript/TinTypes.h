@@ -341,6 +341,7 @@ struct tPODTypeMember
 
 typedef CHashTable<tPODTypeMember> tPODTypeTable;
 class CFunctionEntry;
+class CVariableEntry;
 
 // --------------------------------------------------------------------------------------------------------------------
 // -- we also need to register methods for POD types (e.g.  vector3f:normalized())
@@ -473,15 +474,46 @@ enum eVarType : int16
 	TYPE_COUNT
 };
 
-// ====================================================================================================================
-// interface
+// -- interface -------------------------------------------------------------------------------------------------------
+
+// -- system API
 void InitializeTypes();
 void ShutdownTypes();
 
+// -- POD Member/Method API
 // -- manual registration of POD tables for members and methods
 void RegisterPODTypeTable(eVarType var_type, tPODTypeTable* pod_table);
 void RegisterPODMethodTable(eVarType var_type, CHashTable<CFunctionEntry>* pod_methods);
 
+template<typename T>
+T* GetPODStackVarAddr(CVariableEntry* ve_src, int32 stack_depth)
+{
+    // -- sanity check
+    if (ve_src == nullptr || ve_src->GetFunctionEntry() == nullptr)
+        return nullptr;
+
+    // -- this is a stack variable, if it's owned by a function
+    // -- by definition, we're executing a function call for this method, so we want the
+    // calling function's stack offset, which will likely be at 1 (stack_depth) below us on the stack
+    int32 stack_var_offset = 0;
+    CExecStack* execstack = nullptr;
+    CFunctionCallStack* funccallstack = CFunctionCallStack::GetExecutionStackAtDepth(stack_depth, execstack,
+                                                                                        stack_var_offset);
+    T* value = funccallstack != nullptr
+               ? (T*)execstack->GetStackVarAddr(stack_var_offset, ve_src->GetStackOffset())
+               : nullptr;
+
+    // -- if we were not able to retrieve the value by now, we failed
+    if (value == nullptr)
+    {
+        TinPrint(TinScript::GetContext(), "Error - unable to get vector3f stack var addr for %s\n",
+                                            UnHash(ve_src->GetHash()));
+    }
+
+    return (value);
+}
+
+// TYPE registration API
 // -- manual registration of an operation override for a registered types
 void RegisterTypeOpOverride(eOpCode op, eVarType var_type, TypeOpOverride op_override);
 
@@ -490,7 +522,6 @@ void RegisterTypeConvert(eVarType to_type, eVarType from_type, TypeConvertFuncti
 
 // ====================================================================================================================
 void* TypeConvert(CScriptContext* script_context, eVarType fromtype, void* fromaddr, eVarType totype);
-const char* DebugPrintVar(void* addr, eVarType vartype, bool dump_stack = false);
 
 // ====================================================================================================================
 // -- only two types of functions: registered (from code), and script

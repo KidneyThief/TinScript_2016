@@ -259,9 +259,9 @@ REGISTER_GLOBAL_VAR(gUnitTestStringArray, gUnitTestStringArray);
 // -- Registered enum -----------------------------------------------------------------------------
 
 #define MyEnum(TestEnum, ENUM_ENTRY)	\
-	ENUM_ENTRY(TestEnum, Foo, 0)		\
-	ENUM_ENTRY(TestEnum, Bar, 17)		\
-	ENUM_ENTRY(TestEnum, Count, 49)
+	ENUM_ENTRY(TestEnum, UnitTest_eFoo, 0)		\
+	ENUM_ENTRY(TestEnum, UnitTest_eBar, 17)		\
+	ENUM_ENTRY(TestEnum, UnitTest_eCount, 49)
 
 CREATE_ENUM_CLASS(TestEnum, MyEnum);
 CREATE_ENUM_STRINGS(TestEnum, MyEnum);
@@ -635,13 +635,15 @@ uint32 PerformUnitTests(bool8 results_only, const char* specific_test)
         if (strcmp(CUnitTest::gScriptResult, current_test->mScriptResult) != 0)
         {
             ScriptAssert_(script_context, false, "<unit test>", -1,
-                          "Error() - Unit test '%s' failed the script result\n", current_test->mName);
+                          "Error() - Unit test '%s' failed the script result:\n%s\n", current_test->mName,
+                          CUnitTest::gScriptResult);
             current_result = false;
         }
         if (strcmp(CUnitTest::gCodeResult, current_test->mCodeResult) != 0)
         {
             ScriptAssert_(script_context, false, "<unit test>", -1,
-                          "Error() - Unit test '%s' failed the code result\n", current_test->mName);
+                          "Error() - Unit test '%s' failed the code result:\n%s\n", current_test->mName,
+                          CUnitTest::gCodeResult);
             current_result = false;
         }
 
@@ -898,6 +900,26 @@ bool8 CreateUnitTests()
         success = success && AddUnitTest("registered_string_array", "Registered string[15]", "UnitTest_CodeStringArray();", "", UnitTest_RegisteredStringArrayModify, "Winter Goodbye", true);
         success = success && AddUnitTest("registered_member_int_array", "Registered int[15]", "UnitTest_CodeMemberIntArray();", "19 67");
         success = success && AddUnitTest("registered_member_string_array", "Registered int[15]", "UnitTest_CodeMemberStringArray();", "Foobar Goodbye");
+
+        // -- array:copy tests
+        success = success && AddUnitTest("int_array_copy_g2g", "Int Array Copy Global to Global", "UnitTest_IntArrayCopyG2G();", "10 19 63 12");
+        success = success && AddUnitTest("int_array_copy_g2l", "Int Array Copy Global to Local", "UnitTest_IntArrayCopyG2L();", "10 19 63 12");
+        success = success && AddUnitTest("int_array_copy_l2g", "Int Array Copy Local to Local", "UnitTest_IntArrayCopyL2G();", "7 87 76 65");
+        success = success && AddUnitTest("int_array_copy_p2g", "Int Array Copy Param to Local", "UnitTest_IntArrayCopyP2G();", "4 45 56 67");
+        success = success && AddUnitTest("int_array_copy_g2m", "Int Array Copy Global to Member", "UnitTest_IntArrayCopyG2M();", "10 19 63 12");
+        success = success && AddUnitTest("int_array_copy_m2g", "Int Array Copy Member to Global", "UnitTest_IntArrayCopyM2G();", "5 24 35 46");
+        success = success && AddUnitTest("int_array_copy_m2l", "Int Array Copy Member to Local", "UnitTest_IntArrayCopyM2L();", "5 24 35 46");
+        success = success && AddUnitTest("int_array_copy_p2m", "Int Array Copy Param to Member", "UnitTest_IntArrayCopyP2M();", "9 28 37 46");
+
+        success = success && AddUnitTest("str_array_copy_g2g", "Str Array Copy Global to Global", "UnitTest_StrArrayCopyG2G();", "10 dog mouse snake");
+        success = success && AddUnitTest("str_array_copy_g2l", "Str Array Copy Global to Local", "UnitTest_StrArrayCopyG2L();", "10 dog mouse snake");
+        success = success && AddUnitTest("str_array_copy_l2g", "Str Array Copy Local to Local", "UnitTest_StrArrayCopyL2G();", "7 zebra giraffe whale");
+        success = success && AddUnitTest("str_array_copy_p2g", "Str Array Copy Param to Local", "UnitTest_StrArrayCopyP2G();", "4 mongoose spider monkey");
+        success = success && AddUnitTest("str_array_copy_g2m", "Str Array Copy Global to Member", "UnitTest_StrArrayCopyG2M();", "10 dog mouse snake");
+        success = success && AddUnitTest("str_array_copy_m2g", "Str Array Copy Member to Global", "UnitTest_StrArrayCopyM2G();", "5 beaver turkey swan");
+        success = success && AddUnitTest("str_array_copy_m2l", "Str Array Copy Member to Local", "UnitTest_StrArrayCopyM2L();", "6 beaver turkey swan");
+        success = success && AddUnitTest("str_array_copy_p2m", "Str Array Copy Param to Member", "UnitTest_StrArrayCopyP2M();", "9 beaver turkey swan");
+
     }
 
     // -- return success
