@@ -48,21 +48,6 @@ class CHashtable
         void CreateInternalHashtable();
 
         bool CopyFromHashtableVE(const CVariableEntry* ve);
-        void Dump();
-
-        bool HasKey(const char* key)
-        {
-            // see if we can get a value for a given key
-            if (key == nullptr || key[0] == '\0')
-                return {};
-
-            // -- get the internal hashtable (the *actual* hashtable that this class wraps)
-            tVarTable* hashtable = (tVarTable*)mHashtableVE->GetAddr(nullptr);
-
-            // -- see if this hashtable already has an entry for the given key
-            uint32 key_hash = Hash(key);
-            return (hashtable->FindItem(key_hash) != nullptr);
-        }
 
         template <typename T>
         bool GetValue(const char* key, T& out_value)
@@ -227,6 +212,12 @@ class CHashtable
         static void NotifyHashtableUnwrapped(CVariableEntry* ve, CHashtable* wrapper);
         static void NotifyHashtableDestroyed(CVariableEntry* ve);
         static void Shutdown();
+
+        // -- registered API ------------------------------------------------------------------------------------------
+
+        void Dump();
+        bool HasKey(const char* key);
+        const char* GetStringValue(const char* key);
 
     private:
         CVariableEntry* mHashtableVE = nullptr;

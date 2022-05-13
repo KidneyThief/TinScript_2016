@@ -580,7 +580,7 @@ void ClearResults()
     CUnitTest::gCodeResult[0] = '\0';
 }
 
-uint32 PerformUnitTests(bool8 results_only, const char* specific_test)
+uint32 PerformUnitTests(bool8 results_only, const char* partial_name)
 {
     // -- unit tests are run on the main thread
     TinScript::CScriptContext* script_context = TinScript::GetContext();
@@ -589,9 +589,6 @@ uint32 PerformUnitTests(bool8 results_only, const char* specific_test)
     if (!script_context || !CUnitTest::gUnitTests)
         return (0);
 
-    // -- get the hash value, if we're using a specific test
-    uint32 specific_test_hash = TinScript::Hash(specific_test);
-
     // -- loop through and perform the unit tests
     uint32 error_test_hash = 0;
     uint32 current_test_hash = 0;
@@ -599,8 +596,8 @@ uint32 PerformUnitTests(bool8 results_only, const char* specific_test)
     const CUnitTest* current_test = CUnitTest::gUnitTests->First(&current_test_hash);
     while (current_test)
     {
-        // -- if we're performing a specific test, ensure this is the correct one
-        if (specific_test_hash != 0 && current_test_hash != specific_test_hash)
+        // -- if we're executing all tests with a given partial name, see if this test is to be skipped
+        if (partial_name != nullptr && partial_name[0] != '\0' && TinScript::SafeStrStr(current_test->mName, partial_name) == 0)
         {
             // -- next test
             current_test = CUnitTest::gUnitTests->Next(&current_test_hash);
@@ -828,11 +825,18 @@ bool8 CreateUnitTests()
         success = success && AddUnitTest("vector3f_pody", "Print the 'y' of (1, 2, 3)", "vector3f v0 = '1, 2, 3'; gUnitTestScriptResult = StringCat(v0:y);", "2.0000");
         success = success && AddUnitTest("vector3f_podz", "Print the 'z' of (1, 2, 3)", "vector3f v0 = '1, 2, 3'; gUnitTestScriptResult = StringCat(v0:z);", "3.0000");
 
-        // -- vector3f registered functions for this registered type
+        // -- vector3f registered functions for this registered type  (we should deprecate this asap)
         success = success && AddUnitTest("vector3f_length", "Length of (1, 2, 3)", "vector3f v0 = '1, 2, 3'; gUnitTestScriptResult = StringCat(V3fLength(v0));", "3.7417");
         success = success && AddUnitTest("vector3f_cross", "(1, 2, 3) cross (4 5 6)", "vector3f v0 = '1, 2, 3'; vector3f v1 = '4 5 6'; gUnitTestScriptResult = StringCat(V3fCross(v0, v1));", "-3.0000 6.0000 -3.0000");
         success = success && AddUnitTest("vector3f_dot", "(1, 2, 3) dot (4 5 6)", "vector3f v0 = '1, 2, 3'; vector3f v1 = '4 5 6'; gUnitTestScriptResult = StringCat(V3fDot(v0, v1));", "32.0000");
         success = success && AddUnitTest("vector3f_norm", "(1, 2, 3) normalized", "vector3f v0 = '1, 2, 3'; gUnitTestScriptResult = StringCat(V3fNormalized(v0));", "0.2673 0.5345 0.8018");
+
+        success = success && AddUnitTest("vector3f_pod_length", "Length of (1, 2, 3)", "vector3f v0 = '1, 2, 3'; gUnitTestScriptResult = v0:length();", "3.7417");
+        success = success && AddUnitTest("vector3f_pod_cross", "(1, 2, 3) cross (4 5 6)", "vector3f v0 = '1, 2, 3'; vector3f v1 = '4 5 6'; gUnitTestScriptResult = v0:cross(v1);", "-3.0000 6.0000 -3.0000");
+        success = success && AddUnitTest("vector3f_pod_dot", "(1, 2, 3) dot (4 5 6)", "vector3f v0 = '1, 2, 3'; vector3f v1 = '4 5 6'; gUnitTestScriptResult = v0:dot(v1);", "32.0000");
+        success = success && AddUnitTest("vector3f_pod_normd", "(1, 2, 3) normalized", "vector3f v0 = '1, 2, 3'; gUnitTestScriptResult = v0:normalized();", "0.2673 0.5345 0.8018");
+        success = success && AddUnitTest("vector3f_pod_norm", "(1, 2, 3) normalize", "vector3f v0 = '1, 2, 3'; gUnitTestScriptResult = StringCat(v0:normalize(), ' ', v0);", "3.7417 0.2673 0.5345 0.8018");
+        success = success && AddUnitTest("vector3f_pod_set", "(1, 2, 3) set", "vector3f v0 = '3, 2, 1'; gUnitTestScriptResult = v0;", "3.0000 2.0000 1.0000");
 
         // -- script access to registered variables -------------------------------------------------------------------
         success = success && AddUnitTest("scriptaccess_regint", "gUnitTestRegisteredInt, value 17 read from script", "UnitTest_RegisteredIntAccess();", "17", UnitTest_RegisteredIntAccess);
@@ -920,6 +924,28 @@ bool8 CreateUnitTests()
         success = success && AddUnitTest("str_array_copy_m2l", "Str Array Copy Member to Local", "UnitTest_StrArrayCopyM2L();", "6 beaver turkey swan");
         success = success && AddUnitTest("str_array_copy_p2m", "Str Array Copy Param to Member", "UnitTest_StrArrayCopyP2M();", "9 beaver turkey swan");
 
+        // -- exec stack verification with unused variables, with and without post-inc
+        success = success && AddUnitTest("unused_pod_member", "Unused POD member", "UnitTest_UnusedPodMember();", "3.0000");
+        success = success && AddUnitTest("unused_pod_member_postinc", "Unused POD member post++", "UnitTest_UnusedPodMemberPostInc();", "4.0000");
+        success = success && AddUnitTest("unused_obj_member", "Unused Obj member", "UnitTest_UnusedObjMember();", "78");
+        success = success && AddUnitTest("unused_obj_member_postinc", "Unused Obj member post++", "UnitTest_UnusedObjMemberPostInc();", "79");
+        success = success && AddUnitTest("unused_array_member", "Unused array member", "UnitTest_UnusedArrayMember();", "23");
+        success = success && AddUnitTest("unused_array_member_postinc", "Unused Array member post++", "UnitTest_UnusedArrayMemberPostInc();", "24");
+        success = success && AddUnitTest("unused_ht_member", "Unused HT member", "UnitTest_UnusedHTMember();", "45");
+        success = success && AddUnitTest("unused_ht_member_postinc", "Unused HT member post++", "UnitTest_UnusedHTMemberPostInc();", "46");
+
+        // -- foreach
+        success = success && AddUnitTest("foreach_array", "Foreach Array", "UnitTest_Foreach_Array();", "3 cat mouse dog");
+        success = success && AddUnitTest("foreach_ht", "Foreach Hashtable", "UnitTest_Foreach_HT();", "3 cat mouse dog");
+        success = success && AddUnitTest("foreach_objectset", "Foreach ObjectSet", "UnitTest_Foreach_ObjectSet();", "3 cat mouse dog");
+
+        // -- hashtable copy/wrap
+        success = success && AddUnitTest("ht_ht_return", "HT as return value", "UnitTest_HT_ReturnHTVal();", "cat");
+        success = success && AddUnitTest("ht_cpp_ht_copy_global", "HT copy a global ht to a Cpp HT", "UnitTest_CppHTCopyGlobal();", "cat dogmaticallaciousness");
+        success = success && AddUnitTest("ht_cpp_ht_copy_local", "HT copy a local ht to a Cpp HT", "UnitTest_CppHTCopyLocal();", "cat dogmaticallaciousness");
+        success = success && AddUnitTest("ht_cpp_ht_wrap_global", "HT wrap a global ht with a Cpp", "UnitTest_CppHTWrapGlobal();", "6.7800 dogmaticallaciousness");
+        success = success && AddUnitTest("ht_cpp_ht_wrap_local", "HT wrap a local ht with a Cpp", "UnitTest_CppHTWrapLocal();", "6.7800 dogmaticallaciousness");
+        success = success && AddUnitTest("ht_cpp_ht_wrap_obj_ht", "HT wrap a an object member ht with a Cpp", "UnitTest_CppHTWrapObject();", "6.7800 dogmaticallaciousness");
     }
 
     // -- return success
@@ -1349,44 +1375,60 @@ REGISTER_SCRIPT_CLASS_END()
 REGISTER_METHOD(TestFooDefaults, TestDefaults, TestDefaults);
 REGISTER_METHOD_DEFAULT_ARGS_P3(TestFooDefaults, TestDefaults, "return", "in_float", 67.0f, "in_int", 49, "in_str", "foobar", "This is the help string for my function!");
 
-void TestCppHashTable(TinScript::CHashtable* ht_param)
+void TestCppHashTable(TinScript::CHashtable* ht_param, bool debug_print)
 {
     if (ht_param == nullptr)
         return;
 
-    TinPrint(TinScript::GetContext(), "### ht_param:\n");
-    ht_param->Dump();
+    if (debug_print)
+    {
+        TinPrint(TinScript::GetContext(), "### ht_param:\n");
+        ht_param->Dump();
+    }
 
     // -- see if we can pull out a string_arg
     const char* string_arg = "";
     if (ht_param->GetValue<const char*>("string_arg", string_arg))
     {
-        TinPrint(TinScript::GetContext(), "### ht_param['string_arg']: %s\n", string_arg);
+        if (debug_print)
+        {
+            TinPrint(TinScript::GetContext(), "### ht_param['string_arg']: %s\n", string_arg);
+        }
     }
     else
     {
-        TinPrint(TinScript::GetContext(), "### ht_param['string_arg'] not found\n");
+        // -- always print failures
+        TinPrint(TinScript::GetContext(), "### ERROR: ht_param['string_arg'] not found\n");
     }
 
     // -- see if we can pull out a float_arg
     float float_arg = 0.0f;
     if (ht_param->GetValue<float>("float_arg", float_arg))
     {
-        TinPrint(TinScript::GetContext(), "### ht_param['float_arg']: %.2f\n", float_arg);
+        if (debug_print)
+        {
+            TinPrint(TinScript::GetContext(), "### ht_param['float_arg']: %.2f\n", float_arg);
+        }
     }
     else
     {
-        TinPrint(TinScript::GetContext(), "### ht_param['float_arg'] not found\n");
+        // -- always print failures
+       TinPrint(TinScript::GetContext(), "### ERROR: ht_param['float_arg'] not found\n");
     }
+
     // -- see if we can pull out a vector3f arg
     CVector3f location_arg = 0.0f;
     if (ht_param->GetValue<CVector3f>("vector3f_arg", location_arg))
     {
-        TinPrint(TinScript::GetContext(), "### ht_param['vector3f_arg']: (%.2f, %.2f, %.2f)\n", location_arg.x, location_arg.y, location_arg.z);
+        if (debug_print)
+        {
+            TinPrint(TinScript::GetContext(), "### ht_param['vector3f_arg']: (%.2f, %.2f, %.2f)\n", location_arg.x, location_arg.y, location_arg.z);
+        }
     }
     else
     {
-        TinPrint(TinScript::GetContext(), "### ht_param['vector3f_arg'] not found\n");
+        // -- always print failures
+        TinPrint(TinScript::GetContext(), "### ERROR: ht_param['vector3f_arg'] not found\n");
     }
 
     // -- see if we can pull out a vector3f arg
@@ -1395,7 +1437,10 @@ void TestCppHashTable(TinScript::CHashtable* ht_param)
     if (ht_param->GetValue<CBase*>("object_arg", object_arg))
     {
         object_found = true;
-        TinPrint(TinScript::GetContext(), "### ht_param['object_arg']: floatvalue %.2f\n", object_arg->GetFloatValue());
+        if (debug_print)
+        {
+            TinPrint(TinScript::GetContext(), "### ht_param['object_arg']: floatvalue %.2f\n", object_arg->GetFloatValue());
+        }
 
         // -- call a method on the object passed via a hashtable:
         int32 param_count = 0;
@@ -1403,13 +1448,16 @@ void TestCppHashTable(TinScript::CHashtable* ht_param)
         {
             float result = 0.0f;
             TinScript::ObjExecMethod(object_arg, result, TinScript::Hash("TestMethod"));
-            TinPrint(TinScript::GetContext(), "### ht_param['object_arg'].TestMethod(): %.2f\n", result);
+            if (debug_print)
+            {
+                TinPrint(TinScript::GetContext(), "### ht_param['object_arg'].TestMethod(): %.2f\n", result);
+            }
         }
     }
 
     if (!object_found)
     {
-        TinPrint(TinScript::GetContext(), "### ht_param['vector3f_arg'] not found\n");
+        TinPrint(TinScript::GetContext(), "### ERROR: ht_param['vector3f_arg'] not found\n");
     }
 
     // -- see if we can add a value from C++

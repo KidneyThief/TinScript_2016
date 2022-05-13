@@ -329,7 +329,7 @@ bool CHashtable::CopyHashtableEntry(const char* key, const CVariableEntry* src_v
     return CopyHashtableEntry(Hash(key), src_value, dest_hashtable);
 }
 
-    // ====================================================================================================================
+// ====================================================================================================================
 // CopyHashtableEntry():  The source ve here is an entry in a hashtable, not a hashtable itself
 // ====================================================================================================================
 bool CHashtable::CopyHashtableEntry(uint32 key_hash, const CVariableEntry* source, CVariableEntry* dest_hashtable)
@@ -377,12 +377,43 @@ bool CHashtable::CopyHashtableEntry(uint32 key_hash, const CVariableEntry* sourc
     return true;
 }
 
+// ====================================================================================================================
+// HasKey(): returns true if the given key is contained in the HT (registered method)
+// ====================================================================================================================
+bool CHashtable::HasKey(const char* key)
+{
+    // see if we can get a value for a given key
+    if (key == nullptr || key[0] == '\0')
+        return {};
+
+    // -- get the internal hashtable (the *actual* hashtable that this class wraps)
+    tVarTable* hashtable = (tVarTable*)mHashtableVE->GetAddr(nullptr);
+
+    // -- see if this hashtable already has an entry for the given key
+    uint32 key_hash = Hash(key);
+    return (hashtable->FindItem(key_hash) != nullptr);
+}
+
+// ====================================================================================================================
+// GetStringValue():  returns the value for the given key, as a string (registered method)
+// ====================================================================================================================
+const char* CHashtable::GetStringValue(const char* key)
+{
+    const char* out_value = "";
+    if (!GetValue(key, out_value))
+    {
+        return "";
+    }
+    return out_value;
+}
 // -- test passing hashtables to Cpp ----------------------------------------------------------------------------------
 
 REGISTER_SCRIPT_CLASS_BEGIN(CHashtable, VOID)
 REGISTER_SCRIPT_CLASS_END()
 
 REGISTER_METHOD(CHashtable, Dump, Dump);
+REGISTER_METHOD(CHashtable, HasKey, HasKey);
+REGISTER_METHOD(CHashtable, GetStringValue, GetStringValue);
 
 }
 

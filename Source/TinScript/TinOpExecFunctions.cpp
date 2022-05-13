@@ -3396,7 +3396,7 @@ bool8 OpExecHashtableCopy(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, C
 
     // -- pull the hashtable variable off the stack
     tStackEntry stack_entry_0;
-    if (!GetStackEntry(cb->GetScriptContext(), execstack, funccallstack, stack_entry_1))
+    if (!GetStackEntry(cb->GetScriptContext(), execstack, funccallstack, stack_entry_0))
     {
 		DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
 					    "Error - ExecStack should contain a hashtable value\n");
