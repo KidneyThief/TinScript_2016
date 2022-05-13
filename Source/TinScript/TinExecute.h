@@ -454,6 +454,10 @@ class CFunctionCallStack
         static CFunctionCallStack* GetExecutionStackAtDepth(int32 depth, CExecStack*& out_execstack,
                                                             int32& out_var_stack_offset);
 
+        // -- API for tracking branch instructions, to detect infinite loops
+        static bool NotifyBranchInstruction(const uint32* from_instr);
+        static void ClearBranchTracking();
+
 	private:
         CExecStack* m_varExecStack = nullptr;
         char m_functionStackStorage[sizeof(tFunctionCallEntry) * kExecFuncCallDepth];

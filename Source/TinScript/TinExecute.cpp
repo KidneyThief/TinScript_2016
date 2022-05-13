@@ -232,6 +232,69 @@ _declspec(thread) CFunctionCallStack* g_DebuggerBreakLastCallstack = nullptr;
 _declspec(thread) int32 g_DebuggerBreakLastLineNumber = -1;
 _declspec(thread) int32 g_DebuggerBreakLastStackDepth = -1;
 
+// -- a section to track whether the VM is jumping to the same address repeatedly... at a max count,
+// we'll consider this an infinite loop, and assert
+#if VM_DETECT_INFINITE_LOOP
+
+// -- branch tracking
+struct tOPBranchTracking
+{
+    tOPBranchTracking(const uint32* jump_to)
+        : mJumpTo(jump_to)
+    {
+    }
+
+    const uint32* mJumpTo = nullptr;
+    int32 count = 0;
+};
+
+_declspec(thread) CHashTable<tOPBranchTracking>* g_BranchTrackingTable = nullptr;
+
+#endif
+
+// -- API for tracking branch instructions, to detect infinite loops
+bool CFunctionCallStack::NotifyBranchInstruction(const uint32* from_instr)
+{
+#if VM_DETECT_INFINITE_LOOP
+
+    if (g_BranchTrackingTable == nullptr)
+    {
+        // -- arbitrary size - how many different branch instructions are we
+        g_BranchTrackingTable = TinAlloc(ALLOC_HashTable, CHashTable<tOPBranchTracking>, 5000);
+    }
+
+    tOPBranchTracking* tracking_entry = g_BranchTrackingTable->FindItem((uint32)from_instr);
+    if (tracking_entry == nullptr)
+    {
+        tracking_entry = TinAlloc(ALLOC_Integration, tOPBranchTracking, from_instr);
+        g_BranchTrackingTable->AddItem(*tracking_entry, (uint32)from_instr);
+    }
+
+    // -- if we've hit our max loop count, 
+    if (++tracking_entry->count > kExecBranchMaxLoopCount)
+    {
+        tracking_entry->count = 0;
+        return true;
+    }
+#endif
+
+    // -- no infinite loop detected
+    return (false);
+}
+
+void CFunctionCallStack::ClearBranchTracking()
+{
+#if VM_DETECT_INFINITE_LOOP
+
+    if (g_BranchTrackingTable != nullptr)
+    {
+        g_BranchTrackingTable->DestroyAll();
+    }
+#endif
+}
+
+// -- class CFunctionCallStack ----------------------------------------------------------------------------------------
+
 CFunctionCallStack::CFunctionCallStack(CExecStack* var_execstack)
 {
     m_varExecStack = var_execstack;
@@ -312,6 +375,9 @@ CFunctionCallStack::~CFunctionCallStack()
         g_DebuggerBreakLastCallstack = nullptr;
         g_DebuggerBreakLastLineNumber = -1;
         g_DebuggerBreakLastStackDepth = -1;
+
+        // -- we also want to clear out "infinite loop detection" table
+        CFunctionCallStack::ClearBranchTracking();
     }
 }
 
@@ -566,7 +632,6 @@ void CFunctionCallStack::NotifyFunctionDeleted(CFunctionEntry* deleted_fe)
 CFunctionCallStack* CFunctionCallStack::GetExecutionStackAtDepth(int32 depth, CExecStack*& out_execstack,
                                                                  int32& out_var_stack_offset)
 {
-
     CFunctionCallStack* walk = g_ExecutionHead;
     out_execstack = nullptr;
     out_var_stack_offset = 0;

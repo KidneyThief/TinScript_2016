@@ -2408,6 +2408,16 @@ bool8 OpExecBranch(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExecSta
 {
     int32 jumpcount = *instrptr++;
     instrptr += jumpcount;
+
+#if VM_DETECT_INFINITE_LOOP
+    if (CFunctionCallStack::NotifyBranchInstruction(instrptr))
+    {
+        DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
+                        "Error - loop count of %d exceeded (infinte loop?)\n", kExecBranchMaxLoopCount);
+        return false;
+    }
+#endif
+
     DebugTrace(op, "count: %d", jumpcount);
     return (true);
 }
@@ -2441,8 +2451,22 @@ bool8 OpExecBranchCond(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CExe
     }
 
 	// -- branch, if the conditional matches
+    // note:  tracking these branches will catch infinite loops involving (e.g. recursive) function calls
+    // the direct branch will catch infinite loops in for/while loops... both are needed
     if (*convertAddr == branch_true)
+    {
         instrptr += jumpcount;
+
+#if VM_DETECT_INFINITE_LOOP
+        if (CFunctionCallStack::NotifyBranchInstruction(instrptr))
+        {
+            DebuggerAssert_(false, cb, instrptr, execstack, funccallstack,
+                            "Error - loop count of %d exceeded (infinte loop?)\n", kExecBranchMaxLoopCount);
+            return false;
+        }
+#endif
+
+    }
 
 	DebugTrace(op, "%s, count: %d", *convertAddr ? "true" : "false", jumpcount);
 

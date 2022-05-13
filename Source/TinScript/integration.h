@@ -73,6 +73,10 @@
 // -- we can check whether a script has been modified, and notify when it needs to be recompiled
 #define NOTIFY_SCRIPTS_MODIFIED 1
 
+// -- set the max number of times a branch instruction is permitted to hit the same address
+// (detecting infinite loops)
+#define VM_DETECT_INFINITE_LOOP 1
+
 // ------------------------------------------------------------------------------------------------
 // -- TYPES
 // ------------------------------------------------------------------------------------------------
@@ -142,6 +146,8 @@ const int32 kExecStackSize = 4096;
 const int32 kExecFuncCallDepth = 2048;
 const int32 kExecFuncCallMaxLocalObjects = 32;
 
+const int32 kExecBranchMaxLoopCount = 1000000;
+
 #if PLATFORM_UE4
 	// -- the AssertWaitForConnection uses an FMessageDialog, which halts execution
 	// until 'OK' is pressed...  as such, there's no need for a timeout
@@ -209,6 +215,7 @@ const int32 kSocketPacketProcessMax = 64;
     AllocTypeEntry(ObjectGroup)     \
     AllocTypeEntry(FileBuf)         \
     AllocTypeEntry(Debugger)        \
+    AllocTypeEntry(Integration)     \
 
 enum eAllocType
 {
