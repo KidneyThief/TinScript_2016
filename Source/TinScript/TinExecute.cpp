@@ -263,11 +263,11 @@ bool CFunctionCallStack::NotifyBranchInstruction(const uint32* from_instr)
         g_BranchTrackingTable = TinAlloc(ALLOC_HashTable, CHashTable<tOPBranchTracking>, 5000);
     }
 
-    tOPBranchTracking* tracking_entry = g_BranchTrackingTable->FindItem((uint32)from_instr);
+    tOPBranchTracking* tracking_entry = g_BranchTrackingTable->FindItem(kPointerToUInt32(from_instr));
     if (tracking_entry == nullptr)
     {
         tracking_entry = TinAlloc(ALLOC_Integration, tOPBranchTracking, from_instr);
-        g_BranchTrackingTable->AddItem(*tracking_entry, (uint32)from_instr);
+        g_BranchTrackingTable->AddItem(*tracking_entry, kPointerToUInt32(from_instr));
     }
 
     // -- if we've hit our max loop count, 
