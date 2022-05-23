@@ -102,9 +102,18 @@ class CDebugFunctionAssistWin : public QWidget
         void OnButtonShowOriginPressed();
         void OnButtonCopyToConsolePressed();
 
+        void OnCBFilterObjectsPressed();
+        void OnCBFilterNamespacesPressed();
+        void OnCBFilterFunctionsPressed();
+        void OnCBFilterHierarchyPressed();
+
     private:
         CFunctionAssistInput* mFunctionInput;
-        QLabel* mObjectIndentifier;
+        QLabel* mObjectIndentifier = nullptr;
+        QCheckBox* mObjectFilterCB = nullptr;
+        QCheckBox* mNamespaceFilterCB = nullptr;
+        QCheckBox* mFunctionFilterCB = nullptr;
+        QCheckBox* mHierarchyFilterCB = nullptr;
         QLabel* mFunctionDisplayLabel;
         CFunctionAssistList* mFunctionList;
 

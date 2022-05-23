@@ -19,8 +19,8 @@
 
 QT_BEGIN_MOC_NAMESPACE
 struct qt_meta_stringdata_CDebugFunctionAssistWin_t {
-    QByteArrayData data[6];
-    char stringdata[132];
+    QByteArrayData data[10];
+    char stringdata[239];
 };
 #define QT_MOC_LITERAL(idx, ofs, len) \
     Q_STATIC_BYTE_ARRAY_DATA_HEADER_INITIALIZER_WITH_OFFSET(len, \
@@ -34,12 +34,20 @@ QT_MOC_LITERAL(1, 24, 28),
 QT_MOC_LITERAL(2, 53, 0),
 QT_MOC_LITERAL(3, 54, 22),
 QT_MOC_LITERAL(4, 77, 25),
-QT_MOC_LITERAL(5, 103, 28)
+QT_MOC_LITERAL(5, 103, 28),
+QT_MOC_LITERAL(6, 132, 24),
+QT_MOC_LITERAL(7, 157, 27),
+QT_MOC_LITERAL(8, 185, 26),
+QT_MOC_LITERAL(9, 212, 26)
     },
     "CDebugFunctionAssistWin\0"
     "OnButtonFilterRefreshPressed\0\0"
     "OnButtonShowAPIPressed\0OnButtonShowOriginPressed\0"
-    "OnButtonCopyToConsolePressed"
+    "OnButtonCopyToConsolePressed\0"
+    "OnCBFilterObjectsPressed\0"
+    "OnCBFilterNamespacesPressed\0"
+    "OnCBFilterFunctionsPressed\0"
+    "OnCBFilterHierarchyPressed"
 };
 #undef QT_MOC_LITERAL
 
@@ -49,7 +57,7 @@ static const uint qt_meta_data_CDebugFunctionAssistWin[] = {
        7,       // revision
        0,       // classname
        0,    0, // classinfo
-       4,   14, // methods
+       8,   14, // methods
        0,    0, // properties
        0,    0, // enums/sets
        0,    0, // constructors
@@ -57,12 +65,20 @@ static const uint qt_meta_data_CDebugFunctionAssistWin[] = {
        0,       // signalCount
 
  // slots: name, argc, parameters, tag, flags
-       1,    0,   34,    2, 0x0a /* Public */,
-       3,    0,   35,    2, 0x0a /* Public */,
-       4,    0,   36,    2, 0x0a /* Public */,
-       5,    0,   37,    2, 0x0a /* Public */,
+       1,    0,   54,    2, 0x0a /* Public */,
+       3,    0,   55,    2, 0x0a /* Public */,
+       4,    0,   56,    2, 0x0a /* Public */,
+       5,    0,   57,    2, 0x0a /* Public */,
+       6,    0,   58,    2, 0x0a /* Public */,
+       7,    0,   59,    2, 0x0a /* Public */,
+       8,    0,   60,    2, 0x0a /* Public */,
+       9,    0,   61,    2, 0x0a /* Public */,
 
  // slots: parameters
+    QMetaType::Void,
+    QMetaType::Void,
+    QMetaType::Void,
+    QMetaType::Void,
     QMetaType::Void,
     QMetaType::Void,
     QMetaType::Void,
@@ -80,6 +96,10 @@ void CDebugFunctionAssistWin::qt_static_metacall(QObject *_o, QMetaObject::Call 
         case 1: _t->OnButtonShowAPIPressed(); break;
         case 2: _t->OnButtonShowOriginPressed(); break;
         case 3: _t->OnButtonCopyToConsolePressed(); break;
+        case 4: _t->OnCBFilterObjectsPressed(); break;
+        case 5: _t->OnCBFilterNamespacesPressed(); break;
+        case 6: _t->OnCBFilterFunctionsPressed(); break;
+        case 7: _t->OnCBFilterHierarchyPressed(); break;
         default: ;
         }
     }
@@ -111,13 +131,13 @@ int CDebugFunctionAssistWin::qt_metacall(QMetaObject::Call _c, int _id, void **_
     if (_id < 0)
         return _id;
     if (_c == QMetaObject::InvokeMetaMethod) {
-        if (_id < 4)
+        if (_id < 8)
             qt_static_metacall(this, _c, _id, _a);
-        _id -= 4;
+        _id -= 8;
     } else if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
-        if (_id < 4)
+        if (_id < 8)
             *reinterpret_cast<int*>(_a[0]) = -1;
-        _id -= 4;
+        _id -= 8;
     }
     return _id;
 }

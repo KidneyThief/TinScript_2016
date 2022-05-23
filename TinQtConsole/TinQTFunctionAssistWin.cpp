@@ -33,6 +33,7 @@
 #include <qlabel.h>
 #include <QKeyEvent>
 #include <QToolTip>
+#include <QCheckBox>
 
 // -- TinScript includes
 #include "TinScript.h"
@@ -44,6 +45,7 @@
 #include "TinQTSourceWin.h"
 #include "TinQTObjectBrowserWin.h"
 #include "TinQTFunctionAssistWin.h"
+#include "TinQtPreferences.h"
 
 // == class CDebugFunctionAssistWin ===================================================================================
 
@@ -70,10 +72,28 @@ CDebugFunctionAssistWin::CDebugFunctionAssistWin(QWidget* parent)
 
     // -- create the object identifier
     QWidget* identifier_widget = new QWidget(this);
-    identifier_widget->setFixedHeight(CConsoleWindow::TextEditHeight() * 2 + 4);
+    identifier_widget->setFixedHeight(CConsoleWindow::TextEditHeight() * 3);
     identifier_widget->setMinimumWidth(80);
     QGridLayout* identifier_layout = new QGridLayout(identifier_widget);
+
     mObjectIndentifier = new QLabel("<global scope>", identifier_widget);
+
+    mObjectFilterCB = new QCheckBox("Objects", this);
+    bool checkbox_enabled = TinPreferences::GetInstance()->GetValue("FA_FilterObjects", true);
+    mObjectFilterCB->setChecked(checkbox_enabled);
+
+    mNamespaceFilterCB = new QCheckBox("Namespaces", this);
+    checkbox_enabled = TinPreferences::GetInstance()->GetValue("FA_FilterNamespaces", true);
+    mNamespaceFilterCB->setChecked(checkbox_enabled);
+
+    mFunctionFilterCB = new QCheckBox("Functions", this);
+    checkbox_enabled = TinPreferences::GetInstance()->GetValue("FA_FilterFunctions", true);
+    mFunctionFilterCB->setChecked(checkbox_enabled);
+
+    mHierarchyFilterCB = new QCheckBox("Hierarchy", this);
+    checkbox_enabled = TinPreferences::GetInstance()->GetValue("FA_FilterHierarchy", true);
+    mHierarchyFilterCB->setChecked(checkbox_enabled);
+
 	mObjectIndentifier->setFixedHeight(CConsoleWindow::FontHeight());
 	QPushButton* show_api_button = new QPushButton("Show Signature", identifier_widget);
     QPushButton* show_origin_button = new QPushButton("Show Object Creation", identifier_widget);
@@ -82,10 +102,18 @@ CDebugFunctionAssistWin::CDebugFunctionAssistWin(QWidget* parent)
     show_origin_button->setFixedHeight(CConsoleWindow::TextEditHeight());
     console_input_button->setFixedHeight(CConsoleWindow::TextEditHeight());
 
-    identifier_layout->addWidget(mObjectIndentifier, 0, 0, 1, 3);
-	identifier_layout->addWidget(show_api_button, 1, 0, 1, 1);
-    identifier_layout->addWidget(show_origin_button, 1, 1, 1, 1);
-    identifier_layout->addWidget(console_input_button, 1, 2, 1, 1);
+    int column = 0;
+    identifier_layout->addWidget(mObjectIndentifier, 0, column++);
+    identifier_layout->addWidget(new QLabel(""), 0, column++);
+    identifier_layout->addWidget(mObjectFilterCB, 0, column++);
+    identifier_layout->addWidget(mNamespaceFilterCB, 0, column++);
+    identifier_layout->addWidget(mFunctionFilterCB, 0, column++);
+    identifier_layout->addWidget(mHierarchyFilterCB, 0, column++);
+
+    column = 2;
+	identifier_layout->addWidget(show_api_button, 1, column++);
+    identifier_layout->addWidget(show_origin_button, 1, column++);
+    identifier_layout->addWidget(console_input_button, 1, column++);
 
     identifier_layout->setRowStretch(0, 0);
 
@@ -113,6 +141,11 @@ CDebugFunctionAssistWin::CDebugFunctionAssistWin(QWidget* parent)
     mFilterString[0] = '\0';
 
     // -- hook up the button signals
+    QObject::connect(mObjectFilterCB, SIGNAL(clicked()), this, SLOT(OnCBFilterObjectsPressed()));
+    QObject::connect(mNamespaceFilterCB, SIGNAL(clicked()), this, SLOT(OnCBFilterNamespacesPressed()));
+    QObject::connect(mFunctionFilterCB, SIGNAL(clicked()), this, SLOT(OnCBFilterFunctionsPressed()));
+    QObject::connect(mHierarchyFilterCB, SIGNAL(clicked()), this, SLOT(OnCBFilterHierarchyPressed()));
+
 	QObject::connect(refresh_button, SIGNAL(clicked()), this, SLOT(OnButtonFilterRefreshPressed()));
     QObject::connect(show_api_button,SIGNAL(clicked()),this,SLOT(OnButtonShowAPIPressed()));
     QObject::connect(show_origin_button, SIGNAL(clicked()), this, SLOT(OnButtonShowOriginPressed()));
@@ -270,9 +303,17 @@ void CDebugFunctionAssistWin::UpdateSearchNewEntry(TinScript::CDebuggerFunctionA
     if (in_entry == nullptr)
         return;
 
-    // -- when filtering, we don't really care what the entry type is, just
-    // that the search string passes the filter
-    if (FilterStringCompare(in_entry->mSearchName))
+    // -- get our filter flags
+    bool filter_by_objects = TinPreferences::GetInstance()->GetValue("FA_FilterObjects", true);
+    bool filter_by_namespaces = TinPreferences::GetInstance()->GetValue("FA_FilterNamespaces", true);
+    bool filter_by_functions = TinPreferences::GetInstance()->GetValue("FA_FilterFunctions", true);
+    bool filter_by_hierarchy = TinPreferences::GetInstance()->GetValue("FA_FilterHierarchy", true);
+
+    // -- see if our new entry passes the types of filters enabled (and of course, our filter string)
+    if (((filter_by_functions && in_entry->mEntryType == TinScript::eFunctionEntryType::Function) ||
+         (filter_by_namespaces && in_entry->mEntryType == TinScript::eFunctionEntryType::Namespace) ||
+         (filter_by_objects && in_entry->mEntryType == TinScript::eFunctionEntryType::Object)) &&
+        FilterStringCompare(in_entry->mSearchName))
     {
         mFunctionList->DisplayEntry(in_entry);
     }
@@ -389,8 +430,20 @@ void CDebugFunctionAssistWin::UpdateFilter(const char* filter, bool8 force_refre
     while (filter_ptr && *filter_ptr > 0x00 && *filter_ptr <= 0x20)
         ++filter_ptr;
 
+    // -- if the current filter is empty, and the new filter is also empty
+    // (e.g.  we pressed return/del/backspace)
+    // then we reset the search object and namespace (fresh search)
+    if (filter[0] == '\0' && mFilterString[0] == '\0')
+    {
+        mSearchNamespaceHash = 0;
+        mSearchObjectID = 0;
+    }
+
     // -- if we've cleared the search, we're forcing a refresh, and resetting the search
-    if (filter_ptr == nullptr || filter_ptr[0] == '\0')
+    // -- note:  if we have a search object, the filter string is prepended with the <objectid>.XXX
+    // but if we're searching a namespace (after a double click), the filter string will be empty,
+    // and we want to continue searching that namespace
+    if (mSearchNamespaceHash == 0 && (filter_ptr == nullptr || filter_ptr[0] == '\0'))
     {
         filter_ptr = "";
         force_refresh = true;
@@ -412,6 +465,12 @@ void CDebugFunctionAssistWin::UpdateFilter(const char* filter, bool8 force_refre
     // -- if we have an exact match, we're done
     if (exact_match)
         return;
+
+    // -- get our filter flags
+    bool filter_by_objects = TinPreferences::GetInstance()->GetValue("FA_FilterObjects", true);
+    bool filter_by_namespaces = TinPreferences::GetInstance()->GetValue("FA_FilterNamespaces", true);
+    bool filter_by_functions = TinPreferences::GetInstance()->GetValue("FA_FilterFunctions", true);
+    bool filter_by_hierarchy = TinPreferences::GetInstance()->GetValue("FA_FilterHierarchy", true);
 
     // -- copy the new search filter
     TinScript::SafeStrcpy(mFilterString, sizeof(mFilterString), filter, TinScript::kMaxNameLength);
@@ -536,18 +595,23 @@ void CDebugFunctionAssistWin::UpdateFilter(const char* filter, bool8 force_refre
         for (auto iter : mFunctionEntryList)
         {
             bool should_display = false;
-            if (mSearchObjectID == 0 && filter_string_obj_id > 0 && iter->mObjectID == filter_string_obj_id)
+            if (filter_by_objects && mSearchObjectID == 0 && filter_string_obj_id > 0 && iter->mObjectID == filter_string_obj_id)
             {
                 should_display = true;
             }
-            else if (FilterStringCompare(iter->mSearchName))
+
+            // -- this is a function
+            else if (((filter_by_functions && iter->mEntryType == TinScript::eFunctionEntryType::Function) ||
+                      (filter_by_namespaces && iter->mEntryType == TinScript::eFunctionEntryType::Namespace) ||
+                      (filter_by_objects && iter->mEntryType == TinScript::eFunctionEntryType::Object)) &&
+                     FilterStringCompare(iter->mSearchName))
             {
                 should_display = true;
             }
 
             // -- else if the iter is an object, and we're not searching on a specific object
             // check the derivation and origin for the search string
-            else if (mSearchObjectID == 0 && filter_string_obj_id == 0 &&
+            else if (filter_by_objects && filter_by_hierarchy && mSearchObjectID == 0 && filter_string_obj_id == 0 &&
                      iter->mEntryType == TinScript::eFunctionEntryType::Object && iter->mObjectID > 0)
             {
                 const char* object_derivation =
@@ -772,6 +836,46 @@ void CDebugFunctionAssistWin::NotifyAssistEntryDoubleClicked(TinScript::CDebugge
     // -- display the function signature - if an object was double-clicked, then this 
     // will clear the panel and update the header
     DisplayFunctionSignature();
+}
+
+// ====================================================================================================================
+// OnCBFilterObjectsPressed():  Update the filter to to include objects
+// ====================================================================================================================
+void CDebugFunctionAssistWin::OnCBFilterObjectsPressed()
+{
+    bool enabled = mObjectFilterCB->isChecked();
+    TinPreferences::GetInstance()->SetValue("FA_FilterObjects", enabled);
+    UpdateFilter(mFilterString, true);
+}
+
+// ====================================================================================================================
+// OnCBFilterNamespacesPressed():  Update the filter to to include namespaces
+// ====================================================================================================================
+void CDebugFunctionAssistWin::OnCBFilterNamespacesPressed()
+{
+    bool enabled = mNamespaceFilterCB->isChecked();
+    TinPreferences::GetInstance()->SetValue("FA_FilterNamespaces", enabled);
+    UpdateFilter(mFilterString, true);
+}
+
+// ====================================================================================================================
+// OnCBFilterNamespacesPressed():  Update the filter to to include functions
+// ====================================================================================================================
+void CDebugFunctionAssistWin::OnCBFilterFunctionsPressed()
+{
+    bool enabled = mFunctionFilterCB->isChecked();
+    TinPreferences::GetInstance()->SetValue("FA_FilterFunctions", enabled);
+    UpdateFilter(mFilterString, true);
+}
+
+// ====================================================================================================================
+// OnCBFilterHierarchyPressed():  Update the filter to to include functions
+// ====================================================================================================================
+void CDebugFunctionAssistWin::OnCBFilterHierarchyPressed()
+{
+    bool enabled = mHierarchyFilterCB->isChecked();
+    TinPreferences::GetInstance()->SetValue("FA_FilterHierarchy", enabled);
+    UpdateFilter(mFilterString, true);
 }
 
 // ====================================================================================================================
@@ -1045,10 +1149,15 @@ void CFunctionAssistInput::keyPressEvent(QKeyEvent * event)
         QLineEdit::keyPressEvent(event);
     }
 
-    // -- get the current text, see if our search string has changed
-    QByteArray text_input = text().toUtf8();
-    const char* search_text = text_input.data();
-    mOwner->UpdateFilter(search_text);
+    // -- don't do anything on a modifier key press
+    if (event->key() != Qt::Key_CapsLock && event->key() != Qt::Key_Shift && event->key() != Qt::Key_Alt &&
+        event->key() != Qt::Key_Control)
+    {
+        // -- get the current text, see if our search string has changed
+        QByteArray text_input = text().toUtf8();
+        const char* search_text = text_input.data();
+        mOwner->UpdateFilter(search_text);
+    }
 }
 
 // == class CFunctionListEntry ========================================================================================

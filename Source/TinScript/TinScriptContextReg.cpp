@@ -391,6 +391,81 @@ const char* ContextGetObjectNamespace(uint32 objectid)
 }
 
 // ====================================================================================================================
+// ContextListFunctions():  If a partial function name is provided, list all functions containing the partial.
+// ====================================================================================================================
+void ContextFindMethod(const char* partial, bool exact = false)
+{
+    // -- sanity check
+    if (partial == nullptr || partial[0] == '\0')
+        return;
+
+    uint32 method_hash = Hash(partial, -1, false);
+    CScriptContext* script_context = TinScript::GetContext();
+    CHashTable<CNamespace>* namespaces = script_context->GetNamespaceDictionary();
+
+    // -- no allocations, simply copy the strings into our result list
+    struct tEntryFound
+    {
+        char ns_entry[256];
+    };
+    tEntryFound ns_method_list[1024];
+    const char* ns_sorted_list[1024];
+
+    if (namespaces != nullptr)
+    {
+        // -- we're going to sort them alphabetically...
+        int results_count = 0;
+        CNamespace* current_namespace = namespaces->First();
+        while (current_namespace != nullptr && results_count < 1024)
+        {
+            const char* ns_name = UnHash(current_namespace->GetHash());
+            // -- see if this namespace has a given method
+            tFuncTable* func_table = current_namespace->GetFuncTable();
+            CFunctionEntry* fe = func_table != nullptr ? func_table->First() : nullptr;
+            while (fe != nullptr && results_count < 1024)
+            {
+                const char* method_name = UnHash(fe->GetHash());
+                if ((exact && fe->GetHash() == method_hash) ||
+                    (!exact && SafeStrStr(UnHash(fe->GetHash()), partial) != 0))
+                {
+                    snprintf(ns_method_list[results_count++].ns_entry, kMaxNameLength, "    %s::%s()", ns_name, method_name);
+                }
+
+                fe = func_table->Next();
+            }
+
+            current_namespace = namespaces->Next();
+        }
+
+        // -- sort the namespaces alphabetically
+        if (results_count > 0)
+        {
+            for (int i = 0; i < results_count; ++i)
+            {
+                ns_sorted_list[i] = ns_method_list[i].ns_entry;
+            }
+
+            auto namespace_sort = [](const void* a, const void* b) -> int
+            {
+                const char* entry_a = *(const char**)a;
+                const char* entry_b = *(const char**)b;
+                int result = _stricmp(entry_a, entry_b);
+                return (result);
+            };
+
+            qsort(ns_sorted_list, results_count, sizeof(const char*), namespace_sort);
+        }
+
+        // -- print out the namespaces names
+        TinPrint(script_context, "Namespaces containing %smethod %s()\n", exact ? "" : "(partial match) ", partial);
+        for (int i = 0; i < results_count; ++i)
+        {
+            TinPrint(script_context, "    %s\n", ns_sorted_list[i]);
+        }
+    }
+}
+
+// ====================================================================================================================
 // ContextSaveObjects():  Save the entire tree hierarchy for an object, to the given filename.
 // ====================================================================================================================
 void ContextSaveObjects(uint32 objectid, const char* filename)
@@ -471,6 +546,9 @@ REGISTER_FUNCTION(IsMethodHash, ContextIsMethodHash);
 REGISTER_FUNCTION(ListNamespaces, ContextListNamespaces);
 REGISTER_FUNCTION(IsNamespace, ContextIsNamespace);
 REGISTER_FUNCTION(GetObjectNamespace, ContextGetObjectNamespace);
+
+REGISTER_FUNCTION(FindMethod, ContextFindMethod);
+
 REGISTER_FUNCTION(SaveObjects, ContextSaveObjects);
 
 REGISTER_FUNCTION(ListSchedules, ContextListSchedules);
