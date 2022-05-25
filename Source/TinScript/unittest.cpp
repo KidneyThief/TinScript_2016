@@ -924,6 +924,10 @@ bool8 CreateUnitTests()
         success = success && AddUnitTest("str_array_copy_m2l", "Str Array Copy Member to Local", "UnitTest_StrArrayCopyM2L();", "6 beaver turkey swan");
         success = success && AddUnitTest("str_array_copy_p2m", "Str Array Copy Param to Member", "UnitTest_StrArrayCopyP2M();", "9 beaver turkey swan");
 
+        success = success && AddUnitTest("int_array_resize_global", "Int Array Resize global", "UnitTest_IntArrayResizeGlobal();", "9 28 37 46");
+        success = success && AddUnitTest("v3f_array_resize_global", "V3f Array Resize global", "UnitTest_V3fArrayResizeGlobal();", "9 3.0000 4.0000 5.0000");
+        success = success && AddUnitTest("string_array_resize_global", "String Array Resize global", "UnitTest_StringArrayResizeGlobal();", "9 cat dog mouse");
+
         // -- exec stack verification with unused variables, with and without post-inc
         success = success && AddUnitTest("unused_pod_member", "Unused POD member", "UnitTest_UnusedPodMember();", "3.0000");
         success = success && AddUnitTest("unused_pod_member_postinc", "Unused POD member post++", "UnitTest_UnusedPodMemberPostInc();", "4.0000");

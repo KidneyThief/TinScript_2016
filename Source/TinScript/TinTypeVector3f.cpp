@@ -292,6 +292,20 @@ void* FVectorToVector3fConvert(CScriptContext* script_context, eVarType from_typ
 }
 
 // --------------------------------------------------------------------------------------------------------------------
+bool TypeVector3f_Contains(CVariableEntry* ve, CVector3f v3f_val)
+{
+    int32 count = ve != nullptr ? ve->GetArraySize() : 0;
+    for (int i = 0; i < count; ++i)
+    {
+        void* array_val = ve->GetArrayVarAddr(nullptr, i);
+        if (array_val != nullptr && *(CVector3f*)array_val == v3f_val)
+            return true;
+    }
+
+    return false;
+}
+
+// --------------------------------------------------------------------------------------------------------------------
 CVector3f TypeVector3f_Set(CVariableEntry* ve_src, float _x, float _y, float _z)
 {
     // -- sanity check
@@ -534,6 +548,11 @@ bool8 Vector3fConfig(eVarType var_type, bool8 onInit)
             REGISTER_TYPE_METHOD(TYPE_vector3f, length, TypeVector3f_Length);
             REGISTER_TYPE_METHOD(TYPE_vector3f, dot, TypeVector3f_Dot);
             REGISTER_TYPE_METHOD(TYPE_vector3f, cross, TypeVector3f_Cross);
+
+            REGISTER_TYPE_METHOD(TYPE_vector3f, count, TypeVariable_Count);
+            REGISTER_TYPE_METHOD(TYPE_vector3f, contains, TypeVector3f_Contains);
+            REGISTER_TYPE_METHOD(TYPE_vector3f, copy, TypeVariableArray_Copy);
+            REGISTER_TYPE_METHOD(TYPE_vector3f, resize, TypeVariableArray_Resize);
         }
     }
 

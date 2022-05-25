@@ -388,6 +388,11 @@ bool8 Vector3fConfig(eVarType var_type, bool8 onInit);
 bool8 FVectorToString(TinScript::CScriptContext* script_context, void* value, char* buf, int32 bufsize);
 bool8 StringToFVector(TinScript::CScriptContext* script_context, void* addr, char* value);
 
+// -- Generic array methods
+int32 TypeVariable_Count(CVariableEntry* ve);
+bool TypeVariableArray_Copy(CVariableEntry* ve_src, CVariableEntry* ve_dst);
+bool TypeVariableArray_Resize(CVariableEntry* ve_src, int32 new_size);
+
 // ====================================================================================================================
 // -- operation and conversion type functions
 enum eOpCode;

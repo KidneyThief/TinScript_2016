@@ -552,6 +552,44 @@ void UnitTest_IntArrayCopyP2M()
     gUnitTestScriptResult = StringCat(foo.member_array:count(), " ", foo.member_array[1], " ", foo.member_array[2], " ", foo.member_array[3]);
 }
 
+// -- array resize tests
+int[] UT_ArrayResize_int;
+void UnitTest_IntArrayResizeGlobal()
+{
+    UT_ArrayResize_int:resize(5);
+    UT_ArrayResize_int[2] = 28;
+    UT_ArrayResize_int[3] = 37;
+    UT_ArrayResize_int[4] = 46;
+    UT_ArrayResize_int:resize(9);
+
+    gUnitTestScriptResult = StringCat(UT_ArrayResize_int:count(), " ", UT_ArrayResize_int[2], " ", UT_ArrayResize_int[3], " ", UT_ArrayResize_int[4]);
+}
+
+vector3f[] UT_ArrayResize_vector3f;
+void UnitTest_V3fArrayResizeGlobal()
+{
+    UT_ArrayResize_vector3f:resize(5);
+    // $$$TZA fix me...  :set() doesn't work on array indices
+    //UT_ArrayResize_vector3f[2]:set(3, 4, 5);
+    UT_ArrayResize_vector3f[2] = "3 4 5";
+    UT_ArrayResize_vector3f:resize(9);
+
+    gUnitTestScriptResult = StringCat(UT_ArrayResize_vector3f:count(), " ", UT_ArrayResize_vector3f[2]);
+}
+
+string[] UT_ArrayResize_string;
+void UnitTest_StringArrayResizeGlobal()
+{
+    UT_ArrayResize_string:resize(5);
+    UT_ArrayResize_string[2] = "cat";
+    UT_ArrayResize_string[3] = "dog";
+    UT_ArrayResize_string[4] = "mouse";
+    UT_ArrayResize_string:resize(9);
+
+    gUnitTestScriptResult = StringCat(UT_ArrayResize_string:count(), " ", UT_ArrayResize_string[2], " ", UT_ArrayResize_string[3], " ", UT_ArrayResize_string[4]);
+}
+
+
 // -- string versions of all of the above
 
 string[10] g_UT_StrArray_0;

@@ -513,8 +513,6 @@ void* TypeConvert(CScriptContext* script_context, eVarType fromtype, void* froma
     return (NULL);
 }
 
-
-
 // ====================================================================================================================
 // SafeStrcpy(): Safe version of strcpy(), checks nullptrs and returns a null-terminated destination.
 // ====================================================================================================================
@@ -1168,8 +1166,8 @@ bool TypeVariableArray_Copy(CVariableEntry* ve_src, CVariableEntry* ve_dst)
         ve_src->GetArraySize() < 1 || ve_src->GetType() != ve_dst->GetType())
     {
         TinPrint(TinScript::GetContext(), "Error - array:copy() failed from copying %s to %s\n",
-                                           (ve_src ? UnHash(ve_src->GetHash()) : "<unkown>"),
-                                           (ve_dst ? UnHash(ve_dst->GetHash()) : "<unkown>"));
+                                           (ve_src ? UnHash(ve_src->GetHash()) : "<unknown>"),
+                                           (ve_dst ? UnHash(ve_dst->GetHash()) : "<unknown>"));
         return false;
     }
 
@@ -1202,8 +1200,8 @@ bool TypeVariableArray_Copy(CVariableEntry* ve_src, CVariableEntry* ve_dst)
     if (src_addr == nullptr || dst_addr == nullptr)
     {
         TinPrint(TinScript::GetContext(), "Error - array:copy() null address copying %s to %s\n",
-                                           (ve_src ? UnHash(ve_src->GetHash()) : "<unkown>"),
-                                           (ve_dst ? UnHash(ve_dst->GetHash()) : "<unkown>"));
+                                           (ve_src ? UnHash(ve_src->GetHash()) : "<unknown>"),
+                                           (ve_dst ? UnHash(ve_dst->GetHash()) : "<unknown>"));
          return (false);
     }
 
@@ -1216,8 +1214,8 @@ bool TypeVariableArray_Copy(CVariableEntry* ve_src, CVariableEntry* ve_dst)
         if (src_str_addr == nullptr || dst_str_addr == nullptr)
         {
             TinPrint(TinScript::GetContext(), "Error - array:copy() failed from copying string array %s to %s\n",
-                                              (ve_src ? UnHash(ve_src->GetHash()) : "<unkown>"),
-                                              (ve_dst ? UnHash(ve_dst->GetHash()) : "<unkown>"));
+                                              (ve_src ? UnHash(ve_src->GetHash()) : "<unknown>"),
+                                              (ve_dst ? UnHash(ve_dst->GetHash()) : "<unknown>"));
             return (false);
         }
         memcpy(dst_addr, src_addr, sizeof(const char*) * count);
@@ -1230,6 +1228,63 @@ bool TypeVariableArray_Copy(CVariableEntry* ve_src, CVariableEntry* ve_dst)
     // -- return success
     return (true);
 }
+
+bool TypeVariableArray_Resize(CVariableEntry* ve_src, int32 new_size)
+{
+    // -- make sure we've got a script array
+    if (ve_src == nullptr || !ve_src->IsArray() || !ve_src->IsScriptVar() || ve_src->IsParameter() || ve_src->IsReference())
+    {
+        TinPrint(TinScript::GetContext(), "Error - array:resize() var: %s, :resize() only supports script non-param array vars\n",
+                                           (ve_src ? UnHash(ve_src->GetHash()) : "<unknown>"));
+        return (false);
+    }
+
+    // -- valid size
+    // $$$TZA max size?
+    if (new_size <= 1)
+    {
+        TinPrint(TinScript::GetContext(), "Error - array:resize() invalid size %d for var: %s\n",
+                                           new_size, UnHash(ve_src->GetHash()));
+        return (false);
+    }
+
+    // -- no point in resizing to a smaller size (TinScript doesn't yet require manual memory optimizations)
+    // note:  we'll return true, since technically the array is large enough for the size requested
+    if (new_size <= ve_src->GetArraySize())
+    {
+        TinPrint(TinScript::GetContext(), "array:resize() from %d to smaller size %d for var: %s skipped\n",
+                                          ve_src->GetArraySize(), new_size, UnHash(ve_src->GetHash()));
+        return (true);
+    }
+
+    // -- resize is already an expensive operation and shouldn't be used if possible...
+    // for now, we'll block copy, rather than hooking into the ve, and deleting the original storage after a copy
+    int32 orig_size = ve_src->GetArraySize();
+    char* orig_value = nullptr;
+    if (orig_size >= 1)
+    {
+        orig_value = TinAllocArray(ALLOC_VarStorage, char, sizeof(uint32) * orig_size * MAX_TYPE_SIZE);
+        memcpy(orig_value, ve_src->GetAddr(nullptr), sizeof(uint32) * orig_size * MAX_TYPE_SIZE);
+    }
+
+    // -- try to free the memory for our array
+    if (!ve_src->TryFreeAddrMem())
+        return (false);
+
+    // -- try to convert back to an array, of the new size
+    if (!ve_src->ConvertToArray(new_size))
+        return false;
+
+    // -- copy the contents back to our array (the original count obviously)
+    if (orig_size >= 1)
+    {
+        memcpy(ve_src->GetAddr(nullptr), orig_value, sizeof(uint32) * orig_size * MAX_TYPE_SIZE);
+    }
+
+    // -- return success
+    return (true);
+}
+
 
 // ====================================================================================================================
 // ObjectConfig():  Called from InitializeTypes() to register object operations and conversions
@@ -1267,6 +1322,7 @@ bool8 ObjectConfig(eVarType var_type, bool8 onInit)
         REGISTER_TYPE_METHOD(TYPE_object, count, TypeVariable_Count);
         REGISTER_TYPE_METHOD(TYPE_object, contains, TypeObject_Contains);
         REGISTER_TYPE_METHOD(TYPE_object, copy, TypeVariableArray_Copy);
+        REGISTER_TYPE_METHOD(TYPE_object, resize, TypeVariableArray_Resize);
     }
 
     // -- success
@@ -1314,6 +1370,7 @@ bool8 StringConfig(eVarType var_type, bool8 onInit)
         REGISTER_TYPE_METHOD(TYPE_string, count, TypeVariable_Count);
         REGISTER_TYPE_METHOD(TYPE_string, contains, TypeString_Contains);
         REGISTER_TYPE_METHOD(TYPE_string, copy, TypeVariableArray_Copy);
+        REGISTER_TYPE_METHOD(TYPE_string, resize, TypeVariableArray_Resize);
     }
 
     // -- success
@@ -1368,6 +1425,7 @@ bool8 FloatConfig(eVarType var_type, bool8 onInit)
         REGISTER_TYPE_METHOD(TYPE_float, count, TypeVariable_Count);
         REGISTER_TYPE_METHOD(TYPE_float, contains, TypeFloat_Contains);
         REGISTER_TYPE_METHOD(TYPE_float, copy, TypeVariableArray_Copy);
+        REGISTER_TYPE_METHOD(TYPE_float, resize, TypeVariableArray_Resize);
     }
 
     // -- success
@@ -1430,6 +1488,7 @@ bool8 IntegerConfig(eVarType var_type, bool8 onInit)
         REGISTER_TYPE_METHOD(TYPE_int, count, TypeVariable_Count);
         REGISTER_TYPE_METHOD(TYPE_int, contains, TypeInt_Contains);
         REGISTER_TYPE_METHOD(TYPE_int, copy, TypeVariableArray_Copy);
+        REGISTER_TYPE_METHOD(TYPE_int, resize, TypeVariableArray_Resize);
     }
 
     // -- success
@@ -1472,6 +1531,7 @@ bool8 BoolConfig(eVarType var_type, bool8 onInit)
         REGISTER_TYPE_METHOD(TYPE_bool, count, TypeVariable_Count);
         REGISTER_TYPE_METHOD(TYPE_bool, contains, TypeBool_Contains);
         REGISTER_TYPE_METHOD(TYPE_bool, copy, TypeVariableArray_Copy);
+        REGISTER_TYPE_METHOD(TYPE_bool, resize, TypeVariableArray_Resize);
     }
 
     // -- success
