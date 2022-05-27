@@ -63,6 +63,27 @@
 // if this isn't defined
 #define TS_PLATFORM_WINDOWS 0
 
+// -- defines for enabling internal debugging
+#define TIN_DEBUGGER 1
+
+// --------------------------------------------------------------------------------------------------------------------
+// -- compile flags
+// -- note:  if you change these (like, modifying compile symbols), you may want to bump the kCompilerVersion
+// -- If any operation changes it's instruction format, bump the compiler version
+
+// -- the following three have no side effects, but slow down execution
+#define DEBUG_CODEBLOCK 1
+#define DEBUG_TRACE 1
+
+// -- this affects the compiled versions, whether the code block contains line number offsets
+#define DEBUG_COMPILE_SYMBOLS 1
+
+// -- mostly untested - affects the Hash function, and which version of Strncmp_ to use...
+// -- theoretically the all tokens/identifiers (e.g. namespaces, function names, ...) are
+// -- executed through their hash values...
+#define CASE_SENSITIVE 1
+
+
 // -- if this define is enabled, every function executed from script to C++ and vice versa, will
 // be logged
 #define LOG_FUNCTION_EXEC 0
@@ -122,11 +143,17 @@ typedef float               float32;
 // -- CONSTANTS
 // ====================================================================================================================
 
+// -- 05/12 reworked the "stack top reserve", asserting if we ever pop into local var space
+const int32 kCompilerVersion = 18;
+
+const int32 kMaxNameLength = 256;
+const int32 kMaxTokenLength = 2048;
+
 const int32 kMaxArgs = 256;
 const int32 kMaxArgLength = 256;
 
 // -- change this constant, if you genregclasses.py -maxparam X, to generate higher count templated bindings
-const int32 kMaxRegisteredParameterCount = 8;
+const int32 kMaxRegisteredParameterCount = 12;
 
 const int32 kMaxVariableArraySize = 256;
 

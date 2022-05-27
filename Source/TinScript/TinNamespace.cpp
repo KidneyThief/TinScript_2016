@@ -23,18 +23,18 @@
 // TinNamespace.cpp
 // ====================================================================================================================
 
+// -- class include
+#include "TinNamespace.h"
+
 // -- lib includes
-#include "stdio.h"
+#include <stdio.h>
 
 // -- includes
-#include "TinNamespace.h"
-#include "TinParse.h"
+#include "TinVariableEntry.h"
 #include "TinScheduler.h"
 #include "TinObjectGroup.h"
 #include "TinStringTable.h"
-#include "TinRegistration.h"
-
-#include "registrationexecs.h"
+#include "TinRegBinding.h"
 
 // == namespace TinScript =============================================================================================
 

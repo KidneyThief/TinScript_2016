@@ -113,7 +113,7 @@ int32 CDebugToolEntry::Initialize(const char* name, const char* description, QWi
     CDebugToolsWin::gDebugToolEntryMap[mEntryID] = this;
 
     // -- add the entry to the named map
-    char hash_string[TinScript::kMaxNameLength];
+    char hash_string[kMaxNameLength];
     snprintf(hash_string, sizeof(hash_string), "%s::%s", mParent != nullptr ? mParent->GetWindowName() : "<unnamed>", name);
     mEntryNameHash = TinScript::Hash(hash_string);
     if (!CDebugToolsWin::gDebugToolEntryNamedMap.contains(mEntryNameHash))
@@ -174,7 +174,7 @@ CDebugToolButton::CDebugToolButton(const char* name, const char* description, co
     : CDebugToolEntry(parent)
 {
     // -- copy the command
-    TinScript::SafeStrcpy(mCommand, sizeof(mCommand), command, TinScript::kMaxTokenLength);
+    TinScript::SafeStrcpy(mCommand, sizeof(mCommand), command, kMaxTokenLength);
 
     // -- create the button
     mButton = new QPushButton(value);
@@ -231,7 +231,7 @@ CDebugToolSlider::CDebugToolSlider(const char* name, const char* description, in
     : CDebugToolEntry(parent)
 {
     // -- copy the command
-    TinScript::SafeStrcpy(mCommand, sizeof(mCommand), command, TinScript::kMaxTokenLength);
+    TinScript::SafeStrcpy(mCommand, sizeof(mCommand), command, kMaxTokenLength);
 
     // -- create the button
     mSlider = new QSlider(Qt::Horizontal);
@@ -272,7 +272,7 @@ void CDebugToolSlider::SetValue(const char* new_value)
 void CDebugToolSlider::OnSliderReleased()
 {
     // -- create the command, by inserting the slider value as the first parameter
-    char command_buf[TinScript::kMaxTokenLength];
+    char command_buf[kMaxTokenLength];
     if (!mCommand[0])
         snprintf(command_buf, sizeof(command_buf), "Print(%d);", mSlider->value());
     else
@@ -303,7 +303,7 @@ CDebugToolTextEdit::CDebugToolTextEdit(const char* name, const char* description
     : CDebugToolEntry(parent)
 {
     // -- copy the command
-    TinScript::SafeStrcpy(mCommand, sizeof(mCommand), command, TinScript::kMaxTokenLength);
+    TinScript::SafeStrcpy(mCommand, sizeof(mCommand), command, kMaxTokenLength);
 
     // -- create the button
     mLineEdit = new SafeLineEdit();
@@ -340,7 +340,7 @@ void CDebugToolTextEdit::SetValue(const char* new_value)
 void CDebugToolTextEdit::OnReturnPressed()
 {
     // -- create the command, by inserting the slider value as the first parameter
-    char command_buf[TinScript::kMaxTokenLength];
+    char command_buf[kMaxTokenLength];
     if (!mCommand[0])
         snprintf(command_buf, sizeof(command_buf), "Print(`%s`);", mLineEdit->GetStringValue());
     else
@@ -371,7 +371,7 @@ CDebugToolCheckBox::CDebugToolCheckBox(const char* name, const char* description
     : CDebugToolEntry(parent)
 {
     // -- copy the command
-    TinScript::SafeStrcpy(mCommand, sizeof(mCommand), command, TinScript::kMaxTokenLength);
+    TinScript::SafeStrcpy(mCommand, sizeof(mCommand), command, kMaxTokenLength);
 
     // -- create the button
     mCheckBox = new QCheckBox();
@@ -407,7 +407,7 @@ void CDebugToolCheckBox::OnClicked()
 {
     // -- create the command, by inserting the slider value as the first parameter
     bool value = (mCheckBox->checkState() == Qt::Checked);
-    char command_buf[TinScript::kMaxTokenLength];
+    char command_buf[kMaxTokenLength];
     if (!mCommand[0])
         snprintf(command_buf, sizeof(command_buf), "Print(%s);", value ? "true" : "false");
     else
@@ -434,7 +434,7 @@ void CDebugToolCheckBox::OnClicked()
 // ====================================================================================================================
 CDebugToolsWin::CDebugToolsWin(const char* tools_name, QWidget* parent) : QWidget(parent)
 {
-    TinScript::SafeStrcpy(mWindowName, sizeof(mWindowName), tools_name, TinScript::kMaxNameLength);
+    TinScript::SafeStrcpy(mWindowName, sizeof(mWindowName), tools_name, kMaxNameLength);
     mScrollArea = new QScrollArea(this);
     mScrollContent = new QWidget(mScrollArea);
     mLayout = new QGridLayout(mScrollContent);

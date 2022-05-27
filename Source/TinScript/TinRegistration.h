@@ -34,6 +34,7 @@
 #include "TinStringTable.h"
 #include "TinInterface.h"
 #include "TinFunctionEntry.h"
+#include "TinVariableEntry.h"
 
 // == namespace TinScript =============================================================================================
 
@@ -43,19 +44,10 @@ namespace TinScript
 // --------------------------------------------------------------------------------------------------------------------
 // -- forward declarations
 
-class CVariableEntry;
-class CFunctionEntry;
 class CCodeBlock;
 
 typedef CHashTable<CVariableEntry> tVarTable;
 typedef CHashTable<CFunctionEntry> tFuncTable;
-
-// ====================================================================================================================
-// registration macros
-// ====================================================================================================================
-// -- these macros are generated from the python script genregclasses.py
-// -- default usage is:  python genregclasses.py -maxparams 8
-#include "registrationmacros.h"
 
 class CRegFunctionBase;
 
@@ -151,16 +143,6 @@ class CRegFunctionBase
         // and when preparing to call a registered function, we initialize with default args
         CRegDefaultArgValues* m_DefaultArgs = nullptr;
 };
-
-// ====================================================================================================================
-// registration classes
-// ====================================================================================================================
-// -- these classes are generated from the python script genregclasses.py
-// -- default usage is:  python genregclasses.py -maxparams 8
-// -- included after the definition of CRegFunctionBase
-#include "registrationclasses.h"
-#include "registrationdefaultargs.h"
-#include "variadicclasses.h"
 
 }  // TinScript
 

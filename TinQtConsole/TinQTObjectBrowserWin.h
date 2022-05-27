@@ -52,10 +52,10 @@ class CBrowserEntry : public QTreeWidgetItem
         uint32 mObjectID;
         uint32 mParentID;
         bool8 mOwned;
-        char mName[TinScript::kMaxNameLength];
-        char mFormattedName[TinScript::kMaxNameLength];
-        char mDerivation[TinScript::kMaxNameLength];
-        char mFormattedOrigin[TinScript::kMaxNameLength];
+        char mName[kMaxNameLength];
+        char mFormattedName[kMaxNameLength];
+        char mDerivation[kMaxNameLength];
+        char mFormattedOrigin[kMaxNameLength];
         int32 mCreatedStackSize;
         uint32 mCreatedFileHashArray[kDebuggerCallstackSize];
         int32 mCreatedLineNumberArray[kDebuggerCallstackSize];

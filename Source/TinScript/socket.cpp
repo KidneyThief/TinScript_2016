@@ -19,6 +19,9 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ------------------------------------------------------------------------------------------------
 
+// -- class include
+#include "socket.h"
+
 #include "integration.h"
 
 #if PLATFORM_UE4
@@ -37,11 +40,10 @@
 
 // -- includes
 #include "mathutil.h"
-#include "socket.h"
 
 // -- includes required by any system wanting access to TinScript
 #include "TinTypes.h"
-#include "TinRegistration.h"
+#include "TinRegBinding.h"
 
 // -- use the DECLARE_FILE/REGISTER_FILE macros to prevent deadstripping
 DECLARE_FILE(socket_cpp);

@@ -67,7 +67,7 @@ class CObjectInspectEntry : public QWidget
         CDebugObjectInspectWin* mParent;
 
         QLabel* mNameLabel;
-        char mName[TinScript::kMaxNameLength];
+        char mName[kMaxNameLength];
         uint32 mNameHash;
 
         QLabel* mTypeLabel;
@@ -121,7 +121,7 @@ class CDebugObjectInspectWin : public QWidget
 
     private:
         uint32 mObjectID;
-        char mWindowName[TinScript::kMaxNameLength];
+        char mWindowName[kMaxNameLength];
         QMap<int32, CObjectInspectEntry*> mEntryMap;
         QPushButton* mRefreshButton;
         QGridLayout* mLayout;

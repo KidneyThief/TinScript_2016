@@ -23,10 +23,14 @@
 // TinFunctionEntry.h:  Defines the classes for a registered function, type (script or code), context (parameters...)
 // ====================================================================================================================
 
-#include "integration.h"
+// -- class include
 #include "TinFunctionEntry.h"
+
+#include "integration.h"
 #include "TinVariableEntry.h"
 #include "TinCompile.h"
+#include "TinExecute.h"
+#include "TinRegistration.h"
 
 namespace TinScript
 {

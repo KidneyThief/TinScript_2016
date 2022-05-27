@@ -23,6 +23,9 @@
 // TinExecute.cpp : Implementation of the virtual machine
 // ====================================================================================================================
 
+// -- "Include What You Use"
+#include "TinExecute.h"
+
 #include "integration.h"
 
 // -- lib includes
@@ -37,11 +40,12 @@
 
 // -- TinScript includes
 #include "TinScript.h"
+#include "TinParse.h"
 #include "TinCompile.h"
 #include "TinNamespace.h"
 #include "TinScheduler.h"
-#include "TinExecute.h"
 #include "TinOpExecFunctions.h"
+#include "TinExecStack.h"
 
 // == namespace TinScript =============================================================================================
 
@@ -458,7 +462,7 @@ const CFunctionCallStack*
 {
     // -- sanity check
     if (execution_depth < 0)
-        return false;
+        return (nullptr);
 
     stack_offset_from_bottom = 0;
     int32 current_stack_index = 0;
@@ -1237,7 +1241,7 @@ const CFunctionCallStack::tFunctionCallEntry* CFunctionCallStack::GetExecutingCa
 {
     bool dummy;
     if (!IsExecutingByIndex(stack_top_offset, dummy))
-        return (false);
+        return (nullptr);
 
 	// note:  we count from the top down
     // note: this is unsafe!!  returning an internal stack pointer - it had better not be cached or used beyond
@@ -1250,7 +1254,7 @@ const CFunctionCallStack::tFunctionCallEntry* CFunctionCallStack::GetExecutingCa
     }
 
     // -- not executing
-    return nullptr;
+    return (nullptr);
 }
 
 // ====================================================================================================================

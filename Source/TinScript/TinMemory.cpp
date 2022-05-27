@@ -30,7 +30,7 @@
 #include "TinScript.h"
 #include "TinInterface.h"
 #include "TinExecute.h"
-#include "TinRegistration.h"
+#include "TinRegBinding.h"
 
 // -- use the DECLARE_FILE/REGISTER_FILE macros to prevent deadstripping
 DECLARE_FILE(tinmemory_cpp);

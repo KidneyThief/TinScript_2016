@@ -79,7 +79,7 @@ void CObjectInspectEntry::Initialize(const TinScript::CDebuggerWatchVarEntry& de
 	mParent->GetContent()->setGeometry(0, CConsoleWindow::TitleHeight(), newWidth, (count + 2) * CConsoleWindow::TextEditHeight());
 
     mNameLabel = new QLabel(debugger_entry.mVarName);
-    TinScript::SafeStrcpy(mName, sizeof(mName), debugger_entry.mVarName, TinScript::kMaxNameLength);
+    TinScript::SafeStrcpy(mName, sizeof(mName), debugger_entry.mVarName, kMaxNameLength);
     mNameHash = debugger_entry.mVarHash;
 
     // -- if this is not a namespace, add the line edit
@@ -134,7 +134,7 @@ void CObjectInspectEntry::SetValue(const char* new_value)
 void CObjectInspectEntry::OnReturnPressed()
 {
     // -- create the command, by inserting the slider value as the first parameter
-    char command_buf[TinScript::kMaxTokenLength];
+    char command_buf[kMaxTokenLength];
     snprintf(command_buf, sizeof(command_buf), "%d.%s = `%s`;", mParent->GetObjectID(), mName, mValue->GetStringValue());
 
     bool8 is_connected = CConsoleWindow::GetInstance()->IsConnected();
@@ -155,7 +155,7 @@ CDebugObjectInspectWin::CDebugObjectInspectWin(uint32 object_id, const char* obj
     : QWidget(parent)
     , mObjectID(object_id)
 {
-    TinScript::SafeStrcpy(mWindowName, sizeof(mWindowName), object_identifier, TinScript::kMaxNameLength);
+    TinScript::SafeStrcpy(mWindowName, sizeof(mWindowName), object_identifier, kMaxNameLength);
     mScrollArea = new QScrollArea(this);
     mScrollContent = new QWidget(mScrollArea);
     mLayout = new QGridLayout(mScrollContent);

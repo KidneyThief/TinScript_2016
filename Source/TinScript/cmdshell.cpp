@@ -290,7 +290,7 @@ void CCmdShell::InsertCharacterAtCursor(char c)
     char* input_ptr = &mConsoleInputBuf[m_cursorOffset];
 
     // -- ensure we've got room
-    if (count >= TinScript::kMaxTokenLength - 1)
+    if (count >= kMaxTokenLength - 1)
         return;
 
     // -- ensure the string is null-terminated after inserting a character 
@@ -364,7 +364,7 @@ void CCmdShell::RefreshConsoleInput(bool8 display_prompt, const char* new_input_
 
         // -- update the input string, if given
         if (new_input_string)
-            TinScript::SafeStrcpy(mConsoleInputBuf, TinScript::kMaxTokenLength, new_input_string);
+            TinScript::SafeStrcpy(mConsoleInputBuf, kMaxTokenLength, new_input_string);
 
         // -- display the input string
         printf(mConsoleInputBuf);
@@ -380,7 +380,7 @@ void CCmdShell::RefreshConsoleInput(bool8 display_prompt, const char* new_input_
         DeleteCharactersFromDisplay(count);
 
         // -- update the new input string
-        TinScript::SafeStrcpy(mConsoleInputBuf, TinScript::kMaxTokenLength, new_input_string);
+        TinScript::SafeStrcpy(mConsoleInputBuf, kMaxTokenLength, new_input_string);
 
         // -- print the new string
         printf(new_input_string);
@@ -520,7 +520,7 @@ const char* CCmdShell::Update()
             // -- see if we should initialize the tab completion buffer
             if (mTabCompletionBuf[0] == '\0')
             {
-                TinScript::SafeStrcpy(mTabCompletionBuf, TinScript::kMaxTokenLength, mConsoleInputBuf);
+                TinScript::SafeStrcpy(mTabCompletionBuf, kMaxTokenLength, mConsoleInputBuf);
                 mTabCompletionIndex = -1;
             }
 
@@ -541,9 +541,9 @@ const char* CCmdShell::Update()
                 int32 tab_complete_length = (int32)strlen(tab_result);
 
                 // -- build the function prototype string
-                char prototype_string[TinScript::kMaxTokenLength];
+                char prototype_string[kMaxTokenLength];
 
-                // -- see if we are to preserve the preceeding part of the tab completion buf
+                // -- see if we are to preserve the preceding part of the tab completion buf
                 if (tab_string_offset > 0)
                     strncpy_s(prototype_string, mTabCompletionBuf, tab_string_offset);
 
@@ -552,12 +552,12 @@ const char* CCmdShell::Update()
                 {
                     // -- if we have parameters (more than 1, since the first parameter is always the return value)
                     if (fe->GetContext()->GetParameterCount() > 1)
-                        snprintf(&prototype_string[tab_string_offset], TinScript::kMaxTokenLength - tab_string_offset, "%s(", tab_result);
+                        snprintf(&prototype_string[tab_string_offset], kMaxTokenLength - tab_string_offset, "%s(", tab_result);
                     else
-                        snprintf(&prototype_string[tab_string_offset], TinScript::kMaxTokenLength - tab_string_offset, "%s()", tab_result);
+                        snprintf(&prototype_string[tab_string_offset], kMaxTokenLength - tab_string_offset, "%s()", tab_result);
                 }
                 else
-                    snprintf(&prototype_string[tab_string_offset], TinScript::kMaxTokenLength - tab_string_offset, "%s", tab_result);
+                    snprintf(&prototype_string[tab_string_offset], kMaxTokenLength - tab_string_offset, "%s", tab_result);
 
                 RefreshConsoleInput(false, prototype_string);
             }
@@ -685,12 +685,12 @@ const char* CCmdShell::Update()
             {
                 mHistoryFull = mHistoryFull || mHistoryLastIndex == kMaxHistory - 1;
                 mHistoryLastIndex = (mHistoryLastIndex + 1) % kMaxHistory;
-                TinScript::SafeStrcpy(mHistory[mHistoryLastIndex], TinScript::kMaxTokenLength, mConsoleInputBuf);
+                TinScript::SafeStrcpy(mHistory[mHistoryLastIndex], kMaxTokenLength, mConsoleInputBuf);
             }
             mHistoryIndex = -1;
 
             // -- copy the input buf to the command buf, and return it
-            TinScript::SafeStrcpy(mCommandBuf, TinScript::kMaxTokenLength, mConsoleInputBuf);
+            TinScript::SafeStrcpy(mCommandBuf, kMaxTokenLength, mConsoleInputBuf);
             return_value = mCommandBuf;
 
             // -- clear the input, and set the input ptr

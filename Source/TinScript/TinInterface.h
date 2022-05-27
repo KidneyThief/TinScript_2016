@@ -28,7 +28,6 @@
 
 // -- includes
 #include "TinVariableEntry.h"
-#include "TinParse.h"
 
 // == namespace TinScript =============================================================================================
 
@@ -91,100 +90,6 @@ bool8 ExecScript(const char* filename, bool allow_no_exist = false);
 // SetTimeScale():  Allows for accurate communication with the debugger, if the application adjusts timescale
 // ====================================================================================================================
 void SetTimeScale(float time_scale);
-
-// ====================================================================================================================
-// GetGlobalVar():  Provides access from code, to a registered or scripted global variable
-// Must be used if the global is declared in script (not registered from code)
-// Must be used, of the global is of type const char* (or in string, in script)
-// ====================================================================================================================
-template <typename T>
-inline bool8 GetGlobalVar(CScriptContext* script_context, const char* varname, T& value)
-{
-    // -- sanity check
-    if (!script_context->GetGlobalNamespace() || !varname ||!varname[0])
-        return (false);
-
-    CVariableEntry*
-        ve = script_context->GetGlobalNamespace()->GetVarTable()->FindItem(Hash(varname));
-    if (!ve)
-        return (false);
-
-    // -- see if we can recognize an appropriate type
-    eVarType returntype = GetRegisteredType(GetTypeID<T>());
-    if (returntype == TYPE_NULL)
-        return (false);
-
-    // -- because the return type is *not* a const char* (which is specialized below)
-    // -- we want to call GetValue(), not GetValueAddr() - which allows us to properly
-    // -- convert from a string (ste) to any other type
-    void* convertvalue = TypeConvert(script_context, ve->GetType(), ve->GetAddr(NULL), returntype);
-    if (!convertvalue)
-        return (false);
-
-    // -- set the return value
-    value = *reinterpret_cast<T*>((uint32*)(convertvalue));
-
-    return (true);
-}
-
-// ====================================================================================================================
-// GetGlobalVar():  const char* specialization - since we want a const char*, we need to use GetValueAddr()
-// which returns an actual string, not the ste hash value
-// ====================================================================================================================
-template <>
-inline bool8 GetGlobalVar<const char*>(CScriptContext* script_context, const char* varname, const char*& value)
-{
-    // -- sanity check
-    if (!script_context->GetGlobalNamespace() || !varname ||!varname[0])
-        return (false);
-
-    CVariableEntry*
-        ve = script_context->GetGlobalNamespace()->GetVarTable()->FindItem(Hash(varname));
-    if (!ve)
-        return (false);
-
-    // -- note we're using GetValueAddr() - which returns a const char*, not an STE, for TYPE_string
-    void* convertvalue = TypeConvert(script_context, ve->GetType(), ve->GetValueAddr(NULL), TYPE_string);
-    if (!convertvalue)
-        return (false);
-
-    // -- set the return value
-    value = (const char*)(convertvalue);
-
-    return (true);
-}
-
-// ====================================================================================================================
-// SetGlobalVar():  Provides access for code to modify the value of a registered or scripted global variable
-// Must be used if the global is declared in script (not registered from code)
-// Must be used, of the global is of type const char* (or in string, in script)
-// ====================================================================================================================
-template <typename T>
-bool8 SetGlobalVar(CScriptContext* script_context, const char* varname, T value)
-{
-    // -- sanity check
-    if (!script_context->GetGlobalNamespace() || !varname ||!varname[0])
-        return (false);
-
-    CVariableEntry*
-        ve = script_context->GetGlobalNamespace()->GetVarTable()->FindItem(Hash(varname));
-    if (!ve)
-        return (false);
-
-    // -- see if we can recognize an appropriate type
-    eVarType input_type = GetRegisteredType(GetTypeID<T>());
-    if (input_type == TYPE_NULL)
-        return (false);
-
-    void* convertvalue = TypeConvert(script_context, ve->GetType(), convert_to_void_ptr<T>::Convert(value), input_type);
-    if (!convertvalue)
-        return (false);
-
-    // -- set the value - note, we're using SetValueAddr(), not SetValue(), which uses a const char*,
-    // -- not an STE, for TYPE_string
-    ve->SetValueAddr(NULL, convertvalue);
-    return (true);
-}
 
 // ====================================================================================================================
 // ExecResult():  Pass the value returned by a script function back to code

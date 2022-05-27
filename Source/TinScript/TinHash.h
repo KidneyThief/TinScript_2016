@@ -40,6 +40,9 @@
 namespace TinScript
 {
 
+class CMemoryTracker;
+class CObjectEntry;
+
 // -- forward declarations
 CScriptContext* GetContext();
 

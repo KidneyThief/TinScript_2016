@@ -32,6 +32,7 @@
 #include <QWidget>
 #include <QPainter>
 
+#include <integration.h>
 #include <mathutil.h>
 #include <socket.h>
 
@@ -193,14 +194,14 @@ struct tText
     {
         id = _id;
         position = _position;
-        TinScript::SafeStrcpy(text, TinScript::kMaxNameLength, _text);
+        TinScript::SafeStrcpy(text, kMaxNameLength, _text);
         color = _color;
         expired = false;
     }
 
     int id;
     CVector3f position;
-    char text[TinScript::kMaxNameLength];
+    char text[kMaxNameLength];
     int32 color;
     bool expired;
 };

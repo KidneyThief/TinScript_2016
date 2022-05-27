@@ -35,7 +35,7 @@
 
 // -- tinscript includes
 #include <cmdshell.h>
-#include <registrationexecs.h>
+#include <TinRegBinding.h>
 
 // -- includes
 #include "TinQtDemo.h"
@@ -401,7 +401,7 @@ void CDemoWidget::DrawText(int32 id, const CVector3f& position, const char* _tex
         {
             item.id = id;
             item.position = position;
-            TinScript::SafeStrcpy(item.text, TinScript::kMaxNameLength, _text);
+            TinScript::SafeStrcpy(item.text, kMaxNameLength, _text);
             item.color = color;
             item.expired = false;
 

@@ -24,22 +24,24 @@
 // ------------------------------------------------------------------------------------------------
 
 
+#pragma once
+
 #define REGISTER_FUNCTION(name, funcptr) \
-    static const int gArgCount_##name = ::TinScript::SignatureArgCount<decltype(funcptr)>::arg_count; \
-    static ::TinScript::CRegisterFunction<gArgCount_##name, decltype(funcptr)> _reg_##name(#name, funcptr);
+    static const int gArgCount_##name = SignatureArgCount<decltype(funcptr)>::arg_count; \
+    static CRegisterFunction<gArgCount_##name, decltype(funcptr)> _reg_##name(#name, funcptr);
 
 #if !PLATFORM_VS_2019
     #define REGISTER_METHOD(classname, name, methodptr) \
-        static const int gArgCount_##classname##_##name = ::TinScript::SignatureArgCount<decltype(std::declval<classname>().methodptr)>::arg_count; \
-        static ::TinScript::CRegisterMethod<gArgCount_##classname##_##name, classname, decltype(std::declval<classname>().methodptr)> _reg_##classname##_##name(#name, &classname::methodptr);
+        static const int gArgCount_##classname##_##name = SignatureArgCount<decltype(std::declval<classname>().methodptr)>::arg_count; \
+        static CRegisterMethod<gArgCount_##classname##_##name, classname, decltype(std::declval<classname>().methodptr)> _reg_##classname##_##name(#name, &classname::methodptr);
 #else
     #define REGISTER_METHOD(classname, name, methodptr) \
-        static const int gArgCount_##classname##_##name = ::TinScript::MethodArgCount<decltype(&classname::methodptr)>::arg_count; \
-        static ::TinScript::CRegisterMethod<gArgCount_##classname##_##name, classname, decltype(&classname::methodptr)> _reg_##classname##_##name(#name, &classname::methodptr);
+        static const int gArgCount_##classname##_##name = MethodArgCount<decltype(&classname::methodptr)>::arg_count; \
+        static CRegisterMethod<gArgCount_##classname##_##name, classname, decltype(&classname::methodptr)> _reg_##classname##_##name(#name, &classname::methodptr);
 #endif
 #define REGISTER_CLASS_FUNCTION(classname, name, methodptr) \
-    static const int gArgCount_##classname##_##name = ::TinScript::SignatureArgCount<decltype(std::declval<classname>().methodptr)>::arg_count; \
-    static ::TinScript::CRegisterFunction<gArgCount_##classname##_##name, decltype(std::declval<classname>().methodptr)> _reg_##classname##_##name(#name, &classname::methodptr); \
+    static const int gArgCount_##classname##_##name = SignatureArgCount<decltype(std::declval<classname>().methodptr)>::arg_count; \
+    static CRegisterFunction<gArgCount_##classname##_##name, decltype(std::declval<classname>().methodptr)> _reg_##classname##_##name(#name, &classname::methodptr); \
 
 template<typename S>
 class SignatureArgCount;
@@ -75,7 +77,7 @@ class CRegisterMethod;
 // -- class CRegisterFunction<0, R(Args...)> ----------------------------------------
 
 template<typename R, typename... Args>
-class CRegisterFunction<0, R(Args...)> : public CRegFunctionBase
+class CRegisterFunction<0, R(Args...)> : public TinScript::CRegFunctionBase
 {
 public:
 
@@ -100,17 +102,17 @@ public:
         R r = funcptr();
 
         assert(GetContext()->GetParameter(0));
-        CVariableEntry* returnval = GetContext()->GetParameter(0);
-        returnval->SetValueAddr(NULL, convert_to_void_ptr<R>::Convert(r));
+        TinScript::CVariableEntry* returnval = GetContext()->GetParameter(0);
+        returnval->SetValueAddr(NULL, TinScript::convert_to_void_ptr<R>::Convert(r));
         return (r);
     }
 
     // -- registration method
     virtual bool Register()
     {
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::GetRegisteredType(TinScript::GetTypeID<R>()), 1, TinScript::GetTypeID<R>()) && success;
 
         return (success);
     }
@@ -122,7 +124,7 @@ private:
 // -- class CRegisterFunction<0, void(Args...)> ----------------------------------------
 
 template<typename... Args>
-class CRegisterFunction<0, void(Args...)> : public CRegFunctionBase
+class CRegisterFunction<0, void(Args...)> : public TinScript::CRegFunctionBase
 {
 public:
 
@@ -151,9 +153,9 @@ public:
     // -- registration method
     virtual bool Register()
     {
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::TYPE_void, 1, 0) && success;
         return (success);
     }
 
@@ -165,10 +167,10 @@ private:
 
 template<typename C, typename R, typename... Args>
 #if !PLATFORM_VS_2019
-class CRegisterMethod<0, C, R(Args...)> : public CRegFunctionBase
+class CRegisterMethod<0, C, R(Args...)> : public TinScript::CRegFunctionBase
 {
 #else
-class CRegisterMethod<0, C, R(C::*)(Args...)> : public CRegFunctionBase
+class CRegisterMethod<0, C, R(C::*)(Args...)> : public TinScript::CRegFunctionBase
 {
 #endif
 public:
@@ -198,16 +200,16 @@ public:
 
         assert(GetContext()->GetParameter(0));
         TinScript::CVariableEntry* returnval = this->GetContext()->GetParameter(0);
-        returnval->SetValueAddr(NULL, convert_to_void_ptr<R>::Convert(r));
+        returnval->SetValueAddr(NULL, TinScript::convert_to_void_ptr<R>::Convert(r));
         return (r);
     }
 
     // -- registration method
     virtual bool Register()
     {
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::GetRegisteredType(TinScript::GetTypeID<R>()), 1, TinScript::GetTypeID<R>()) && success;
         return (success);
     }
 
@@ -218,10 +220,10 @@ private:
 
 template<typename C, typename... Args>
 #if !PLATFORM_VS_2019
-class CRegisterMethod<0, C, void(Args...)> : public CRegFunctionBase
+class CRegisterMethod<0, C, void(Args...)> : public TinScript::CRegFunctionBase
 {
 #else
-class CRegisterMethod<0, C, void(C::*)(Args...)> : public CRegFunctionBase
+class CRegisterMethod<0, C, void(C::*)(Args...)> : public TinScript::CRegFunctionBase
 {
 #endif
 public:
@@ -256,9 +258,9 @@ public:
     virtual bool Register()
     {
 
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::TYPE_void, 1, 0) && success;
 
         return (success);
     }
@@ -274,7 +276,7 @@ private:
 // -- class CRegisterFunction<1, R(Args...)> ----------------------------------------
 
 template<typename R, typename... Args>
-class CRegisterFunction<1, R(Args...)> : public CRegFunctionBase
+class CRegisterFunction<1, R(Args...)> : public TinScript::CRegFunctionBase
 {
 public:
 
@@ -290,11 +292,11 @@ public:
     // -- virtual DispatchFunction wrapper
     virtual void DispatchFunction(void*)
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
 
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
 
-        T1 p1 = ConvertVariableForDispatch<T1>(ve1);
+        T1 p1 = TinScript::ConvertVariableForDispatch<T1>(ve1);
 
         Dispatch(&p1);
     }
@@ -302,27 +304,27 @@ public:
     // -- dispatch method
     R Dispatch(void* _p1)
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
 
         T1* p1 = (T1*)_p1;
 
         R r = funcptr(*p1);
 
         assert(GetContext()->GetParameter(0));
-        CVariableEntry* returnval = GetContext()->GetParameter(0);
-        returnval->SetValueAddr(NULL, convert_to_void_ptr<R>::Convert(r));
+        TinScript::CVariableEntry* returnval = GetContext()->GetParameter(0);
+        returnval->SetValueAddr(NULL, TinScript::convert_to_void_ptr<R>::Convert(r));
         return (r);
     }
 
     // -- registration method
     virtual bool Register()
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
 
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>()) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::GetRegisteredType(TinScript::GetTypeID<R>()), 1, TinScript::GetTypeID<R>()) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
 
         return (success);
     }
@@ -334,7 +336,7 @@ private:
 // -- class CRegisterFunction<1, void(Args...)> ----------------------------------------
 
 template<typename... Args>
-class CRegisterFunction<1, void(Args...)> : public CRegFunctionBase
+class CRegisterFunction<1, void(Args...)> : public TinScript::CRegFunctionBase
 {
 public:
 
@@ -350,11 +352,11 @@ public:
     // -- virtual DispatchFunction wrapper
     virtual void DispatchFunction(void*)
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
 
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
 
-        T1 p1 = ConvertVariableForDispatch<T1>(ve1);
+        T1 p1 = TinScript::ConvertVariableForDispatch<T1>(ve1);
 
         Dispatch(&p1);
     }
@@ -362,7 +364,7 @@ public:
     // -- dispatch method
     void Dispatch(void* _p1)
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
 
         T1* p1 = (T1*)_p1;
 
@@ -373,12 +375,12 @@ public:
     // -- registration method
     virtual bool Register()
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
 
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::TYPE_void, 1, 0) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
 
         return (success);
     }
@@ -391,10 +393,10 @@ private:
 
 template<typename C, typename R, typename... Args>
 #if !PLATFORM_VS_2019
-class CRegisterMethod<1, C, R(Args...)> : public CRegFunctionBase
+class CRegisterMethod<1, C, R(Args...)> : public TinScript::CRegFunctionBase
 {
 #else
-class CRegisterMethod<1, C, R(C::*)(Args...)> : public CRegFunctionBase
+class CRegisterMethod<1, C, R(C::*)(Args...)> : public TinScript::CRegFunctionBase
 {
 #endif
 public:
@@ -413,18 +415,18 @@ public:
     virtual void DispatchFunction(void* objaddr)
     {
 
-        using T1 = std::tuple_element<0, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
 
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
 
-        T1 p1 = ConvertVariableForDispatch<T1>(ve1);
+        T1 p1 = TinScript::ConvertVariableForDispatch<T1>(ve1);
         Dispatch(objaddr, &p1);
     }
 
     // -- dispatch method
     R Dispatch(void* objaddr, void* _p1)
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
 
         T1* p1 = (T1*)_p1;
 
@@ -433,19 +435,19 @@ public:
 
         assert(GetContext()->GetParameter(0));
         TinScript::CVariableEntry* returnval = this->GetContext()->GetParameter(0);
-        returnval->SetValueAddr(NULL, convert_to_void_ptr<R>::Convert(r));
+        returnval->SetValueAddr(NULL, TinScript::convert_to_void_ptr<R>::Convert(r));
         return (r);
     }
 
     // -- registration method
     virtual bool Register()
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
 
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>()) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::GetRegisteredType(TinScript::GetTypeID<R>()), 1, TinScript::GetTypeID<R>()) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
 
         return (success);
     }
@@ -457,10 +459,10 @@ private:
 
 template<typename C, typename... Args>
 #if !PLATFORM_VS_2019
-class CRegisterMethod<1, C, void(Args...)> : public CRegFunctionBase
+class CRegisterMethod<1, C, void(Args...)> : public TinScript::CRegFunctionBase
 {
 #else
-class CRegisterMethod<1, C, void(C::*)(Args...)> : public CRegFunctionBase
+class CRegisterMethod<1, C, void(C::*)(Args...)> : public TinScript::CRegFunctionBase
 {
 #endif
 public:
@@ -479,11 +481,11 @@ public:
     virtual void DispatchFunction(void* objaddr)
     {
 
-        using T1 = std::tuple_element<0, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
 
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
 
-        T1 p1 = ConvertVariableForDispatch<T1>(ve1);
+        T1 p1 = TinScript::ConvertVariableForDispatch<T1>(ve1);
 
         Dispatch(objaddr, &p1);
     }
@@ -491,7 +493,7 @@ public:
     // -- dispatch method
     void Dispatch(void* objaddr, void* _p1)
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
 
         T1* p1 = (T1*)_p1;
 
@@ -503,13 +505,13 @@ public:
     // -- registration method
     virtual bool Register()
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
 
 
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::TYPE_void, 1, 0) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
 
 
         return (success);
@@ -526,7 +528,7 @@ private:
 // -- class CRegisterFunction<2, R(Args...)> ----------------------------------------
 
 template<typename R, typename... Args>
-class CRegisterFunction<2, R(Args...)> : public CRegFunctionBase
+class CRegisterFunction<2, R(Args...)> : public TinScript::CRegFunctionBase
 {
 public:
 
@@ -542,14 +544,14 @@ public:
     // -- virtual DispatchFunction wrapper
     virtual void DispatchFunction(void*)
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
 
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
 
-        T1 p1 = ConvertVariableForDispatch<T1>(ve1);
-        T2 p2 = ConvertVariableForDispatch<T2>(ve2);
+        T1 p1 = TinScript::ConvertVariableForDispatch<T1>(ve1);
+        T2 p2 = TinScript::ConvertVariableForDispatch<T2>(ve2);
 
         Dispatch(&p1, &p2);
     }
@@ -557,8 +559,8 @@ public:
     // -- dispatch method
     R Dispatch(void* _p1, void* _p2)
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
 
         T1* p1 = (T1*)_p1;
         T2* p2 = (T2*)_p2;
@@ -566,22 +568,22 @@ public:
         R r = funcptr(*p1, *p2);
 
         assert(GetContext()->GetParameter(0));
-        CVariableEntry* returnval = GetContext()->GetParameter(0);
-        returnval->SetValueAddr(NULL, convert_to_void_ptr<R>::Convert(r));
+        TinScript::CVariableEntry* returnval = GetContext()->GetParameter(0);
+        returnval->SetValueAddr(NULL, TinScript::convert_to_void_ptr<R>::Convert(r));
         return (r);
     }
 
     // -- registration method
     virtual bool Register()
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
 
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>()) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::GetRegisteredType(TinScript::GetTypeID<R>()), 1, TinScript::GetTypeID<R>()) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
 
         return (success);
     }
@@ -593,7 +595,7 @@ private:
 // -- class CRegisterFunction<2, void(Args...)> ----------------------------------------
 
 template<typename... Args>
-class CRegisterFunction<2, void(Args...)> : public CRegFunctionBase
+class CRegisterFunction<2, void(Args...)> : public TinScript::CRegFunctionBase
 {
 public:
 
@@ -609,14 +611,14 @@ public:
     // -- virtual DispatchFunction wrapper
     virtual void DispatchFunction(void*)
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
 
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
 
-        T1 p1 = ConvertVariableForDispatch<T1>(ve1);
-        T2 p2 = ConvertVariableForDispatch<T2>(ve2);
+        T1 p1 = TinScript::ConvertVariableForDispatch<T1>(ve1);
+        T2 p2 = TinScript::ConvertVariableForDispatch<T2>(ve2);
 
         Dispatch(&p1, &p2);
     }
@@ -624,8 +626,8 @@ public:
     // -- dispatch method
     void Dispatch(void* _p1, void* _p2)
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
 
         T1* p1 = (T1*)_p1;
         T2* p2 = (T2*)_p2;
@@ -637,14 +639,14 @@ public:
     // -- registration method
     virtual bool Register()
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
 
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::TYPE_void, 1, 0) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
 
         return (success);
     }
@@ -657,10 +659,10 @@ private:
 
 template<typename C, typename R, typename... Args>
 #if !PLATFORM_VS_2019
-class CRegisterMethod<2, C, R(Args...)> : public CRegFunctionBase
+class CRegisterMethod<2, C, R(Args...)> : public TinScript::CRegFunctionBase
 {
 #else
-class CRegisterMethod<2, C, R(C::*)(Args...)> : public CRegFunctionBase
+class CRegisterMethod<2, C, R(C::*)(Args...)> : public TinScript::CRegFunctionBase
 {
 #endif
 public:
@@ -679,22 +681,22 @@ public:
     virtual void DispatchFunction(void* objaddr)
     {
 
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
 
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
 
-        T1 p1 = ConvertVariableForDispatch<T1>(ve1);
-        T2 p2 = ConvertVariableForDispatch<T2>(ve2);
+        T1 p1 = TinScript::ConvertVariableForDispatch<T1>(ve1);
+        T2 p2 = TinScript::ConvertVariableForDispatch<T2>(ve2);
         Dispatch(objaddr, &p1, &p2);
     }
 
     // -- dispatch method
     R Dispatch(void* objaddr, void* _p1, void* _p2)
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
 
         T1* p1 = (T1*)_p1;
         T2* p2 = (T2*)_p2;
@@ -704,21 +706,21 @@ public:
 
         assert(GetContext()->GetParameter(0));
         TinScript::CVariableEntry* returnval = this->GetContext()->GetParameter(0);
-        returnval->SetValueAddr(NULL, convert_to_void_ptr<R>::Convert(r));
+        returnval->SetValueAddr(NULL, TinScript::convert_to_void_ptr<R>::Convert(r));
         return (r);
     }
 
     // -- registration method
     virtual bool Register()
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
 
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>()) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::GetRegisteredType(TinScript::GetTypeID<R>()), 1, TinScript::GetTypeID<R>()) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
 
         return (success);
     }
@@ -730,10 +732,10 @@ private:
 
 template<typename C, typename... Args>
 #if !PLATFORM_VS_2019
-class CRegisterMethod<2, C, void(Args...)> : public CRegFunctionBase
+class CRegisterMethod<2, C, void(Args...)> : public TinScript::CRegFunctionBase
 {
 #else
-class CRegisterMethod<2, C, void(C::*)(Args...)> : public CRegFunctionBase
+class CRegisterMethod<2, C, void(C::*)(Args...)> : public TinScript::CRegFunctionBase
 {
 #endif
 public:
@@ -752,14 +754,14 @@ public:
     virtual void DispatchFunction(void* objaddr)
     {
 
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
 
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
 
-        T1 p1 = ConvertVariableForDispatch<T1>(ve1);
-        T2 p2 = ConvertVariableForDispatch<T2>(ve2);
+        T1 p1 = TinScript::ConvertVariableForDispatch<T1>(ve1);
+        T2 p2 = TinScript::ConvertVariableForDispatch<T2>(ve2);
 
         Dispatch(objaddr, &p1, &p2);
     }
@@ -767,8 +769,8 @@ public:
     // -- dispatch method
     void Dispatch(void* objaddr, void* _p1, void* _p2)
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
 
         T1* p1 = (T1*)_p1;
         T2* p2 = (T2*)_p2;
@@ -781,15 +783,15 @@ public:
     // -- registration method
     virtual bool Register()
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
 
 
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::TYPE_void, 1, 0) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
 
 
         return (success);
@@ -806,7 +808,7 @@ private:
 // -- class CRegisterFunction<3, R(Args...)> ----------------------------------------
 
 template<typename R, typename... Args>
-class CRegisterFunction<3, R(Args...)> : public CRegFunctionBase
+class CRegisterFunction<3, R(Args...)> : public TinScript::CRegFunctionBase
 {
 public:
 
@@ -822,17 +824,17 @@ public:
     // -- virtual DispatchFunction wrapper
     virtual void DispatchFunction(void*)
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
 
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
 
-        T1 p1 = ConvertVariableForDispatch<T1>(ve1);
-        T2 p2 = ConvertVariableForDispatch<T2>(ve2);
-        T3 p3 = ConvertVariableForDispatch<T3>(ve3);
+        T1 p1 = TinScript::ConvertVariableForDispatch<T1>(ve1);
+        T2 p2 = TinScript::ConvertVariableForDispatch<T2>(ve2);
+        T3 p3 = TinScript::ConvertVariableForDispatch<T3>(ve3);
 
         Dispatch(&p1, &p2, &p3);
     }
@@ -840,9 +842,9 @@ public:
     // -- dispatch method
     R Dispatch(void* _p1, void* _p2, void* _p3)
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
 
         T1* p1 = (T1*)_p1;
         T2* p2 = (T2*)_p2;
@@ -851,24 +853,24 @@ public:
         R r = funcptr(*p1, *p2, *p3);
 
         assert(GetContext()->GetParameter(0));
-        CVariableEntry* returnval = GetContext()->GetParameter(0);
-        returnval->SetValueAddr(NULL, convert_to_void_ptr<R>::Convert(r));
+        TinScript::CVariableEntry* returnval = GetContext()->GetParameter(0);
+        returnval->SetValueAddr(NULL, TinScript::convert_to_void_ptr<R>::Convert(r));
         return (r);
     }
 
     // -- registration method
     virtual bool Register()
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
 
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>()) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::GetRegisteredType(TinScript::GetTypeID<R>()), 1, TinScript::GetTypeID<R>()) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
 
         return (success);
     }
@@ -880,7 +882,7 @@ private:
 // -- class CRegisterFunction<3, void(Args...)> ----------------------------------------
 
 template<typename... Args>
-class CRegisterFunction<3, void(Args...)> : public CRegFunctionBase
+class CRegisterFunction<3, void(Args...)> : public TinScript::CRegFunctionBase
 {
 public:
 
@@ -896,17 +898,17 @@ public:
     // -- virtual DispatchFunction wrapper
     virtual void DispatchFunction(void*)
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
 
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
 
-        T1 p1 = ConvertVariableForDispatch<T1>(ve1);
-        T2 p2 = ConvertVariableForDispatch<T2>(ve2);
-        T3 p3 = ConvertVariableForDispatch<T3>(ve3);
+        T1 p1 = TinScript::ConvertVariableForDispatch<T1>(ve1);
+        T2 p2 = TinScript::ConvertVariableForDispatch<T2>(ve2);
+        T3 p3 = TinScript::ConvertVariableForDispatch<T3>(ve3);
 
         Dispatch(&p1, &p2, &p3);
     }
@@ -914,9 +916,9 @@ public:
     // -- dispatch method
     void Dispatch(void* _p1, void* _p2, void* _p3)
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
 
         T1* p1 = (T1*)_p1;
         T2* p2 = (T2*)_p2;
@@ -929,16 +931,16 @@ public:
     // -- registration method
     virtual bool Register()
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
 
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::TYPE_void, 1, 0) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
 
         return (success);
     }
@@ -951,10 +953,10 @@ private:
 
 template<typename C, typename R, typename... Args>
 #if !PLATFORM_VS_2019
-class CRegisterMethod<3, C, R(Args...)> : public CRegFunctionBase
+class CRegisterMethod<3, C, R(Args...)> : public TinScript::CRegFunctionBase
 {
 #else
-class CRegisterMethod<3, C, R(C::*)(Args...)> : public CRegFunctionBase
+class CRegisterMethod<3, C, R(C::*)(Args...)> : public TinScript::CRegFunctionBase
 {
 #endif
 public:
@@ -973,26 +975,26 @@ public:
     virtual void DispatchFunction(void* objaddr)
     {
 
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
 
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
 
-        T1 p1 = ConvertVariableForDispatch<T1>(ve1);
-        T2 p2 = ConvertVariableForDispatch<T2>(ve2);
-        T3 p3 = ConvertVariableForDispatch<T3>(ve3);
+        T1 p1 = TinScript::ConvertVariableForDispatch<T1>(ve1);
+        T2 p2 = TinScript::ConvertVariableForDispatch<T2>(ve2);
+        T3 p3 = TinScript::ConvertVariableForDispatch<T3>(ve3);
         Dispatch(objaddr, &p1, &p2, &p3);
     }
 
     // -- dispatch method
     R Dispatch(void* objaddr, void* _p1, void* _p2, void* _p3)
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
 
         T1* p1 = (T1*)_p1;
         T2* p2 = (T2*)_p2;
@@ -1003,23 +1005,23 @@ public:
 
         assert(GetContext()->GetParameter(0));
         TinScript::CVariableEntry* returnval = this->GetContext()->GetParameter(0);
-        returnval->SetValueAddr(NULL, convert_to_void_ptr<R>::Convert(r));
+        returnval->SetValueAddr(NULL, TinScript::convert_to_void_ptr<R>::Convert(r));
         return (r);
     }
 
     // -- registration method
     virtual bool Register()
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
 
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>()) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::GetRegisteredType(TinScript::GetTypeID<R>()), 1, TinScript::GetTypeID<R>()) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
 
         return (success);
     }
@@ -1031,10 +1033,10 @@ private:
 
 template<typename C, typename... Args>
 #if !PLATFORM_VS_2019
-class CRegisterMethod<3, C, void(Args...)> : public CRegFunctionBase
+class CRegisterMethod<3, C, void(Args...)> : public TinScript::CRegFunctionBase
 {
 #else
-class CRegisterMethod<3, C, void(C::*)(Args...)> : public CRegFunctionBase
+class CRegisterMethod<3, C, void(C::*)(Args...)> : public TinScript::CRegFunctionBase
 {
 #endif
 public:
@@ -1053,17 +1055,17 @@ public:
     virtual void DispatchFunction(void* objaddr)
     {
 
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
 
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
 
-        T1 p1 = ConvertVariableForDispatch<T1>(ve1);
-        T2 p2 = ConvertVariableForDispatch<T2>(ve2);
-        T3 p3 = ConvertVariableForDispatch<T3>(ve3);
+        T1 p1 = TinScript::ConvertVariableForDispatch<T1>(ve1);
+        T2 p2 = TinScript::ConvertVariableForDispatch<T2>(ve2);
+        T3 p3 = TinScript::ConvertVariableForDispatch<T3>(ve3);
 
         Dispatch(objaddr, &p1, &p2, &p3);
     }
@@ -1071,9 +1073,9 @@ public:
     // -- dispatch method
     void Dispatch(void* objaddr, void* _p1, void* _p2, void* _p3)
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
 
         T1* p1 = (T1*)_p1;
         T2* p2 = (T2*)_p2;
@@ -1087,17 +1089,17 @@ public:
     // -- registration method
     virtual bool Register()
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
 
 
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::TYPE_void, 1, 0) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
 
 
         return (success);
@@ -1114,7 +1116,7 @@ private:
 // -- class CRegisterFunction<4, R(Args...)> ----------------------------------------
 
 template<typename R, typename... Args>
-class CRegisterFunction<4, R(Args...)> : public CRegFunctionBase
+class CRegisterFunction<4, R(Args...)> : public TinScript::CRegFunctionBase
 {
 public:
 
@@ -1130,20 +1132,20 @@ public:
     // -- virtual DispatchFunction wrapper
     virtual void DispatchFunction(void*)
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
 
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
-        CVariableEntry* ve4 = GetContext()->GetParameter(4);
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        TinScript::CVariableEntry* ve4 = GetContext()->GetParameter(4);
 
-        T1 p1 = ConvertVariableForDispatch<T1>(ve1);
-        T2 p2 = ConvertVariableForDispatch<T2>(ve2);
-        T3 p3 = ConvertVariableForDispatch<T3>(ve3);
-        T4 p4 = ConvertVariableForDispatch<T4>(ve4);
+        T1 p1 = TinScript::ConvertVariableForDispatch<T1>(ve1);
+        T2 p2 = TinScript::ConvertVariableForDispatch<T2>(ve2);
+        T3 p3 = TinScript::ConvertVariableForDispatch<T3>(ve3);
+        T4 p4 = TinScript::ConvertVariableForDispatch<T4>(ve4);
 
         Dispatch(&p1, &p2, &p3, &p4);
     }
@@ -1151,10 +1153,10 @@ public:
     // -- dispatch method
     R Dispatch(void* _p1, void* _p2, void* _p3, void* _p4)
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
 
         T1* p1 = (T1*)_p1;
         T2* p2 = (T2*)_p2;
@@ -1164,26 +1166,26 @@ public:
         R r = funcptr(*p1, *p2, *p3, *p4);
 
         assert(GetContext()->GetParameter(0));
-        CVariableEntry* returnval = GetContext()->GetParameter(0);
-        returnval->SetValueAddr(NULL, convert_to_void_ptr<R>::Convert(r));
+        TinScript::CVariableEntry* returnval = GetContext()->GetParameter(0);
+        returnval->SetValueAddr(NULL, TinScript::convert_to_void_ptr<R>::Convert(r));
         return (r);
     }
 
     // -- registration method
     virtual bool Register()
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
 
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>()) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
-        success = fc->AddParameter("_p4", Hash("_p4"), GetRegisteredType(GetTypeID<T4>()), 1, GetTypeID<T4>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::GetRegisteredType(TinScript::GetTypeID<R>()), 1, TinScript::GetTypeID<R>()) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
+        success = fc->AddParameter("_p4", TinScript::Hash("_p4"), TinScript::GetRegisteredType(TinScript::GetTypeID<T4>()), 1, TinScript::GetTypeID<T4>()) && success;
 
         return (success);
     }
@@ -1195,7 +1197,7 @@ private:
 // -- class CRegisterFunction<4, void(Args...)> ----------------------------------------
 
 template<typename... Args>
-class CRegisterFunction<4, void(Args...)> : public CRegFunctionBase
+class CRegisterFunction<4, void(Args...)> : public TinScript::CRegFunctionBase
 {
 public:
 
@@ -1211,20 +1213,20 @@ public:
     // -- virtual DispatchFunction wrapper
     virtual void DispatchFunction(void*)
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
 
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
-        CVariableEntry* ve4 = GetContext()->GetParameter(4);
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        TinScript::CVariableEntry* ve4 = GetContext()->GetParameter(4);
 
-        T1 p1 = ConvertVariableForDispatch<T1>(ve1);
-        T2 p2 = ConvertVariableForDispatch<T2>(ve2);
-        T3 p3 = ConvertVariableForDispatch<T3>(ve3);
-        T4 p4 = ConvertVariableForDispatch<T4>(ve4);
+        T1 p1 = TinScript::ConvertVariableForDispatch<T1>(ve1);
+        T2 p2 = TinScript::ConvertVariableForDispatch<T2>(ve2);
+        T3 p3 = TinScript::ConvertVariableForDispatch<T3>(ve3);
+        T4 p4 = TinScript::ConvertVariableForDispatch<T4>(ve4);
 
         Dispatch(&p1, &p2, &p3, &p4);
     }
@@ -1232,10 +1234,10 @@ public:
     // -- dispatch method
     void Dispatch(void* _p1, void* _p2, void* _p3, void* _p4)
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
 
         T1* p1 = (T1*)_p1;
         T2* p2 = (T2*)_p2;
@@ -1249,18 +1251,18 @@ public:
     // -- registration method
     virtual bool Register()
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
 
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
-        success = fc->AddParameter("_p4", Hash("_p4"), GetRegisteredType(GetTypeID<T4>()), 1, GetTypeID<T4>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::TYPE_void, 1, 0) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
+        success = fc->AddParameter("_p4", TinScript::Hash("_p4"), TinScript::GetRegisteredType(TinScript::GetTypeID<T4>()), 1, TinScript::GetTypeID<T4>()) && success;
 
         return (success);
     }
@@ -1273,10 +1275,10 @@ private:
 
 template<typename C, typename R, typename... Args>
 #if !PLATFORM_VS_2019
-class CRegisterMethod<4, C, R(Args...)> : public CRegFunctionBase
+class CRegisterMethod<4, C, R(Args...)> : public TinScript::CRegFunctionBase
 {
 #else
-class CRegisterMethod<4, C, R(C::*)(Args...)> : public CRegFunctionBase
+class CRegisterMethod<4, C, R(C::*)(Args...)> : public TinScript::CRegFunctionBase
 {
 #endif
 public:
@@ -1295,30 +1297,30 @@ public:
     virtual void DispatchFunction(void* objaddr)
     {
 
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
 
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
-        CVariableEntry* ve4 = GetContext()->GetParameter(4);
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        TinScript::CVariableEntry* ve4 = GetContext()->GetParameter(4);
 
-        T1 p1 = ConvertVariableForDispatch<T1>(ve1);
-        T2 p2 = ConvertVariableForDispatch<T2>(ve2);
-        T3 p3 = ConvertVariableForDispatch<T3>(ve3);
-        T4 p4 = ConvertVariableForDispatch<T4>(ve4);
+        T1 p1 = TinScript::ConvertVariableForDispatch<T1>(ve1);
+        T2 p2 = TinScript::ConvertVariableForDispatch<T2>(ve2);
+        T3 p3 = TinScript::ConvertVariableForDispatch<T3>(ve3);
+        T4 p4 = TinScript::ConvertVariableForDispatch<T4>(ve4);
         Dispatch(objaddr, &p1, &p2, &p3, &p4);
     }
 
     // -- dispatch method
     R Dispatch(void* objaddr, void* _p1, void* _p2, void* _p3, void* _p4)
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
 
         T1* p1 = (T1*)_p1;
         T2* p2 = (T2*)_p2;
@@ -1330,25 +1332,25 @@ public:
 
         assert(GetContext()->GetParameter(0));
         TinScript::CVariableEntry* returnval = this->GetContext()->GetParameter(0);
-        returnval->SetValueAddr(NULL, convert_to_void_ptr<R>::Convert(r));
+        returnval->SetValueAddr(NULL, TinScript::convert_to_void_ptr<R>::Convert(r));
         return (r);
     }
 
     // -- registration method
     virtual bool Register()
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
 
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>()) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
-        success = fc->AddParameter("_p4", Hash("_p4"), GetRegisteredType(GetTypeID<T4>()), 1, GetTypeID<T4>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::GetRegisteredType(TinScript::GetTypeID<R>()), 1, TinScript::GetTypeID<R>()) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
+        success = fc->AddParameter("_p4", TinScript::Hash("_p4"), TinScript::GetRegisteredType(TinScript::GetTypeID<T4>()), 1, TinScript::GetTypeID<T4>()) && success;
 
         return (success);
     }
@@ -1360,10 +1362,10 @@ private:
 
 template<typename C, typename... Args>
 #if !PLATFORM_VS_2019
-class CRegisterMethod<4, C, void(Args...)> : public CRegFunctionBase
+class CRegisterMethod<4, C, void(Args...)> : public TinScript::CRegFunctionBase
 {
 #else
-class CRegisterMethod<4, C, void(C::*)(Args...)> : public CRegFunctionBase
+class CRegisterMethod<4, C, void(C::*)(Args...)> : public TinScript::CRegFunctionBase
 {
 #endif
 public:
@@ -1382,20 +1384,20 @@ public:
     virtual void DispatchFunction(void* objaddr)
     {
 
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
 
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
-        CVariableEntry* ve4 = GetContext()->GetParameter(4);
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        TinScript::CVariableEntry* ve4 = GetContext()->GetParameter(4);
 
-        T1 p1 = ConvertVariableForDispatch<T1>(ve1);
-        T2 p2 = ConvertVariableForDispatch<T2>(ve2);
-        T3 p3 = ConvertVariableForDispatch<T3>(ve3);
-        T4 p4 = ConvertVariableForDispatch<T4>(ve4);
+        T1 p1 = TinScript::ConvertVariableForDispatch<T1>(ve1);
+        T2 p2 = TinScript::ConvertVariableForDispatch<T2>(ve2);
+        T3 p3 = TinScript::ConvertVariableForDispatch<T3>(ve3);
+        T4 p4 = TinScript::ConvertVariableForDispatch<T4>(ve4);
 
         Dispatch(objaddr, &p1, &p2, &p3, &p4);
     }
@@ -1403,10 +1405,10 @@ public:
     // -- dispatch method
     void Dispatch(void* objaddr, void* _p1, void* _p2, void* _p3, void* _p4)
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
 
         T1* p1 = (T1*)_p1;
         T2* p2 = (T2*)_p2;
@@ -1421,19 +1423,19 @@ public:
     // -- registration method
     virtual bool Register()
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
 
 
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
-        success = fc->AddParameter("_p4", Hash("_p4"), GetRegisteredType(GetTypeID<T4>()), 1, GetTypeID<T4>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::TYPE_void, 1, 0) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
+        success = fc->AddParameter("_p4", TinScript::Hash("_p4"), TinScript::GetRegisteredType(TinScript::GetTypeID<T4>()), 1, TinScript::GetTypeID<T4>()) && success;
 
 
         return (success);
@@ -1450,7 +1452,7 @@ private:
 // -- class CRegisterFunction<5, R(Args...)> ----------------------------------------
 
 template<typename R, typename... Args>
-class CRegisterFunction<5, R(Args...)> : public CRegFunctionBase
+class CRegisterFunction<5, R(Args...)> : public TinScript::CRegFunctionBase
 {
 public:
 
@@ -1466,23 +1468,23 @@ public:
     // -- virtual DispatchFunction wrapper
     virtual void DispatchFunction(void*)
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
 
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
-        CVariableEntry* ve4 = GetContext()->GetParameter(4);
-        CVariableEntry* ve5 = GetContext()->GetParameter(5);
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        TinScript::CVariableEntry* ve4 = GetContext()->GetParameter(4);
+        TinScript::CVariableEntry* ve5 = GetContext()->GetParameter(5);
 
-        T1 p1 = ConvertVariableForDispatch<T1>(ve1);
-        T2 p2 = ConvertVariableForDispatch<T2>(ve2);
-        T3 p3 = ConvertVariableForDispatch<T3>(ve3);
-        T4 p4 = ConvertVariableForDispatch<T4>(ve4);
-        T5 p5 = ConvertVariableForDispatch<T5>(ve5);
+        T1 p1 = TinScript::ConvertVariableForDispatch<T1>(ve1);
+        T2 p2 = TinScript::ConvertVariableForDispatch<T2>(ve2);
+        T3 p3 = TinScript::ConvertVariableForDispatch<T3>(ve3);
+        T4 p4 = TinScript::ConvertVariableForDispatch<T4>(ve4);
+        T5 p5 = TinScript::ConvertVariableForDispatch<T5>(ve5);
 
         Dispatch(&p1, &p2, &p3, &p4, &p5);
     }
@@ -1490,11 +1492,11 @@ public:
     // -- dispatch method
     R Dispatch(void* _p1, void* _p2, void* _p3, void* _p4, void* _p5)
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
 
         T1* p1 = (T1*)_p1;
         T2* p2 = (T2*)_p2;
@@ -1505,28 +1507,28 @@ public:
         R r = funcptr(*p1, *p2, *p3, *p4, *p5);
 
         assert(GetContext()->GetParameter(0));
-        CVariableEntry* returnval = GetContext()->GetParameter(0);
-        returnval->SetValueAddr(NULL, convert_to_void_ptr<R>::Convert(r));
+        TinScript::CVariableEntry* returnval = GetContext()->GetParameter(0);
+        returnval->SetValueAddr(NULL, TinScript::convert_to_void_ptr<R>::Convert(r));
         return (r);
     }
 
     // -- registration method
     virtual bool Register()
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
 
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>()) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
-        success = fc->AddParameter("_p4", Hash("_p4"), GetRegisteredType(GetTypeID<T4>()), 1, GetTypeID<T4>()) && success;
-        success = fc->AddParameter("_p5", Hash("_p5"), GetRegisteredType(GetTypeID<T5>()), 1, GetTypeID<T5>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::GetRegisteredType(TinScript::GetTypeID<R>()), 1, TinScript::GetTypeID<R>()) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
+        success = fc->AddParameter("_p4", TinScript::Hash("_p4"), TinScript::GetRegisteredType(TinScript::GetTypeID<T4>()), 1, TinScript::GetTypeID<T4>()) && success;
+        success = fc->AddParameter("_p5", TinScript::Hash("_p5"), TinScript::GetRegisteredType(TinScript::GetTypeID<T5>()), 1, TinScript::GetTypeID<T5>()) && success;
 
         return (success);
     }
@@ -1538,7 +1540,7 @@ private:
 // -- class CRegisterFunction<5, void(Args...)> ----------------------------------------
 
 template<typename... Args>
-class CRegisterFunction<5, void(Args...)> : public CRegFunctionBase
+class CRegisterFunction<5, void(Args...)> : public TinScript::CRegFunctionBase
 {
 public:
 
@@ -1554,23 +1556,23 @@ public:
     // -- virtual DispatchFunction wrapper
     virtual void DispatchFunction(void*)
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
 
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
-        CVariableEntry* ve4 = GetContext()->GetParameter(4);
-        CVariableEntry* ve5 = GetContext()->GetParameter(5);
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        TinScript::CVariableEntry* ve4 = GetContext()->GetParameter(4);
+        TinScript::CVariableEntry* ve5 = GetContext()->GetParameter(5);
 
-        T1 p1 = ConvertVariableForDispatch<T1>(ve1);
-        T2 p2 = ConvertVariableForDispatch<T2>(ve2);
-        T3 p3 = ConvertVariableForDispatch<T3>(ve3);
-        T4 p4 = ConvertVariableForDispatch<T4>(ve4);
-        T5 p5 = ConvertVariableForDispatch<T5>(ve5);
+        T1 p1 = TinScript::ConvertVariableForDispatch<T1>(ve1);
+        T2 p2 = TinScript::ConvertVariableForDispatch<T2>(ve2);
+        T3 p3 = TinScript::ConvertVariableForDispatch<T3>(ve3);
+        T4 p4 = TinScript::ConvertVariableForDispatch<T4>(ve4);
+        T5 p5 = TinScript::ConvertVariableForDispatch<T5>(ve5);
 
         Dispatch(&p1, &p2, &p3, &p4, &p5);
     }
@@ -1578,11 +1580,11 @@ public:
     // -- dispatch method
     void Dispatch(void* _p1, void* _p2, void* _p3, void* _p4, void* _p5)
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
 
         T1* p1 = (T1*)_p1;
         T2* p2 = (T2*)_p2;
@@ -1597,20 +1599,20 @@ public:
     // -- registration method
     virtual bool Register()
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
 
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
-        success = fc->AddParameter("_p4", Hash("_p4"), GetRegisteredType(GetTypeID<T4>()), 1, GetTypeID<T4>()) && success;
-        success = fc->AddParameter("_p5", Hash("_p5"), GetRegisteredType(GetTypeID<T5>()), 1, GetTypeID<T5>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::TYPE_void, 1, 0) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
+        success = fc->AddParameter("_p4", TinScript::Hash("_p4"), TinScript::GetRegisteredType(TinScript::GetTypeID<T4>()), 1, TinScript::GetTypeID<T4>()) && success;
+        success = fc->AddParameter("_p5", TinScript::Hash("_p5"), TinScript::GetRegisteredType(TinScript::GetTypeID<T5>()), 1, TinScript::GetTypeID<T5>()) && success;
 
         return (success);
     }
@@ -1623,10 +1625,10 @@ private:
 
 template<typename C, typename R, typename... Args>
 #if !PLATFORM_VS_2019
-class CRegisterMethod<5, C, R(Args...)> : public CRegFunctionBase
+class CRegisterMethod<5, C, R(Args...)> : public TinScript::CRegFunctionBase
 {
 #else
-class CRegisterMethod<5, C, R(C::*)(Args...)> : public CRegFunctionBase
+class CRegisterMethod<5, C, R(C::*)(Args...)> : public TinScript::CRegFunctionBase
 {
 #endif
 public:
@@ -1645,34 +1647,34 @@ public:
     virtual void DispatchFunction(void* objaddr)
     {
 
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
 
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
-        CVariableEntry* ve4 = GetContext()->GetParameter(4);
-        CVariableEntry* ve5 = GetContext()->GetParameter(5);
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        TinScript::CVariableEntry* ve4 = GetContext()->GetParameter(4);
+        TinScript::CVariableEntry* ve5 = GetContext()->GetParameter(5);
 
-        T1 p1 = ConvertVariableForDispatch<T1>(ve1);
-        T2 p2 = ConvertVariableForDispatch<T2>(ve2);
-        T3 p3 = ConvertVariableForDispatch<T3>(ve3);
-        T4 p4 = ConvertVariableForDispatch<T4>(ve4);
-        T5 p5 = ConvertVariableForDispatch<T5>(ve5);
+        T1 p1 = TinScript::ConvertVariableForDispatch<T1>(ve1);
+        T2 p2 = TinScript::ConvertVariableForDispatch<T2>(ve2);
+        T3 p3 = TinScript::ConvertVariableForDispatch<T3>(ve3);
+        T4 p4 = TinScript::ConvertVariableForDispatch<T4>(ve4);
+        T5 p5 = TinScript::ConvertVariableForDispatch<T5>(ve5);
         Dispatch(objaddr, &p1, &p2, &p3, &p4, &p5);
     }
 
     // -- dispatch method
     R Dispatch(void* objaddr, void* _p1, void* _p2, void* _p3, void* _p4, void* _p5)
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
 
         T1* p1 = (T1*)_p1;
         T2* p2 = (T2*)_p2;
@@ -1685,27 +1687,27 @@ public:
 
         assert(GetContext()->GetParameter(0));
         TinScript::CVariableEntry* returnval = this->GetContext()->GetParameter(0);
-        returnval->SetValueAddr(NULL, convert_to_void_ptr<R>::Convert(r));
+        returnval->SetValueAddr(NULL, TinScript::convert_to_void_ptr<R>::Convert(r));
         return (r);
     }
 
     // -- registration method
     virtual bool Register()
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
 
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>()) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
-        success = fc->AddParameter("_p4", Hash("_p4"), GetRegisteredType(GetTypeID<T4>()), 1, GetTypeID<T4>()) && success;
-        success = fc->AddParameter("_p5", Hash("_p5"), GetRegisteredType(GetTypeID<T5>()), 1, GetTypeID<T5>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::GetRegisteredType(TinScript::GetTypeID<R>()), 1, TinScript::GetTypeID<R>()) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
+        success = fc->AddParameter("_p4", TinScript::Hash("_p4"), TinScript::GetRegisteredType(TinScript::GetTypeID<T4>()), 1, TinScript::GetTypeID<T4>()) && success;
+        success = fc->AddParameter("_p5", TinScript::Hash("_p5"), TinScript::GetRegisteredType(TinScript::GetTypeID<T5>()), 1, TinScript::GetTypeID<T5>()) && success;
 
         return (success);
     }
@@ -1717,10 +1719,10 @@ private:
 
 template<typename C, typename... Args>
 #if !PLATFORM_VS_2019
-class CRegisterMethod<5, C, void(Args...)> : public CRegFunctionBase
+class CRegisterMethod<5, C, void(Args...)> : public TinScript::CRegFunctionBase
 {
 #else
-class CRegisterMethod<5, C, void(C::*)(Args...)> : public CRegFunctionBase
+class CRegisterMethod<5, C, void(C::*)(Args...)> : public TinScript::CRegFunctionBase
 {
 #endif
 public:
@@ -1739,23 +1741,23 @@ public:
     virtual void DispatchFunction(void* objaddr)
     {
 
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
 
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
-        CVariableEntry* ve4 = GetContext()->GetParameter(4);
-        CVariableEntry* ve5 = GetContext()->GetParameter(5);
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        TinScript::CVariableEntry* ve4 = GetContext()->GetParameter(4);
+        TinScript::CVariableEntry* ve5 = GetContext()->GetParameter(5);
 
-        T1 p1 = ConvertVariableForDispatch<T1>(ve1);
-        T2 p2 = ConvertVariableForDispatch<T2>(ve2);
-        T3 p3 = ConvertVariableForDispatch<T3>(ve3);
-        T4 p4 = ConvertVariableForDispatch<T4>(ve4);
-        T5 p5 = ConvertVariableForDispatch<T5>(ve5);
+        T1 p1 = TinScript::ConvertVariableForDispatch<T1>(ve1);
+        T2 p2 = TinScript::ConvertVariableForDispatch<T2>(ve2);
+        T3 p3 = TinScript::ConvertVariableForDispatch<T3>(ve3);
+        T4 p4 = TinScript::ConvertVariableForDispatch<T4>(ve4);
+        T5 p5 = TinScript::ConvertVariableForDispatch<T5>(ve5);
 
         Dispatch(objaddr, &p1, &p2, &p3, &p4, &p5);
     }
@@ -1763,11 +1765,11 @@ public:
     // -- dispatch method
     void Dispatch(void* objaddr, void* _p1, void* _p2, void* _p3, void* _p4, void* _p5)
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
 
         T1* p1 = (T1*)_p1;
         T2* p2 = (T2*)_p2;
@@ -1783,21 +1785,21 @@ public:
     // -- registration method
     virtual bool Register()
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
 
 
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
-        success = fc->AddParameter("_p4", Hash("_p4"), GetRegisteredType(GetTypeID<T4>()), 1, GetTypeID<T4>()) && success;
-        success = fc->AddParameter("_p5", Hash("_p5"), GetRegisteredType(GetTypeID<T5>()), 1, GetTypeID<T5>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::TYPE_void, 1, 0) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
+        success = fc->AddParameter("_p4", TinScript::Hash("_p4"), TinScript::GetRegisteredType(TinScript::GetTypeID<T4>()), 1, TinScript::GetTypeID<T4>()) && success;
+        success = fc->AddParameter("_p5", TinScript::Hash("_p5"), TinScript::GetRegisteredType(TinScript::GetTypeID<T5>()), 1, TinScript::GetTypeID<T5>()) && success;
 
 
         return (success);
@@ -1814,7 +1816,7 @@ private:
 // -- class CRegisterFunction<6, R(Args...)> ----------------------------------------
 
 template<typename R, typename... Args>
-class CRegisterFunction<6, R(Args...)> : public CRegFunctionBase
+class CRegisterFunction<6, R(Args...)> : public TinScript::CRegFunctionBase
 {
 public:
 
@@ -1830,26 +1832,26 @@ public:
     // -- virtual DispatchFunction wrapper
     virtual void DispatchFunction(void*)
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
 
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
-        CVariableEntry* ve4 = GetContext()->GetParameter(4);
-        CVariableEntry* ve5 = GetContext()->GetParameter(5);
-        CVariableEntry* ve6 = GetContext()->GetParameter(6);
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        TinScript::CVariableEntry* ve4 = GetContext()->GetParameter(4);
+        TinScript::CVariableEntry* ve5 = GetContext()->GetParameter(5);
+        TinScript::CVariableEntry* ve6 = GetContext()->GetParameter(6);
 
-        T1 p1 = ConvertVariableForDispatch<T1>(ve1);
-        T2 p2 = ConvertVariableForDispatch<T2>(ve2);
-        T3 p3 = ConvertVariableForDispatch<T3>(ve3);
-        T4 p4 = ConvertVariableForDispatch<T4>(ve4);
-        T5 p5 = ConvertVariableForDispatch<T5>(ve5);
-        T6 p6 = ConvertVariableForDispatch<T6>(ve6);
+        T1 p1 = TinScript::ConvertVariableForDispatch<T1>(ve1);
+        T2 p2 = TinScript::ConvertVariableForDispatch<T2>(ve2);
+        T3 p3 = TinScript::ConvertVariableForDispatch<T3>(ve3);
+        T4 p4 = TinScript::ConvertVariableForDispatch<T4>(ve4);
+        T5 p5 = TinScript::ConvertVariableForDispatch<T5>(ve5);
+        T6 p6 = TinScript::ConvertVariableForDispatch<T6>(ve6);
 
         Dispatch(&p1, &p2, &p3, &p4, &p5, &p6);
     }
@@ -1857,12 +1859,12 @@ public:
     // -- dispatch method
     R Dispatch(void* _p1, void* _p2, void* _p3, void* _p4, void* _p5, void* _p6)
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
 
         T1* p1 = (T1*)_p1;
         T2* p2 = (T2*)_p2;
@@ -1874,30 +1876,30 @@ public:
         R r = funcptr(*p1, *p2, *p3, *p4, *p5, *p6);
 
         assert(GetContext()->GetParameter(0));
-        CVariableEntry* returnval = GetContext()->GetParameter(0);
-        returnval->SetValueAddr(NULL, convert_to_void_ptr<R>::Convert(r));
+        TinScript::CVariableEntry* returnval = GetContext()->GetParameter(0);
+        returnval->SetValueAddr(NULL, TinScript::convert_to_void_ptr<R>::Convert(r));
         return (r);
     }
 
     // -- registration method
     virtual bool Register()
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
 
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>()) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
-        success = fc->AddParameter("_p4", Hash("_p4"), GetRegisteredType(GetTypeID<T4>()), 1, GetTypeID<T4>()) && success;
-        success = fc->AddParameter("_p5", Hash("_p5"), GetRegisteredType(GetTypeID<T5>()), 1, GetTypeID<T5>()) && success;
-        success = fc->AddParameter("_p6", Hash("_p6"), GetRegisteredType(GetTypeID<T6>()), 1, GetTypeID<T6>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::GetRegisteredType(TinScript::GetTypeID<R>()), 1, TinScript::GetTypeID<R>()) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
+        success = fc->AddParameter("_p4", TinScript::Hash("_p4"), TinScript::GetRegisteredType(TinScript::GetTypeID<T4>()), 1, TinScript::GetTypeID<T4>()) && success;
+        success = fc->AddParameter("_p5", TinScript::Hash("_p5"), TinScript::GetRegisteredType(TinScript::GetTypeID<T5>()), 1, TinScript::GetTypeID<T5>()) && success;
+        success = fc->AddParameter("_p6", TinScript::Hash("_p6"), TinScript::GetRegisteredType(TinScript::GetTypeID<T6>()), 1, TinScript::GetTypeID<T6>()) && success;
 
         return (success);
     }
@@ -1909,7 +1911,7 @@ private:
 // -- class CRegisterFunction<6, void(Args...)> ----------------------------------------
 
 template<typename... Args>
-class CRegisterFunction<6, void(Args...)> : public CRegFunctionBase
+class CRegisterFunction<6, void(Args...)> : public TinScript::CRegFunctionBase
 {
 public:
 
@@ -1925,26 +1927,26 @@ public:
     // -- virtual DispatchFunction wrapper
     virtual void DispatchFunction(void*)
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
 
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
-        CVariableEntry* ve4 = GetContext()->GetParameter(4);
-        CVariableEntry* ve5 = GetContext()->GetParameter(5);
-        CVariableEntry* ve6 = GetContext()->GetParameter(6);
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        TinScript::CVariableEntry* ve4 = GetContext()->GetParameter(4);
+        TinScript::CVariableEntry* ve5 = GetContext()->GetParameter(5);
+        TinScript::CVariableEntry* ve6 = GetContext()->GetParameter(6);
 
-        T1 p1 = ConvertVariableForDispatch<T1>(ve1);
-        T2 p2 = ConvertVariableForDispatch<T2>(ve2);
-        T3 p3 = ConvertVariableForDispatch<T3>(ve3);
-        T4 p4 = ConvertVariableForDispatch<T4>(ve4);
-        T5 p5 = ConvertVariableForDispatch<T5>(ve5);
-        T6 p6 = ConvertVariableForDispatch<T6>(ve6);
+        T1 p1 = TinScript::ConvertVariableForDispatch<T1>(ve1);
+        T2 p2 = TinScript::ConvertVariableForDispatch<T2>(ve2);
+        T3 p3 = TinScript::ConvertVariableForDispatch<T3>(ve3);
+        T4 p4 = TinScript::ConvertVariableForDispatch<T4>(ve4);
+        T5 p5 = TinScript::ConvertVariableForDispatch<T5>(ve5);
+        T6 p6 = TinScript::ConvertVariableForDispatch<T6>(ve6);
 
         Dispatch(&p1, &p2, &p3, &p4, &p5, &p6);
     }
@@ -1952,12 +1954,12 @@ public:
     // -- dispatch method
     void Dispatch(void* _p1, void* _p2, void* _p3, void* _p4, void* _p5, void* _p6)
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
 
         T1* p1 = (T1*)_p1;
         T2* p2 = (T2*)_p2;
@@ -1973,22 +1975,22 @@ public:
     // -- registration method
     virtual bool Register()
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
 
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
-        success = fc->AddParameter("_p4", Hash("_p4"), GetRegisteredType(GetTypeID<T4>()), 1, GetTypeID<T4>()) && success;
-        success = fc->AddParameter("_p5", Hash("_p5"), GetRegisteredType(GetTypeID<T5>()), 1, GetTypeID<T5>()) && success;
-        success = fc->AddParameter("_p6", Hash("_p6"), GetRegisteredType(GetTypeID<T6>()), 1, GetTypeID<T6>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::TYPE_void, 1, 0) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
+        success = fc->AddParameter("_p4", TinScript::Hash("_p4"), TinScript::GetRegisteredType(TinScript::GetTypeID<T4>()), 1, TinScript::GetTypeID<T4>()) && success;
+        success = fc->AddParameter("_p5", TinScript::Hash("_p5"), TinScript::GetRegisteredType(TinScript::GetTypeID<T5>()), 1, TinScript::GetTypeID<T5>()) && success;
+        success = fc->AddParameter("_p6", TinScript::Hash("_p6"), TinScript::GetRegisteredType(TinScript::GetTypeID<T6>()), 1, TinScript::GetTypeID<T6>()) && success;
 
         return (success);
     }
@@ -2001,10 +2003,10 @@ private:
 
 template<typename C, typename R, typename... Args>
 #if !PLATFORM_VS_2019
-class CRegisterMethod<6, C, R(Args...)> : public CRegFunctionBase
+class CRegisterMethod<6, C, R(Args...)> : public TinScript::CRegFunctionBase
 {
 #else
-class CRegisterMethod<6, C, R(C::*)(Args...)> : public CRegFunctionBase
+class CRegisterMethod<6, C, R(C::*)(Args...)> : public TinScript::CRegFunctionBase
 {
 #endif
 public:
@@ -2023,38 +2025,38 @@ public:
     virtual void DispatchFunction(void* objaddr)
     {
 
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
 
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
-        CVariableEntry* ve4 = GetContext()->GetParameter(4);
-        CVariableEntry* ve5 = GetContext()->GetParameter(5);
-        CVariableEntry* ve6 = GetContext()->GetParameter(6);
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        TinScript::CVariableEntry* ve4 = GetContext()->GetParameter(4);
+        TinScript::CVariableEntry* ve5 = GetContext()->GetParameter(5);
+        TinScript::CVariableEntry* ve6 = GetContext()->GetParameter(6);
 
-        T1 p1 = ConvertVariableForDispatch<T1>(ve1);
-        T2 p2 = ConvertVariableForDispatch<T2>(ve2);
-        T3 p3 = ConvertVariableForDispatch<T3>(ve3);
-        T4 p4 = ConvertVariableForDispatch<T4>(ve4);
-        T5 p5 = ConvertVariableForDispatch<T5>(ve5);
-        T6 p6 = ConvertVariableForDispatch<T6>(ve6);
+        T1 p1 = TinScript::ConvertVariableForDispatch<T1>(ve1);
+        T2 p2 = TinScript::ConvertVariableForDispatch<T2>(ve2);
+        T3 p3 = TinScript::ConvertVariableForDispatch<T3>(ve3);
+        T4 p4 = TinScript::ConvertVariableForDispatch<T4>(ve4);
+        T5 p5 = TinScript::ConvertVariableForDispatch<T5>(ve5);
+        T6 p6 = TinScript::ConvertVariableForDispatch<T6>(ve6);
         Dispatch(objaddr, &p1, &p2, &p3, &p4, &p5, &p6);
     }
 
     // -- dispatch method
     R Dispatch(void* objaddr, void* _p1, void* _p2, void* _p3, void* _p4, void* _p5, void* _p6)
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
 
         T1* p1 = (T1*)_p1;
         T2* p2 = (T2*)_p2;
@@ -2068,29 +2070,29 @@ public:
 
         assert(GetContext()->GetParameter(0));
         TinScript::CVariableEntry* returnval = this->GetContext()->GetParameter(0);
-        returnval->SetValueAddr(NULL, convert_to_void_ptr<R>::Convert(r));
+        returnval->SetValueAddr(NULL, TinScript::convert_to_void_ptr<R>::Convert(r));
         return (r);
     }
 
     // -- registration method
     virtual bool Register()
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
 
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>()) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
-        success = fc->AddParameter("_p4", Hash("_p4"), GetRegisteredType(GetTypeID<T4>()), 1, GetTypeID<T4>()) && success;
-        success = fc->AddParameter("_p5", Hash("_p5"), GetRegisteredType(GetTypeID<T5>()), 1, GetTypeID<T5>()) && success;
-        success = fc->AddParameter("_p6", Hash("_p6"), GetRegisteredType(GetTypeID<T6>()), 1, GetTypeID<T6>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::GetRegisteredType(TinScript::GetTypeID<R>()), 1, TinScript::GetTypeID<R>()) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
+        success = fc->AddParameter("_p4", TinScript::Hash("_p4"), TinScript::GetRegisteredType(TinScript::GetTypeID<T4>()), 1, TinScript::GetTypeID<T4>()) && success;
+        success = fc->AddParameter("_p5", TinScript::Hash("_p5"), TinScript::GetRegisteredType(TinScript::GetTypeID<T5>()), 1, TinScript::GetTypeID<T5>()) && success;
+        success = fc->AddParameter("_p6", TinScript::Hash("_p6"), TinScript::GetRegisteredType(TinScript::GetTypeID<T6>()), 1, TinScript::GetTypeID<T6>()) && success;
 
         return (success);
     }
@@ -2102,10 +2104,10 @@ private:
 
 template<typename C, typename... Args>
 #if !PLATFORM_VS_2019
-class CRegisterMethod<6, C, void(Args...)> : public CRegFunctionBase
+class CRegisterMethod<6, C, void(Args...)> : public TinScript::CRegFunctionBase
 {
 #else
-class CRegisterMethod<6, C, void(C::*)(Args...)> : public CRegFunctionBase
+class CRegisterMethod<6, C, void(C::*)(Args...)> : public TinScript::CRegFunctionBase
 {
 #endif
 public:
@@ -2124,26 +2126,26 @@ public:
     virtual void DispatchFunction(void* objaddr)
     {
 
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
 
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
-        CVariableEntry* ve4 = GetContext()->GetParameter(4);
-        CVariableEntry* ve5 = GetContext()->GetParameter(5);
-        CVariableEntry* ve6 = GetContext()->GetParameter(6);
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        TinScript::CVariableEntry* ve4 = GetContext()->GetParameter(4);
+        TinScript::CVariableEntry* ve5 = GetContext()->GetParameter(5);
+        TinScript::CVariableEntry* ve6 = GetContext()->GetParameter(6);
 
-        T1 p1 = ConvertVariableForDispatch<T1>(ve1);
-        T2 p2 = ConvertVariableForDispatch<T2>(ve2);
-        T3 p3 = ConvertVariableForDispatch<T3>(ve3);
-        T4 p4 = ConvertVariableForDispatch<T4>(ve4);
-        T5 p5 = ConvertVariableForDispatch<T5>(ve5);
-        T6 p6 = ConvertVariableForDispatch<T6>(ve6);
+        T1 p1 = TinScript::ConvertVariableForDispatch<T1>(ve1);
+        T2 p2 = TinScript::ConvertVariableForDispatch<T2>(ve2);
+        T3 p3 = TinScript::ConvertVariableForDispatch<T3>(ve3);
+        T4 p4 = TinScript::ConvertVariableForDispatch<T4>(ve4);
+        T5 p5 = TinScript::ConvertVariableForDispatch<T5>(ve5);
+        T6 p6 = TinScript::ConvertVariableForDispatch<T6>(ve6);
 
         Dispatch(objaddr, &p1, &p2, &p3, &p4, &p5, &p6);
     }
@@ -2151,12 +2153,12 @@ public:
     // -- dispatch method
     void Dispatch(void* objaddr, void* _p1, void* _p2, void* _p3, void* _p4, void* _p5, void* _p6)
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
 
         T1* p1 = (T1*)_p1;
         T2* p2 = (T2*)_p2;
@@ -2173,23 +2175,23 @@ public:
     // -- registration method
     virtual bool Register()
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
 
 
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
-        success = fc->AddParameter("_p4", Hash("_p4"), GetRegisteredType(GetTypeID<T4>()), 1, GetTypeID<T4>()) && success;
-        success = fc->AddParameter("_p5", Hash("_p5"), GetRegisteredType(GetTypeID<T5>()), 1, GetTypeID<T5>()) && success;
-        success = fc->AddParameter("_p6", Hash("_p6"), GetRegisteredType(GetTypeID<T6>()), 1, GetTypeID<T6>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::TYPE_void, 1, 0) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
+        success = fc->AddParameter("_p4", TinScript::Hash("_p4"), TinScript::GetRegisteredType(TinScript::GetTypeID<T4>()), 1, TinScript::GetTypeID<T4>()) && success;
+        success = fc->AddParameter("_p5", TinScript::Hash("_p5"), TinScript::GetRegisteredType(TinScript::GetTypeID<T5>()), 1, TinScript::GetTypeID<T5>()) && success;
+        success = fc->AddParameter("_p6", TinScript::Hash("_p6"), TinScript::GetRegisteredType(TinScript::GetTypeID<T6>()), 1, TinScript::GetTypeID<T6>()) && success;
 
 
         return (success);
@@ -2206,7 +2208,7 @@ private:
 // -- class CRegisterFunction<7, R(Args...)> ----------------------------------------
 
 template<typename R, typename... Args>
-class CRegisterFunction<7, R(Args...)> : public CRegFunctionBase
+class CRegisterFunction<7, R(Args...)> : public TinScript::CRegFunctionBase
 {
 public:
 
@@ -2222,29 +2224,29 @@ public:
     // -- virtual DispatchFunction wrapper
     virtual void DispatchFunction(void*)
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
-        using T7 = std::tuple_element<6, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
+        using T7 = typename std::tuple_element<6, argument_types>::type;
 
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
-        CVariableEntry* ve4 = GetContext()->GetParameter(4);
-        CVariableEntry* ve5 = GetContext()->GetParameter(5);
-        CVariableEntry* ve6 = GetContext()->GetParameter(6);
-        CVariableEntry* ve7 = GetContext()->GetParameter(7);
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        TinScript::CVariableEntry* ve4 = GetContext()->GetParameter(4);
+        TinScript::CVariableEntry* ve5 = GetContext()->GetParameter(5);
+        TinScript::CVariableEntry* ve6 = GetContext()->GetParameter(6);
+        TinScript::CVariableEntry* ve7 = GetContext()->GetParameter(7);
 
-        T1 p1 = ConvertVariableForDispatch<T1>(ve1);
-        T2 p2 = ConvertVariableForDispatch<T2>(ve2);
-        T3 p3 = ConvertVariableForDispatch<T3>(ve3);
-        T4 p4 = ConvertVariableForDispatch<T4>(ve4);
-        T5 p5 = ConvertVariableForDispatch<T5>(ve5);
-        T6 p6 = ConvertVariableForDispatch<T6>(ve6);
-        T7 p7 = ConvertVariableForDispatch<T7>(ve7);
+        T1 p1 = TinScript::ConvertVariableForDispatch<T1>(ve1);
+        T2 p2 = TinScript::ConvertVariableForDispatch<T2>(ve2);
+        T3 p3 = TinScript::ConvertVariableForDispatch<T3>(ve3);
+        T4 p4 = TinScript::ConvertVariableForDispatch<T4>(ve4);
+        T5 p5 = TinScript::ConvertVariableForDispatch<T5>(ve5);
+        T6 p6 = TinScript::ConvertVariableForDispatch<T6>(ve6);
+        T7 p7 = TinScript::ConvertVariableForDispatch<T7>(ve7);
 
         Dispatch(&p1, &p2, &p3, &p4, &p5, &p6, &p7);
     }
@@ -2252,13 +2254,13 @@ public:
     // -- dispatch method
     R Dispatch(void* _p1, void* _p2, void* _p3, void* _p4, void* _p5, void* _p6, void* _p7)
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
-        using T7 = std::tuple_element<6, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
+        using T7 = typename std::tuple_element<6, argument_types>::type;
 
         T1* p1 = (T1*)_p1;
         T2* p2 = (T2*)_p2;
@@ -2271,32 +2273,32 @@ public:
         R r = funcptr(*p1, *p2, *p3, *p4, *p5, *p6, *p7);
 
         assert(GetContext()->GetParameter(0));
-        CVariableEntry* returnval = GetContext()->GetParameter(0);
-        returnval->SetValueAddr(NULL, convert_to_void_ptr<R>::Convert(r));
+        TinScript::CVariableEntry* returnval = GetContext()->GetParameter(0);
+        returnval->SetValueAddr(NULL, TinScript::convert_to_void_ptr<R>::Convert(r));
         return (r);
     }
 
     // -- registration method
     virtual bool Register()
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
-        using T7 = std::tuple_element<6, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
+        using T7 = typename std::tuple_element<6, argument_types>::type;
 
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>()) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
-        success = fc->AddParameter("_p4", Hash("_p4"), GetRegisteredType(GetTypeID<T4>()), 1, GetTypeID<T4>()) && success;
-        success = fc->AddParameter("_p5", Hash("_p5"), GetRegisteredType(GetTypeID<T5>()), 1, GetTypeID<T5>()) && success;
-        success = fc->AddParameter("_p6", Hash("_p6"), GetRegisteredType(GetTypeID<T6>()), 1, GetTypeID<T6>()) && success;
-        success = fc->AddParameter("_p7", Hash("_p7"), GetRegisteredType(GetTypeID<T7>()), 1, GetTypeID<T7>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::GetRegisteredType(TinScript::GetTypeID<R>()), 1, TinScript::GetTypeID<R>()) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
+        success = fc->AddParameter("_p4", TinScript::Hash("_p4"), TinScript::GetRegisteredType(TinScript::GetTypeID<T4>()), 1, TinScript::GetTypeID<T4>()) && success;
+        success = fc->AddParameter("_p5", TinScript::Hash("_p5"), TinScript::GetRegisteredType(TinScript::GetTypeID<T5>()), 1, TinScript::GetTypeID<T5>()) && success;
+        success = fc->AddParameter("_p6", TinScript::Hash("_p6"), TinScript::GetRegisteredType(TinScript::GetTypeID<T6>()), 1, TinScript::GetTypeID<T6>()) && success;
+        success = fc->AddParameter("_p7", TinScript::Hash("_p7"), TinScript::GetRegisteredType(TinScript::GetTypeID<T7>()), 1, TinScript::GetTypeID<T7>()) && success;
 
         return (success);
     }
@@ -2308,7 +2310,7 @@ private:
 // -- class CRegisterFunction<7, void(Args...)> ----------------------------------------
 
 template<typename... Args>
-class CRegisterFunction<7, void(Args...)> : public CRegFunctionBase
+class CRegisterFunction<7, void(Args...)> : public TinScript::CRegFunctionBase
 {
 public:
 
@@ -2324,29 +2326,29 @@ public:
     // -- virtual DispatchFunction wrapper
     virtual void DispatchFunction(void*)
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
-        using T7 = std::tuple_element<6, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
+        using T7 = typename std::tuple_element<6, argument_types>::type;
 
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
-        CVariableEntry* ve4 = GetContext()->GetParameter(4);
-        CVariableEntry* ve5 = GetContext()->GetParameter(5);
-        CVariableEntry* ve6 = GetContext()->GetParameter(6);
-        CVariableEntry* ve7 = GetContext()->GetParameter(7);
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        TinScript::CVariableEntry* ve4 = GetContext()->GetParameter(4);
+        TinScript::CVariableEntry* ve5 = GetContext()->GetParameter(5);
+        TinScript::CVariableEntry* ve6 = GetContext()->GetParameter(6);
+        TinScript::CVariableEntry* ve7 = GetContext()->GetParameter(7);
 
-        T1 p1 = ConvertVariableForDispatch<T1>(ve1);
-        T2 p2 = ConvertVariableForDispatch<T2>(ve2);
-        T3 p3 = ConvertVariableForDispatch<T3>(ve3);
-        T4 p4 = ConvertVariableForDispatch<T4>(ve4);
-        T5 p5 = ConvertVariableForDispatch<T5>(ve5);
-        T6 p6 = ConvertVariableForDispatch<T6>(ve6);
-        T7 p7 = ConvertVariableForDispatch<T7>(ve7);
+        T1 p1 = TinScript::ConvertVariableForDispatch<T1>(ve1);
+        T2 p2 = TinScript::ConvertVariableForDispatch<T2>(ve2);
+        T3 p3 = TinScript::ConvertVariableForDispatch<T3>(ve3);
+        T4 p4 = TinScript::ConvertVariableForDispatch<T4>(ve4);
+        T5 p5 = TinScript::ConvertVariableForDispatch<T5>(ve5);
+        T6 p6 = TinScript::ConvertVariableForDispatch<T6>(ve6);
+        T7 p7 = TinScript::ConvertVariableForDispatch<T7>(ve7);
 
         Dispatch(&p1, &p2, &p3, &p4, &p5, &p6, &p7);
     }
@@ -2354,13 +2356,13 @@ public:
     // -- dispatch method
     void Dispatch(void* _p1, void* _p2, void* _p3, void* _p4, void* _p5, void* _p6, void* _p7)
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
-        using T7 = std::tuple_element<6, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
+        using T7 = typename std::tuple_element<6, argument_types>::type;
 
         T1* p1 = (T1*)_p1;
         T2* p2 = (T2*)_p2;
@@ -2377,24 +2379,24 @@ public:
     // -- registration method
     virtual bool Register()
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
-        using T7 = std::tuple_element<6, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
+        using T7 = typename std::tuple_element<6, argument_types>::type;
 
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
-        success = fc->AddParameter("_p4", Hash("_p4"), GetRegisteredType(GetTypeID<T4>()), 1, GetTypeID<T4>()) && success;
-        success = fc->AddParameter("_p5", Hash("_p5"), GetRegisteredType(GetTypeID<T5>()), 1, GetTypeID<T5>()) && success;
-        success = fc->AddParameter("_p6", Hash("_p6"), GetRegisteredType(GetTypeID<T6>()), 1, GetTypeID<T6>()) && success;
-        success = fc->AddParameter("_p7", Hash("_p7"), GetRegisteredType(GetTypeID<T7>()), 1, GetTypeID<T7>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::TYPE_void, 1, 0) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
+        success = fc->AddParameter("_p4", TinScript::Hash("_p4"), TinScript::GetRegisteredType(TinScript::GetTypeID<T4>()), 1, TinScript::GetTypeID<T4>()) && success;
+        success = fc->AddParameter("_p5", TinScript::Hash("_p5"), TinScript::GetRegisteredType(TinScript::GetTypeID<T5>()), 1, TinScript::GetTypeID<T5>()) && success;
+        success = fc->AddParameter("_p6", TinScript::Hash("_p6"), TinScript::GetRegisteredType(TinScript::GetTypeID<T6>()), 1, TinScript::GetTypeID<T6>()) && success;
+        success = fc->AddParameter("_p7", TinScript::Hash("_p7"), TinScript::GetRegisteredType(TinScript::GetTypeID<T7>()), 1, TinScript::GetTypeID<T7>()) && success;
 
         return (success);
     }
@@ -2407,10 +2409,10 @@ private:
 
 template<typename C, typename R, typename... Args>
 #if !PLATFORM_VS_2019
-class CRegisterMethod<7, C, R(Args...)> : public CRegFunctionBase
+class CRegisterMethod<7, C, R(Args...)> : public TinScript::CRegFunctionBase
 {
 #else
-class CRegisterMethod<7, C, R(C::*)(Args...)> : public CRegFunctionBase
+class CRegisterMethod<7, C, R(C::*)(Args...)> : public TinScript::CRegFunctionBase
 {
 #endif
 public:
@@ -2429,42 +2431,42 @@ public:
     virtual void DispatchFunction(void* objaddr)
     {
 
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
-        using T7 = std::tuple_element<6, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
+        using T7 = typename std::tuple_element<6, argument_types>::type;
 
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
-        CVariableEntry* ve4 = GetContext()->GetParameter(4);
-        CVariableEntry* ve5 = GetContext()->GetParameter(5);
-        CVariableEntry* ve6 = GetContext()->GetParameter(6);
-        CVariableEntry* ve7 = GetContext()->GetParameter(7);
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        TinScript::CVariableEntry* ve4 = GetContext()->GetParameter(4);
+        TinScript::CVariableEntry* ve5 = GetContext()->GetParameter(5);
+        TinScript::CVariableEntry* ve6 = GetContext()->GetParameter(6);
+        TinScript::CVariableEntry* ve7 = GetContext()->GetParameter(7);
 
-        T1 p1 = ConvertVariableForDispatch<T1>(ve1);
-        T2 p2 = ConvertVariableForDispatch<T2>(ve2);
-        T3 p3 = ConvertVariableForDispatch<T3>(ve3);
-        T4 p4 = ConvertVariableForDispatch<T4>(ve4);
-        T5 p5 = ConvertVariableForDispatch<T5>(ve5);
-        T6 p6 = ConvertVariableForDispatch<T6>(ve6);
-        T7 p7 = ConvertVariableForDispatch<T7>(ve7);
+        T1 p1 = TinScript::ConvertVariableForDispatch<T1>(ve1);
+        T2 p2 = TinScript::ConvertVariableForDispatch<T2>(ve2);
+        T3 p3 = TinScript::ConvertVariableForDispatch<T3>(ve3);
+        T4 p4 = TinScript::ConvertVariableForDispatch<T4>(ve4);
+        T5 p5 = TinScript::ConvertVariableForDispatch<T5>(ve5);
+        T6 p6 = TinScript::ConvertVariableForDispatch<T6>(ve6);
+        T7 p7 = TinScript::ConvertVariableForDispatch<T7>(ve7);
         Dispatch(objaddr, &p1, &p2, &p3, &p4, &p5, &p6, &p7);
     }
 
     // -- dispatch method
     R Dispatch(void* objaddr, void* _p1, void* _p2, void* _p3, void* _p4, void* _p5, void* _p6, void* _p7)
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
-        using T7 = std::tuple_element<6, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
+        using T7 = typename std::tuple_element<6, argument_types>::type;
 
         T1* p1 = (T1*)_p1;
         T2* p2 = (T2*)_p2;
@@ -2479,31 +2481,31 @@ public:
 
         assert(GetContext()->GetParameter(0));
         TinScript::CVariableEntry* returnval = this->GetContext()->GetParameter(0);
-        returnval->SetValueAddr(NULL, convert_to_void_ptr<R>::Convert(r));
+        returnval->SetValueAddr(NULL, TinScript::convert_to_void_ptr<R>::Convert(r));
         return (r);
     }
 
     // -- registration method
     virtual bool Register()
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
-        using T7 = std::tuple_element<6, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
+        using T7 = typename std::tuple_element<6, argument_types>::type;
 
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>()) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
-        success = fc->AddParameter("_p4", Hash("_p4"), GetRegisteredType(GetTypeID<T4>()), 1, GetTypeID<T4>()) && success;
-        success = fc->AddParameter("_p5", Hash("_p5"), GetRegisteredType(GetTypeID<T5>()), 1, GetTypeID<T5>()) && success;
-        success = fc->AddParameter("_p6", Hash("_p6"), GetRegisteredType(GetTypeID<T6>()), 1, GetTypeID<T6>()) && success;
-        success = fc->AddParameter("_p7", Hash("_p7"), GetRegisteredType(GetTypeID<T7>()), 1, GetTypeID<T7>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::GetRegisteredType(TinScript::GetTypeID<R>()), 1, TinScript::GetTypeID<R>()) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
+        success = fc->AddParameter("_p4", TinScript::Hash("_p4"), TinScript::GetRegisteredType(TinScript::GetTypeID<T4>()), 1, TinScript::GetTypeID<T4>()) && success;
+        success = fc->AddParameter("_p5", TinScript::Hash("_p5"), TinScript::GetRegisteredType(TinScript::GetTypeID<T5>()), 1, TinScript::GetTypeID<T5>()) && success;
+        success = fc->AddParameter("_p6", TinScript::Hash("_p6"), TinScript::GetRegisteredType(TinScript::GetTypeID<T6>()), 1, TinScript::GetTypeID<T6>()) && success;
+        success = fc->AddParameter("_p7", TinScript::Hash("_p7"), TinScript::GetRegisteredType(TinScript::GetTypeID<T7>()), 1, TinScript::GetTypeID<T7>()) && success;
 
         return (success);
     }
@@ -2515,10 +2517,10 @@ private:
 
 template<typename C, typename... Args>
 #if !PLATFORM_VS_2019
-class CRegisterMethod<7, C, void(Args...)> : public CRegFunctionBase
+class CRegisterMethod<7, C, void(Args...)> : public TinScript::CRegFunctionBase
 {
 #else
-class CRegisterMethod<7, C, void(C::*)(Args...)> : public CRegFunctionBase
+class CRegisterMethod<7, C, void(C::*)(Args...)> : public TinScript::CRegFunctionBase
 {
 #endif
 public:
@@ -2537,29 +2539,29 @@ public:
     virtual void DispatchFunction(void* objaddr)
     {
 
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
-        using T7 = std::tuple_element<6, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
+        using T7 = typename std::tuple_element<6, argument_types>::type;
 
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
-        CVariableEntry* ve4 = GetContext()->GetParameter(4);
-        CVariableEntry* ve5 = GetContext()->GetParameter(5);
-        CVariableEntry* ve6 = GetContext()->GetParameter(6);
-        CVariableEntry* ve7 = GetContext()->GetParameter(7);
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        TinScript::CVariableEntry* ve4 = GetContext()->GetParameter(4);
+        TinScript::CVariableEntry* ve5 = GetContext()->GetParameter(5);
+        TinScript::CVariableEntry* ve6 = GetContext()->GetParameter(6);
+        TinScript::CVariableEntry* ve7 = GetContext()->GetParameter(7);
 
-        T1 p1 = ConvertVariableForDispatch<T1>(ve1);
-        T2 p2 = ConvertVariableForDispatch<T2>(ve2);
-        T3 p3 = ConvertVariableForDispatch<T3>(ve3);
-        T4 p4 = ConvertVariableForDispatch<T4>(ve4);
-        T5 p5 = ConvertVariableForDispatch<T5>(ve5);
-        T6 p6 = ConvertVariableForDispatch<T6>(ve6);
-        T7 p7 = ConvertVariableForDispatch<T7>(ve7);
+        T1 p1 = TinScript::ConvertVariableForDispatch<T1>(ve1);
+        T2 p2 = TinScript::ConvertVariableForDispatch<T2>(ve2);
+        T3 p3 = TinScript::ConvertVariableForDispatch<T3>(ve3);
+        T4 p4 = TinScript::ConvertVariableForDispatch<T4>(ve4);
+        T5 p5 = TinScript::ConvertVariableForDispatch<T5>(ve5);
+        T6 p6 = TinScript::ConvertVariableForDispatch<T6>(ve6);
+        T7 p7 = TinScript::ConvertVariableForDispatch<T7>(ve7);
 
         Dispatch(objaddr, &p1, &p2, &p3, &p4, &p5, &p6, &p7);
     }
@@ -2567,13 +2569,13 @@ public:
     // -- dispatch method
     void Dispatch(void* objaddr, void* _p1, void* _p2, void* _p3, void* _p4, void* _p5, void* _p6, void* _p7)
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
-        using T7 = std::tuple_element<6, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
+        using T7 = typename std::tuple_element<6, argument_types>::type;
 
         T1* p1 = (T1*)_p1;
         T2* p2 = (T2*)_p2;
@@ -2591,25 +2593,25 @@ public:
     // -- registration method
     virtual bool Register()
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
-        using T7 = std::tuple_element<6, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
+        using T7 = typename std::tuple_element<6, argument_types>::type;
 
 
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
-        success = fc->AddParameter("_p4", Hash("_p4"), GetRegisteredType(GetTypeID<T4>()), 1, GetTypeID<T4>()) && success;
-        success = fc->AddParameter("_p5", Hash("_p5"), GetRegisteredType(GetTypeID<T5>()), 1, GetTypeID<T5>()) && success;
-        success = fc->AddParameter("_p6", Hash("_p6"), GetRegisteredType(GetTypeID<T6>()), 1, GetTypeID<T6>()) && success;
-        success = fc->AddParameter("_p7", Hash("_p7"), GetRegisteredType(GetTypeID<T7>()), 1, GetTypeID<T7>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::TYPE_void, 1, 0) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
+        success = fc->AddParameter("_p4", TinScript::Hash("_p4"), TinScript::GetRegisteredType(TinScript::GetTypeID<T4>()), 1, TinScript::GetTypeID<T4>()) && success;
+        success = fc->AddParameter("_p5", TinScript::Hash("_p5"), TinScript::GetRegisteredType(TinScript::GetTypeID<T5>()), 1, TinScript::GetTypeID<T5>()) && success;
+        success = fc->AddParameter("_p6", TinScript::Hash("_p6"), TinScript::GetRegisteredType(TinScript::GetTypeID<T6>()), 1, TinScript::GetTypeID<T6>()) && success;
+        success = fc->AddParameter("_p7", TinScript::Hash("_p7"), TinScript::GetRegisteredType(TinScript::GetTypeID<T7>()), 1, TinScript::GetTypeID<T7>()) && success;
 
 
         return (success);
@@ -2626,7 +2628,7 @@ private:
 // -- class CRegisterFunction<8, R(Args...)> ----------------------------------------
 
 template<typename R, typename... Args>
-class CRegisterFunction<8, R(Args...)> : public CRegFunctionBase
+class CRegisterFunction<8, R(Args...)> : public TinScript::CRegFunctionBase
 {
 public:
 
@@ -2642,32 +2644,32 @@ public:
     // -- virtual DispatchFunction wrapper
     virtual void DispatchFunction(void*)
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
-        using T7 = std::tuple_element<6, argument_types>::type;
-        using T8 = std::tuple_element<7, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
+        using T7 = typename std::tuple_element<6, argument_types>::type;
+        using T8 = typename std::tuple_element<7, argument_types>::type;
 
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
-        CVariableEntry* ve4 = GetContext()->GetParameter(4);
-        CVariableEntry* ve5 = GetContext()->GetParameter(5);
-        CVariableEntry* ve6 = GetContext()->GetParameter(6);
-        CVariableEntry* ve7 = GetContext()->GetParameter(7);
-        CVariableEntry* ve8 = GetContext()->GetParameter(8);
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        TinScript::CVariableEntry* ve4 = GetContext()->GetParameter(4);
+        TinScript::CVariableEntry* ve5 = GetContext()->GetParameter(5);
+        TinScript::CVariableEntry* ve6 = GetContext()->GetParameter(6);
+        TinScript::CVariableEntry* ve7 = GetContext()->GetParameter(7);
+        TinScript::CVariableEntry* ve8 = GetContext()->GetParameter(8);
 
-        T1 p1 = ConvertVariableForDispatch<T1>(ve1);
-        T2 p2 = ConvertVariableForDispatch<T2>(ve2);
-        T3 p3 = ConvertVariableForDispatch<T3>(ve3);
-        T4 p4 = ConvertVariableForDispatch<T4>(ve4);
-        T5 p5 = ConvertVariableForDispatch<T5>(ve5);
-        T6 p6 = ConvertVariableForDispatch<T6>(ve6);
-        T7 p7 = ConvertVariableForDispatch<T7>(ve7);
-        T8 p8 = ConvertVariableForDispatch<T8>(ve8);
+        T1 p1 = TinScript::ConvertVariableForDispatch<T1>(ve1);
+        T2 p2 = TinScript::ConvertVariableForDispatch<T2>(ve2);
+        T3 p3 = TinScript::ConvertVariableForDispatch<T3>(ve3);
+        T4 p4 = TinScript::ConvertVariableForDispatch<T4>(ve4);
+        T5 p5 = TinScript::ConvertVariableForDispatch<T5>(ve5);
+        T6 p6 = TinScript::ConvertVariableForDispatch<T6>(ve6);
+        T7 p7 = TinScript::ConvertVariableForDispatch<T7>(ve7);
+        T8 p8 = TinScript::ConvertVariableForDispatch<T8>(ve8);
 
         Dispatch(&p1, &p2, &p3, &p4, &p5, &p6, &p7, &p8);
     }
@@ -2675,14 +2677,14 @@ public:
     // -- dispatch method
     R Dispatch(void* _p1, void* _p2, void* _p3, void* _p4, void* _p5, void* _p6, void* _p7, void* _p8)
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
-        using T7 = std::tuple_element<6, argument_types>::type;
-        using T8 = std::tuple_element<7, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
+        using T7 = typename std::tuple_element<6, argument_types>::type;
+        using T8 = typename std::tuple_element<7, argument_types>::type;
 
         T1* p1 = (T1*)_p1;
         T2* p2 = (T2*)_p2;
@@ -2696,34 +2698,34 @@ public:
         R r = funcptr(*p1, *p2, *p3, *p4, *p5, *p6, *p7, *p8);
 
         assert(GetContext()->GetParameter(0));
-        CVariableEntry* returnval = GetContext()->GetParameter(0);
-        returnval->SetValueAddr(NULL, convert_to_void_ptr<R>::Convert(r));
+        TinScript::CVariableEntry* returnval = GetContext()->GetParameter(0);
+        returnval->SetValueAddr(NULL, TinScript::convert_to_void_ptr<R>::Convert(r));
         return (r);
     }
 
     // -- registration method
     virtual bool Register()
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
-        using T7 = std::tuple_element<6, argument_types>::type;
-        using T8 = std::tuple_element<7, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
+        using T7 = typename std::tuple_element<6, argument_types>::type;
+        using T8 = typename std::tuple_element<7, argument_types>::type;
 
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>()) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
-        success = fc->AddParameter("_p4", Hash("_p4"), GetRegisteredType(GetTypeID<T4>()), 1, GetTypeID<T4>()) && success;
-        success = fc->AddParameter("_p5", Hash("_p5"), GetRegisteredType(GetTypeID<T5>()), 1, GetTypeID<T5>()) && success;
-        success = fc->AddParameter("_p6", Hash("_p6"), GetRegisteredType(GetTypeID<T6>()), 1, GetTypeID<T6>()) && success;
-        success = fc->AddParameter("_p7", Hash("_p7"), GetRegisteredType(GetTypeID<T7>()), 1, GetTypeID<T7>()) && success;
-        success = fc->AddParameter("_p8", Hash("_p8"), GetRegisteredType(GetTypeID<T8>()), 1, GetTypeID<T8>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::GetRegisteredType(TinScript::GetTypeID<R>()), 1, TinScript::GetTypeID<R>()) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
+        success = fc->AddParameter("_p4", TinScript::Hash("_p4"), TinScript::GetRegisteredType(TinScript::GetTypeID<T4>()), 1, TinScript::GetTypeID<T4>()) && success;
+        success = fc->AddParameter("_p5", TinScript::Hash("_p5"), TinScript::GetRegisteredType(TinScript::GetTypeID<T5>()), 1, TinScript::GetTypeID<T5>()) && success;
+        success = fc->AddParameter("_p6", TinScript::Hash("_p6"), TinScript::GetRegisteredType(TinScript::GetTypeID<T6>()), 1, TinScript::GetTypeID<T6>()) && success;
+        success = fc->AddParameter("_p7", TinScript::Hash("_p7"), TinScript::GetRegisteredType(TinScript::GetTypeID<T7>()), 1, TinScript::GetTypeID<T7>()) && success;
+        success = fc->AddParameter("_p8", TinScript::Hash("_p8"), TinScript::GetRegisteredType(TinScript::GetTypeID<T8>()), 1, TinScript::GetTypeID<T8>()) && success;
 
         return (success);
     }
@@ -2735,7 +2737,7 @@ private:
 // -- class CRegisterFunction<8, void(Args...)> ----------------------------------------
 
 template<typename... Args>
-class CRegisterFunction<8, void(Args...)> : public CRegFunctionBase
+class CRegisterFunction<8, void(Args...)> : public TinScript::CRegFunctionBase
 {
 public:
 
@@ -2751,32 +2753,32 @@ public:
     // -- virtual DispatchFunction wrapper
     virtual void DispatchFunction(void*)
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
-        using T7 = std::tuple_element<6, argument_types>::type;
-        using T8 = std::tuple_element<7, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
+        using T7 = typename std::tuple_element<6, argument_types>::type;
+        using T8 = typename std::tuple_element<7, argument_types>::type;
 
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
-        CVariableEntry* ve4 = GetContext()->GetParameter(4);
-        CVariableEntry* ve5 = GetContext()->GetParameter(5);
-        CVariableEntry* ve6 = GetContext()->GetParameter(6);
-        CVariableEntry* ve7 = GetContext()->GetParameter(7);
-        CVariableEntry* ve8 = GetContext()->GetParameter(8);
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        TinScript::CVariableEntry* ve4 = GetContext()->GetParameter(4);
+        TinScript::CVariableEntry* ve5 = GetContext()->GetParameter(5);
+        TinScript::CVariableEntry* ve6 = GetContext()->GetParameter(6);
+        TinScript::CVariableEntry* ve7 = GetContext()->GetParameter(7);
+        TinScript::CVariableEntry* ve8 = GetContext()->GetParameter(8);
 
-        T1 p1 = ConvertVariableForDispatch<T1>(ve1);
-        T2 p2 = ConvertVariableForDispatch<T2>(ve2);
-        T3 p3 = ConvertVariableForDispatch<T3>(ve3);
-        T4 p4 = ConvertVariableForDispatch<T4>(ve4);
-        T5 p5 = ConvertVariableForDispatch<T5>(ve5);
-        T6 p6 = ConvertVariableForDispatch<T6>(ve6);
-        T7 p7 = ConvertVariableForDispatch<T7>(ve7);
-        T8 p8 = ConvertVariableForDispatch<T8>(ve8);
+        T1 p1 = TinScript::ConvertVariableForDispatch<T1>(ve1);
+        T2 p2 = TinScript::ConvertVariableForDispatch<T2>(ve2);
+        T3 p3 = TinScript::ConvertVariableForDispatch<T3>(ve3);
+        T4 p4 = TinScript::ConvertVariableForDispatch<T4>(ve4);
+        T5 p5 = TinScript::ConvertVariableForDispatch<T5>(ve5);
+        T6 p6 = TinScript::ConvertVariableForDispatch<T6>(ve6);
+        T7 p7 = TinScript::ConvertVariableForDispatch<T7>(ve7);
+        T8 p8 = TinScript::ConvertVariableForDispatch<T8>(ve8);
 
         Dispatch(&p1, &p2, &p3, &p4, &p5, &p6, &p7, &p8);
     }
@@ -2784,14 +2786,14 @@ public:
     // -- dispatch method
     void Dispatch(void* _p1, void* _p2, void* _p3, void* _p4, void* _p5, void* _p6, void* _p7, void* _p8)
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
-        using T7 = std::tuple_element<6, argument_types>::type;
-        using T8 = std::tuple_element<7, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
+        using T7 = typename std::tuple_element<6, argument_types>::type;
+        using T8 = typename std::tuple_element<7, argument_types>::type;
 
         T1* p1 = (T1*)_p1;
         T2* p2 = (T2*)_p2;
@@ -2809,26 +2811,26 @@ public:
     // -- registration method
     virtual bool Register()
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
-        using T7 = std::tuple_element<6, argument_types>::type;
-        using T8 = std::tuple_element<7, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
+        using T7 = typename std::tuple_element<6, argument_types>::type;
+        using T8 = typename std::tuple_element<7, argument_types>::type;
 
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
-        success = fc->AddParameter("_p4", Hash("_p4"), GetRegisteredType(GetTypeID<T4>()), 1, GetTypeID<T4>()) && success;
-        success = fc->AddParameter("_p5", Hash("_p5"), GetRegisteredType(GetTypeID<T5>()), 1, GetTypeID<T5>()) && success;
-        success = fc->AddParameter("_p6", Hash("_p6"), GetRegisteredType(GetTypeID<T6>()), 1, GetTypeID<T6>()) && success;
-        success = fc->AddParameter("_p7", Hash("_p7"), GetRegisteredType(GetTypeID<T7>()), 1, GetTypeID<T7>()) && success;
-        success = fc->AddParameter("_p8", Hash("_p8"), GetRegisteredType(GetTypeID<T8>()), 1, GetTypeID<T8>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::TYPE_void, 1, 0) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
+        success = fc->AddParameter("_p4", TinScript::Hash("_p4"), TinScript::GetRegisteredType(TinScript::GetTypeID<T4>()), 1, TinScript::GetTypeID<T4>()) && success;
+        success = fc->AddParameter("_p5", TinScript::Hash("_p5"), TinScript::GetRegisteredType(TinScript::GetTypeID<T5>()), 1, TinScript::GetTypeID<T5>()) && success;
+        success = fc->AddParameter("_p6", TinScript::Hash("_p6"), TinScript::GetRegisteredType(TinScript::GetTypeID<T6>()), 1, TinScript::GetTypeID<T6>()) && success;
+        success = fc->AddParameter("_p7", TinScript::Hash("_p7"), TinScript::GetRegisteredType(TinScript::GetTypeID<T7>()), 1, TinScript::GetTypeID<T7>()) && success;
+        success = fc->AddParameter("_p8", TinScript::Hash("_p8"), TinScript::GetRegisteredType(TinScript::GetTypeID<T8>()), 1, TinScript::GetTypeID<T8>()) && success;
 
         return (success);
     }
@@ -2841,10 +2843,10 @@ private:
 
 template<typename C, typename R, typename... Args>
 #if !PLATFORM_VS_2019
-class CRegisterMethod<8, C, R(Args...)> : public CRegFunctionBase
+class CRegisterMethod<8, C, R(Args...)> : public TinScript::CRegFunctionBase
 {
 #else
-class CRegisterMethod<8, C, R(C::*)(Args...)> : public CRegFunctionBase
+class CRegisterMethod<8, C, R(C::*)(Args...)> : public TinScript::CRegFunctionBase
 {
 #endif
 public:
@@ -2863,46 +2865,46 @@ public:
     virtual void DispatchFunction(void* objaddr)
     {
 
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
-        using T7 = std::tuple_element<6, argument_types>::type;
-        using T8 = std::tuple_element<7, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
+        using T7 = typename std::tuple_element<6, argument_types>::type;
+        using T8 = typename std::tuple_element<7, argument_types>::type;
 
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
-        CVariableEntry* ve4 = GetContext()->GetParameter(4);
-        CVariableEntry* ve5 = GetContext()->GetParameter(5);
-        CVariableEntry* ve6 = GetContext()->GetParameter(6);
-        CVariableEntry* ve7 = GetContext()->GetParameter(7);
-        CVariableEntry* ve8 = GetContext()->GetParameter(8);
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        TinScript::CVariableEntry* ve4 = GetContext()->GetParameter(4);
+        TinScript::CVariableEntry* ve5 = GetContext()->GetParameter(5);
+        TinScript::CVariableEntry* ve6 = GetContext()->GetParameter(6);
+        TinScript::CVariableEntry* ve7 = GetContext()->GetParameter(7);
+        TinScript::CVariableEntry* ve8 = GetContext()->GetParameter(8);
 
-        T1 p1 = ConvertVariableForDispatch<T1>(ve1);
-        T2 p2 = ConvertVariableForDispatch<T2>(ve2);
-        T3 p3 = ConvertVariableForDispatch<T3>(ve3);
-        T4 p4 = ConvertVariableForDispatch<T4>(ve4);
-        T5 p5 = ConvertVariableForDispatch<T5>(ve5);
-        T6 p6 = ConvertVariableForDispatch<T6>(ve6);
-        T7 p7 = ConvertVariableForDispatch<T7>(ve7);
-        T8 p8 = ConvertVariableForDispatch<T8>(ve8);
+        T1 p1 = TinScript::ConvertVariableForDispatch<T1>(ve1);
+        T2 p2 = TinScript::ConvertVariableForDispatch<T2>(ve2);
+        T3 p3 = TinScript::ConvertVariableForDispatch<T3>(ve3);
+        T4 p4 = TinScript::ConvertVariableForDispatch<T4>(ve4);
+        T5 p5 = TinScript::ConvertVariableForDispatch<T5>(ve5);
+        T6 p6 = TinScript::ConvertVariableForDispatch<T6>(ve6);
+        T7 p7 = TinScript::ConvertVariableForDispatch<T7>(ve7);
+        T8 p8 = TinScript::ConvertVariableForDispatch<T8>(ve8);
         Dispatch(objaddr, &p1, &p2, &p3, &p4, &p5, &p6, &p7, &p8);
     }
 
     // -- dispatch method
     R Dispatch(void* objaddr, void* _p1, void* _p2, void* _p3, void* _p4, void* _p5, void* _p6, void* _p7, void* _p8)
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
-        using T7 = std::tuple_element<6, argument_types>::type;
-        using T8 = std::tuple_element<7, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
+        using T7 = typename std::tuple_element<6, argument_types>::type;
+        using T8 = typename std::tuple_element<7, argument_types>::type;
 
         T1* p1 = (T1*)_p1;
         T2* p2 = (T2*)_p2;
@@ -2918,33 +2920,33 @@ public:
 
         assert(GetContext()->GetParameter(0));
         TinScript::CVariableEntry* returnval = this->GetContext()->GetParameter(0);
-        returnval->SetValueAddr(NULL, convert_to_void_ptr<R>::Convert(r));
+        returnval->SetValueAddr(NULL, TinScript::convert_to_void_ptr<R>::Convert(r));
         return (r);
     }
 
     // -- registration method
     virtual bool Register()
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
-        using T7 = std::tuple_element<6, argument_types>::type;
-        using T8 = std::tuple_element<7, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
+        using T7 = typename std::tuple_element<6, argument_types>::type;
+        using T8 = typename std::tuple_element<7, argument_types>::type;
 
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>()) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
-        success = fc->AddParameter("_p4", Hash("_p4"), GetRegisteredType(GetTypeID<T4>()), 1, GetTypeID<T4>()) && success;
-        success = fc->AddParameter("_p5", Hash("_p5"), GetRegisteredType(GetTypeID<T5>()), 1, GetTypeID<T5>()) && success;
-        success = fc->AddParameter("_p6", Hash("_p6"), GetRegisteredType(GetTypeID<T6>()), 1, GetTypeID<T6>()) && success;
-        success = fc->AddParameter("_p7", Hash("_p7"), GetRegisteredType(GetTypeID<T7>()), 1, GetTypeID<T7>()) && success;
-        success = fc->AddParameter("_p8", Hash("_p8"), GetRegisteredType(GetTypeID<T8>()), 1, GetTypeID<T8>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::GetRegisteredType(TinScript::GetTypeID<R>()), 1, TinScript::GetTypeID<R>()) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
+        success = fc->AddParameter("_p4", TinScript::Hash("_p4"), TinScript::GetRegisteredType(TinScript::GetTypeID<T4>()), 1, TinScript::GetTypeID<T4>()) && success;
+        success = fc->AddParameter("_p5", TinScript::Hash("_p5"), TinScript::GetRegisteredType(TinScript::GetTypeID<T5>()), 1, TinScript::GetTypeID<T5>()) && success;
+        success = fc->AddParameter("_p6", TinScript::Hash("_p6"), TinScript::GetRegisteredType(TinScript::GetTypeID<T6>()), 1, TinScript::GetTypeID<T6>()) && success;
+        success = fc->AddParameter("_p7", TinScript::Hash("_p7"), TinScript::GetRegisteredType(TinScript::GetTypeID<T7>()), 1, TinScript::GetTypeID<T7>()) && success;
+        success = fc->AddParameter("_p8", TinScript::Hash("_p8"), TinScript::GetRegisteredType(TinScript::GetTypeID<T8>()), 1, TinScript::GetTypeID<T8>()) && success;
 
         return (success);
     }
@@ -2956,10 +2958,10 @@ private:
 
 template<typename C, typename... Args>
 #if !PLATFORM_VS_2019
-class CRegisterMethod<8, C, void(Args...)> : public CRegFunctionBase
+class CRegisterMethod<8, C, void(Args...)> : public TinScript::CRegFunctionBase
 {
 #else
-class CRegisterMethod<8, C, void(C::*)(Args...)> : public CRegFunctionBase
+class CRegisterMethod<8, C, void(C::*)(Args...)> : public TinScript::CRegFunctionBase
 {
 #endif
 public:
@@ -2978,32 +2980,32 @@ public:
     virtual void DispatchFunction(void* objaddr)
     {
 
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
-        using T7 = std::tuple_element<6, argument_types>::type;
-        using T8 = std::tuple_element<7, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
+        using T7 = typename std::tuple_element<6, argument_types>::type;
+        using T8 = typename std::tuple_element<7, argument_types>::type;
 
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
-        CVariableEntry* ve4 = GetContext()->GetParameter(4);
-        CVariableEntry* ve5 = GetContext()->GetParameter(5);
-        CVariableEntry* ve6 = GetContext()->GetParameter(6);
-        CVariableEntry* ve7 = GetContext()->GetParameter(7);
-        CVariableEntry* ve8 = GetContext()->GetParameter(8);
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        TinScript::CVariableEntry* ve4 = GetContext()->GetParameter(4);
+        TinScript::CVariableEntry* ve5 = GetContext()->GetParameter(5);
+        TinScript::CVariableEntry* ve6 = GetContext()->GetParameter(6);
+        TinScript::CVariableEntry* ve7 = GetContext()->GetParameter(7);
+        TinScript::CVariableEntry* ve8 = GetContext()->GetParameter(8);
 
-        T1 p1 = ConvertVariableForDispatch<T1>(ve1);
-        T2 p2 = ConvertVariableForDispatch<T2>(ve2);
-        T3 p3 = ConvertVariableForDispatch<T3>(ve3);
-        T4 p4 = ConvertVariableForDispatch<T4>(ve4);
-        T5 p5 = ConvertVariableForDispatch<T5>(ve5);
-        T6 p6 = ConvertVariableForDispatch<T6>(ve6);
-        T7 p7 = ConvertVariableForDispatch<T7>(ve7);
-        T8 p8 = ConvertVariableForDispatch<T8>(ve8);
+        T1 p1 = TinScript::ConvertVariableForDispatch<T1>(ve1);
+        T2 p2 = TinScript::ConvertVariableForDispatch<T2>(ve2);
+        T3 p3 = TinScript::ConvertVariableForDispatch<T3>(ve3);
+        T4 p4 = TinScript::ConvertVariableForDispatch<T4>(ve4);
+        T5 p5 = TinScript::ConvertVariableForDispatch<T5>(ve5);
+        T6 p6 = TinScript::ConvertVariableForDispatch<T6>(ve6);
+        T7 p7 = TinScript::ConvertVariableForDispatch<T7>(ve7);
+        T8 p8 = TinScript::ConvertVariableForDispatch<T8>(ve8);
 
         Dispatch(objaddr, &p1, &p2, &p3, &p4, &p5, &p6, &p7, &p8);
     }
@@ -3011,14 +3013,14 @@ public:
     // -- dispatch method
     void Dispatch(void* objaddr, void* _p1, void* _p2, void* _p3, void* _p4, void* _p5, void* _p6, void* _p7, void* _p8)
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
-        using T7 = std::tuple_element<6, argument_types>::type;
-        using T8 = std::tuple_element<7, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
+        using T7 = typename std::tuple_element<6, argument_types>::type;
+        using T8 = typename std::tuple_element<7, argument_types>::type;
 
         T1* p1 = (T1*)_p1;
         T2* p2 = (T2*)_p2;
@@ -3037,27 +3039,27 @@ public:
     // -- registration method
     virtual bool Register()
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
-        using T7 = std::tuple_element<6, argument_types>::type;
-        using T8 = std::tuple_element<7, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
+        using T7 = typename std::tuple_element<6, argument_types>::type;
+        using T8 = typename std::tuple_element<7, argument_types>::type;
 
 
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
-        success = fc->AddParameter("_p4", Hash("_p4"), GetRegisteredType(GetTypeID<T4>()), 1, GetTypeID<T4>()) && success;
-        success = fc->AddParameter("_p5", Hash("_p5"), GetRegisteredType(GetTypeID<T5>()), 1, GetTypeID<T5>()) && success;
-        success = fc->AddParameter("_p6", Hash("_p6"), GetRegisteredType(GetTypeID<T6>()), 1, GetTypeID<T6>()) && success;
-        success = fc->AddParameter("_p7", Hash("_p7"), GetRegisteredType(GetTypeID<T7>()), 1, GetTypeID<T7>()) && success;
-        success = fc->AddParameter("_p8", Hash("_p8"), GetRegisteredType(GetTypeID<T8>()), 1, GetTypeID<T8>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::TYPE_void, 1, 0) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
+        success = fc->AddParameter("_p4", TinScript::Hash("_p4"), TinScript::GetRegisteredType(TinScript::GetTypeID<T4>()), 1, TinScript::GetTypeID<T4>()) && success;
+        success = fc->AddParameter("_p5", TinScript::Hash("_p5"), TinScript::GetRegisteredType(TinScript::GetTypeID<T5>()), 1, TinScript::GetTypeID<T5>()) && success;
+        success = fc->AddParameter("_p6", TinScript::Hash("_p6"), TinScript::GetRegisteredType(TinScript::GetTypeID<T6>()), 1, TinScript::GetTypeID<T6>()) && success;
+        success = fc->AddParameter("_p7", TinScript::Hash("_p7"), TinScript::GetRegisteredType(TinScript::GetTypeID<T7>()), 1, TinScript::GetTypeID<T7>()) && success;
+        success = fc->AddParameter("_p8", TinScript::Hash("_p8"), TinScript::GetRegisteredType(TinScript::GetTypeID<T8>()), 1, TinScript::GetTypeID<T8>()) && success;
 
 
         return (success);
@@ -3074,7 +3076,7 @@ private:
 // -- class CRegisterFunction<9, R(Args...)> ----------------------------------------
 
 template<typename R, typename... Args>
-class CRegisterFunction<9, R(Args...)> : public CRegFunctionBase
+class CRegisterFunction<9, R(Args...)> : public TinScript::CRegFunctionBase
 {
 public:
 
@@ -3090,35 +3092,35 @@ public:
     // -- virtual DispatchFunction wrapper
     virtual void DispatchFunction(void*)
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
-        using T7 = std::tuple_element<6, argument_types>::type;
-        using T8 = std::tuple_element<7, argument_types>::type;
-        using T9 = std::tuple_element<8, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
+        using T7 = typename std::tuple_element<6, argument_types>::type;
+        using T8 = typename std::tuple_element<7, argument_types>::type;
+        using T9 = typename std::tuple_element<8, argument_types>::type;
 
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
-        CVariableEntry* ve4 = GetContext()->GetParameter(4);
-        CVariableEntry* ve5 = GetContext()->GetParameter(5);
-        CVariableEntry* ve6 = GetContext()->GetParameter(6);
-        CVariableEntry* ve7 = GetContext()->GetParameter(7);
-        CVariableEntry* ve8 = GetContext()->GetParameter(8);
-        CVariableEntry* ve9 = GetContext()->GetParameter(9);
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        TinScript::CVariableEntry* ve4 = GetContext()->GetParameter(4);
+        TinScript::CVariableEntry* ve5 = GetContext()->GetParameter(5);
+        TinScript::CVariableEntry* ve6 = GetContext()->GetParameter(6);
+        TinScript::CVariableEntry* ve7 = GetContext()->GetParameter(7);
+        TinScript::CVariableEntry* ve8 = GetContext()->GetParameter(8);
+        TinScript::CVariableEntry* ve9 = GetContext()->GetParameter(9);
 
-        T1 p1 = ConvertVariableForDispatch<T1>(ve1);
-        T2 p2 = ConvertVariableForDispatch<T2>(ve2);
-        T3 p3 = ConvertVariableForDispatch<T3>(ve3);
-        T4 p4 = ConvertVariableForDispatch<T4>(ve4);
-        T5 p5 = ConvertVariableForDispatch<T5>(ve5);
-        T6 p6 = ConvertVariableForDispatch<T6>(ve6);
-        T7 p7 = ConvertVariableForDispatch<T7>(ve7);
-        T8 p8 = ConvertVariableForDispatch<T8>(ve8);
-        T9 p9 = ConvertVariableForDispatch<T9>(ve9);
+        T1 p1 = TinScript::ConvertVariableForDispatch<T1>(ve1);
+        T2 p2 = TinScript::ConvertVariableForDispatch<T2>(ve2);
+        T3 p3 = TinScript::ConvertVariableForDispatch<T3>(ve3);
+        T4 p4 = TinScript::ConvertVariableForDispatch<T4>(ve4);
+        T5 p5 = TinScript::ConvertVariableForDispatch<T5>(ve5);
+        T6 p6 = TinScript::ConvertVariableForDispatch<T6>(ve6);
+        T7 p7 = TinScript::ConvertVariableForDispatch<T7>(ve7);
+        T8 p8 = TinScript::ConvertVariableForDispatch<T8>(ve8);
+        T9 p9 = TinScript::ConvertVariableForDispatch<T9>(ve9);
 
         Dispatch(&p1, &p2, &p3, &p4, &p5, &p6, &p7, &p8, &p9);
     }
@@ -3126,15 +3128,15 @@ public:
     // -- dispatch method
     R Dispatch(void* _p1, void* _p2, void* _p3, void* _p4, void* _p5, void* _p6, void* _p7, void* _p8, void* _p9)
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
-        using T7 = std::tuple_element<6, argument_types>::type;
-        using T8 = std::tuple_element<7, argument_types>::type;
-        using T9 = std::tuple_element<8, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
+        using T7 = typename std::tuple_element<6, argument_types>::type;
+        using T8 = typename std::tuple_element<7, argument_types>::type;
+        using T9 = typename std::tuple_element<8, argument_types>::type;
 
         T1* p1 = (T1*)_p1;
         T2* p2 = (T2*)_p2;
@@ -3149,36 +3151,36 @@ public:
         R r = funcptr(*p1, *p2, *p3, *p4, *p5, *p6, *p7, *p8, *p9);
 
         assert(GetContext()->GetParameter(0));
-        CVariableEntry* returnval = GetContext()->GetParameter(0);
-        returnval->SetValueAddr(NULL, convert_to_void_ptr<R>::Convert(r));
+        TinScript::CVariableEntry* returnval = GetContext()->GetParameter(0);
+        returnval->SetValueAddr(NULL, TinScript::convert_to_void_ptr<R>::Convert(r));
         return (r);
     }
 
     // -- registration method
     virtual bool Register()
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
-        using T7 = std::tuple_element<6, argument_types>::type;
-        using T8 = std::tuple_element<7, argument_types>::type;
-        using T9 = std::tuple_element<8, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
+        using T7 = typename std::tuple_element<6, argument_types>::type;
+        using T8 = typename std::tuple_element<7, argument_types>::type;
+        using T9 = typename std::tuple_element<8, argument_types>::type;
 
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>()) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
-        success = fc->AddParameter("_p4", Hash("_p4"), GetRegisteredType(GetTypeID<T4>()), 1, GetTypeID<T4>()) && success;
-        success = fc->AddParameter("_p5", Hash("_p5"), GetRegisteredType(GetTypeID<T5>()), 1, GetTypeID<T5>()) && success;
-        success = fc->AddParameter("_p6", Hash("_p6"), GetRegisteredType(GetTypeID<T6>()), 1, GetTypeID<T6>()) && success;
-        success = fc->AddParameter("_p7", Hash("_p7"), GetRegisteredType(GetTypeID<T7>()), 1, GetTypeID<T7>()) && success;
-        success = fc->AddParameter("_p8", Hash("_p8"), GetRegisteredType(GetTypeID<T8>()), 1, GetTypeID<T8>()) && success;
-        success = fc->AddParameter("_p9", Hash("_p9"), GetRegisteredType(GetTypeID<T9>()), 1, GetTypeID<T9>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::GetRegisteredType(TinScript::GetTypeID<R>()), 1, TinScript::GetTypeID<R>()) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
+        success = fc->AddParameter("_p4", TinScript::Hash("_p4"), TinScript::GetRegisteredType(TinScript::GetTypeID<T4>()), 1, TinScript::GetTypeID<T4>()) && success;
+        success = fc->AddParameter("_p5", TinScript::Hash("_p5"), TinScript::GetRegisteredType(TinScript::GetTypeID<T5>()), 1, TinScript::GetTypeID<T5>()) && success;
+        success = fc->AddParameter("_p6", TinScript::Hash("_p6"), TinScript::GetRegisteredType(TinScript::GetTypeID<T6>()), 1, TinScript::GetTypeID<T6>()) && success;
+        success = fc->AddParameter("_p7", TinScript::Hash("_p7"), TinScript::GetRegisteredType(TinScript::GetTypeID<T7>()), 1, TinScript::GetTypeID<T7>()) && success;
+        success = fc->AddParameter("_p8", TinScript::Hash("_p8"), TinScript::GetRegisteredType(TinScript::GetTypeID<T8>()), 1, TinScript::GetTypeID<T8>()) && success;
+        success = fc->AddParameter("_p9", TinScript::Hash("_p9"), TinScript::GetRegisteredType(TinScript::GetTypeID<T9>()), 1, TinScript::GetTypeID<T9>()) && success;
 
         return (success);
     }
@@ -3190,7 +3192,7 @@ private:
 // -- class CRegisterFunction<9, void(Args...)> ----------------------------------------
 
 template<typename... Args>
-class CRegisterFunction<9, void(Args...)> : public CRegFunctionBase
+class CRegisterFunction<9, void(Args...)> : public TinScript::CRegFunctionBase
 {
 public:
 
@@ -3206,35 +3208,35 @@ public:
     // -- virtual DispatchFunction wrapper
     virtual void DispatchFunction(void*)
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
-        using T7 = std::tuple_element<6, argument_types>::type;
-        using T8 = std::tuple_element<7, argument_types>::type;
-        using T9 = std::tuple_element<8, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
+        using T7 = typename std::tuple_element<6, argument_types>::type;
+        using T8 = typename std::tuple_element<7, argument_types>::type;
+        using T9 = typename std::tuple_element<8, argument_types>::type;
 
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
-        CVariableEntry* ve4 = GetContext()->GetParameter(4);
-        CVariableEntry* ve5 = GetContext()->GetParameter(5);
-        CVariableEntry* ve6 = GetContext()->GetParameter(6);
-        CVariableEntry* ve7 = GetContext()->GetParameter(7);
-        CVariableEntry* ve8 = GetContext()->GetParameter(8);
-        CVariableEntry* ve9 = GetContext()->GetParameter(9);
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        TinScript::CVariableEntry* ve4 = GetContext()->GetParameter(4);
+        TinScript::CVariableEntry* ve5 = GetContext()->GetParameter(5);
+        TinScript::CVariableEntry* ve6 = GetContext()->GetParameter(6);
+        TinScript::CVariableEntry* ve7 = GetContext()->GetParameter(7);
+        TinScript::CVariableEntry* ve8 = GetContext()->GetParameter(8);
+        TinScript::CVariableEntry* ve9 = GetContext()->GetParameter(9);
 
-        T1 p1 = ConvertVariableForDispatch<T1>(ve1);
-        T2 p2 = ConvertVariableForDispatch<T2>(ve2);
-        T3 p3 = ConvertVariableForDispatch<T3>(ve3);
-        T4 p4 = ConvertVariableForDispatch<T4>(ve4);
-        T5 p5 = ConvertVariableForDispatch<T5>(ve5);
-        T6 p6 = ConvertVariableForDispatch<T6>(ve6);
-        T7 p7 = ConvertVariableForDispatch<T7>(ve7);
-        T8 p8 = ConvertVariableForDispatch<T8>(ve8);
-        T9 p9 = ConvertVariableForDispatch<T9>(ve9);
+        T1 p1 = TinScript::ConvertVariableForDispatch<T1>(ve1);
+        T2 p2 = TinScript::ConvertVariableForDispatch<T2>(ve2);
+        T3 p3 = TinScript::ConvertVariableForDispatch<T3>(ve3);
+        T4 p4 = TinScript::ConvertVariableForDispatch<T4>(ve4);
+        T5 p5 = TinScript::ConvertVariableForDispatch<T5>(ve5);
+        T6 p6 = TinScript::ConvertVariableForDispatch<T6>(ve6);
+        T7 p7 = TinScript::ConvertVariableForDispatch<T7>(ve7);
+        T8 p8 = TinScript::ConvertVariableForDispatch<T8>(ve8);
+        T9 p9 = TinScript::ConvertVariableForDispatch<T9>(ve9);
 
         Dispatch(&p1, &p2, &p3, &p4, &p5, &p6, &p7, &p8, &p9);
     }
@@ -3242,15 +3244,15 @@ public:
     // -- dispatch method
     void Dispatch(void* _p1, void* _p2, void* _p3, void* _p4, void* _p5, void* _p6, void* _p7, void* _p8, void* _p9)
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
-        using T7 = std::tuple_element<6, argument_types>::type;
-        using T8 = std::tuple_element<7, argument_types>::type;
-        using T9 = std::tuple_element<8, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
+        using T7 = typename std::tuple_element<6, argument_types>::type;
+        using T8 = typename std::tuple_element<7, argument_types>::type;
+        using T9 = typename std::tuple_element<8, argument_types>::type;
 
         T1* p1 = (T1*)_p1;
         T2* p2 = (T2*)_p2;
@@ -3269,28 +3271,28 @@ public:
     // -- registration method
     virtual bool Register()
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
-        using T7 = std::tuple_element<6, argument_types>::type;
-        using T8 = std::tuple_element<7, argument_types>::type;
-        using T9 = std::tuple_element<8, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
+        using T7 = typename std::tuple_element<6, argument_types>::type;
+        using T8 = typename std::tuple_element<7, argument_types>::type;
+        using T9 = typename std::tuple_element<8, argument_types>::type;
 
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
-        success = fc->AddParameter("_p4", Hash("_p4"), GetRegisteredType(GetTypeID<T4>()), 1, GetTypeID<T4>()) && success;
-        success = fc->AddParameter("_p5", Hash("_p5"), GetRegisteredType(GetTypeID<T5>()), 1, GetTypeID<T5>()) && success;
-        success = fc->AddParameter("_p6", Hash("_p6"), GetRegisteredType(GetTypeID<T6>()), 1, GetTypeID<T6>()) && success;
-        success = fc->AddParameter("_p7", Hash("_p7"), GetRegisteredType(GetTypeID<T7>()), 1, GetTypeID<T7>()) && success;
-        success = fc->AddParameter("_p8", Hash("_p8"), GetRegisteredType(GetTypeID<T8>()), 1, GetTypeID<T8>()) && success;
-        success = fc->AddParameter("_p9", Hash("_p9"), GetRegisteredType(GetTypeID<T9>()), 1, GetTypeID<T9>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::TYPE_void, 1, 0) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
+        success = fc->AddParameter("_p4", TinScript::Hash("_p4"), TinScript::GetRegisteredType(TinScript::GetTypeID<T4>()), 1, TinScript::GetTypeID<T4>()) && success;
+        success = fc->AddParameter("_p5", TinScript::Hash("_p5"), TinScript::GetRegisteredType(TinScript::GetTypeID<T5>()), 1, TinScript::GetTypeID<T5>()) && success;
+        success = fc->AddParameter("_p6", TinScript::Hash("_p6"), TinScript::GetRegisteredType(TinScript::GetTypeID<T6>()), 1, TinScript::GetTypeID<T6>()) && success;
+        success = fc->AddParameter("_p7", TinScript::Hash("_p7"), TinScript::GetRegisteredType(TinScript::GetTypeID<T7>()), 1, TinScript::GetTypeID<T7>()) && success;
+        success = fc->AddParameter("_p8", TinScript::Hash("_p8"), TinScript::GetRegisteredType(TinScript::GetTypeID<T8>()), 1, TinScript::GetTypeID<T8>()) && success;
+        success = fc->AddParameter("_p9", TinScript::Hash("_p9"), TinScript::GetRegisteredType(TinScript::GetTypeID<T9>()), 1, TinScript::GetTypeID<T9>()) && success;
 
         return (success);
     }
@@ -3303,10 +3305,10 @@ private:
 
 template<typename C, typename R, typename... Args>
 #if !PLATFORM_VS_2019
-class CRegisterMethod<9, C, R(Args...)> : public CRegFunctionBase
+class CRegisterMethod<9, C, R(Args...)> : public TinScript::CRegFunctionBase
 {
 #else
-class CRegisterMethod<9, C, R(C::*)(Args...)> : public CRegFunctionBase
+class CRegisterMethod<9, C, R(C::*)(Args...)> : public TinScript::CRegFunctionBase
 {
 #endif
 public:
@@ -3325,50 +3327,50 @@ public:
     virtual void DispatchFunction(void* objaddr)
     {
 
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
-        using T7 = std::tuple_element<6, argument_types>::type;
-        using T8 = std::tuple_element<7, argument_types>::type;
-        using T9 = std::tuple_element<8, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
+        using T7 = typename std::tuple_element<6, argument_types>::type;
+        using T8 = typename std::tuple_element<7, argument_types>::type;
+        using T9 = typename std::tuple_element<8, argument_types>::type;
 
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
-        CVariableEntry* ve4 = GetContext()->GetParameter(4);
-        CVariableEntry* ve5 = GetContext()->GetParameter(5);
-        CVariableEntry* ve6 = GetContext()->GetParameter(6);
-        CVariableEntry* ve7 = GetContext()->GetParameter(7);
-        CVariableEntry* ve8 = GetContext()->GetParameter(8);
-        CVariableEntry* ve9 = GetContext()->GetParameter(9);
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        TinScript::CVariableEntry* ve4 = GetContext()->GetParameter(4);
+        TinScript::CVariableEntry* ve5 = GetContext()->GetParameter(5);
+        TinScript::CVariableEntry* ve6 = GetContext()->GetParameter(6);
+        TinScript::CVariableEntry* ve7 = GetContext()->GetParameter(7);
+        TinScript::CVariableEntry* ve8 = GetContext()->GetParameter(8);
+        TinScript::CVariableEntry* ve9 = GetContext()->GetParameter(9);
 
-        T1 p1 = ConvertVariableForDispatch<T1>(ve1);
-        T2 p2 = ConvertVariableForDispatch<T2>(ve2);
-        T3 p3 = ConvertVariableForDispatch<T3>(ve3);
-        T4 p4 = ConvertVariableForDispatch<T4>(ve4);
-        T5 p5 = ConvertVariableForDispatch<T5>(ve5);
-        T6 p6 = ConvertVariableForDispatch<T6>(ve6);
-        T7 p7 = ConvertVariableForDispatch<T7>(ve7);
-        T8 p8 = ConvertVariableForDispatch<T8>(ve8);
-        T9 p9 = ConvertVariableForDispatch<T9>(ve9);
+        T1 p1 = TinScript::ConvertVariableForDispatch<T1>(ve1);
+        T2 p2 = TinScript::ConvertVariableForDispatch<T2>(ve2);
+        T3 p3 = TinScript::ConvertVariableForDispatch<T3>(ve3);
+        T4 p4 = TinScript::ConvertVariableForDispatch<T4>(ve4);
+        T5 p5 = TinScript::ConvertVariableForDispatch<T5>(ve5);
+        T6 p6 = TinScript::ConvertVariableForDispatch<T6>(ve6);
+        T7 p7 = TinScript::ConvertVariableForDispatch<T7>(ve7);
+        T8 p8 = TinScript::ConvertVariableForDispatch<T8>(ve8);
+        T9 p9 = TinScript::ConvertVariableForDispatch<T9>(ve9);
         Dispatch(objaddr, &p1, &p2, &p3, &p4, &p5, &p6, &p7, &p8, &p9);
     }
 
     // -- dispatch method
     R Dispatch(void* objaddr, void* _p1, void* _p2, void* _p3, void* _p4, void* _p5, void* _p6, void* _p7, void* _p8, void* _p9)
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
-        using T7 = std::tuple_element<6, argument_types>::type;
-        using T8 = std::tuple_element<7, argument_types>::type;
-        using T9 = std::tuple_element<8, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
+        using T7 = typename std::tuple_element<6, argument_types>::type;
+        using T8 = typename std::tuple_element<7, argument_types>::type;
+        using T9 = typename std::tuple_element<8, argument_types>::type;
 
         T1* p1 = (T1*)_p1;
         T2* p2 = (T2*)_p2;
@@ -3385,35 +3387,35 @@ public:
 
         assert(GetContext()->GetParameter(0));
         TinScript::CVariableEntry* returnval = this->GetContext()->GetParameter(0);
-        returnval->SetValueAddr(NULL, convert_to_void_ptr<R>::Convert(r));
+        returnval->SetValueAddr(NULL, TinScript::convert_to_void_ptr<R>::Convert(r));
         return (r);
     }
 
     // -- registration method
     virtual bool Register()
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
-        using T7 = std::tuple_element<6, argument_types>::type;
-        using T8 = std::tuple_element<7, argument_types>::type;
-        using T9 = std::tuple_element<8, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
+        using T7 = typename std::tuple_element<6, argument_types>::type;
+        using T8 = typename std::tuple_element<7, argument_types>::type;
+        using T9 = typename std::tuple_element<8, argument_types>::type;
 
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>()) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
-        success = fc->AddParameter("_p4", Hash("_p4"), GetRegisteredType(GetTypeID<T4>()), 1, GetTypeID<T4>()) && success;
-        success = fc->AddParameter("_p5", Hash("_p5"), GetRegisteredType(GetTypeID<T5>()), 1, GetTypeID<T5>()) && success;
-        success = fc->AddParameter("_p6", Hash("_p6"), GetRegisteredType(GetTypeID<T6>()), 1, GetTypeID<T6>()) && success;
-        success = fc->AddParameter("_p7", Hash("_p7"), GetRegisteredType(GetTypeID<T7>()), 1, GetTypeID<T7>()) && success;
-        success = fc->AddParameter("_p8", Hash("_p8"), GetRegisteredType(GetTypeID<T8>()), 1, GetTypeID<T8>()) && success;
-        success = fc->AddParameter("_p9", Hash("_p9"), GetRegisteredType(GetTypeID<T9>()), 1, GetTypeID<T9>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::GetRegisteredType(TinScript::GetTypeID<R>()), 1, TinScript::GetTypeID<R>()) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
+        success = fc->AddParameter("_p4", TinScript::Hash("_p4"), TinScript::GetRegisteredType(TinScript::GetTypeID<T4>()), 1, TinScript::GetTypeID<T4>()) && success;
+        success = fc->AddParameter("_p5", TinScript::Hash("_p5"), TinScript::GetRegisteredType(TinScript::GetTypeID<T5>()), 1, TinScript::GetTypeID<T5>()) && success;
+        success = fc->AddParameter("_p6", TinScript::Hash("_p6"), TinScript::GetRegisteredType(TinScript::GetTypeID<T6>()), 1, TinScript::GetTypeID<T6>()) && success;
+        success = fc->AddParameter("_p7", TinScript::Hash("_p7"), TinScript::GetRegisteredType(TinScript::GetTypeID<T7>()), 1, TinScript::GetTypeID<T7>()) && success;
+        success = fc->AddParameter("_p8", TinScript::Hash("_p8"), TinScript::GetRegisteredType(TinScript::GetTypeID<T8>()), 1, TinScript::GetTypeID<T8>()) && success;
+        success = fc->AddParameter("_p9", TinScript::Hash("_p9"), TinScript::GetRegisteredType(TinScript::GetTypeID<T9>()), 1, TinScript::GetTypeID<T9>()) && success;
 
         return (success);
     }
@@ -3425,10 +3427,10 @@ private:
 
 template<typename C, typename... Args>
 #if !PLATFORM_VS_2019
-class CRegisterMethod<9, C, void(Args...)> : public CRegFunctionBase
+class CRegisterMethod<9, C, void(Args...)> : public TinScript::CRegFunctionBase
 {
 #else
-class CRegisterMethod<9, C, void(C::*)(Args...)> : public CRegFunctionBase
+class CRegisterMethod<9, C, void(C::*)(Args...)> : public TinScript::CRegFunctionBase
 {
 #endif
 public:
@@ -3447,35 +3449,35 @@ public:
     virtual void DispatchFunction(void* objaddr)
     {
 
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
-        using T7 = std::tuple_element<6, argument_types>::type;
-        using T8 = std::tuple_element<7, argument_types>::type;
-        using T9 = std::tuple_element<8, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
+        using T7 = typename std::tuple_element<6, argument_types>::type;
+        using T8 = typename std::tuple_element<7, argument_types>::type;
+        using T9 = typename std::tuple_element<8, argument_types>::type;
 
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
-        CVariableEntry* ve4 = GetContext()->GetParameter(4);
-        CVariableEntry* ve5 = GetContext()->GetParameter(5);
-        CVariableEntry* ve6 = GetContext()->GetParameter(6);
-        CVariableEntry* ve7 = GetContext()->GetParameter(7);
-        CVariableEntry* ve8 = GetContext()->GetParameter(8);
-        CVariableEntry* ve9 = GetContext()->GetParameter(9);
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        TinScript::CVariableEntry* ve4 = GetContext()->GetParameter(4);
+        TinScript::CVariableEntry* ve5 = GetContext()->GetParameter(5);
+        TinScript::CVariableEntry* ve6 = GetContext()->GetParameter(6);
+        TinScript::CVariableEntry* ve7 = GetContext()->GetParameter(7);
+        TinScript::CVariableEntry* ve8 = GetContext()->GetParameter(8);
+        TinScript::CVariableEntry* ve9 = GetContext()->GetParameter(9);
 
-        T1 p1 = ConvertVariableForDispatch<T1>(ve1);
-        T2 p2 = ConvertVariableForDispatch<T2>(ve2);
-        T3 p3 = ConvertVariableForDispatch<T3>(ve3);
-        T4 p4 = ConvertVariableForDispatch<T4>(ve4);
-        T5 p5 = ConvertVariableForDispatch<T5>(ve5);
-        T6 p6 = ConvertVariableForDispatch<T6>(ve6);
-        T7 p7 = ConvertVariableForDispatch<T7>(ve7);
-        T8 p8 = ConvertVariableForDispatch<T8>(ve8);
-        T9 p9 = ConvertVariableForDispatch<T9>(ve9);
+        T1 p1 = TinScript::ConvertVariableForDispatch<T1>(ve1);
+        T2 p2 = TinScript::ConvertVariableForDispatch<T2>(ve2);
+        T3 p3 = TinScript::ConvertVariableForDispatch<T3>(ve3);
+        T4 p4 = TinScript::ConvertVariableForDispatch<T4>(ve4);
+        T5 p5 = TinScript::ConvertVariableForDispatch<T5>(ve5);
+        T6 p6 = TinScript::ConvertVariableForDispatch<T6>(ve6);
+        T7 p7 = TinScript::ConvertVariableForDispatch<T7>(ve7);
+        T8 p8 = TinScript::ConvertVariableForDispatch<T8>(ve8);
+        T9 p9 = TinScript::ConvertVariableForDispatch<T9>(ve9);
 
         Dispatch(objaddr, &p1, &p2, &p3, &p4, &p5, &p6, &p7, &p8, &p9);
     }
@@ -3483,15 +3485,15 @@ public:
     // -- dispatch method
     void Dispatch(void* objaddr, void* _p1, void* _p2, void* _p3, void* _p4, void* _p5, void* _p6, void* _p7, void* _p8, void* _p9)
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
-        using T7 = std::tuple_element<6, argument_types>::type;
-        using T8 = std::tuple_element<7, argument_types>::type;
-        using T9 = std::tuple_element<8, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
+        using T7 = typename std::tuple_element<6, argument_types>::type;
+        using T8 = typename std::tuple_element<7, argument_types>::type;
+        using T9 = typename std::tuple_element<8, argument_types>::type;
 
         T1* p1 = (T1*)_p1;
         T2* p2 = (T2*)_p2;
@@ -3511,29 +3513,29 @@ public:
     // -- registration method
     virtual bool Register()
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
-        using T7 = std::tuple_element<6, argument_types>::type;
-        using T8 = std::tuple_element<7, argument_types>::type;
-        using T9 = std::tuple_element<8, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
+        using T7 = typename std::tuple_element<6, argument_types>::type;
+        using T8 = typename std::tuple_element<7, argument_types>::type;
+        using T9 = typename std::tuple_element<8, argument_types>::type;
 
 
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
-        success = fc->AddParameter("_p4", Hash("_p4"), GetRegisteredType(GetTypeID<T4>()), 1, GetTypeID<T4>()) && success;
-        success = fc->AddParameter("_p5", Hash("_p5"), GetRegisteredType(GetTypeID<T5>()), 1, GetTypeID<T5>()) && success;
-        success = fc->AddParameter("_p6", Hash("_p6"), GetRegisteredType(GetTypeID<T6>()), 1, GetTypeID<T6>()) && success;
-        success = fc->AddParameter("_p7", Hash("_p7"), GetRegisteredType(GetTypeID<T7>()), 1, GetTypeID<T7>()) && success;
-        success = fc->AddParameter("_p8", Hash("_p8"), GetRegisteredType(GetTypeID<T8>()), 1, GetTypeID<T8>()) && success;
-        success = fc->AddParameter("_p9", Hash("_p9"), GetRegisteredType(GetTypeID<T9>()), 1, GetTypeID<T9>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::TYPE_void, 1, 0) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
+        success = fc->AddParameter("_p4", TinScript::Hash("_p4"), TinScript::GetRegisteredType(TinScript::GetTypeID<T4>()), 1, TinScript::GetTypeID<T4>()) && success;
+        success = fc->AddParameter("_p5", TinScript::Hash("_p5"), TinScript::GetRegisteredType(TinScript::GetTypeID<T5>()), 1, TinScript::GetTypeID<T5>()) && success;
+        success = fc->AddParameter("_p6", TinScript::Hash("_p6"), TinScript::GetRegisteredType(TinScript::GetTypeID<T6>()), 1, TinScript::GetTypeID<T6>()) && success;
+        success = fc->AddParameter("_p7", TinScript::Hash("_p7"), TinScript::GetRegisteredType(TinScript::GetTypeID<T7>()), 1, TinScript::GetTypeID<T7>()) && success;
+        success = fc->AddParameter("_p8", TinScript::Hash("_p8"), TinScript::GetRegisteredType(TinScript::GetTypeID<T8>()), 1, TinScript::GetTypeID<T8>()) && success;
+        success = fc->AddParameter("_p9", TinScript::Hash("_p9"), TinScript::GetRegisteredType(TinScript::GetTypeID<T9>()), 1, TinScript::GetTypeID<T9>()) && success;
 
 
         return (success);
@@ -3550,7 +3552,7 @@ private:
 // -- class CRegisterFunction<10, R(Args...)> ----------------------------------------
 
 template<typename R, typename... Args>
-class CRegisterFunction<10, R(Args...)> : public CRegFunctionBase
+class CRegisterFunction<10, R(Args...)> : public TinScript::CRegFunctionBase
 {
 public:
 
@@ -3566,38 +3568,38 @@ public:
     // -- virtual DispatchFunction wrapper
     virtual void DispatchFunction(void*)
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
-        using T7 = std::tuple_element<6, argument_types>::type;
-        using T8 = std::tuple_element<7, argument_types>::type;
-        using T9 = std::tuple_element<8, argument_types>::type;
-        using T10 = std::tuple_element<9, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
+        using T7 = typename std::tuple_element<6, argument_types>::type;
+        using T8 = typename std::tuple_element<7, argument_types>::type;
+        using T9 = typename std::tuple_element<8, argument_types>::type;
+        using T10 = typename std::tuple_element<9, argument_types>::type;
 
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
-        CVariableEntry* ve4 = GetContext()->GetParameter(4);
-        CVariableEntry* ve5 = GetContext()->GetParameter(5);
-        CVariableEntry* ve6 = GetContext()->GetParameter(6);
-        CVariableEntry* ve7 = GetContext()->GetParameter(7);
-        CVariableEntry* ve8 = GetContext()->GetParameter(8);
-        CVariableEntry* ve9 = GetContext()->GetParameter(9);
-        CVariableEntry* ve10 = GetContext()->GetParameter(10);
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        TinScript::CVariableEntry* ve4 = GetContext()->GetParameter(4);
+        TinScript::CVariableEntry* ve5 = GetContext()->GetParameter(5);
+        TinScript::CVariableEntry* ve6 = GetContext()->GetParameter(6);
+        TinScript::CVariableEntry* ve7 = GetContext()->GetParameter(7);
+        TinScript::CVariableEntry* ve8 = GetContext()->GetParameter(8);
+        TinScript::CVariableEntry* ve9 = GetContext()->GetParameter(9);
+        TinScript::CVariableEntry* ve10 = GetContext()->GetParameter(10);
 
-        T1 p1 = ConvertVariableForDispatch<T1>(ve1);
-        T2 p2 = ConvertVariableForDispatch<T2>(ve2);
-        T3 p3 = ConvertVariableForDispatch<T3>(ve3);
-        T4 p4 = ConvertVariableForDispatch<T4>(ve4);
-        T5 p5 = ConvertVariableForDispatch<T5>(ve5);
-        T6 p6 = ConvertVariableForDispatch<T6>(ve6);
-        T7 p7 = ConvertVariableForDispatch<T7>(ve7);
-        T8 p8 = ConvertVariableForDispatch<T8>(ve8);
-        T9 p9 = ConvertVariableForDispatch<T9>(ve9);
-        T10 p10 = ConvertVariableForDispatch<T10>(ve10);
+        T1 p1 = TinScript::ConvertVariableForDispatch<T1>(ve1);
+        T2 p2 = TinScript::ConvertVariableForDispatch<T2>(ve2);
+        T3 p3 = TinScript::ConvertVariableForDispatch<T3>(ve3);
+        T4 p4 = TinScript::ConvertVariableForDispatch<T4>(ve4);
+        T5 p5 = TinScript::ConvertVariableForDispatch<T5>(ve5);
+        T6 p6 = TinScript::ConvertVariableForDispatch<T6>(ve6);
+        T7 p7 = TinScript::ConvertVariableForDispatch<T7>(ve7);
+        T8 p8 = TinScript::ConvertVariableForDispatch<T8>(ve8);
+        T9 p9 = TinScript::ConvertVariableForDispatch<T9>(ve9);
+        T10 p10 = TinScript::ConvertVariableForDispatch<T10>(ve10);
 
         Dispatch(&p1, &p2, &p3, &p4, &p5, &p6, &p7, &p8, &p9, &p10);
     }
@@ -3605,16 +3607,16 @@ public:
     // -- dispatch method
     R Dispatch(void* _p1, void* _p2, void* _p3, void* _p4, void* _p5, void* _p6, void* _p7, void* _p8, void* _p9, void* _p10)
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
-        using T7 = std::tuple_element<6, argument_types>::type;
-        using T8 = std::tuple_element<7, argument_types>::type;
-        using T9 = std::tuple_element<8, argument_types>::type;
-        using T10 = std::tuple_element<9, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
+        using T7 = typename std::tuple_element<6, argument_types>::type;
+        using T8 = typename std::tuple_element<7, argument_types>::type;
+        using T9 = typename std::tuple_element<8, argument_types>::type;
+        using T10 = typename std::tuple_element<9, argument_types>::type;
 
         T1* p1 = (T1*)_p1;
         T2* p2 = (T2*)_p2;
@@ -3630,38 +3632,38 @@ public:
         R r = funcptr(*p1, *p2, *p3, *p4, *p5, *p6, *p7, *p8, *p9, *p10);
 
         assert(GetContext()->GetParameter(0));
-        CVariableEntry* returnval = GetContext()->GetParameter(0);
-        returnval->SetValueAddr(NULL, convert_to_void_ptr<R>::Convert(r));
+        TinScript::CVariableEntry* returnval = GetContext()->GetParameter(0);
+        returnval->SetValueAddr(NULL, TinScript::convert_to_void_ptr<R>::Convert(r));
         return (r);
     }
 
     // -- registration method
     virtual bool Register()
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
-        using T7 = std::tuple_element<6, argument_types>::type;
-        using T8 = std::tuple_element<7, argument_types>::type;
-        using T9 = std::tuple_element<8, argument_types>::type;
-        using T10 = std::tuple_element<9, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
+        using T7 = typename std::tuple_element<6, argument_types>::type;
+        using T8 = typename std::tuple_element<7, argument_types>::type;
+        using T9 = typename std::tuple_element<8, argument_types>::type;
+        using T10 = typename std::tuple_element<9, argument_types>::type;
 
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>()) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
-        success = fc->AddParameter("_p4", Hash("_p4"), GetRegisteredType(GetTypeID<T4>()), 1, GetTypeID<T4>()) && success;
-        success = fc->AddParameter("_p5", Hash("_p5"), GetRegisteredType(GetTypeID<T5>()), 1, GetTypeID<T5>()) && success;
-        success = fc->AddParameter("_p6", Hash("_p6"), GetRegisteredType(GetTypeID<T6>()), 1, GetTypeID<T6>()) && success;
-        success = fc->AddParameter("_p7", Hash("_p7"), GetRegisteredType(GetTypeID<T7>()), 1, GetTypeID<T7>()) && success;
-        success = fc->AddParameter("_p8", Hash("_p8"), GetRegisteredType(GetTypeID<T8>()), 1, GetTypeID<T8>()) && success;
-        success = fc->AddParameter("_p9", Hash("_p9"), GetRegisteredType(GetTypeID<T9>()), 1, GetTypeID<T9>()) && success;
-        success = fc->AddParameter("_p10", Hash("_p10"), GetRegisteredType(GetTypeID<T10>()), 1, GetTypeID<T10>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::GetRegisteredType(TinScript::GetTypeID<R>()), 1, TinScript::GetTypeID<R>()) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
+        success = fc->AddParameter("_p4", TinScript::Hash("_p4"), TinScript::GetRegisteredType(TinScript::GetTypeID<T4>()), 1, TinScript::GetTypeID<T4>()) && success;
+        success = fc->AddParameter("_p5", TinScript::Hash("_p5"), TinScript::GetRegisteredType(TinScript::GetTypeID<T5>()), 1, TinScript::GetTypeID<T5>()) && success;
+        success = fc->AddParameter("_p6", TinScript::Hash("_p6"), TinScript::GetRegisteredType(TinScript::GetTypeID<T6>()), 1, TinScript::GetTypeID<T6>()) && success;
+        success = fc->AddParameter("_p7", TinScript::Hash("_p7"), TinScript::GetRegisteredType(TinScript::GetTypeID<T7>()), 1, TinScript::GetTypeID<T7>()) && success;
+        success = fc->AddParameter("_p8", TinScript::Hash("_p8"), TinScript::GetRegisteredType(TinScript::GetTypeID<T8>()), 1, TinScript::GetTypeID<T8>()) && success;
+        success = fc->AddParameter("_p9", TinScript::Hash("_p9"), TinScript::GetRegisteredType(TinScript::GetTypeID<T9>()), 1, TinScript::GetTypeID<T9>()) && success;
+        success = fc->AddParameter("_p10", TinScript::Hash("_p10"), TinScript::GetRegisteredType(TinScript::GetTypeID<T10>()), 1, TinScript::GetTypeID<T10>()) && success;
 
         return (success);
     }
@@ -3673,7 +3675,7 @@ private:
 // -- class CRegisterFunction<10, void(Args...)> ----------------------------------------
 
 template<typename... Args>
-class CRegisterFunction<10, void(Args...)> : public CRegFunctionBase
+class CRegisterFunction<10, void(Args...)> : public TinScript::CRegFunctionBase
 {
 public:
 
@@ -3689,38 +3691,38 @@ public:
     // -- virtual DispatchFunction wrapper
     virtual void DispatchFunction(void*)
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
-        using T7 = std::tuple_element<6, argument_types>::type;
-        using T8 = std::tuple_element<7, argument_types>::type;
-        using T9 = std::tuple_element<8, argument_types>::type;
-        using T10 = std::tuple_element<9, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
+        using T7 = typename std::tuple_element<6, argument_types>::type;
+        using T8 = typename std::tuple_element<7, argument_types>::type;
+        using T9 = typename std::tuple_element<8, argument_types>::type;
+        using T10 = typename std::tuple_element<9, argument_types>::type;
 
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
-        CVariableEntry* ve4 = GetContext()->GetParameter(4);
-        CVariableEntry* ve5 = GetContext()->GetParameter(5);
-        CVariableEntry* ve6 = GetContext()->GetParameter(6);
-        CVariableEntry* ve7 = GetContext()->GetParameter(7);
-        CVariableEntry* ve8 = GetContext()->GetParameter(8);
-        CVariableEntry* ve9 = GetContext()->GetParameter(9);
-        CVariableEntry* ve10 = GetContext()->GetParameter(10);
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        TinScript::CVariableEntry* ve4 = GetContext()->GetParameter(4);
+        TinScript::CVariableEntry* ve5 = GetContext()->GetParameter(5);
+        TinScript::CVariableEntry* ve6 = GetContext()->GetParameter(6);
+        TinScript::CVariableEntry* ve7 = GetContext()->GetParameter(7);
+        TinScript::CVariableEntry* ve8 = GetContext()->GetParameter(8);
+        TinScript::CVariableEntry* ve9 = GetContext()->GetParameter(9);
+        TinScript::CVariableEntry* ve10 = GetContext()->GetParameter(10);
 
-        T1 p1 = ConvertVariableForDispatch<T1>(ve1);
-        T2 p2 = ConvertVariableForDispatch<T2>(ve2);
-        T3 p3 = ConvertVariableForDispatch<T3>(ve3);
-        T4 p4 = ConvertVariableForDispatch<T4>(ve4);
-        T5 p5 = ConvertVariableForDispatch<T5>(ve5);
-        T6 p6 = ConvertVariableForDispatch<T6>(ve6);
-        T7 p7 = ConvertVariableForDispatch<T7>(ve7);
-        T8 p8 = ConvertVariableForDispatch<T8>(ve8);
-        T9 p9 = ConvertVariableForDispatch<T9>(ve9);
-        T10 p10 = ConvertVariableForDispatch<T10>(ve10);
+        T1 p1 = TinScript::ConvertVariableForDispatch<T1>(ve1);
+        T2 p2 = TinScript::ConvertVariableForDispatch<T2>(ve2);
+        T3 p3 = TinScript::ConvertVariableForDispatch<T3>(ve3);
+        T4 p4 = TinScript::ConvertVariableForDispatch<T4>(ve4);
+        T5 p5 = TinScript::ConvertVariableForDispatch<T5>(ve5);
+        T6 p6 = TinScript::ConvertVariableForDispatch<T6>(ve6);
+        T7 p7 = TinScript::ConvertVariableForDispatch<T7>(ve7);
+        T8 p8 = TinScript::ConvertVariableForDispatch<T8>(ve8);
+        T9 p9 = TinScript::ConvertVariableForDispatch<T9>(ve9);
+        T10 p10 = TinScript::ConvertVariableForDispatch<T10>(ve10);
 
         Dispatch(&p1, &p2, &p3, &p4, &p5, &p6, &p7, &p8, &p9, &p10);
     }
@@ -3728,16 +3730,16 @@ public:
     // -- dispatch method
     void Dispatch(void* _p1, void* _p2, void* _p3, void* _p4, void* _p5, void* _p6, void* _p7, void* _p8, void* _p9, void* _p10)
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
-        using T7 = std::tuple_element<6, argument_types>::type;
-        using T8 = std::tuple_element<7, argument_types>::type;
-        using T9 = std::tuple_element<8, argument_types>::type;
-        using T10 = std::tuple_element<9, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
+        using T7 = typename std::tuple_element<6, argument_types>::type;
+        using T8 = typename std::tuple_element<7, argument_types>::type;
+        using T9 = typename std::tuple_element<8, argument_types>::type;
+        using T10 = typename std::tuple_element<9, argument_types>::type;
 
         T1* p1 = (T1*)_p1;
         T2* p2 = (T2*)_p2;
@@ -3757,30 +3759,30 @@ public:
     // -- registration method
     virtual bool Register()
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
-        using T7 = std::tuple_element<6, argument_types>::type;
-        using T8 = std::tuple_element<7, argument_types>::type;
-        using T9 = std::tuple_element<8, argument_types>::type;
-        using T10 = std::tuple_element<9, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
+        using T7 = typename std::tuple_element<6, argument_types>::type;
+        using T8 = typename std::tuple_element<7, argument_types>::type;
+        using T9 = typename std::tuple_element<8, argument_types>::type;
+        using T10 = typename std::tuple_element<9, argument_types>::type;
 
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
-        success = fc->AddParameter("_p4", Hash("_p4"), GetRegisteredType(GetTypeID<T4>()), 1, GetTypeID<T4>()) && success;
-        success = fc->AddParameter("_p5", Hash("_p5"), GetRegisteredType(GetTypeID<T5>()), 1, GetTypeID<T5>()) && success;
-        success = fc->AddParameter("_p6", Hash("_p6"), GetRegisteredType(GetTypeID<T6>()), 1, GetTypeID<T6>()) && success;
-        success = fc->AddParameter("_p7", Hash("_p7"), GetRegisteredType(GetTypeID<T7>()), 1, GetTypeID<T7>()) && success;
-        success = fc->AddParameter("_p8", Hash("_p8"), GetRegisteredType(GetTypeID<T8>()), 1, GetTypeID<T8>()) && success;
-        success = fc->AddParameter("_p9", Hash("_p9"), GetRegisteredType(GetTypeID<T9>()), 1, GetTypeID<T9>()) && success;
-        success = fc->AddParameter("_p10", Hash("_p10"), GetRegisteredType(GetTypeID<T10>()), 1, GetTypeID<T10>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::TYPE_void, 1, 0) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
+        success = fc->AddParameter("_p4", TinScript::Hash("_p4"), TinScript::GetRegisteredType(TinScript::GetTypeID<T4>()), 1, TinScript::GetTypeID<T4>()) && success;
+        success = fc->AddParameter("_p5", TinScript::Hash("_p5"), TinScript::GetRegisteredType(TinScript::GetTypeID<T5>()), 1, TinScript::GetTypeID<T5>()) && success;
+        success = fc->AddParameter("_p6", TinScript::Hash("_p6"), TinScript::GetRegisteredType(TinScript::GetTypeID<T6>()), 1, TinScript::GetTypeID<T6>()) && success;
+        success = fc->AddParameter("_p7", TinScript::Hash("_p7"), TinScript::GetRegisteredType(TinScript::GetTypeID<T7>()), 1, TinScript::GetTypeID<T7>()) && success;
+        success = fc->AddParameter("_p8", TinScript::Hash("_p8"), TinScript::GetRegisteredType(TinScript::GetTypeID<T8>()), 1, TinScript::GetTypeID<T8>()) && success;
+        success = fc->AddParameter("_p9", TinScript::Hash("_p9"), TinScript::GetRegisteredType(TinScript::GetTypeID<T9>()), 1, TinScript::GetTypeID<T9>()) && success;
+        success = fc->AddParameter("_p10", TinScript::Hash("_p10"), TinScript::GetRegisteredType(TinScript::GetTypeID<T10>()), 1, TinScript::GetTypeID<T10>()) && success;
 
         return (success);
     }
@@ -3793,10 +3795,10 @@ private:
 
 template<typename C, typename R, typename... Args>
 #if !PLATFORM_VS_2019
-class CRegisterMethod<10, C, R(Args...)> : public CRegFunctionBase
+class CRegisterMethod<10, C, R(Args...)> : public TinScript::CRegFunctionBase
 {
 #else
-class CRegisterMethod<10, C, R(C::*)(Args...)> : public CRegFunctionBase
+class CRegisterMethod<10, C, R(C::*)(Args...)> : public TinScript::CRegFunctionBase
 {
 #endif
 public:
@@ -3815,54 +3817,54 @@ public:
     virtual void DispatchFunction(void* objaddr)
     {
 
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
-        using T7 = std::tuple_element<6, argument_types>::type;
-        using T8 = std::tuple_element<7, argument_types>::type;
-        using T9 = std::tuple_element<8, argument_types>::type;
-        using T10 = std::tuple_element<9, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
+        using T7 = typename std::tuple_element<6, argument_types>::type;
+        using T8 = typename std::tuple_element<7, argument_types>::type;
+        using T9 = typename std::tuple_element<8, argument_types>::type;
+        using T10 = typename std::tuple_element<9, argument_types>::type;
 
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
-        CVariableEntry* ve4 = GetContext()->GetParameter(4);
-        CVariableEntry* ve5 = GetContext()->GetParameter(5);
-        CVariableEntry* ve6 = GetContext()->GetParameter(6);
-        CVariableEntry* ve7 = GetContext()->GetParameter(7);
-        CVariableEntry* ve8 = GetContext()->GetParameter(8);
-        CVariableEntry* ve9 = GetContext()->GetParameter(9);
-        CVariableEntry* ve10 = GetContext()->GetParameter(10);
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        TinScript::CVariableEntry* ve4 = GetContext()->GetParameter(4);
+        TinScript::CVariableEntry* ve5 = GetContext()->GetParameter(5);
+        TinScript::CVariableEntry* ve6 = GetContext()->GetParameter(6);
+        TinScript::CVariableEntry* ve7 = GetContext()->GetParameter(7);
+        TinScript::CVariableEntry* ve8 = GetContext()->GetParameter(8);
+        TinScript::CVariableEntry* ve9 = GetContext()->GetParameter(9);
+        TinScript::CVariableEntry* ve10 = GetContext()->GetParameter(10);
 
-        T1 p1 = ConvertVariableForDispatch<T1>(ve1);
-        T2 p2 = ConvertVariableForDispatch<T2>(ve2);
-        T3 p3 = ConvertVariableForDispatch<T3>(ve3);
-        T4 p4 = ConvertVariableForDispatch<T4>(ve4);
-        T5 p5 = ConvertVariableForDispatch<T5>(ve5);
-        T6 p6 = ConvertVariableForDispatch<T6>(ve6);
-        T7 p7 = ConvertVariableForDispatch<T7>(ve7);
-        T8 p8 = ConvertVariableForDispatch<T8>(ve8);
-        T9 p9 = ConvertVariableForDispatch<T9>(ve9);
-        T10 p10 = ConvertVariableForDispatch<T10>(ve10);
+        T1 p1 = TinScript::ConvertVariableForDispatch<T1>(ve1);
+        T2 p2 = TinScript::ConvertVariableForDispatch<T2>(ve2);
+        T3 p3 = TinScript::ConvertVariableForDispatch<T3>(ve3);
+        T4 p4 = TinScript::ConvertVariableForDispatch<T4>(ve4);
+        T5 p5 = TinScript::ConvertVariableForDispatch<T5>(ve5);
+        T6 p6 = TinScript::ConvertVariableForDispatch<T6>(ve6);
+        T7 p7 = TinScript::ConvertVariableForDispatch<T7>(ve7);
+        T8 p8 = TinScript::ConvertVariableForDispatch<T8>(ve8);
+        T9 p9 = TinScript::ConvertVariableForDispatch<T9>(ve9);
+        T10 p10 = TinScript::ConvertVariableForDispatch<T10>(ve10);
         Dispatch(objaddr, &p1, &p2, &p3, &p4, &p5, &p6, &p7, &p8, &p9, &p10);
     }
 
     // -- dispatch method
     R Dispatch(void* objaddr, void* _p1, void* _p2, void* _p3, void* _p4, void* _p5, void* _p6, void* _p7, void* _p8, void* _p9, void* _p10)
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
-        using T7 = std::tuple_element<6, argument_types>::type;
-        using T8 = std::tuple_element<7, argument_types>::type;
-        using T9 = std::tuple_element<8, argument_types>::type;
-        using T10 = std::tuple_element<9, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
+        using T7 = typename std::tuple_element<6, argument_types>::type;
+        using T8 = typename std::tuple_element<7, argument_types>::type;
+        using T9 = typename std::tuple_element<8, argument_types>::type;
+        using T10 = typename std::tuple_element<9, argument_types>::type;
 
         T1* p1 = (T1*)_p1;
         T2* p2 = (T2*)_p2;
@@ -3880,37 +3882,37 @@ public:
 
         assert(GetContext()->GetParameter(0));
         TinScript::CVariableEntry* returnval = this->GetContext()->GetParameter(0);
-        returnval->SetValueAddr(NULL, convert_to_void_ptr<R>::Convert(r));
+        returnval->SetValueAddr(NULL, TinScript::convert_to_void_ptr<R>::Convert(r));
         return (r);
     }
 
     // -- registration method
     virtual bool Register()
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
-        using T7 = std::tuple_element<6, argument_types>::type;
-        using T8 = std::tuple_element<7, argument_types>::type;
-        using T9 = std::tuple_element<8, argument_types>::type;
-        using T10 = std::tuple_element<9, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
+        using T7 = typename std::tuple_element<6, argument_types>::type;
+        using T8 = typename std::tuple_element<7, argument_types>::type;
+        using T9 = typename std::tuple_element<8, argument_types>::type;
+        using T10 = typename std::tuple_element<9, argument_types>::type;
 
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>()) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
-        success = fc->AddParameter("_p4", Hash("_p4"), GetRegisteredType(GetTypeID<T4>()), 1, GetTypeID<T4>()) && success;
-        success = fc->AddParameter("_p5", Hash("_p5"), GetRegisteredType(GetTypeID<T5>()), 1, GetTypeID<T5>()) && success;
-        success = fc->AddParameter("_p6", Hash("_p6"), GetRegisteredType(GetTypeID<T6>()), 1, GetTypeID<T6>()) && success;
-        success = fc->AddParameter("_p7", Hash("_p7"), GetRegisteredType(GetTypeID<T7>()), 1, GetTypeID<T7>()) && success;
-        success = fc->AddParameter("_p8", Hash("_p8"), GetRegisteredType(GetTypeID<T8>()), 1, GetTypeID<T8>()) && success;
-        success = fc->AddParameter("_p9", Hash("_p9"), GetRegisteredType(GetTypeID<T9>()), 1, GetTypeID<T9>()) && success;
-        success = fc->AddParameter("_p10", Hash("_p10"), GetRegisteredType(GetTypeID<T10>()), 1, GetTypeID<T10>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::GetRegisteredType(TinScript::GetTypeID<R>()), 1, TinScript::GetTypeID<R>()) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
+        success = fc->AddParameter("_p4", TinScript::Hash("_p4"), TinScript::GetRegisteredType(TinScript::GetTypeID<T4>()), 1, TinScript::GetTypeID<T4>()) && success;
+        success = fc->AddParameter("_p5", TinScript::Hash("_p5"), TinScript::GetRegisteredType(TinScript::GetTypeID<T5>()), 1, TinScript::GetTypeID<T5>()) && success;
+        success = fc->AddParameter("_p6", TinScript::Hash("_p6"), TinScript::GetRegisteredType(TinScript::GetTypeID<T6>()), 1, TinScript::GetTypeID<T6>()) && success;
+        success = fc->AddParameter("_p7", TinScript::Hash("_p7"), TinScript::GetRegisteredType(TinScript::GetTypeID<T7>()), 1, TinScript::GetTypeID<T7>()) && success;
+        success = fc->AddParameter("_p8", TinScript::Hash("_p8"), TinScript::GetRegisteredType(TinScript::GetTypeID<T8>()), 1, TinScript::GetTypeID<T8>()) && success;
+        success = fc->AddParameter("_p9", TinScript::Hash("_p9"), TinScript::GetRegisteredType(TinScript::GetTypeID<T9>()), 1, TinScript::GetTypeID<T9>()) && success;
+        success = fc->AddParameter("_p10", TinScript::Hash("_p10"), TinScript::GetRegisteredType(TinScript::GetTypeID<T10>()), 1, TinScript::GetTypeID<T10>()) && success;
 
         return (success);
     }
@@ -3922,10 +3924,10 @@ private:
 
 template<typename C, typename... Args>
 #if !PLATFORM_VS_2019
-class CRegisterMethod<10, C, void(Args...)> : public CRegFunctionBase
+class CRegisterMethod<10, C, void(Args...)> : public TinScript::CRegFunctionBase
 {
 #else
-class CRegisterMethod<10, C, void(C::*)(Args...)> : public CRegFunctionBase
+class CRegisterMethod<10, C, void(C::*)(Args...)> : public TinScript::CRegFunctionBase
 {
 #endif
 public:
@@ -3944,38 +3946,38 @@ public:
     virtual void DispatchFunction(void* objaddr)
     {
 
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
-        using T7 = std::tuple_element<6, argument_types>::type;
-        using T8 = std::tuple_element<7, argument_types>::type;
-        using T9 = std::tuple_element<8, argument_types>::type;
-        using T10 = std::tuple_element<9, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
+        using T7 = typename std::tuple_element<6, argument_types>::type;
+        using T8 = typename std::tuple_element<7, argument_types>::type;
+        using T9 = typename std::tuple_element<8, argument_types>::type;
+        using T10 = typename std::tuple_element<9, argument_types>::type;
 
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
-        CVariableEntry* ve4 = GetContext()->GetParameter(4);
-        CVariableEntry* ve5 = GetContext()->GetParameter(5);
-        CVariableEntry* ve6 = GetContext()->GetParameter(6);
-        CVariableEntry* ve7 = GetContext()->GetParameter(7);
-        CVariableEntry* ve8 = GetContext()->GetParameter(8);
-        CVariableEntry* ve9 = GetContext()->GetParameter(9);
-        CVariableEntry* ve10 = GetContext()->GetParameter(10);
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        TinScript::CVariableEntry* ve4 = GetContext()->GetParameter(4);
+        TinScript::CVariableEntry* ve5 = GetContext()->GetParameter(5);
+        TinScript::CVariableEntry* ve6 = GetContext()->GetParameter(6);
+        TinScript::CVariableEntry* ve7 = GetContext()->GetParameter(7);
+        TinScript::CVariableEntry* ve8 = GetContext()->GetParameter(8);
+        TinScript::CVariableEntry* ve9 = GetContext()->GetParameter(9);
+        TinScript::CVariableEntry* ve10 = GetContext()->GetParameter(10);
 
-        T1 p1 = ConvertVariableForDispatch<T1>(ve1);
-        T2 p2 = ConvertVariableForDispatch<T2>(ve2);
-        T3 p3 = ConvertVariableForDispatch<T3>(ve3);
-        T4 p4 = ConvertVariableForDispatch<T4>(ve4);
-        T5 p5 = ConvertVariableForDispatch<T5>(ve5);
-        T6 p6 = ConvertVariableForDispatch<T6>(ve6);
-        T7 p7 = ConvertVariableForDispatch<T7>(ve7);
-        T8 p8 = ConvertVariableForDispatch<T8>(ve8);
-        T9 p9 = ConvertVariableForDispatch<T9>(ve9);
-        T10 p10 = ConvertVariableForDispatch<T10>(ve10);
+        T1 p1 = TinScript::ConvertVariableForDispatch<T1>(ve1);
+        T2 p2 = TinScript::ConvertVariableForDispatch<T2>(ve2);
+        T3 p3 = TinScript::ConvertVariableForDispatch<T3>(ve3);
+        T4 p4 = TinScript::ConvertVariableForDispatch<T4>(ve4);
+        T5 p5 = TinScript::ConvertVariableForDispatch<T5>(ve5);
+        T6 p6 = TinScript::ConvertVariableForDispatch<T6>(ve6);
+        T7 p7 = TinScript::ConvertVariableForDispatch<T7>(ve7);
+        T8 p8 = TinScript::ConvertVariableForDispatch<T8>(ve8);
+        T9 p9 = TinScript::ConvertVariableForDispatch<T9>(ve9);
+        T10 p10 = TinScript::ConvertVariableForDispatch<T10>(ve10);
 
         Dispatch(objaddr, &p1, &p2, &p3, &p4, &p5, &p6, &p7, &p8, &p9, &p10);
     }
@@ -3983,16 +3985,16 @@ public:
     // -- dispatch method
     void Dispatch(void* objaddr, void* _p1, void* _p2, void* _p3, void* _p4, void* _p5, void* _p6, void* _p7, void* _p8, void* _p9, void* _p10)
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
-        using T7 = std::tuple_element<6, argument_types>::type;
-        using T8 = std::tuple_element<7, argument_types>::type;
-        using T9 = std::tuple_element<8, argument_types>::type;
-        using T10 = std::tuple_element<9, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
+        using T7 = typename std::tuple_element<6, argument_types>::type;
+        using T8 = typename std::tuple_element<7, argument_types>::type;
+        using T9 = typename std::tuple_element<8, argument_types>::type;
+        using T10 = typename std::tuple_element<9, argument_types>::type;
 
         T1* p1 = (T1*)_p1;
         T2* p2 = (T2*)_p2;
@@ -4013,31 +4015,31 @@ public:
     // -- registration method
     virtual bool Register()
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
-        using T7 = std::tuple_element<6, argument_types>::type;
-        using T8 = std::tuple_element<7, argument_types>::type;
-        using T9 = std::tuple_element<8, argument_types>::type;
-        using T10 = std::tuple_element<9, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
+        using T7 = typename std::tuple_element<6, argument_types>::type;
+        using T8 = typename std::tuple_element<7, argument_types>::type;
+        using T9 = typename std::tuple_element<8, argument_types>::type;
+        using T10 = typename std::tuple_element<9, argument_types>::type;
 
 
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
-        success = fc->AddParameter("_p4", Hash("_p4"), GetRegisteredType(GetTypeID<T4>()), 1, GetTypeID<T4>()) && success;
-        success = fc->AddParameter("_p5", Hash("_p5"), GetRegisteredType(GetTypeID<T5>()), 1, GetTypeID<T5>()) && success;
-        success = fc->AddParameter("_p6", Hash("_p6"), GetRegisteredType(GetTypeID<T6>()), 1, GetTypeID<T6>()) && success;
-        success = fc->AddParameter("_p7", Hash("_p7"), GetRegisteredType(GetTypeID<T7>()), 1, GetTypeID<T7>()) && success;
-        success = fc->AddParameter("_p8", Hash("_p8"), GetRegisteredType(GetTypeID<T8>()), 1, GetTypeID<T8>()) && success;
-        success = fc->AddParameter("_p9", Hash("_p9"), GetRegisteredType(GetTypeID<T9>()), 1, GetTypeID<T9>()) && success;
-        success = fc->AddParameter("_p10", Hash("_p10"), GetRegisteredType(GetTypeID<T10>()), 1, GetTypeID<T10>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::TYPE_void, 1, 0) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
+        success = fc->AddParameter("_p4", TinScript::Hash("_p4"), TinScript::GetRegisteredType(TinScript::GetTypeID<T4>()), 1, TinScript::GetTypeID<T4>()) && success;
+        success = fc->AddParameter("_p5", TinScript::Hash("_p5"), TinScript::GetRegisteredType(TinScript::GetTypeID<T5>()), 1, TinScript::GetTypeID<T5>()) && success;
+        success = fc->AddParameter("_p6", TinScript::Hash("_p6"), TinScript::GetRegisteredType(TinScript::GetTypeID<T6>()), 1, TinScript::GetTypeID<T6>()) && success;
+        success = fc->AddParameter("_p7", TinScript::Hash("_p7"), TinScript::GetRegisteredType(TinScript::GetTypeID<T7>()), 1, TinScript::GetTypeID<T7>()) && success;
+        success = fc->AddParameter("_p8", TinScript::Hash("_p8"), TinScript::GetRegisteredType(TinScript::GetTypeID<T8>()), 1, TinScript::GetTypeID<T8>()) && success;
+        success = fc->AddParameter("_p9", TinScript::Hash("_p9"), TinScript::GetRegisteredType(TinScript::GetTypeID<T9>()), 1, TinScript::GetTypeID<T9>()) && success;
+        success = fc->AddParameter("_p10", TinScript::Hash("_p10"), TinScript::GetRegisteredType(TinScript::GetTypeID<T10>()), 1, TinScript::GetTypeID<T10>()) && success;
 
 
         return (success);
@@ -4054,7 +4056,7 @@ private:
 // -- class CRegisterFunction<11, R(Args...)> ----------------------------------------
 
 template<typename R, typename... Args>
-class CRegisterFunction<11, R(Args...)> : public CRegFunctionBase
+class CRegisterFunction<11, R(Args...)> : public TinScript::CRegFunctionBase
 {
 public:
 
@@ -4070,41 +4072,41 @@ public:
     // -- virtual DispatchFunction wrapper
     virtual void DispatchFunction(void*)
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
-        using T7 = std::tuple_element<6, argument_types>::type;
-        using T8 = std::tuple_element<7, argument_types>::type;
-        using T9 = std::tuple_element<8, argument_types>::type;
-        using T10 = std::tuple_element<9, argument_types>::type;
-        using T11 = std::tuple_element<10, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
+        using T7 = typename std::tuple_element<6, argument_types>::type;
+        using T8 = typename std::tuple_element<7, argument_types>::type;
+        using T9 = typename std::tuple_element<8, argument_types>::type;
+        using T10 = typename std::tuple_element<9, argument_types>::type;
+        using T11 = typename std::tuple_element<10, argument_types>::type;
 
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
-        CVariableEntry* ve4 = GetContext()->GetParameter(4);
-        CVariableEntry* ve5 = GetContext()->GetParameter(5);
-        CVariableEntry* ve6 = GetContext()->GetParameter(6);
-        CVariableEntry* ve7 = GetContext()->GetParameter(7);
-        CVariableEntry* ve8 = GetContext()->GetParameter(8);
-        CVariableEntry* ve9 = GetContext()->GetParameter(9);
-        CVariableEntry* ve10 = GetContext()->GetParameter(10);
-        CVariableEntry* ve11 = GetContext()->GetParameter(11);
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        TinScript::CVariableEntry* ve4 = GetContext()->GetParameter(4);
+        TinScript::CVariableEntry* ve5 = GetContext()->GetParameter(5);
+        TinScript::CVariableEntry* ve6 = GetContext()->GetParameter(6);
+        TinScript::CVariableEntry* ve7 = GetContext()->GetParameter(7);
+        TinScript::CVariableEntry* ve8 = GetContext()->GetParameter(8);
+        TinScript::CVariableEntry* ve9 = GetContext()->GetParameter(9);
+        TinScript::CVariableEntry* ve10 = GetContext()->GetParameter(10);
+        TinScript::CVariableEntry* ve11 = GetContext()->GetParameter(11);
 
-        T1 p1 = ConvertVariableForDispatch<T1>(ve1);
-        T2 p2 = ConvertVariableForDispatch<T2>(ve2);
-        T3 p3 = ConvertVariableForDispatch<T3>(ve3);
-        T4 p4 = ConvertVariableForDispatch<T4>(ve4);
-        T5 p5 = ConvertVariableForDispatch<T5>(ve5);
-        T6 p6 = ConvertVariableForDispatch<T6>(ve6);
-        T7 p7 = ConvertVariableForDispatch<T7>(ve7);
-        T8 p8 = ConvertVariableForDispatch<T8>(ve8);
-        T9 p9 = ConvertVariableForDispatch<T9>(ve9);
-        T10 p10 = ConvertVariableForDispatch<T10>(ve10);
-        T11 p11 = ConvertVariableForDispatch<T11>(ve11);
+        T1 p1 = TinScript::ConvertVariableForDispatch<T1>(ve1);
+        T2 p2 = TinScript::ConvertVariableForDispatch<T2>(ve2);
+        T3 p3 = TinScript::ConvertVariableForDispatch<T3>(ve3);
+        T4 p4 = TinScript::ConvertVariableForDispatch<T4>(ve4);
+        T5 p5 = TinScript::ConvertVariableForDispatch<T5>(ve5);
+        T6 p6 = TinScript::ConvertVariableForDispatch<T6>(ve6);
+        T7 p7 = TinScript::ConvertVariableForDispatch<T7>(ve7);
+        T8 p8 = TinScript::ConvertVariableForDispatch<T8>(ve8);
+        T9 p9 = TinScript::ConvertVariableForDispatch<T9>(ve9);
+        T10 p10 = TinScript::ConvertVariableForDispatch<T10>(ve10);
+        T11 p11 = TinScript::ConvertVariableForDispatch<T11>(ve11);
 
         Dispatch(&p1, &p2, &p3, &p4, &p5, &p6, &p7, &p8, &p9, &p10, &p11);
     }
@@ -4112,17 +4114,17 @@ public:
     // -- dispatch method
     R Dispatch(void* _p1, void* _p2, void* _p3, void* _p4, void* _p5, void* _p6, void* _p7, void* _p8, void* _p9, void* _p10, void* _p11)
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
-        using T7 = std::tuple_element<6, argument_types>::type;
-        using T8 = std::tuple_element<7, argument_types>::type;
-        using T9 = std::tuple_element<8, argument_types>::type;
-        using T10 = std::tuple_element<9, argument_types>::type;
-        using T11 = std::tuple_element<10, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
+        using T7 = typename std::tuple_element<6, argument_types>::type;
+        using T8 = typename std::tuple_element<7, argument_types>::type;
+        using T9 = typename std::tuple_element<8, argument_types>::type;
+        using T10 = typename std::tuple_element<9, argument_types>::type;
+        using T11 = typename std::tuple_element<10, argument_types>::type;
 
         T1* p1 = (T1*)_p1;
         T2* p2 = (T2*)_p2;
@@ -4139,40 +4141,40 @@ public:
         R r = funcptr(*p1, *p2, *p3, *p4, *p5, *p6, *p7, *p8, *p9, *p10, *p11);
 
         assert(GetContext()->GetParameter(0));
-        CVariableEntry* returnval = GetContext()->GetParameter(0);
-        returnval->SetValueAddr(NULL, convert_to_void_ptr<R>::Convert(r));
+        TinScript::CVariableEntry* returnval = GetContext()->GetParameter(0);
+        returnval->SetValueAddr(NULL, TinScript::convert_to_void_ptr<R>::Convert(r));
         return (r);
     }
 
     // -- registration method
     virtual bool Register()
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
-        using T7 = std::tuple_element<6, argument_types>::type;
-        using T8 = std::tuple_element<7, argument_types>::type;
-        using T9 = std::tuple_element<8, argument_types>::type;
-        using T10 = std::tuple_element<9, argument_types>::type;
-        using T11 = std::tuple_element<10, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
+        using T7 = typename std::tuple_element<6, argument_types>::type;
+        using T8 = typename std::tuple_element<7, argument_types>::type;
+        using T9 = typename std::tuple_element<8, argument_types>::type;
+        using T10 = typename std::tuple_element<9, argument_types>::type;
+        using T11 = typename std::tuple_element<10, argument_types>::type;
 
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>()) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
-        success = fc->AddParameter("_p4", Hash("_p4"), GetRegisteredType(GetTypeID<T4>()), 1, GetTypeID<T4>()) && success;
-        success = fc->AddParameter("_p5", Hash("_p5"), GetRegisteredType(GetTypeID<T5>()), 1, GetTypeID<T5>()) && success;
-        success = fc->AddParameter("_p6", Hash("_p6"), GetRegisteredType(GetTypeID<T6>()), 1, GetTypeID<T6>()) && success;
-        success = fc->AddParameter("_p7", Hash("_p7"), GetRegisteredType(GetTypeID<T7>()), 1, GetTypeID<T7>()) && success;
-        success = fc->AddParameter("_p8", Hash("_p8"), GetRegisteredType(GetTypeID<T8>()), 1, GetTypeID<T8>()) && success;
-        success = fc->AddParameter("_p9", Hash("_p9"), GetRegisteredType(GetTypeID<T9>()), 1, GetTypeID<T9>()) && success;
-        success = fc->AddParameter("_p10", Hash("_p10"), GetRegisteredType(GetTypeID<T10>()), 1, GetTypeID<T10>()) && success;
-        success = fc->AddParameter("_p11", Hash("_p11"), GetRegisteredType(GetTypeID<T11>()), 1, GetTypeID<T11>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::GetRegisteredType(TinScript::GetTypeID<R>()), 1, TinScript::GetTypeID<R>()) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
+        success = fc->AddParameter("_p4", TinScript::Hash("_p4"), TinScript::GetRegisteredType(TinScript::GetTypeID<T4>()), 1, TinScript::GetTypeID<T4>()) && success;
+        success = fc->AddParameter("_p5", TinScript::Hash("_p5"), TinScript::GetRegisteredType(TinScript::GetTypeID<T5>()), 1, TinScript::GetTypeID<T5>()) && success;
+        success = fc->AddParameter("_p6", TinScript::Hash("_p6"), TinScript::GetRegisteredType(TinScript::GetTypeID<T6>()), 1, TinScript::GetTypeID<T6>()) && success;
+        success = fc->AddParameter("_p7", TinScript::Hash("_p7"), TinScript::GetRegisteredType(TinScript::GetTypeID<T7>()), 1, TinScript::GetTypeID<T7>()) && success;
+        success = fc->AddParameter("_p8", TinScript::Hash("_p8"), TinScript::GetRegisteredType(TinScript::GetTypeID<T8>()), 1, TinScript::GetTypeID<T8>()) && success;
+        success = fc->AddParameter("_p9", TinScript::Hash("_p9"), TinScript::GetRegisteredType(TinScript::GetTypeID<T9>()), 1, TinScript::GetTypeID<T9>()) && success;
+        success = fc->AddParameter("_p10", TinScript::Hash("_p10"), TinScript::GetRegisteredType(TinScript::GetTypeID<T10>()), 1, TinScript::GetTypeID<T10>()) && success;
+        success = fc->AddParameter("_p11", TinScript::Hash("_p11"), TinScript::GetRegisteredType(TinScript::GetTypeID<T11>()), 1, TinScript::GetTypeID<T11>()) && success;
 
         return (success);
     }
@@ -4184,7 +4186,7 @@ private:
 // -- class CRegisterFunction<11, void(Args...)> ----------------------------------------
 
 template<typename... Args>
-class CRegisterFunction<11, void(Args...)> : public CRegFunctionBase
+class CRegisterFunction<11, void(Args...)> : public TinScript::CRegFunctionBase
 {
 public:
 
@@ -4200,41 +4202,41 @@ public:
     // -- virtual DispatchFunction wrapper
     virtual void DispatchFunction(void*)
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
-        using T7 = std::tuple_element<6, argument_types>::type;
-        using T8 = std::tuple_element<7, argument_types>::type;
-        using T9 = std::tuple_element<8, argument_types>::type;
-        using T10 = std::tuple_element<9, argument_types>::type;
-        using T11 = std::tuple_element<10, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
+        using T7 = typename std::tuple_element<6, argument_types>::type;
+        using T8 = typename std::tuple_element<7, argument_types>::type;
+        using T9 = typename std::tuple_element<8, argument_types>::type;
+        using T10 = typename std::tuple_element<9, argument_types>::type;
+        using T11 = typename std::tuple_element<10, argument_types>::type;
 
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
-        CVariableEntry* ve4 = GetContext()->GetParameter(4);
-        CVariableEntry* ve5 = GetContext()->GetParameter(5);
-        CVariableEntry* ve6 = GetContext()->GetParameter(6);
-        CVariableEntry* ve7 = GetContext()->GetParameter(7);
-        CVariableEntry* ve8 = GetContext()->GetParameter(8);
-        CVariableEntry* ve9 = GetContext()->GetParameter(9);
-        CVariableEntry* ve10 = GetContext()->GetParameter(10);
-        CVariableEntry* ve11 = GetContext()->GetParameter(11);
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        TinScript::CVariableEntry* ve4 = GetContext()->GetParameter(4);
+        TinScript::CVariableEntry* ve5 = GetContext()->GetParameter(5);
+        TinScript::CVariableEntry* ve6 = GetContext()->GetParameter(6);
+        TinScript::CVariableEntry* ve7 = GetContext()->GetParameter(7);
+        TinScript::CVariableEntry* ve8 = GetContext()->GetParameter(8);
+        TinScript::CVariableEntry* ve9 = GetContext()->GetParameter(9);
+        TinScript::CVariableEntry* ve10 = GetContext()->GetParameter(10);
+        TinScript::CVariableEntry* ve11 = GetContext()->GetParameter(11);
 
-        T1 p1 = ConvertVariableForDispatch<T1>(ve1);
-        T2 p2 = ConvertVariableForDispatch<T2>(ve2);
-        T3 p3 = ConvertVariableForDispatch<T3>(ve3);
-        T4 p4 = ConvertVariableForDispatch<T4>(ve4);
-        T5 p5 = ConvertVariableForDispatch<T5>(ve5);
-        T6 p6 = ConvertVariableForDispatch<T6>(ve6);
-        T7 p7 = ConvertVariableForDispatch<T7>(ve7);
-        T8 p8 = ConvertVariableForDispatch<T8>(ve8);
-        T9 p9 = ConvertVariableForDispatch<T9>(ve9);
-        T10 p10 = ConvertVariableForDispatch<T10>(ve10);
-        T11 p11 = ConvertVariableForDispatch<T11>(ve11);
+        T1 p1 = TinScript::ConvertVariableForDispatch<T1>(ve1);
+        T2 p2 = TinScript::ConvertVariableForDispatch<T2>(ve2);
+        T3 p3 = TinScript::ConvertVariableForDispatch<T3>(ve3);
+        T4 p4 = TinScript::ConvertVariableForDispatch<T4>(ve4);
+        T5 p5 = TinScript::ConvertVariableForDispatch<T5>(ve5);
+        T6 p6 = TinScript::ConvertVariableForDispatch<T6>(ve6);
+        T7 p7 = TinScript::ConvertVariableForDispatch<T7>(ve7);
+        T8 p8 = TinScript::ConvertVariableForDispatch<T8>(ve8);
+        T9 p9 = TinScript::ConvertVariableForDispatch<T9>(ve9);
+        T10 p10 = TinScript::ConvertVariableForDispatch<T10>(ve10);
+        T11 p11 = TinScript::ConvertVariableForDispatch<T11>(ve11);
 
         Dispatch(&p1, &p2, &p3, &p4, &p5, &p6, &p7, &p8, &p9, &p10, &p11);
     }
@@ -4242,17 +4244,17 @@ public:
     // -- dispatch method
     void Dispatch(void* _p1, void* _p2, void* _p3, void* _p4, void* _p5, void* _p6, void* _p7, void* _p8, void* _p9, void* _p10, void* _p11)
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
-        using T7 = std::tuple_element<6, argument_types>::type;
-        using T8 = std::tuple_element<7, argument_types>::type;
-        using T9 = std::tuple_element<8, argument_types>::type;
-        using T10 = std::tuple_element<9, argument_types>::type;
-        using T11 = std::tuple_element<10, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
+        using T7 = typename std::tuple_element<6, argument_types>::type;
+        using T8 = typename std::tuple_element<7, argument_types>::type;
+        using T9 = typename std::tuple_element<8, argument_types>::type;
+        using T10 = typename std::tuple_element<9, argument_types>::type;
+        using T11 = typename std::tuple_element<10, argument_types>::type;
 
         T1* p1 = (T1*)_p1;
         T2* p2 = (T2*)_p2;
@@ -4273,32 +4275,32 @@ public:
     // -- registration method
     virtual bool Register()
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
-        using T7 = std::tuple_element<6, argument_types>::type;
-        using T8 = std::tuple_element<7, argument_types>::type;
-        using T9 = std::tuple_element<8, argument_types>::type;
-        using T10 = std::tuple_element<9, argument_types>::type;
-        using T11 = std::tuple_element<10, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
+        using T7 = typename std::tuple_element<6, argument_types>::type;
+        using T8 = typename std::tuple_element<7, argument_types>::type;
+        using T9 = typename std::tuple_element<8, argument_types>::type;
+        using T10 = typename std::tuple_element<9, argument_types>::type;
+        using T11 = typename std::tuple_element<10, argument_types>::type;
 
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
-        success = fc->AddParameter("_p4", Hash("_p4"), GetRegisteredType(GetTypeID<T4>()), 1, GetTypeID<T4>()) && success;
-        success = fc->AddParameter("_p5", Hash("_p5"), GetRegisteredType(GetTypeID<T5>()), 1, GetTypeID<T5>()) && success;
-        success = fc->AddParameter("_p6", Hash("_p6"), GetRegisteredType(GetTypeID<T6>()), 1, GetTypeID<T6>()) && success;
-        success = fc->AddParameter("_p7", Hash("_p7"), GetRegisteredType(GetTypeID<T7>()), 1, GetTypeID<T7>()) && success;
-        success = fc->AddParameter("_p8", Hash("_p8"), GetRegisteredType(GetTypeID<T8>()), 1, GetTypeID<T8>()) && success;
-        success = fc->AddParameter("_p9", Hash("_p9"), GetRegisteredType(GetTypeID<T9>()), 1, GetTypeID<T9>()) && success;
-        success = fc->AddParameter("_p10", Hash("_p10"), GetRegisteredType(GetTypeID<T10>()), 1, GetTypeID<T10>()) && success;
-        success = fc->AddParameter("_p11", Hash("_p11"), GetRegisteredType(GetTypeID<T11>()), 1, GetTypeID<T11>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::TYPE_void, 1, 0) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
+        success = fc->AddParameter("_p4", TinScript::Hash("_p4"), TinScript::GetRegisteredType(TinScript::GetTypeID<T4>()), 1, TinScript::GetTypeID<T4>()) && success;
+        success = fc->AddParameter("_p5", TinScript::Hash("_p5"), TinScript::GetRegisteredType(TinScript::GetTypeID<T5>()), 1, TinScript::GetTypeID<T5>()) && success;
+        success = fc->AddParameter("_p6", TinScript::Hash("_p6"), TinScript::GetRegisteredType(TinScript::GetTypeID<T6>()), 1, TinScript::GetTypeID<T6>()) && success;
+        success = fc->AddParameter("_p7", TinScript::Hash("_p7"), TinScript::GetRegisteredType(TinScript::GetTypeID<T7>()), 1, TinScript::GetTypeID<T7>()) && success;
+        success = fc->AddParameter("_p8", TinScript::Hash("_p8"), TinScript::GetRegisteredType(TinScript::GetTypeID<T8>()), 1, TinScript::GetTypeID<T8>()) && success;
+        success = fc->AddParameter("_p9", TinScript::Hash("_p9"), TinScript::GetRegisteredType(TinScript::GetTypeID<T9>()), 1, TinScript::GetTypeID<T9>()) && success;
+        success = fc->AddParameter("_p10", TinScript::Hash("_p10"), TinScript::GetRegisteredType(TinScript::GetTypeID<T10>()), 1, TinScript::GetTypeID<T10>()) && success;
+        success = fc->AddParameter("_p11", TinScript::Hash("_p11"), TinScript::GetRegisteredType(TinScript::GetTypeID<T11>()), 1, TinScript::GetTypeID<T11>()) && success;
 
         return (success);
     }
@@ -4311,10 +4313,10 @@ private:
 
 template<typename C, typename R, typename... Args>
 #if !PLATFORM_VS_2019
-class CRegisterMethod<11, C, R(Args...)> : public CRegFunctionBase
+class CRegisterMethod<11, C, R(Args...)> : public TinScript::CRegFunctionBase
 {
 #else
-class CRegisterMethod<11, C, R(C::*)(Args...)> : public CRegFunctionBase
+class CRegisterMethod<11, C, R(C::*)(Args...)> : public TinScript::CRegFunctionBase
 {
 #endif
 public:
@@ -4333,58 +4335,58 @@ public:
     virtual void DispatchFunction(void* objaddr)
     {
 
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
-        using T7 = std::tuple_element<6, argument_types>::type;
-        using T8 = std::tuple_element<7, argument_types>::type;
-        using T9 = std::tuple_element<8, argument_types>::type;
-        using T10 = std::tuple_element<9, argument_types>::type;
-        using T11 = std::tuple_element<10, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
+        using T7 = typename std::tuple_element<6, argument_types>::type;
+        using T8 = typename std::tuple_element<7, argument_types>::type;
+        using T9 = typename std::tuple_element<8, argument_types>::type;
+        using T10 = typename std::tuple_element<9, argument_types>::type;
+        using T11 = typename std::tuple_element<10, argument_types>::type;
 
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
-        CVariableEntry* ve4 = GetContext()->GetParameter(4);
-        CVariableEntry* ve5 = GetContext()->GetParameter(5);
-        CVariableEntry* ve6 = GetContext()->GetParameter(6);
-        CVariableEntry* ve7 = GetContext()->GetParameter(7);
-        CVariableEntry* ve8 = GetContext()->GetParameter(8);
-        CVariableEntry* ve9 = GetContext()->GetParameter(9);
-        CVariableEntry* ve10 = GetContext()->GetParameter(10);
-        CVariableEntry* ve11 = GetContext()->GetParameter(11);
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        TinScript::CVariableEntry* ve4 = GetContext()->GetParameter(4);
+        TinScript::CVariableEntry* ve5 = GetContext()->GetParameter(5);
+        TinScript::CVariableEntry* ve6 = GetContext()->GetParameter(6);
+        TinScript::CVariableEntry* ve7 = GetContext()->GetParameter(7);
+        TinScript::CVariableEntry* ve8 = GetContext()->GetParameter(8);
+        TinScript::CVariableEntry* ve9 = GetContext()->GetParameter(9);
+        TinScript::CVariableEntry* ve10 = GetContext()->GetParameter(10);
+        TinScript::CVariableEntry* ve11 = GetContext()->GetParameter(11);
 
-        T1 p1 = ConvertVariableForDispatch<T1>(ve1);
-        T2 p2 = ConvertVariableForDispatch<T2>(ve2);
-        T3 p3 = ConvertVariableForDispatch<T3>(ve3);
-        T4 p4 = ConvertVariableForDispatch<T4>(ve4);
-        T5 p5 = ConvertVariableForDispatch<T5>(ve5);
-        T6 p6 = ConvertVariableForDispatch<T6>(ve6);
-        T7 p7 = ConvertVariableForDispatch<T7>(ve7);
-        T8 p8 = ConvertVariableForDispatch<T8>(ve8);
-        T9 p9 = ConvertVariableForDispatch<T9>(ve9);
-        T10 p10 = ConvertVariableForDispatch<T10>(ve10);
-        T11 p11 = ConvertVariableForDispatch<T11>(ve11);
+        T1 p1 = TinScript::ConvertVariableForDispatch<T1>(ve1);
+        T2 p2 = TinScript::ConvertVariableForDispatch<T2>(ve2);
+        T3 p3 = TinScript::ConvertVariableForDispatch<T3>(ve3);
+        T4 p4 = TinScript::ConvertVariableForDispatch<T4>(ve4);
+        T5 p5 = TinScript::ConvertVariableForDispatch<T5>(ve5);
+        T6 p6 = TinScript::ConvertVariableForDispatch<T6>(ve6);
+        T7 p7 = TinScript::ConvertVariableForDispatch<T7>(ve7);
+        T8 p8 = TinScript::ConvertVariableForDispatch<T8>(ve8);
+        T9 p9 = TinScript::ConvertVariableForDispatch<T9>(ve9);
+        T10 p10 = TinScript::ConvertVariableForDispatch<T10>(ve10);
+        T11 p11 = TinScript::ConvertVariableForDispatch<T11>(ve11);
         Dispatch(objaddr, &p1, &p2, &p3, &p4, &p5, &p6, &p7, &p8, &p9, &p10, &p11);
     }
 
     // -- dispatch method
     R Dispatch(void* objaddr, void* _p1, void* _p2, void* _p3, void* _p4, void* _p5, void* _p6, void* _p7, void* _p8, void* _p9, void* _p10, void* _p11)
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
-        using T7 = std::tuple_element<6, argument_types>::type;
-        using T8 = std::tuple_element<7, argument_types>::type;
-        using T9 = std::tuple_element<8, argument_types>::type;
-        using T10 = std::tuple_element<9, argument_types>::type;
-        using T11 = std::tuple_element<10, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
+        using T7 = typename std::tuple_element<6, argument_types>::type;
+        using T8 = typename std::tuple_element<7, argument_types>::type;
+        using T9 = typename std::tuple_element<8, argument_types>::type;
+        using T10 = typename std::tuple_element<9, argument_types>::type;
+        using T11 = typename std::tuple_element<10, argument_types>::type;
 
         T1* p1 = (T1*)_p1;
         T2* p2 = (T2*)_p2;
@@ -4403,39 +4405,39 @@ public:
 
         assert(GetContext()->GetParameter(0));
         TinScript::CVariableEntry* returnval = this->GetContext()->GetParameter(0);
-        returnval->SetValueAddr(NULL, convert_to_void_ptr<R>::Convert(r));
+        returnval->SetValueAddr(NULL, TinScript::convert_to_void_ptr<R>::Convert(r));
         return (r);
     }
 
     // -- registration method
     virtual bool Register()
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
-        using T7 = std::tuple_element<6, argument_types>::type;
-        using T8 = std::tuple_element<7, argument_types>::type;
-        using T9 = std::tuple_element<8, argument_types>::type;
-        using T10 = std::tuple_element<9, argument_types>::type;
-        using T11 = std::tuple_element<10, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
+        using T7 = typename std::tuple_element<6, argument_types>::type;
+        using T8 = typename std::tuple_element<7, argument_types>::type;
+        using T9 = typename std::tuple_element<8, argument_types>::type;
+        using T10 = typename std::tuple_element<9, argument_types>::type;
+        using T11 = typename std::tuple_element<10, argument_types>::type;
 
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>()) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
-        success = fc->AddParameter("_p4", Hash("_p4"), GetRegisteredType(GetTypeID<T4>()), 1, GetTypeID<T4>()) && success;
-        success = fc->AddParameter("_p5", Hash("_p5"), GetRegisteredType(GetTypeID<T5>()), 1, GetTypeID<T5>()) && success;
-        success = fc->AddParameter("_p6", Hash("_p6"), GetRegisteredType(GetTypeID<T6>()), 1, GetTypeID<T6>()) && success;
-        success = fc->AddParameter("_p7", Hash("_p7"), GetRegisteredType(GetTypeID<T7>()), 1, GetTypeID<T7>()) && success;
-        success = fc->AddParameter("_p8", Hash("_p8"), GetRegisteredType(GetTypeID<T8>()), 1, GetTypeID<T8>()) && success;
-        success = fc->AddParameter("_p9", Hash("_p9"), GetRegisteredType(GetTypeID<T9>()), 1, GetTypeID<T9>()) && success;
-        success = fc->AddParameter("_p10", Hash("_p10"), GetRegisteredType(GetTypeID<T10>()), 1, GetTypeID<T10>()) && success;
-        success = fc->AddParameter("_p11", Hash("_p11"), GetRegisteredType(GetTypeID<T11>()), 1, GetTypeID<T11>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::GetRegisteredType(TinScript::GetTypeID<R>()), 1, TinScript::GetTypeID<R>()) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
+        success = fc->AddParameter("_p4", TinScript::Hash("_p4"), TinScript::GetRegisteredType(TinScript::GetTypeID<T4>()), 1, TinScript::GetTypeID<T4>()) && success;
+        success = fc->AddParameter("_p5", TinScript::Hash("_p5"), TinScript::GetRegisteredType(TinScript::GetTypeID<T5>()), 1, TinScript::GetTypeID<T5>()) && success;
+        success = fc->AddParameter("_p6", TinScript::Hash("_p6"), TinScript::GetRegisteredType(TinScript::GetTypeID<T6>()), 1, TinScript::GetTypeID<T6>()) && success;
+        success = fc->AddParameter("_p7", TinScript::Hash("_p7"), TinScript::GetRegisteredType(TinScript::GetTypeID<T7>()), 1, TinScript::GetTypeID<T7>()) && success;
+        success = fc->AddParameter("_p8", TinScript::Hash("_p8"), TinScript::GetRegisteredType(TinScript::GetTypeID<T8>()), 1, TinScript::GetTypeID<T8>()) && success;
+        success = fc->AddParameter("_p9", TinScript::Hash("_p9"), TinScript::GetRegisteredType(TinScript::GetTypeID<T9>()), 1, TinScript::GetTypeID<T9>()) && success;
+        success = fc->AddParameter("_p10", TinScript::Hash("_p10"), TinScript::GetRegisteredType(TinScript::GetTypeID<T10>()), 1, TinScript::GetTypeID<T10>()) && success;
+        success = fc->AddParameter("_p11", TinScript::Hash("_p11"), TinScript::GetRegisteredType(TinScript::GetTypeID<T11>()), 1, TinScript::GetTypeID<T11>()) && success;
 
         return (success);
     }
@@ -4447,10 +4449,10 @@ private:
 
 template<typename C, typename... Args>
 #if !PLATFORM_VS_2019
-class CRegisterMethod<11, C, void(Args...)> : public CRegFunctionBase
+class CRegisterMethod<11, C, void(Args...)> : public TinScript::CRegFunctionBase
 {
 #else
-class CRegisterMethod<11, C, void(C::*)(Args...)> : public CRegFunctionBase
+class CRegisterMethod<11, C, void(C::*)(Args...)> : public TinScript::CRegFunctionBase
 {
 #endif
 public:
@@ -4469,41 +4471,41 @@ public:
     virtual void DispatchFunction(void* objaddr)
     {
 
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
-        using T7 = std::tuple_element<6, argument_types>::type;
-        using T8 = std::tuple_element<7, argument_types>::type;
-        using T9 = std::tuple_element<8, argument_types>::type;
-        using T10 = std::tuple_element<9, argument_types>::type;
-        using T11 = std::tuple_element<10, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
+        using T7 = typename std::tuple_element<6, argument_types>::type;
+        using T8 = typename std::tuple_element<7, argument_types>::type;
+        using T9 = typename std::tuple_element<8, argument_types>::type;
+        using T10 = typename std::tuple_element<9, argument_types>::type;
+        using T11 = typename std::tuple_element<10, argument_types>::type;
 
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
-        CVariableEntry* ve4 = GetContext()->GetParameter(4);
-        CVariableEntry* ve5 = GetContext()->GetParameter(5);
-        CVariableEntry* ve6 = GetContext()->GetParameter(6);
-        CVariableEntry* ve7 = GetContext()->GetParameter(7);
-        CVariableEntry* ve8 = GetContext()->GetParameter(8);
-        CVariableEntry* ve9 = GetContext()->GetParameter(9);
-        CVariableEntry* ve10 = GetContext()->GetParameter(10);
-        CVariableEntry* ve11 = GetContext()->GetParameter(11);
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        TinScript::CVariableEntry* ve4 = GetContext()->GetParameter(4);
+        TinScript::CVariableEntry* ve5 = GetContext()->GetParameter(5);
+        TinScript::CVariableEntry* ve6 = GetContext()->GetParameter(6);
+        TinScript::CVariableEntry* ve7 = GetContext()->GetParameter(7);
+        TinScript::CVariableEntry* ve8 = GetContext()->GetParameter(8);
+        TinScript::CVariableEntry* ve9 = GetContext()->GetParameter(9);
+        TinScript::CVariableEntry* ve10 = GetContext()->GetParameter(10);
+        TinScript::CVariableEntry* ve11 = GetContext()->GetParameter(11);
 
-        T1 p1 = ConvertVariableForDispatch<T1>(ve1);
-        T2 p2 = ConvertVariableForDispatch<T2>(ve2);
-        T3 p3 = ConvertVariableForDispatch<T3>(ve3);
-        T4 p4 = ConvertVariableForDispatch<T4>(ve4);
-        T5 p5 = ConvertVariableForDispatch<T5>(ve5);
-        T6 p6 = ConvertVariableForDispatch<T6>(ve6);
-        T7 p7 = ConvertVariableForDispatch<T7>(ve7);
-        T8 p8 = ConvertVariableForDispatch<T8>(ve8);
-        T9 p9 = ConvertVariableForDispatch<T9>(ve9);
-        T10 p10 = ConvertVariableForDispatch<T10>(ve10);
-        T11 p11 = ConvertVariableForDispatch<T11>(ve11);
+        T1 p1 = TinScript::ConvertVariableForDispatch<T1>(ve1);
+        T2 p2 = TinScript::ConvertVariableForDispatch<T2>(ve2);
+        T3 p3 = TinScript::ConvertVariableForDispatch<T3>(ve3);
+        T4 p4 = TinScript::ConvertVariableForDispatch<T4>(ve4);
+        T5 p5 = TinScript::ConvertVariableForDispatch<T5>(ve5);
+        T6 p6 = TinScript::ConvertVariableForDispatch<T6>(ve6);
+        T7 p7 = TinScript::ConvertVariableForDispatch<T7>(ve7);
+        T8 p8 = TinScript::ConvertVariableForDispatch<T8>(ve8);
+        T9 p9 = TinScript::ConvertVariableForDispatch<T9>(ve9);
+        T10 p10 = TinScript::ConvertVariableForDispatch<T10>(ve10);
+        T11 p11 = TinScript::ConvertVariableForDispatch<T11>(ve11);
 
         Dispatch(objaddr, &p1, &p2, &p3, &p4, &p5, &p6, &p7, &p8, &p9, &p10, &p11);
     }
@@ -4511,17 +4513,17 @@ public:
     // -- dispatch method
     void Dispatch(void* objaddr, void* _p1, void* _p2, void* _p3, void* _p4, void* _p5, void* _p6, void* _p7, void* _p8, void* _p9, void* _p10, void* _p11)
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
-        using T7 = std::tuple_element<6, argument_types>::type;
-        using T8 = std::tuple_element<7, argument_types>::type;
-        using T9 = std::tuple_element<8, argument_types>::type;
-        using T10 = std::tuple_element<9, argument_types>::type;
-        using T11 = std::tuple_element<10, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
+        using T7 = typename std::tuple_element<6, argument_types>::type;
+        using T8 = typename std::tuple_element<7, argument_types>::type;
+        using T9 = typename std::tuple_element<8, argument_types>::type;
+        using T10 = typename std::tuple_element<9, argument_types>::type;
+        using T11 = typename std::tuple_element<10, argument_types>::type;
 
         T1* p1 = (T1*)_p1;
         T2* p2 = (T2*)_p2;
@@ -4543,33 +4545,33 @@ public:
     // -- registration method
     virtual bool Register()
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
-        using T7 = std::tuple_element<6, argument_types>::type;
-        using T8 = std::tuple_element<7, argument_types>::type;
-        using T9 = std::tuple_element<8, argument_types>::type;
-        using T10 = std::tuple_element<9, argument_types>::type;
-        using T11 = std::tuple_element<10, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
+        using T7 = typename std::tuple_element<6, argument_types>::type;
+        using T8 = typename std::tuple_element<7, argument_types>::type;
+        using T9 = typename std::tuple_element<8, argument_types>::type;
+        using T10 = typename std::tuple_element<9, argument_types>::type;
+        using T11 = typename std::tuple_element<10, argument_types>::type;
 
 
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
-        success = fc->AddParameter("_p4", Hash("_p4"), GetRegisteredType(GetTypeID<T4>()), 1, GetTypeID<T4>()) && success;
-        success = fc->AddParameter("_p5", Hash("_p5"), GetRegisteredType(GetTypeID<T5>()), 1, GetTypeID<T5>()) && success;
-        success = fc->AddParameter("_p6", Hash("_p6"), GetRegisteredType(GetTypeID<T6>()), 1, GetTypeID<T6>()) && success;
-        success = fc->AddParameter("_p7", Hash("_p7"), GetRegisteredType(GetTypeID<T7>()), 1, GetTypeID<T7>()) && success;
-        success = fc->AddParameter("_p8", Hash("_p8"), GetRegisteredType(GetTypeID<T8>()), 1, GetTypeID<T8>()) && success;
-        success = fc->AddParameter("_p9", Hash("_p9"), GetRegisteredType(GetTypeID<T9>()), 1, GetTypeID<T9>()) && success;
-        success = fc->AddParameter("_p10", Hash("_p10"), GetRegisteredType(GetTypeID<T10>()), 1, GetTypeID<T10>()) && success;
-        success = fc->AddParameter("_p11", Hash("_p11"), GetRegisteredType(GetTypeID<T11>()), 1, GetTypeID<T11>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::TYPE_void, 1, 0) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
+        success = fc->AddParameter("_p4", TinScript::Hash("_p4"), TinScript::GetRegisteredType(TinScript::GetTypeID<T4>()), 1, TinScript::GetTypeID<T4>()) && success;
+        success = fc->AddParameter("_p5", TinScript::Hash("_p5"), TinScript::GetRegisteredType(TinScript::GetTypeID<T5>()), 1, TinScript::GetTypeID<T5>()) && success;
+        success = fc->AddParameter("_p6", TinScript::Hash("_p6"), TinScript::GetRegisteredType(TinScript::GetTypeID<T6>()), 1, TinScript::GetTypeID<T6>()) && success;
+        success = fc->AddParameter("_p7", TinScript::Hash("_p7"), TinScript::GetRegisteredType(TinScript::GetTypeID<T7>()), 1, TinScript::GetTypeID<T7>()) && success;
+        success = fc->AddParameter("_p8", TinScript::Hash("_p8"), TinScript::GetRegisteredType(TinScript::GetTypeID<T8>()), 1, TinScript::GetTypeID<T8>()) && success;
+        success = fc->AddParameter("_p9", TinScript::Hash("_p9"), TinScript::GetRegisteredType(TinScript::GetTypeID<T9>()), 1, TinScript::GetTypeID<T9>()) && success;
+        success = fc->AddParameter("_p10", TinScript::Hash("_p10"), TinScript::GetRegisteredType(TinScript::GetTypeID<T10>()), 1, TinScript::GetTypeID<T10>()) && success;
+        success = fc->AddParameter("_p11", TinScript::Hash("_p11"), TinScript::GetRegisteredType(TinScript::GetTypeID<T11>()), 1, TinScript::GetTypeID<T11>()) && success;
 
 
         return (success);
@@ -4586,7 +4588,7 @@ private:
 // -- class CRegisterFunction<12, R(Args...)> ----------------------------------------
 
 template<typename R, typename... Args>
-class CRegisterFunction<12, R(Args...)> : public CRegFunctionBase
+class CRegisterFunction<12, R(Args...)> : public TinScript::CRegFunctionBase
 {
 public:
 
@@ -4602,44 +4604,44 @@ public:
     // -- virtual DispatchFunction wrapper
     virtual void DispatchFunction(void*)
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
-        using T7 = std::tuple_element<6, argument_types>::type;
-        using T8 = std::tuple_element<7, argument_types>::type;
-        using T9 = std::tuple_element<8, argument_types>::type;
-        using T10 = std::tuple_element<9, argument_types>::type;
-        using T11 = std::tuple_element<10, argument_types>::type;
-        using T12 = std::tuple_element<11, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
+        using T7 = typename std::tuple_element<6, argument_types>::type;
+        using T8 = typename std::tuple_element<7, argument_types>::type;
+        using T9 = typename std::tuple_element<8, argument_types>::type;
+        using T10 = typename std::tuple_element<9, argument_types>::type;
+        using T11 = typename std::tuple_element<10, argument_types>::type;
+        using T12 = typename std::tuple_element<11, argument_types>::type;
 
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
-        CVariableEntry* ve4 = GetContext()->GetParameter(4);
-        CVariableEntry* ve5 = GetContext()->GetParameter(5);
-        CVariableEntry* ve6 = GetContext()->GetParameter(6);
-        CVariableEntry* ve7 = GetContext()->GetParameter(7);
-        CVariableEntry* ve8 = GetContext()->GetParameter(8);
-        CVariableEntry* ve9 = GetContext()->GetParameter(9);
-        CVariableEntry* ve10 = GetContext()->GetParameter(10);
-        CVariableEntry* ve11 = GetContext()->GetParameter(11);
-        CVariableEntry* ve12 = GetContext()->GetParameter(12);
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        TinScript::CVariableEntry* ve4 = GetContext()->GetParameter(4);
+        TinScript::CVariableEntry* ve5 = GetContext()->GetParameter(5);
+        TinScript::CVariableEntry* ve6 = GetContext()->GetParameter(6);
+        TinScript::CVariableEntry* ve7 = GetContext()->GetParameter(7);
+        TinScript::CVariableEntry* ve8 = GetContext()->GetParameter(8);
+        TinScript::CVariableEntry* ve9 = GetContext()->GetParameter(9);
+        TinScript::CVariableEntry* ve10 = GetContext()->GetParameter(10);
+        TinScript::CVariableEntry* ve11 = GetContext()->GetParameter(11);
+        TinScript::CVariableEntry* ve12 = GetContext()->GetParameter(12);
 
-        T1 p1 = ConvertVariableForDispatch<T1>(ve1);
-        T2 p2 = ConvertVariableForDispatch<T2>(ve2);
-        T3 p3 = ConvertVariableForDispatch<T3>(ve3);
-        T4 p4 = ConvertVariableForDispatch<T4>(ve4);
-        T5 p5 = ConvertVariableForDispatch<T5>(ve5);
-        T6 p6 = ConvertVariableForDispatch<T6>(ve6);
-        T7 p7 = ConvertVariableForDispatch<T7>(ve7);
-        T8 p8 = ConvertVariableForDispatch<T8>(ve8);
-        T9 p9 = ConvertVariableForDispatch<T9>(ve9);
-        T10 p10 = ConvertVariableForDispatch<T10>(ve10);
-        T11 p11 = ConvertVariableForDispatch<T11>(ve11);
-        T12 p12 = ConvertVariableForDispatch<T12>(ve12);
+        T1 p1 = TinScript::ConvertVariableForDispatch<T1>(ve1);
+        T2 p2 = TinScript::ConvertVariableForDispatch<T2>(ve2);
+        T3 p3 = TinScript::ConvertVariableForDispatch<T3>(ve3);
+        T4 p4 = TinScript::ConvertVariableForDispatch<T4>(ve4);
+        T5 p5 = TinScript::ConvertVariableForDispatch<T5>(ve5);
+        T6 p6 = TinScript::ConvertVariableForDispatch<T6>(ve6);
+        T7 p7 = TinScript::ConvertVariableForDispatch<T7>(ve7);
+        T8 p8 = TinScript::ConvertVariableForDispatch<T8>(ve8);
+        T9 p9 = TinScript::ConvertVariableForDispatch<T9>(ve9);
+        T10 p10 = TinScript::ConvertVariableForDispatch<T10>(ve10);
+        T11 p11 = TinScript::ConvertVariableForDispatch<T11>(ve11);
+        T12 p12 = TinScript::ConvertVariableForDispatch<T12>(ve12);
 
         Dispatch(&p1, &p2, &p3, &p4, &p5, &p6, &p7, &p8, &p9, &p10, &p11, &p12);
     }
@@ -4647,18 +4649,18 @@ public:
     // -- dispatch method
     R Dispatch(void* _p1, void* _p2, void* _p3, void* _p4, void* _p5, void* _p6, void* _p7, void* _p8, void* _p9, void* _p10, void* _p11, void* _p12)
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
-        using T7 = std::tuple_element<6, argument_types>::type;
-        using T8 = std::tuple_element<7, argument_types>::type;
-        using T9 = std::tuple_element<8, argument_types>::type;
-        using T10 = std::tuple_element<9, argument_types>::type;
-        using T11 = std::tuple_element<10, argument_types>::type;
-        using T12 = std::tuple_element<11, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
+        using T7 = typename std::tuple_element<6, argument_types>::type;
+        using T8 = typename std::tuple_element<7, argument_types>::type;
+        using T9 = typename std::tuple_element<8, argument_types>::type;
+        using T10 = typename std::tuple_element<9, argument_types>::type;
+        using T11 = typename std::tuple_element<10, argument_types>::type;
+        using T12 = typename std::tuple_element<11, argument_types>::type;
 
         T1* p1 = (T1*)_p1;
         T2* p2 = (T2*)_p2;
@@ -4676,42 +4678,42 @@ public:
         R r = funcptr(*p1, *p2, *p3, *p4, *p5, *p6, *p7, *p8, *p9, *p10, *p11, *p12);
 
         assert(GetContext()->GetParameter(0));
-        CVariableEntry* returnval = GetContext()->GetParameter(0);
-        returnval->SetValueAddr(NULL, convert_to_void_ptr<R>::Convert(r));
+        TinScript::CVariableEntry* returnval = GetContext()->GetParameter(0);
+        returnval->SetValueAddr(NULL, TinScript::convert_to_void_ptr<R>::Convert(r));
         return (r);
     }
 
     // -- registration method
     virtual bool Register()
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
-        using T7 = std::tuple_element<6, argument_types>::type;
-        using T8 = std::tuple_element<7, argument_types>::type;
-        using T9 = std::tuple_element<8, argument_types>::type;
-        using T10 = std::tuple_element<9, argument_types>::type;
-        using T11 = std::tuple_element<10, argument_types>::type;
-        using T12 = std::tuple_element<11, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
+        using T7 = typename std::tuple_element<6, argument_types>::type;
+        using T8 = typename std::tuple_element<7, argument_types>::type;
+        using T9 = typename std::tuple_element<8, argument_types>::type;
+        using T10 = typename std::tuple_element<9, argument_types>::type;
+        using T11 = typename std::tuple_element<10, argument_types>::type;
+        using T12 = typename std::tuple_element<11, argument_types>::type;
 
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>()) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
-        success = fc->AddParameter("_p4", Hash("_p4"), GetRegisteredType(GetTypeID<T4>()), 1, GetTypeID<T4>()) && success;
-        success = fc->AddParameter("_p5", Hash("_p5"), GetRegisteredType(GetTypeID<T5>()), 1, GetTypeID<T5>()) && success;
-        success = fc->AddParameter("_p6", Hash("_p6"), GetRegisteredType(GetTypeID<T6>()), 1, GetTypeID<T6>()) && success;
-        success = fc->AddParameter("_p7", Hash("_p7"), GetRegisteredType(GetTypeID<T7>()), 1, GetTypeID<T7>()) && success;
-        success = fc->AddParameter("_p8", Hash("_p8"), GetRegisteredType(GetTypeID<T8>()), 1, GetTypeID<T8>()) && success;
-        success = fc->AddParameter("_p9", Hash("_p9"), GetRegisteredType(GetTypeID<T9>()), 1, GetTypeID<T9>()) && success;
-        success = fc->AddParameter("_p10", Hash("_p10"), GetRegisteredType(GetTypeID<T10>()), 1, GetTypeID<T10>()) && success;
-        success = fc->AddParameter("_p11", Hash("_p11"), GetRegisteredType(GetTypeID<T11>()), 1, GetTypeID<T11>()) && success;
-        success = fc->AddParameter("_p12", Hash("_p12"), GetRegisteredType(GetTypeID<T12>()), 1, GetTypeID<T12>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::GetRegisteredType(TinScript::GetTypeID<R>()), 1, TinScript::GetTypeID<R>()) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
+        success = fc->AddParameter("_p4", TinScript::Hash("_p4"), TinScript::GetRegisteredType(TinScript::GetTypeID<T4>()), 1, TinScript::GetTypeID<T4>()) && success;
+        success = fc->AddParameter("_p5", TinScript::Hash("_p5"), TinScript::GetRegisteredType(TinScript::GetTypeID<T5>()), 1, TinScript::GetTypeID<T5>()) && success;
+        success = fc->AddParameter("_p6", TinScript::Hash("_p6"), TinScript::GetRegisteredType(TinScript::GetTypeID<T6>()), 1, TinScript::GetTypeID<T6>()) && success;
+        success = fc->AddParameter("_p7", TinScript::Hash("_p7"), TinScript::GetRegisteredType(TinScript::GetTypeID<T7>()), 1, TinScript::GetTypeID<T7>()) && success;
+        success = fc->AddParameter("_p8", TinScript::Hash("_p8"), TinScript::GetRegisteredType(TinScript::GetTypeID<T8>()), 1, TinScript::GetTypeID<T8>()) && success;
+        success = fc->AddParameter("_p9", TinScript::Hash("_p9"), TinScript::GetRegisteredType(TinScript::GetTypeID<T9>()), 1, TinScript::GetTypeID<T9>()) && success;
+        success = fc->AddParameter("_p10", TinScript::Hash("_p10"), TinScript::GetRegisteredType(TinScript::GetTypeID<T10>()), 1, TinScript::GetTypeID<T10>()) && success;
+        success = fc->AddParameter("_p11", TinScript::Hash("_p11"), TinScript::GetRegisteredType(TinScript::GetTypeID<T11>()), 1, TinScript::GetTypeID<T11>()) && success;
+        success = fc->AddParameter("_p12", TinScript::Hash("_p12"), TinScript::GetRegisteredType(TinScript::GetTypeID<T12>()), 1, TinScript::GetTypeID<T12>()) && success;
 
         return (success);
     }
@@ -4723,7 +4725,7 @@ private:
 // -- class CRegisterFunction<12, void(Args...)> ----------------------------------------
 
 template<typename... Args>
-class CRegisterFunction<12, void(Args...)> : public CRegFunctionBase
+class CRegisterFunction<12, void(Args...)> : public TinScript::CRegFunctionBase
 {
 public:
 
@@ -4739,44 +4741,44 @@ public:
     // -- virtual DispatchFunction wrapper
     virtual void DispatchFunction(void*)
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
-        using T7 = std::tuple_element<6, argument_types>::type;
-        using T8 = std::tuple_element<7, argument_types>::type;
-        using T9 = std::tuple_element<8, argument_types>::type;
-        using T10 = std::tuple_element<9, argument_types>::type;
-        using T11 = std::tuple_element<10, argument_types>::type;
-        using T12 = std::tuple_element<11, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
+        using T7 = typename std::tuple_element<6, argument_types>::type;
+        using T8 = typename std::tuple_element<7, argument_types>::type;
+        using T9 = typename std::tuple_element<8, argument_types>::type;
+        using T10 = typename std::tuple_element<9, argument_types>::type;
+        using T11 = typename std::tuple_element<10, argument_types>::type;
+        using T12 = typename std::tuple_element<11, argument_types>::type;
 
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
-        CVariableEntry* ve4 = GetContext()->GetParameter(4);
-        CVariableEntry* ve5 = GetContext()->GetParameter(5);
-        CVariableEntry* ve6 = GetContext()->GetParameter(6);
-        CVariableEntry* ve7 = GetContext()->GetParameter(7);
-        CVariableEntry* ve8 = GetContext()->GetParameter(8);
-        CVariableEntry* ve9 = GetContext()->GetParameter(9);
-        CVariableEntry* ve10 = GetContext()->GetParameter(10);
-        CVariableEntry* ve11 = GetContext()->GetParameter(11);
-        CVariableEntry* ve12 = GetContext()->GetParameter(12);
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        TinScript::CVariableEntry* ve4 = GetContext()->GetParameter(4);
+        TinScript::CVariableEntry* ve5 = GetContext()->GetParameter(5);
+        TinScript::CVariableEntry* ve6 = GetContext()->GetParameter(6);
+        TinScript::CVariableEntry* ve7 = GetContext()->GetParameter(7);
+        TinScript::CVariableEntry* ve8 = GetContext()->GetParameter(8);
+        TinScript::CVariableEntry* ve9 = GetContext()->GetParameter(9);
+        TinScript::CVariableEntry* ve10 = GetContext()->GetParameter(10);
+        TinScript::CVariableEntry* ve11 = GetContext()->GetParameter(11);
+        TinScript::CVariableEntry* ve12 = GetContext()->GetParameter(12);
 
-        T1 p1 = ConvertVariableForDispatch<T1>(ve1);
-        T2 p2 = ConvertVariableForDispatch<T2>(ve2);
-        T3 p3 = ConvertVariableForDispatch<T3>(ve3);
-        T4 p4 = ConvertVariableForDispatch<T4>(ve4);
-        T5 p5 = ConvertVariableForDispatch<T5>(ve5);
-        T6 p6 = ConvertVariableForDispatch<T6>(ve6);
-        T7 p7 = ConvertVariableForDispatch<T7>(ve7);
-        T8 p8 = ConvertVariableForDispatch<T8>(ve8);
-        T9 p9 = ConvertVariableForDispatch<T9>(ve9);
-        T10 p10 = ConvertVariableForDispatch<T10>(ve10);
-        T11 p11 = ConvertVariableForDispatch<T11>(ve11);
-        T12 p12 = ConvertVariableForDispatch<T12>(ve12);
+        T1 p1 = TinScript::ConvertVariableForDispatch<T1>(ve1);
+        T2 p2 = TinScript::ConvertVariableForDispatch<T2>(ve2);
+        T3 p3 = TinScript::ConvertVariableForDispatch<T3>(ve3);
+        T4 p4 = TinScript::ConvertVariableForDispatch<T4>(ve4);
+        T5 p5 = TinScript::ConvertVariableForDispatch<T5>(ve5);
+        T6 p6 = TinScript::ConvertVariableForDispatch<T6>(ve6);
+        T7 p7 = TinScript::ConvertVariableForDispatch<T7>(ve7);
+        T8 p8 = TinScript::ConvertVariableForDispatch<T8>(ve8);
+        T9 p9 = TinScript::ConvertVariableForDispatch<T9>(ve9);
+        T10 p10 = TinScript::ConvertVariableForDispatch<T10>(ve10);
+        T11 p11 = TinScript::ConvertVariableForDispatch<T11>(ve11);
+        T12 p12 = TinScript::ConvertVariableForDispatch<T12>(ve12);
 
         Dispatch(&p1, &p2, &p3, &p4, &p5, &p6, &p7, &p8, &p9, &p10, &p11, &p12);
     }
@@ -4784,18 +4786,18 @@ public:
     // -- dispatch method
     void Dispatch(void* _p1, void* _p2, void* _p3, void* _p4, void* _p5, void* _p6, void* _p7, void* _p8, void* _p9, void* _p10, void* _p11, void* _p12)
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
-        using T7 = std::tuple_element<6, argument_types>::type;
-        using T8 = std::tuple_element<7, argument_types>::type;
-        using T9 = std::tuple_element<8, argument_types>::type;
-        using T10 = std::tuple_element<9, argument_types>::type;
-        using T11 = std::tuple_element<10, argument_types>::type;
-        using T12 = std::tuple_element<11, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
+        using T7 = typename std::tuple_element<6, argument_types>::type;
+        using T8 = typename std::tuple_element<7, argument_types>::type;
+        using T9 = typename std::tuple_element<8, argument_types>::type;
+        using T10 = typename std::tuple_element<9, argument_types>::type;
+        using T11 = typename std::tuple_element<10, argument_types>::type;
+        using T12 = typename std::tuple_element<11, argument_types>::type;
 
         T1* p1 = (T1*)_p1;
         T2* p2 = (T2*)_p2;
@@ -4817,34 +4819,34 @@ public:
     // -- registration method
     virtual bool Register()
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
-        using T7 = std::tuple_element<6, argument_types>::type;
-        using T8 = std::tuple_element<7, argument_types>::type;
-        using T9 = std::tuple_element<8, argument_types>::type;
-        using T10 = std::tuple_element<9, argument_types>::type;
-        using T11 = std::tuple_element<10, argument_types>::type;
-        using T12 = std::tuple_element<11, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
+        using T7 = typename std::tuple_element<6, argument_types>::type;
+        using T8 = typename std::tuple_element<7, argument_types>::type;
+        using T9 = typename std::tuple_element<8, argument_types>::type;
+        using T10 = typename std::tuple_element<9, argument_types>::type;
+        using T11 = typename std::tuple_element<10, argument_types>::type;
+        using T12 = typename std::tuple_element<11, argument_types>::type;
 
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
-        success = fc->AddParameter("_p4", Hash("_p4"), GetRegisteredType(GetTypeID<T4>()), 1, GetTypeID<T4>()) && success;
-        success = fc->AddParameter("_p5", Hash("_p5"), GetRegisteredType(GetTypeID<T5>()), 1, GetTypeID<T5>()) && success;
-        success = fc->AddParameter("_p6", Hash("_p6"), GetRegisteredType(GetTypeID<T6>()), 1, GetTypeID<T6>()) && success;
-        success = fc->AddParameter("_p7", Hash("_p7"), GetRegisteredType(GetTypeID<T7>()), 1, GetTypeID<T7>()) && success;
-        success = fc->AddParameter("_p8", Hash("_p8"), GetRegisteredType(GetTypeID<T8>()), 1, GetTypeID<T8>()) && success;
-        success = fc->AddParameter("_p9", Hash("_p9"), GetRegisteredType(GetTypeID<T9>()), 1, GetTypeID<T9>()) && success;
-        success = fc->AddParameter("_p10", Hash("_p10"), GetRegisteredType(GetTypeID<T10>()), 1, GetTypeID<T10>()) && success;
-        success = fc->AddParameter("_p11", Hash("_p11"), GetRegisteredType(GetTypeID<T11>()), 1, GetTypeID<T11>()) && success;
-        success = fc->AddParameter("_p12", Hash("_p12"), GetRegisteredType(GetTypeID<T12>()), 1, GetTypeID<T12>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::TYPE_void, 1, 0) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
+        success = fc->AddParameter("_p4", TinScript::Hash("_p4"), TinScript::GetRegisteredType(TinScript::GetTypeID<T4>()), 1, TinScript::GetTypeID<T4>()) && success;
+        success = fc->AddParameter("_p5", TinScript::Hash("_p5"), TinScript::GetRegisteredType(TinScript::GetTypeID<T5>()), 1, TinScript::GetTypeID<T5>()) && success;
+        success = fc->AddParameter("_p6", TinScript::Hash("_p6"), TinScript::GetRegisteredType(TinScript::GetTypeID<T6>()), 1, TinScript::GetTypeID<T6>()) && success;
+        success = fc->AddParameter("_p7", TinScript::Hash("_p7"), TinScript::GetRegisteredType(TinScript::GetTypeID<T7>()), 1, TinScript::GetTypeID<T7>()) && success;
+        success = fc->AddParameter("_p8", TinScript::Hash("_p8"), TinScript::GetRegisteredType(TinScript::GetTypeID<T8>()), 1, TinScript::GetTypeID<T8>()) && success;
+        success = fc->AddParameter("_p9", TinScript::Hash("_p9"), TinScript::GetRegisteredType(TinScript::GetTypeID<T9>()), 1, TinScript::GetTypeID<T9>()) && success;
+        success = fc->AddParameter("_p10", TinScript::Hash("_p10"), TinScript::GetRegisteredType(TinScript::GetTypeID<T10>()), 1, TinScript::GetTypeID<T10>()) && success;
+        success = fc->AddParameter("_p11", TinScript::Hash("_p11"), TinScript::GetRegisteredType(TinScript::GetTypeID<T11>()), 1, TinScript::GetTypeID<T11>()) && success;
+        success = fc->AddParameter("_p12", TinScript::Hash("_p12"), TinScript::GetRegisteredType(TinScript::GetTypeID<T12>()), 1, TinScript::GetTypeID<T12>()) && success;
 
         return (success);
     }
@@ -4857,10 +4859,10 @@ private:
 
 template<typename C, typename R, typename... Args>
 #if !PLATFORM_VS_2019
-class CRegisterMethod<12, C, R(Args...)> : public CRegFunctionBase
+class CRegisterMethod<12, C, R(Args...)> : public TinScript::CRegFunctionBase
 {
 #else
-class CRegisterMethod<12, C, R(C::*)(Args...)> : public CRegFunctionBase
+class CRegisterMethod<12, C, R(C::*)(Args...)> : public TinScript::CRegFunctionBase
 {
 #endif
 public:
@@ -4879,62 +4881,62 @@ public:
     virtual void DispatchFunction(void* objaddr)
     {
 
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
-        using T7 = std::tuple_element<6, argument_types>::type;
-        using T8 = std::tuple_element<7, argument_types>::type;
-        using T9 = std::tuple_element<8, argument_types>::type;
-        using T10 = std::tuple_element<9, argument_types>::type;
-        using T11 = std::tuple_element<10, argument_types>::type;
-        using T12 = std::tuple_element<11, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
+        using T7 = typename std::tuple_element<6, argument_types>::type;
+        using T8 = typename std::tuple_element<7, argument_types>::type;
+        using T9 = typename std::tuple_element<8, argument_types>::type;
+        using T10 = typename std::tuple_element<9, argument_types>::type;
+        using T11 = typename std::tuple_element<10, argument_types>::type;
+        using T12 = typename std::tuple_element<11, argument_types>::type;
 
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
-        CVariableEntry* ve4 = GetContext()->GetParameter(4);
-        CVariableEntry* ve5 = GetContext()->GetParameter(5);
-        CVariableEntry* ve6 = GetContext()->GetParameter(6);
-        CVariableEntry* ve7 = GetContext()->GetParameter(7);
-        CVariableEntry* ve8 = GetContext()->GetParameter(8);
-        CVariableEntry* ve9 = GetContext()->GetParameter(9);
-        CVariableEntry* ve10 = GetContext()->GetParameter(10);
-        CVariableEntry* ve11 = GetContext()->GetParameter(11);
-        CVariableEntry* ve12 = GetContext()->GetParameter(12);
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        TinScript::CVariableEntry* ve4 = GetContext()->GetParameter(4);
+        TinScript::CVariableEntry* ve5 = GetContext()->GetParameter(5);
+        TinScript::CVariableEntry* ve6 = GetContext()->GetParameter(6);
+        TinScript::CVariableEntry* ve7 = GetContext()->GetParameter(7);
+        TinScript::CVariableEntry* ve8 = GetContext()->GetParameter(8);
+        TinScript::CVariableEntry* ve9 = GetContext()->GetParameter(9);
+        TinScript::CVariableEntry* ve10 = GetContext()->GetParameter(10);
+        TinScript::CVariableEntry* ve11 = GetContext()->GetParameter(11);
+        TinScript::CVariableEntry* ve12 = GetContext()->GetParameter(12);
 
-        T1 p1 = ConvertVariableForDispatch<T1>(ve1);
-        T2 p2 = ConvertVariableForDispatch<T2>(ve2);
-        T3 p3 = ConvertVariableForDispatch<T3>(ve3);
-        T4 p4 = ConvertVariableForDispatch<T4>(ve4);
-        T5 p5 = ConvertVariableForDispatch<T5>(ve5);
-        T6 p6 = ConvertVariableForDispatch<T6>(ve6);
-        T7 p7 = ConvertVariableForDispatch<T7>(ve7);
-        T8 p8 = ConvertVariableForDispatch<T8>(ve8);
-        T9 p9 = ConvertVariableForDispatch<T9>(ve9);
-        T10 p10 = ConvertVariableForDispatch<T10>(ve10);
-        T11 p11 = ConvertVariableForDispatch<T11>(ve11);
-        T12 p12 = ConvertVariableForDispatch<T12>(ve12);
+        T1 p1 = TinScript::ConvertVariableForDispatch<T1>(ve1);
+        T2 p2 = TinScript::ConvertVariableForDispatch<T2>(ve2);
+        T3 p3 = TinScript::ConvertVariableForDispatch<T3>(ve3);
+        T4 p4 = TinScript::ConvertVariableForDispatch<T4>(ve4);
+        T5 p5 = TinScript::ConvertVariableForDispatch<T5>(ve5);
+        T6 p6 = TinScript::ConvertVariableForDispatch<T6>(ve6);
+        T7 p7 = TinScript::ConvertVariableForDispatch<T7>(ve7);
+        T8 p8 = TinScript::ConvertVariableForDispatch<T8>(ve8);
+        T9 p9 = TinScript::ConvertVariableForDispatch<T9>(ve9);
+        T10 p10 = TinScript::ConvertVariableForDispatch<T10>(ve10);
+        T11 p11 = TinScript::ConvertVariableForDispatch<T11>(ve11);
+        T12 p12 = TinScript::ConvertVariableForDispatch<T12>(ve12);
         Dispatch(objaddr, &p1, &p2, &p3, &p4, &p5, &p6, &p7, &p8, &p9, &p10, &p11, &p12);
     }
 
     // -- dispatch method
     R Dispatch(void* objaddr, void* _p1, void* _p2, void* _p3, void* _p4, void* _p5, void* _p6, void* _p7, void* _p8, void* _p9, void* _p10, void* _p11, void* _p12)
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
-        using T7 = std::tuple_element<6, argument_types>::type;
-        using T8 = std::tuple_element<7, argument_types>::type;
-        using T9 = std::tuple_element<8, argument_types>::type;
-        using T10 = std::tuple_element<9, argument_types>::type;
-        using T11 = std::tuple_element<10, argument_types>::type;
-        using T12 = std::tuple_element<11, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
+        using T7 = typename std::tuple_element<6, argument_types>::type;
+        using T8 = typename std::tuple_element<7, argument_types>::type;
+        using T9 = typename std::tuple_element<8, argument_types>::type;
+        using T10 = typename std::tuple_element<9, argument_types>::type;
+        using T11 = typename std::tuple_element<10, argument_types>::type;
+        using T12 = typename std::tuple_element<11, argument_types>::type;
 
         T1* p1 = (T1*)_p1;
         T2* p2 = (T2*)_p2;
@@ -4954,41 +4956,41 @@ public:
 
         assert(GetContext()->GetParameter(0));
         TinScript::CVariableEntry* returnval = this->GetContext()->GetParameter(0);
-        returnval->SetValueAddr(NULL, convert_to_void_ptr<R>::Convert(r));
+        returnval->SetValueAddr(NULL, TinScript::convert_to_void_ptr<R>::Convert(r));
         return (r);
     }
 
     // -- registration method
     virtual bool Register()
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
-        using T7 = std::tuple_element<6, argument_types>::type;
-        using T8 = std::tuple_element<7, argument_types>::type;
-        using T9 = std::tuple_element<8, argument_types>::type;
-        using T10 = std::tuple_element<9, argument_types>::type;
-        using T11 = std::tuple_element<10, argument_types>::type;
-        using T12 = std::tuple_element<11, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
+        using T7 = typename std::tuple_element<6, argument_types>::type;
+        using T8 = typename std::tuple_element<7, argument_types>::type;
+        using T9 = typename std::tuple_element<8, argument_types>::type;
+        using T10 = typename std::tuple_element<9, argument_types>::type;
+        using T11 = typename std::tuple_element<10, argument_types>::type;
+        using T12 = typename std::tuple_element<11, argument_types>::type;
 
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>()) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
-        success = fc->AddParameter("_p4", Hash("_p4"), GetRegisteredType(GetTypeID<T4>()), 1, GetTypeID<T4>()) && success;
-        success = fc->AddParameter("_p5", Hash("_p5"), GetRegisteredType(GetTypeID<T5>()), 1, GetTypeID<T5>()) && success;
-        success = fc->AddParameter("_p6", Hash("_p6"), GetRegisteredType(GetTypeID<T6>()), 1, GetTypeID<T6>()) && success;
-        success = fc->AddParameter("_p7", Hash("_p7"), GetRegisteredType(GetTypeID<T7>()), 1, GetTypeID<T7>()) && success;
-        success = fc->AddParameter("_p8", Hash("_p8"), GetRegisteredType(GetTypeID<T8>()), 1, GetTypeID<T8>()) && success;
-        success = fc->AddParameter("_p9", Hash("_p9"), GetRegisteredType(GetTypeID<T9>()), 1, GetTypeID<T9>()) && success;
-        success = fc->AddParameter("_p10", Hash("_p10"), GetRegisteredType(GetTypeID<T10>()), 1, GetTypeID<T10>()) && success;
-        success = fc->AddParameter("_p11", Hash("_p11"), GetRegisteredType(GetTypeID<T11>()), 1, GetTypeID<T11>()) && success;
-        success = fc->AddParameter("_p12", Hash("_p12"), GetRegisteredType(GetTypeID<T12>()), 1, GetTypeID<T12>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::GetRegisteredType(TinScript::GetTypeID<R>()), 1, TinScript::GetTypeID<R>()) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
+        success = fc->AddParameter("_p4", TinScript::Hash("_p4"), TinScript::GetRegisteredType(TinScript::GetTypeID<T4>()), 1, TinScript::GetTypeID<T4>()) && success;
+        success = fc->AddParameter("_p5", TinScript::Hash("_p5"), TinScript::GetRegisteredType(TinScript::GetTypeID<T5>()), 1, TinScript::GetTypeID<T5>()) && success;
+        success = fc->AddParameter("_p6", TinScript::Hash("_p6"), TinScript::GetRegisteredType(TinScript::GetTypeID<T6>()), 1, TinScript::GetTypeID<T6>()) && success;
+        success = fc->AddParameter("_p7", TinScript::Hash("_p7"), TinScript::GetRegisteredType(TinScript::GetTypeID<T7>()), 1, TinScript::GetTypeID<T7>()) && success;
+        success = fc->AddParameter("_p8", TinScript::Hash("_p8"), TinScript::GetRegisteredType(TinScript::GetTypeID<T8>()), 1, TinScript::GetTypeID<T8>()) && success;
+        success = fc->AddParameter("_p9", TinScript::Hash("_p9"), TinScript::GetRegisteredType(TinScript::GetTypeID<T9>()), 1, TinScript::GetTypeID<T9>()) && success;
+        success = fc->AddParameter("_p10", TinScript::Hash("_p10"), TinScript::GetRegisteredType(TinScript::GetTypeID<T10>()), 1, TinScript::GetTypeID<T10>()) && success;
+        success = fc->AddParameter("_p11", TinScript::Hash("_p11"), TinScript::GetRegisteredType(TinScript::GetTypeID<T11>()), 1, TinScript::GetTypeID<T11>()) && success;
+        success = fc->AddParameter("_p12", TinScript::Hash("_p12"), TinScript::GetRegisteredType(TinScript::GetTypeID<T12>()), 1, TinScript::GetTypeID<T12>()) && success;
 
         return (success);
     }
@@ -5000,10 +5002,10 @@ private:
 
 template<typename C, typename... Args>
 #if !PLATFORM_VS_2019
-class CRegisterMethod<12, C, void(Args...)> : public CRegFunctionBase
+class CRegisterMethod<12, C, void(Args...)> : public TinScript::CRegFunctionBase
 {
 #else
-class CRegisterMethod<12, C, void(C::*)(Args...)> : public CRegFunctionBase
+class CRegisterMethod<12, C, void(C::*)(Args...)> : public TinScript::CRegFunctionBase
 {
 #endif
 public:
@@ -5022,44 +5024,44 @@ public:
     virtual void DispatchFunction(void* objaddr)
     {
 
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
-        using T7 = std::tuple_element<6, argument_types>::type;
-        using T8 = std::tuple_element<7, argument_types>::type;
-        using T9 = std::tuple_element<8, argument_types>::type;
-        using T10 = std::tuple_element<9, argument_types>::type;
-        using T11 = std::tuple_element<10, argument_types>::type;
-        using T12 = std::tuple_element<11, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
+        using T7 = typename std::tuple_element<6, argument_types>::type;
+        using T8 = typename std::tuple_element<7, argument_types>::type;
+        using T9 = typename std::tuple_element<8, argument_types>::type;
+        using T10 = typename std::tuple_element<9, argument_types>::type;
+        using T11 = typename std::tuple_element<10, argument_types>::type;
+        using T12 = typename std::tuple_element<11, argument_types>::type;
 
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
-        CVariableEntry* ve4 = GetContext()->GetParameter(4);
-        CVariableEntry* ve5 = GetContext()->GetParameter(5);
-        CVariableEntry* ve6 = GetContext()->GetParameter(6);
-        CVariableEntry* ve7 = GetContext()->GetParameter(7);
-        CVariableEntry* ve8 = GetContext()->GetParameter(8);
-        CVariableEntry* ve9 = GetContext()->GetParameter(9);
-        CVariableEntry* ve10 = GetContext()->GetParameter(10);
-        CVariableEntry* ve11 = GetContext()->GetParameter(11);
-        CVariableEntry* ve12 = GetContext()->GetParameter(12);
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        TinScript::CVariableEntry* ve4 = GetContext()->GetParameter(4);
+        TinScript::CVariableEntry* ve5 = GetContext()->GetParameter(5);
+        TinScript::CVariableEntry* ve6 = GetContext()->GetParameter(6);
+        TinScript::CVariableEntry* ve7 = GetContext()->GetParameter(7);
+        TinScript::CVariableEntry* ve8 = GetContext()->GetParameter(8);
+        TinScript::CVariableEntry* ve9 = GetContext()->GetParameter(9);
+        TinScript::CVariableEntry* ve10 = GetContext()->GetParameter(10);
+        TinScript::CVariableEntry* ve11 = GetContext()->GetParameter(11);
+        TinScript::CVariableEntry* ve12 = GetContext()->GetParameter(12);
 
-        T1 p1 = ConvertVariableForDispatch<T1>(ve1);
-        T2 p2 = ConvertVariableForDispatch<T2>(ve2);
-        T3 p3 = ConvertVariableForDispatch<T3>(ve3);
-        T4 p4 = ConvertVariableForDispatch<T4>(ve4);
-        T5 p5 = ConvertVariableForDispatch<T5>(ve5);
-        T6 p6 = ConvertVariableForDispatch<T6>(ve6);
-        T7 p7 = ConvertVariableForDispatch<T7>(ve7);
-        T8 p8 = ConvertVariableForDispatch<T8>(ve8);
-        T9 p9 = ConvertVariableForDispatch<T9>(ve9);
-        T10 p10 = ConvertVariableForDispatch<T10>(ve10);
-        T11 p11 = ConvertVariableForDispatch<T11>(ve11);
-        T12 p12 = ConvertVariableForDispatch<T12>(ve12);
+        T1 p1 = TinScript::ConvertVariableForDispatch<T1>(ve1);
+        T2 p2 = TinScript::ConvertVariableForDispatch<T2>(ve2);
+        T3 p3 = TinScript::ConvertVariableForDispatch<T3>(ve3);
+        T4 p4 = TinScript::ConvertVariableForDispatch<T4>(ve4);
+        T5 p5 = TinScript::ConvertVariableForDispatch<T5>(ve5);
+        T6 p6 = TinScript::ConvertVariableForDispatch<T6>(ve6);
+        T7 p7 = TinScript::ConvertVariableForDispatch<T7>(ve7);
+        T8 p8 = TinScript::ConvertVariableForDispatch<T8>(ve8);
+        T9 p9 = TinScript::ConvertVariableForDispatch<T9>(ve9);
+        T10 p10 = TinScript::ConvertVariableForDispatch<T10>(ve10);
+        T11 p11 = TinScript::ConvertVariableForDispatch<T11>(ve11);
+        T12 p12 = TinScript::ConvertVariableForDispatch<T12>(ve12);
 
         Dispatch(objaddr, &p1, &p2, &p3, &p4, &p5, &p6, &p7, &p8, &p9, &p10, &p11, &p12);
     }
@@ -5067,18 +5069,18 @@ public:
     // -- dispatch method
     void Dispatch(void* objaddr, void* _p1, void* _p2, void* _p3, void* _p4, void* _p5, void* _p6, void* _p7, void* _p8, void* _p9, void* _p10, void* _p11, void* _p12)
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
-        using T7 = std::tuple_element<6, argument_types>::type;
-        using T8 = std::tuple_element<7, argument_types>::type;
-        using T9 = std::tuple_element<8, argument_types>::type;
-        using T10 = std::tuple_element<9, argument_types>::type;
-        using T11 = std::tuple_element<10, argument_types>::type;
-        using T12 = std::tuple_element<11, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
+        using T7 = typename std::tuple_element<6, argument_types>::type;
+        using T8 = typename std::tuple_element<7, argument_types>::type;
+        using T9 = typename std::tuple_element<8, argument_types>::type;
+        using T10 = typename std::tuple_element<9, argument_types>::type;
+        using T11 = typename std::tuple_element<10, argument_types>::type;
+        using T12 = typename std::tuple_element<11, argument_types>::type;
 
         T1* p1 = (T1*)_p1;
         T2* p2 = (T2*)_p2;
@@ -5101,35 +5103,35 @@ public:
     // -- registration method
     virtual bool Register()
     {
-        using T1 = std::tuple_element<0, argument_types>::type;
-        using T2 = std::tuple_element<1, argument_types>::type;
-        using T3 = std::tuple_element<2, argument_types>::type;
-        using T4 = std::tuple_element<3, argument_types>::type;
-        using T5 = std::tuple_element<4, argument_types>::type;
-        using T6 = std::tuple_element<5, argument_types>::type;
-        using T7 = std::tuple_element<6, argument_types>::type;
-        using T8 = std::tuple_element<7, argument_types>::type;
-        using T9 = std::tuple_element<8, argument_types>::type;
-        using T10 = std::tuple_element<9, argument_types>::type;
-        using T11 = std::tuple_element<10, argument_types>::type;
-        using T12 = std::tuple_element<11, argument_types>::type;
+        using T1 = typename std::tuple_element<0, argument_types>::type;
+        using T2 = typename std::tuple_element<1, argument_types>::type;
+        using T3 = typename std::tuple_element<2, argument_types>::type;
+        using T4 = typename std::tuple_element<3, argument_types>::type;
+        using T5 = typename std::tuple_element<4, argument_types>::type;
+        using T6 = typename std::tuple_element<5, argument_types>::type;
+        using T7 = typename std::tuple_element<6, argument_types>::type;
+        using T8 = typename std::tuple_element<7, argument_types>::type;
+        using T9 = typename std::tuple_element<8, argument_types>::type;
+        using T10 = typename std::tuple_element<9, argument_types>::type;
+        using T11 = typename std::tuple_element<10, argument_types>::type;
+        using T12 = typename std::tuple_element<11, argument_types>::type;
 
 
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
-        success = fc->AddParameter("_p4", Hash("_p4"), GetRegisteredType(GetTypeID<T4>()), 1, GetTypeID<T4>()) && success;
-        success = fc->AddParameter("_p5", Hash("_p5"), GetRegisteredType(GetTypeID<T5>()), 1, GetTypeID<T5>()) && success;
-        success = fc->AddParameter("_p6", Hash("_p6"), GetRegisteredType(GetTypeID<T6>()), 1, GetTypeID<T6>()) && success;
-        success = fc->AddParameter("_p7", Hash("_p7"), GetRegisteredType(GetTypeID<T7>()), 1, GetTypeID<T7>()) && success;
-        success = fc->AddParameter("_p8", Hash("_p8"), GetRegisteredType(GetTypeID<T8>()), 1, GetTypeID<T8>()) && success;
-        success = fc->AddParameter("_p9", Hash("_p9"), GetRegisteredType(GetTypeID<T9>()), 1, GetTypeID<T9>()) && success;
-        success = fc->AddParameter("_p10", Hash("_p10"), GetRegisteredType(GetTypeID<T10>()), 1, GetTypeID<T10>()) && success;
-        success = fc->AddParameter("_p11", Hash("_p11"), GetRegisteredType(GetTypeID<T11>()), 1, GetTypeID<T11>()) && success;
-        success = fc->AddParameter("_p12", Hash("_p12"), GetRegisteredType(GetTypeID<T12>()), 1, GetTypeID<T12>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::TYPE_void, 1, 0) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
+        success = fc->AddParameter("_p4", TinScript::Hash("_p4"), TinScript::GetRegisteredType(TinScript::GetTypeID<T4>()), 1, TinScript::GetTypeID<T4>()) && success;
+        success = fc->AddParameter("_p5", TinScript::Hash("_p5"), TinScript::GetRegisteredType(TinScript::GetTypeID<T5>()), 1, TinScript::GetTypeID<T5>()) && success;
+        success = fc->AddParameter("_p6", TinScript::Hash("_p6"), TinScript::GetRegisteredType(TinScript::GetTypeID<T6>()), 1, TinScript::GetTypeID<T6>()) && success;
+        success = fc->AddParameter("_p7", TinScript::Hash("_p7"), TinScript::GetRegisteredType(TinScript::GetTypeID<T7>()), 1, TinScript::GetTypeID<T7>()) && success;
+        success = fc->AddParameter("_p8", TinScript::Hash("_p8"), TinScript::GetRegisteredType(TinScript::GetTypeID<T8>()), 1, TinScript::GetTypeID<T8>()) && success;
+        success = fc->AddParameter("_p9", TinScript::Hash("_p9"), TinScript::GetRegisteredType(TinScript::GetTypeID<T9>()), 1, TinScript::GetTypeID<T9>()) && success;
+        success = fc->AddParameter("_p10", TinScript::Hash("_p10"), TinScript::GetRegisteredType(TinScript::GetTypeID<T10>()), 1, TinScript::GetTypeID<T10>()) && success;
+        success = fc->AddParameter("_p11", TinScript::Hash("_p11"), TinScript::GetRegisteredType(TinScript::GetTypeID<T11>()), 1, TinScript::GetTypeID<T11>()) && success;
+        success = fc->AddParameter("_p12", TinScript::Hash("_p12"), TinScript::GetRegisteredType(TinScript::GetTypeID<T12>()), 1, TinScript::GetTypeID<T12>()) && success;
 
 
         return (success);

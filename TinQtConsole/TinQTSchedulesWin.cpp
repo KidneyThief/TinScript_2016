@@ -162,7 +162,7 @@ void CScheduleEntry::SetLayoutRow(int32 row)
 void CScheduleEntry::OnButtonKillPressed()
 {
     // -- create the command, by inserting the slider value as the first parameter
-    char command_buf[TinScript::kMaxTokenLength];
+    char command_buf[kMaxTokenLength];
     snprintf(command_buf, sizeof(command_buf), "ScheduleCancel(%d);", mScheduleID);
 
     bool8 is_connected = CConsoleWindow::GetInstance()->IsConnected();

@@ -23,6 +23,9 @@
 // TinParse.cpp : Parses text and creates the tree of nodes, to be compiled
 // ====================================================================================================================
 
+// -- class include
+#include "TinParse.h"
+
 #include "integration.h"
 
 // -- includes
@@ -31,13 +34,11 @@
 #include <string.h>
 #include <assert.h>
 
-#include "TinTypes.h"
-#include "TinHash.h"
-#include "TinParse.h"
-#include "TinCompile.h"
+#include "TinDefines.h"
 #include "TinExecute.h"
 #include "TinStringTable.h"
-#include "TinScript.h"
+#include "TinFunctionEntry.h"
+#include "TinRegBinding.h"
 
 // == namespace TinScript =============================================================================================
 
@@ -6191,7 +6192,7 @@ CVariableEntry* AddVariable(CScriptContext* script_context, tVarTable* curglobal
 // GetObjectMember():  Given a NS hash, function or object ID, Var Hash, and an array hash, find the variable entry
 // ====================================================================================================================
 CVariableEntry* GetObjectMember(CScriptContext* script_context, CObjectEntry*& oe, uint32 ns_hash,
-                              uint32 func_or_obj, uint32 var_hash, uint32 array_hash)
+                                uint32 func_or_obj, uint32 var_hash, uint32 array_hash)
 {
     // -- note: these are the same 4x parameters as used to find a variable
     // -- if they don't resolve to a member, we return (NULL)

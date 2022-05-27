@@ -24,16 +24,18 @@
 // ------------------------------------------------------------------------------------------------
 
 
-#include "TinRegistration.h"
+#pragma once
+
 #include "TinVariableEntry.h"
 #include "TinFunctionEntry.h"
+#include "TinRegistration.h"
 
 // -------------------
 // Parameter count: 0
 // -------------------
 
 template<typename R>
-class CRegFunctionP0 : public CRegFunctionBase {
+class CRegFunctionP0 : public TinScript::CRegFunctionBase {
 public:
 
     typedef R (*funcsignature)();
@@ -57,16 +59,16 @@ public:
     R Dispatch() {
         R r = funcptr();
         assert(GetContext()->GetParameter(0));
-        CVariableEntry* returnval = GetContext()->GetParameter(0);
-        returnval->SetValueAddr(NULL, convert_to_void_ptr<R>::Convert(r));
+        TinScript::CVariableEntry* returnval = GetContext()->GetParameter(0);
+        returnval->SetValueAddr(NULL, TinScript::convert_to_void_ptr<R>::Convert(r));
         return (r);
     }
 
     // -- registration method
     virtual bool Register() {
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::GetRegisteredType(TinScript::GetTypeID<R>()), 1, TinScript::GetTypeID<R>()) && success;
         return (success);
     }
 
@@ -75,7 +77,7 @@ private:
 };
 
 template<>
-class CRegFunctionP0<void> : public CRegFunctionBase {
+class CRegFunctionP0<void> : public TinScript::CRegFunctionBase {
 public:
 
     typedef void (*funcsignature)();
@@ -102,9 +104,9 @@ public:
 
     // -- registration method
     virtual bool Register() {
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::TYPE_void, 1, 0) && success;
 
         return (success);
     }
@@ -114,7 +116,7 @@ private:
 };
 
 template<typename C, typename R>
-class CRegMethodP0 : public CRegFunctionBase {
+class CRegMethodP0 : public TinScript::CRegFunctionBase {
 public:
 
     typedef R (*methodsignature)(C* c);
@@ -139,16 +141,16 @@ public:
         C* objptr = (C*)objaddr;
         R r = funcptr(objptr);
         assert(GetContext()->GetParameter(0));
-        CVariableEntry* returnval = GetContext()->GetParameter(0);
-        returnval->SetValueAddr(NULL, convert_to_void_ptr<R>::Convert(r));
+        TinScript::CVariableEntry* returnval = GetContext()->GetParameter(0);
+        returnval->SetValueAddr(NULL, TinScript::convert_to_void_ptr<R>::Convert(r));
         return (r);
     }
 
     // -- registration method
     virtual bool Register() {
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::GetRegisteredType(TinScript::GetTypeID<R>()), 1, TinScript::GetTypeID<R>()) && success;
 
         return (success);
     }
@@ -158,7 +160,7 @@ private:
 };
 
 template<typename C>
-class CRegMethodP0<C, void> : public CRegFunctionBase {
+class CRegMethodP0<C, void> : public TinScript::CRegFunctionBase {
 public:
 
     typedef void (*methodsignature)(C* c);
@@ -186,9 +188,9 @@ public:
 
     // -- registration method
     virtual bool Register() {
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::TYPE_void, 1, 0) && success;
 
         return (success);
     }
@@ -203,7 +205,7 @@ private:
 // -------------------
 
 template<typename R, typename T1>
-class CRegFunctionP1 : public CRegFunctionBase {
+class CRegFunctionP1 : public TinScript::CRegFunctionBase {
 public:
 
     typedef R (*funcsignature)(T1 p1);
@@ -220,25 +222,25 @@ public:
 
     // -- virtual DispatchFunction wrapper
     virtual void DispatchFunction(void*) {
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        Dispatch(ConvertVariableForDispatch<T1>(ve1));
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        Dispatch(TinScript::ConvertVariableForDispatch<T1>(ve1));
     }
 
     // -- dispatch method
     R Dispatch(T1 p1) {
         R r = funcptr(p1);
         assert(GetContext()->GetParameter(0));
-        CVariableEntry* returnval = GetContext()->GetParameter(0);
-        returnval->SetValueAddr(NULL, convert_to_void_ptr<R>::Convert(r));
+        TinScript::CVariableEntry* returnval = GetContext()->GetParameter(0);
+        returnval->SetValueAddr(NULL, TinScript::convert_to_void_ptr<R>::Convert(r));
         return (r);
     }
 
     // -- registration method
     virtual bool Register() {
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>()) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::GetRegisteredType(TinScript::GetTypeID<R>()), 1, TinScript::GetTypeID<R>()) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
         return (success);
     }
 
@@ -247,7 +249,7 @@ private:
 };
 
 template<typename T1>
-class CRegFunctionP1<void, T1> : public CRegFunctionBase {
+class CRegFunctionP1<void, T1> : public TinScript::CRegFunctionBase {
 public:
 
     typedef void (*funcsignature)(T1 p1);
@@ -264,8 +266,8 @@ public:
 
     // -- virtual DispatchFunction wrapper
     virtual void DispatchFunction(void*) {
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        Dispatch(ConvertVariableForDispatch<T1>(ve1));
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        Dispatch(TinScript::ConvertVariableForDispatch<T1>(ve1));
     }
 
     // -- dispatch method
@@ -275,10 +277,10 @@ public:
 
     // -- registration method
     virtual bool Register() {
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::TYPE_void, 1, 0) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
 
         return (success);
     }
@@ -288,7 +290,7 @@ private:
 };
 
 template<typename C, typename R, typename T1>
-class CRegMethodP1 : public CRegFunctionBase {
+class CRegMethodP1 : public TinScript::CRegFunctionBase {
 public:
 
     typedef R (*methodsignature)(C* c, T1 p1);
@@ -305,9 +307,9 @@ public:
 
     // -- virtual DispatchFunction wrapper
     virtual void DispatchFunction(void* objaddr) {
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
         Dispatch(objaddr,
-                 ConvertVariableForDispatch<T1>(ve1));
+                 TinScript::ConvertVariableForDispatch<T1>(ve1));
     }
 
     // -- dispatch method
@@ -315,17 +317,17 @@ public:
         C* objptr = (C*)objaddr;
         R r = funcptr(objptr, p1);
         assert(GetContext()->GetParameter(0));
-        CVariableEntry* returnval = GetContext()->GetParameter(0);
-        returnval->SetValueAddr(NULL, convert_to_void_ptr<R>::Convert(r));
+        TinScript::CVariableEntry* returnval = GetContext()->GetParameter(0);
+        returnval->SetValueAddr(NULL, TinScript::convert_to_void_ptr<R>::Convert(r));
         return (r);
     }
 
     // -- registration method
     virtual bool Register() {
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>()) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::GetRegisteredType(TinScript::GetTypeID<R>()), 1, TinScript::GetTypeID<R>()) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
 
         return (success);
     }
@@ -335,7 +337,7 @@ private:
 };
 
 template<typename C, typename T1>
-class CRegMethodP1<C, void, T1> : public CRegFunctionBase {
+class CRegMethodP1<C, void, T1> : public TinScript::CRegFunctionBase {
 public:
 
     typedef void (*methodsignature)(C* c, T1 p1);
@@ -352,9 +354,9 @@ public:
 
     // -- virtual DispatchFunction wrapper
     virtual void DispatchFunction(void* objaddr) {
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
         Dispatch(objaddr,
-                 ConvertVariableForDispatch<T1>(ve1));
+                 TinScript::ConvertVariableForDispatch<T1>(ve1));
     }
 
     // -- dispatch method
@@ -365,10 +367,10 @@ public:
 
     // -- registration method
     virtual bool Register() {
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::TYPE_void, 1, 0) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
 
         return (success);
     }
@@ -383,7 +385,7 @@ private:
 // -------------------
 
 template<typename R, typename T1, typename T2>
-class CRegFunctionP2 : public CRegFunctionBase {
+class CRegFunctionP2 : public TinScript::CRegFunctionBase {
 public:
 
     typedef R (*funcsignature)(T1 p1, T2 p2);
@@ -400,28 +402,28 @@ public:
 
     // -- virtual DispatchFunction wrapper
     virtual void DispatchFunction(void*) {
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        Dispatch(ConvertVariableForDispatch<T1>(ve1),
-                 ConvertVariableForDispatch<T2>(ve2));
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        Dispatch(TinScript::ConvertVariableForDispatch<T1>(ve1),
+                 TinScript::ConvertVariableForDispatch<T2>(ve2));
     }
 
     // -- dispatch method
     R Dispatch(T1 p1, T2 p2) {
         R r = funcptr(p1, p2);
         assert(GetContext()->GetParameter(0));
-        CVariableEntry* returnval = GetContext()->GetParameter(0);
-        returnval->SetValueAddr(NULL, convert_to_void_ptr<R>::Convert(r));
+        TinScript::CVariableEntry* returnval = GetContext()->GetParameter(0);
+        returnval->SetValueAddr(NULL, TinScript::convert_to_void_ptr<R>::Convert(r));
         return (r);
     }
 
     // -- registration method
     virtual bool Register() {
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>()) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::GetRegisteredType(TinScript::GetTypeID<R>()), 1, TinScript::GetTypeID<R>()) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
         return (success);
     }
 
@@ -430,7 +432,7 @@ private:
 };
 
 template<typename T1, typename T2>
-class CRegFunctionP2<void, T1, T2> : public CRegFunctionBase {
+class CRegFunctionP2<void, T1, T2> : public TinScript::CRegFunctionBase {
 public:
 
     typedef void (*funcsignature)(T1 p1, T2 p2);
@@ -447,10 +449,10 @@ public:
 
     // -- virtual DispatchFunction wrapper
     virtual void DispatchFunction(void*) {
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        Dispatch(ConvertVariableForDispatch<T1>(ve1),
-                 ConvertVariableForDispatch<T2>(ve2));
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        Dispatch(TinScript::ConvertVariableForDispatch<T1>(ve1),
+                 TinScript::ConvertVariableForDispatch<T2>(ve2));
     }
 
     // -- dispatch method
@@ -460,11 +462,11 @@ public:
 
     // -- registration method
     virtual bool Register() {
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::TYPE_void, 1, 0) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
 
         return (success);
     }
@@ -474,7 +476,7 @@ private:
 };
 
 template<typename C, typename R, typename T1, typename T2>
-class CRegMethodP2 : public CRegFunctionBase {
+class CRegMethodP2 : public TinScript::CRegFunctionBase {
 public:
 
     typedef R (*methodsignature)(C* c, T1 p1, T2 p2);
@@ -491,11 +493,11 @@ public:
 
     // -- virtual DispatchFunction wrapper
     virtual void DispatchFunction(void* objaddr) {
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
         Dispatch(objaddr,
-                 ConvertVariableForDispatch<T1>(ve1),
-                 ConvertVariableForDispatch<T2>(ve2));
+                 TinScript::ConvertVariableForDispatch<T1>(ve1),
+                 TinScript::ConvertVariableForDispatch<T2>(ve2));
     }
 
     // -- dispatch method
@@ -503,18 +505,18 @@ public:
         C* objptr = (C*)objaddr;
         R r = funcptr(objptr, p1, p2);
         assert(GetContext()->GetParameter(0));
-        CVariableEntry* returnval = GetContext()->GetParameter(0);
-        returnval->SetValueAddr(NULL, convert_to_void_ptr<R>::Convert(r));
+        TinScript::CVariableEntry* returnval = GetContext()->GetParameter(0);
+        returnval->SetValueAddr(NULL, TinScript::convert_to_void_ptr<R>::Convert(r));
         return (r);
     }
 
     // -- registration method
     virtual bool Register() {
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>()) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::GetRegisteredType(TinScript::GetTypeID<R>()), 1, TinScript::GetTypeID<R>()) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
 
         return (success);
     }
@@ -524,7 +526,7 @@ private:
 };
 
 template<typename C, typename T1, typename T2>
-class CRegMethodP2<C, void, T1, T2> : public CRegFunctionBase {
+class CRegMethodP2<C, void, T1, T2> : public TinScript::CRegFunctionBase {
 public:
 
     typedef void (*methodsignature)(C* c, T1 p1, T2 p2);
@@ -541,11 +543,11 @@ public:
 
     // -- virtual DispatchFunction wrapper
     virtual void DispatchFunction(void* objaddr) {
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
         Dispatch(objaddr,
-                 ConvertVariableForDispatch<T1>(ve1),
-                 ConvertVariableForDispatch<T2>(ve2));
+                 TinScript::ConvertVariableForDispatch<T1>(ve1),
+                 TinScript::ConvertVariableForDispatch<T2>(ve2));
     }
 
     // -- dispatch method
@@ -556,11 +558,11 @@ public:
 
     // -- registration method
     virtual bool Register() {
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::TYPE_void, 1, 0) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
 
         return (success);
     }
@@ -575,7 +577,7 @@ private:
 // -------------------
 
 template<typename R, typename T1, typename T2, typename T3>
-class CRegFunctionP3 : public CRegFunctionBase {
+class CRegFunctionP3 : public TinScript::CRegFunctionBase {
 public:
 
     typedef R (*funcsignature)(T1 p1, T2 p2, T3 p3);
@@ -592,31 +594,31 @@ public:
 
     // -- virtual DispatchFunction wrapper
     virtual void DispatchFunction(void*) {
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
-        Dispatch(ConvertVariableForDispatch<T1>(ve1),
-                 ConvertVariableForDispatch<T2>(ve2),
-                 ConvertVariableForDispatch<T3>(ve3));
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        Dispatch(TinScript::ConvertVariableForDispatch<T1>(ve1),
+                 TinScript::ConvertVariableForDispatch<T2>(ve2),
+                 TinScript::ConvertVariableForDispatch<T3>(ve3));
     }
 
     // -- dispatch method
     R Dispatch(T1 p1, T2 p2, T3 p3) {
         R r = funcptr(p1, p2, p3);
         assert(GetContext()->GetParameter(0));
-        CVariableEntry* returnval = GetContext()->GetParameter(0);
-        returnval->SetValueAddr(NULL, convert_to_void_ptr<R>::Convert(r));
+        TinScript::CVariableEntry* returnval = GetContext()->GetParameter(0);
+        returnval->SetValueAddr(NULL, TinScript::convert_to_void_ptr<R>::Convert(r));
         return (r);
     }
 
     // -- registration method
     virtual bool Register() {
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>()) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::GetRegisteredType(TinScript::GetTypeID<R>()), 1, TinScript::GetTypeID<R>()) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
         return (success);
     }
 
@@ -625,7 +627,7 @@ private:
 };
 
 template<typename T1, typename T2, typename T3>
-class CRegFunctionP3<void, T1, T2, T3> : public CRegFunctionBase {
+class CRegFunctionP3<void, T1, T2, T3> : public TinScript::CRegFunctionBase {
 public:
 
     typedef void (*funcsignature)(T1 p1, T2 p2, T3 p3);
@@ -642,12 +644,12 @@ public:
 
     // -- virtual DispatchFunction wrapper
     virtual void DispatchFunction(void*) {
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
-        Dispatch(ConvertVariableForDispatch<T1>(ve1),
-                 ConvertVariableForDispatch<T2>(ve2),
-                 ConvertVariableForDispatch<T3>(ve3));
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        Dispatch(TinScript::ConvertVariableForDispatch<T1>(ve1),
+                 TinScript::ConvertVariableForDispatch<T2>(ve2),
+                 TinScript::ConvertVariableForDispatch<T3>(ve3));
     }
 
     // -- dispatch method
@@ -657,12 +659,12 @@ public:
 
     // -- registration method
     virtual bool Register() {
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::TYPE_void, 1, 0) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
 
         return (success);
     }
@@ -672,7 +674,7 @@ private:
 };
 
 template<typename C, typename R, typename T1, typename T2, typename T3>
-class CRegMethodP3 : public CRegFunctionBase {
+class CRegMethodP3 : public TinScript::CRegFunctionBase {
 public:
 
     typedef R (*methodsignature)(C* c, T1 p1, T2 p2, T3 p3);
@@ -689,13 +691,13 @@ public:
 
     // -- virtual DispatchFunction wrapper
     virtual void DispatchFunction(void* objaddr) {
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
         Dispatch(objaddr,
-                 ConvertVariableForDispatch<T1>(ve1),
-                 ConvertVariableForDispatch<T2>(ve2),
-                 ConvertVariableForDispatch<T3>(ve3));
+                 TinScript::ConvertVariableForDispatch<T1>(ve1),
+                 TinScript::ConvertVariableForDispatch<T2>(ve2),
+                 TinScript::ConvertVariableForDispatch<T3>(ve3));
     }
 
     // -- dispatch method
@@ -703,19 +705,19 @@ public:
         C* objptr = (C*)objaddr;
         R r = funcptr(objptr, p1, p2, p3);
         assert(GetContext()->GetParameter(0));
-        CVariableEntry* returnval = GetContext()->GetParameter(0);
-        returnval->SetValueAddr(NULL, convert_to_void_ptr<R>::Convert(r));
+        TinScript::CVariableEntry* returnval = GetContext()->GetParameter(0);
+        returnval->SetValueAddr(NULL, TinScript::convert_to_void_ptr<R>::Convert(r));
         return (r);
     }
 
     // -- registration method
     virtual bool Register() {
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>()) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::GetRegisteredType(TinScript::GetTypeID<R>()), 1, TinScript::GetTypeID<R>()) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
 
         return (success);
     }
@@ -725,7 +727,7 @@ private:
 };
 
 template<typename C, typename T1, typename T2, typename T3>
-class CRegMethodP3<C, void, T1, T2, T3> : public CRegFunctionBase {
+class CRegMethodP3<C, void, T1, T2, T3> : public TinScript::CRegFunctionBase {
 public:
 
     typedef void (*methodsignature)(C* c, T1 p1, T2 p2, T3 p3);
@@ -742,13 +744,13 @@ public:
 
     // -- virtual DispatchFunction wrapper
     virtual void DispatchFunction(void* objaddr) {
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
         Dispatch(objaddr,
-                 ConvertVariableForDispatch<T1>(ve1),
-                 ConvertVariableForDispatch<T2>(ve2),
-                 ConvertVariableForDispatch<T3>(ve3));
+                 TinScript::ConvertVariableForDispatch<T1>(ve1),
+                 TinScript::ConvertVariableForDispatch<T2>(ve2),
+                 TinScript::ConvertVariableForDispatch<T3>(ve3));
     }
 
     // -- dispatch method
@@ -759,12 +761,12 @@ public:
 
     // -- registration method
     virtual bool Register() {
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::TYPE_void, 1, 0) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
 
         return (success);
     }
@@ -779,7 +781,7 @@ private:
 // -------------------
 
 template<typename R, typename T1, typename T2, typename T3, typename T4>
-class CRegFunctionP4 : public CRegFunctionBase {
+class CRegFunctionP4 : public TinScript::CRegFunctionBase {
 public:
 
     typedef R (*funcsignature)(T1 p1, T2 p2, T3 p3, T4 p4);
@@ -796,34 +798,34 @@ public:
 
     // -- virtual DispatchFunction wrapper
     virtual void DispatchFunction(void*) {
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
-        CVariableEntry* ve4 = GetContext()->GetParameter(4);
-        Dispatch(ConvertVariableForDispatch<T1>(ve1),
-                 ConvertVariableForDispatch<T2>(ve2),
-                 ConvertVariableForDispatch<T3>(ve3),
-                 ConvertVariableForDispatch<T4>(ve4));
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        TinScript::CVariableEntry* ve4 = GetContext()->GetParameter(4);
+        Dispatch(TinScript::ConvertVariableForDispatch<T1>(ve1),
+                 TinScript::ConvertVariableForDispatch<T2>(ve2),
+                 TinScript::ConvertVariableForDispatch<T3>(ve3),
+                 TinScript::ConvertVariableForDispatch<T4>(ve4));
     }
 
     // -- dispatch method
     R Dispatch(T1 p1, T2 p2, T3 p3, T4 p4) {
         R r = funcptr(p1, p2, p3, p4);
         assert(GetContext()->GetParameter(0));
-        CVariableEntry* returnval = GetContext()->GetParameter(0);
-        returnval->SetValueAddr(NULL, convert_to_void_ptr<R>::Convert(r));
+        TinScript::CVariableEntry* returnval = GetContext()->GetParameter(0);
+        returnval->SetValueAddr(NULL, TinScript::convert_to_void_ptr<R>::Convert(r));
         return (r);
     }
 
     // -- registration method
     virtual bool Register() {
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>()) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
-        success = fc->AddParameter("_p4", Hash("_p4"), GetRegisteredType(GetTypeID<T4>()), 1, GetTypeID<T4>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::GetRegisteredType(TinScript::GetTypeID<R>()), 1, TinScript::GetTypeID<R>()) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
+        success = fc->AddParameter("_p4", TinScript::Hash("_p4"), TinScript::GetRegisteredType(TinScript::GetTypeID<T4>()), 1, TinScript::GetTypeID<T4>()) && success;
         return (success);
     }
 
@@ -832,7 +834,7 @@ private:
 };
 
 template<typename T1, typename T2, typename T3, typename T4>
-class CRegFunctionP4<void, T1, T2, T3, T4> : public CRegFunctionBase {
+class CRegFunctionP4<void, T1, T2, T3, T4> : public TinScript::CRegFunctionBase {
 public:
 
     typedef void (*funcsignature)(T1 p1, T2 p2, T3 p3, T4 p4);
@@ -849,14 +851,14 @@ public:
 
     // -- virtual DispatchFunction wrapper
     virtual void DispatchFunction(void*) {
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
-        CVariableEntry* ve4 = GetContext()->GetParameter(4);
-        Dispatch(ConvertVariableForDispatch<T1>(ve1),
-                 ConvertVariableForDispatch<T2>(ve2),
-                 ConvertVariableForDispatch<T3>(ve3),
-                 ConvertVariableForDispatch<T4>(ve4));
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        TinScript::CVariableEntry* ve4 = GetContext()->GetParameter(4);
+        Dispatch(TinScript::ConvertVariableForDispatch<T1>(ve1),
+                 TinScript::ConvertVariableForDispatch<T2>(ve2),
+                 TinScript::ConvertVariableForDispatch<T3>(ve3),
+                 TinScript::ConvertVariableForDispatch<T4>(ve4));
     }
 
     // -- dispatch method
@@ -866,13 +868,13 @@ public:
 
     // -- registration method
     virtual bool Register() {
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
-        success = fc->AddParameter("_p4", Hash("_p4"), GetRegisteredType(GetTypeID<T4>()), 1, GetTypeID<T4>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::TYPE_void, 1, 0) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
+        success = fc->AddParameter("_p4", TinScript::Hash("_p4"), TinScript::GetRegisteredType(TinScript::GetTypeID<T4>()), 1, TinScript::GetTypeID<T4>()) && success;
 
         return (success);
     }
@@ -882,7 +884,7 @@ private:
 };
 
 template<typename C, typename R, typename T1, typename T2, typename T3, typename T4>
-class CRegMethodP4 : public CRegFunctionBase {
+class CRegMethodP4 : public TinScript::CRegFunctionBase {
 public:
 
     typedef R (*methodsignature)(C* c, T1 p1, T2 p2, T3 p3, T4 p4);
@@ -899,15 +901,15 @@ public:
 
     // -- virtual DispatchFunction wrapper
     virtual void DispatchFunction(void* objaddr) {
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
-        CVariableEntry* ve4 = GetContext()->GetParameter(4);
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        TinScript::CVariableEntry* ve4 = GetContext()->GetParameter(4);
         Dispatch(objaddr,
-                 ConvertVariableForDispatch<T1>(ve1),
-                 ConvertVariableForDispatch<T2>(ve2),
-                 ConvertVariableForDispatch<T3>(ve3),
-                 ConvertVariableForDispatch<T4>(ve4));
+                 TinScript::ConvertVariableForDispatch<T1>(ve1),
+                 TinScript::ConvertVariableForDispatch<T2>(ve2),
+                 TinScript::ConvertVariableForDispatch<T3>(ve3),
+                 TinScript::ConvertVariableForDispatch<T4>(ve4));
     }
 
     // -- dispatch method
@@ -915,20 +917,20 @@ public:
         C* objptr = (C*)objaddr;
         R r = funcptr(objptr, p1, p2, p3, p4);
         assert(GetContext()->GetParameter(0));
-        CVariableEntry* returnval = GetContext()->GetParameter(0);
-        returnval->SetValueAddr(NULL, convert_to_void_ptr<R>::Convert(r));
+        TinScript::CVariableEntry* returnval = GetContext()->GetParameter(0);
+        returnval->SetValueAddr(NULL, TinScript::convert_to_void_ptr<R>::Convert(r));
         return (r);
     }
 
     // -- registration method
     virtual bool Register() {
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>()) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
-        success = fc->AddParameter("_p4", Hash("_p4"), GetRegisteredType(GetTypeID<T4>()), 1, GetTypeID<T4>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::GetRegisteredType(TinScript::GetTypeID<R>()), 1, TinScript::GetTypeID<R>()) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
+        success = fc->AddParameter("_p4", TinScript::Hash("_p4"), TinScript::GetRegisteredType(TinScript::GetTypeID<T4>()), 1, TinScript::GetTypeID<T4>()) && success;
 
         return (success);
     }
@@ -938,7 +940,7 @@ private:
 };
 
 template<typename C, typename T1, typename T2, typename T3, typename T4>
-class CRegMethodP4<C, void, T1, T2, T3, T4> : public CRegFunctionBase {
+class CRegMethodP4<C, void, T1, T2, T3, T4> : public TinScript::CRegFunctionBase {
 public:
 
     typedef void (*methodsignature)(C* c, T1 p1, T2 p2, T3 p3, T4 p4);
@@ -955,15 +957,15 @@ public:
 
     // -- virtual DispatchFunction wrapper
     virtual void DispatchFunction(void* objaddr) {
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
-        CVariableEntry* ve4 = GetContext()->GetParameter(4);
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        TinScript::CVariableEntry* ve4 = GetContext()->GetParameter(4);
         Dispatch(objaddr,
-                 ConvertVariableForDispatch<T1>(ve1),
-                 ConvertVariableForDispatch<T2>(ve2),
-                 ConvertVariableForDispatch<T3>(ve3),
-                 ConvertVariableForDispatch<T4>(ve4));
+                 TinScript::ConvertVariableForDispatch<T1>(ve1),
+                 TinScript::ConvertVariableForDispatch<T2>(ve2),
+                 TinScript::ConvertVariableForDispatch<T3>(ve3),
+                 TinScript::ConvertVariableForDispatch<T4>(ve4));
     }
 
     // -- dispatch method
@@ -974,13 +976,13 @@ public:
 
     // -- registration method
     virtual bool Register() {
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
-        success = fc->AddParameter("_p4", Hash("_p4"), GetRegisteredType(GetTypeID<T4>()), 1, GetTypeID<T4>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::TYPE_void, 1, 0) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
+        success = fc->AddParameter("_p4", TinScript::Hash("_p4"), TinScript::GetRegisteredType(TinScript::GetTypeID<T4>()), 1, TinScript::GetTypeID<T4>()) && success;
 
         return (success);
     }
@@ -995,7 +997,7 @@ private:
 // -------------------
 
 template<typename R, typename T1, typename T2, typename T3, typename T4, typename T5>
-class CRegFunctionP5 : public CRegFunctionBase {
+class CRegFunctionP5 : public TinScript::CRegFunctionBase {
 public:
 
     typedef R (*funcsignature)(T1 p1, T2 p2, T3 p3, T4 p4, T5 p5);
@@ -1012,37 +1014,37 @@ public:
 
     // -- virtual DispatchFunction wrapper
     virtual void DispatchFunction(void*) {
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
-        CVariableEntry* ve4 = GetContext()->GetParameter(4);
-        CVariableEntry* ve5 = GetContext()->GetParameter(5);
-        Dispatch(ConvertVariableForDispatch<T1>(ve1),
-                 ConvertVariableForDispatch<T2>(ve2),
-                 ConvertVariableForDispatch<T3>(ve3),
-                 ConvertVariableForDispatch<T4>(ve4),
-                 ConvertVariableForDispatch<T5>(ve5));
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        TinScript::CVariableEntry* ve4 = GetContext()->GetParameter(4);
+        TinScript::CVariableEntry* ve5 = GetContext()->GetParameter(5);
+        Dispatch(TinScript::ConvertVariableForDispatch<T1>(ve1),
+                 TinScript::ConvertVariableForDispatch<T2>(ve2),
+                 TinScript::ConvertVariableForDispatch<T3>(ve3),
+                 TinScript::ConvertVariableForDispatch<T4>(ve4),
+                 TinScript::ConvertVariableForDispatch<T5>(ve5));
     }
 
     // -- dispatch method
     R Dispatch(T1 p1, T2 p2, T3 p3, T4 p4, T5 p5) {
         R r = funcptr(p1, p2, p3, p4, p5);
         assert(GetContext()->GetParameter(0));
-        CVariableEntry* returnval = GetContext()->GetParameter(0);
-        returnval->SetValueAddr(NULL, convert_to_void_ptr<R>::Convert(r));
+        TinScript::CVariableEntry* returnval = GetContext()->GetParameter(0);
+        returnval->SetValueAddr(NULL, TinScript::convert_to_void_ptr<R>::Convert(r));
         return (r);
     }
 
     // -- registration method
     virtual bool Register() {
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>()) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
-        success = fc->AddParameter("_p4", Hash("_p4"), GetRegisteredType(GetTypeID<T4>()), 1, GetTypeID<T4>()) && success;
-        success = fc->AddParameter("_p5", Hash("_p5"), GetRegisteredType(GetTypeID<T5>()), 1, GetTypeID<T5>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::GetRegisteredType(TinScript::GetTypeID<R>()), 1, TinScript::GetTypeID<R>()) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
+        success = fc->AddParameter("_p4", TinScript::Hash("_p4"), TinScript::GetRegisteredType(TinScript::GetTypeID<T4>()), 1, TinScript::GetTypeID<T4>()) && success;
+        success = fc->AddParameter("_p5", TinScript::Hash("_p5"), TinScript::GetRegisteredType(TinScript::GetTypeID<T5>()), 1, TinScript::GetTypeID<T5>()) && success;
         return (success);
     }
 
@@ -1051,7 +1053,7 @@ private:
 };
 
 template<typename T1, typename T2, typename T3, typename T4, typename T5>
-class CRegFunctionP5<void, T1, T2, T3, T4, T5> : public CRegFunctionBase {
+class CRegFunctionP5<void, T1, T2, T3, T4, T5> : public TinScript::CRegFunctionBase {
 public:
 
     typedef void (*funcsignature)(T1 p1, T2 p2, T3 p3, T4 p4, T5 p5);
@@ -1068,16 +1070,16 @@ public:
 
     // -- virtual DispatchFunction wrapper
     virtual void DispatchFunction(void*) {
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
-        CVariableEntry* ve4 = GetContext()->GetParameter(4);
-        CVariableEntry* ve5 = GetContext()->GetParameter(5);
-        Dispatch(ConvertVariableForDispatch<T1>(ve1),
-                 ConvertVariableForDispatch<T2>(ve2),
-                 ConvertVariableForDispatch<T3>(ve3),
-                 ConvertVariableForDispatch<T4>(ve4),
-                 ConvertVariableForDispatch<T5>(ve5));
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        TinScript::CVariableEntry* ve4 = GetContext()->GetParameter(4);
+        TinScript::CVariableEntry* ve5 = GetContext()->GetParameter(5);
+        Dispatch(TinScript::ConvertVariableForDispatch<T1>(ve1),
+                 TinScript::ConvertVariableForDispatch<T2>(ve2),
+                 TinScript::ConvertVariableForDispatch<T3>(ve3),
+                 TinScript::ConvertVariableForDispatch<T4>(ve4),
+                 TinScript::ConvertVariableForDispatch<T5>(ve5));
     }
 
     // -- dispatch method
@@ -1087,14 +1089,14 @@ public:
 
     // -- registration method
     virtual bool Register() {
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
-        success = fc->AddParameter("_p4", Hash("_p4"), GetRegisteredType(GetTypeID<T4>()), 1, GetTypeID<T4>()) && success;
-        success = fc->AddParameter("_p5", Hash("_p5"), GetRegisteredType(GetTypeID<T5>()), 1, GetTypeID<T5>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::TYPE_void, 1, 0) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
+        success = fc->AddParameter("_p4", TinScript::Hash("_p4"), TinScript::GetRegisteredType(TinScript::GetTypeID<T4>()), 1, TinScript::GetTypeID<T4>()) && success;
+        success = fc->AddParameter("_p5", TinScript::Hash("_p5"), TinScript::GetRegisteredType(TinScript::GetTypeID<T5>()), 1, TinScript::GetTypeID<T5>()) && success;
 
         return (success);
     }
@@ -1104,7 +1106,7 @@ private:
 };
 
 template<typename C, typename R, typename T1, typename T2, typename T3, typename T4, typename T5>
-class CRegMethodP5 : public CRegFunctionBase {
+class CRegMethodP5 : public TinScript::CRegFunctionBase {
 public:
 
     typedef R (*methodsignature)(C* c, T1 p1, T2 p2, T3 p3, T4 p4, T5 p5);
@@ -1121,17 +1123,17 @@ public:
 
     // -- virtual DispatchFunction wrapper
     virtual void DispatchFunction(void* objaddr) {
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
-        CVariableEntry* ve4 = GetContext()->GetParameter(4);
-        CVariableEntry* ve5 = GetContext()->GetParameter(5);
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        TinScript::CVariableEntry* ve4 = GetContext()->GetParameter(4);
+        TinScript::CVariableEntry* ve5 = GetContext()->GetParameter(5);
         Dispatch(objaddr,
-                 ConvertVariableForDispatch<T1>(ve1),
-                 ConvertVariableForDispatch<T2>(ve2),
-                 ConvertVariableForDispatch<T3>(ve3),
-                 ConvertVariableForDispatch<T4>(ve4),
-                 ConvertVariableForDispatch<T5>(ve5));
+                 TinScript::ConvertVariableForDispatch<T1>(ve1),
+                 TinScript::ConvertVariableForDispatch<T2>(ve2),
+                 TinScript::ConvertVariableForDispatch<T3>(ve3),
+                 TinScript::ConvertVariableForDispatch<T4>(ve4),
+                 TinScript::ConvertVariableForDispatch<T5>(ve5));
     }
 
     // -- dispatch method
@@ -1139,21 +1141,21 @@ public:
         C* objptr = (C*)objaddr;
         R r = funcptr(objptr, p1, p2, p3, p4, p5);
         assert(GetContext()->GetParameter(0));
-        CVariableEntry* returnval = GetContext()->GetParameter(0);
-        returnval->SetValueAddr(NULL, convert_to_void_ptr<R>::Convert(r));
+        TinScript::CVariableEntry* returnval = GetContext()->GetParameter(0);
+        returnval->SetValueAddr(NULL, TinScript::convert_to_void_ptr<R>::Convert(r));
         return (r);
     }
 
     // -- registration method
     virtual bool Register() {
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>()) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
-        success = fc->AddParameter("_p4", Hash("_p4"), GetRegisteredType(GetTypeID<T4>()), 1, GetTypeID<T4>()) && success;
-        success = fc->AddParameter("_p5", Hash("_p5"), GetRegisteredType(GetTypeID<T5>()), 1, GetTypeID<T5>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::GetRegisteredType(TinScript::GetTypeID<R>()), 1, TinScript::GetTypeID<R>()) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
+        success = fc->AddParameter("_p4", TinScript::Hash("_p4"), TinScript::GetRegisteredType(TinScript::GetTypeID<T4>()), 1, TinScript::GetTypeID<T4>()) && success;
+        success = fc->AddParameter("_p5", TinScript::Hash("_p5"), TinScript::GetRegisteredType(TinScript::GetTypeID<T5>()), 1, TinScript::GetTypeID<T5>()) && success;
 
         return (success);
     }
@@ -1163,7 +1165,7 @@ private:
 };
 
 template<typename C, typename T1, typename T2, typename T3, typename T4, typename T5>
-class CRegMethodP5<C, void, T1, T2, T3, T4, T5> : public CRegFunctionBase {
+class CRegMethodP5<C, void, T1, T2, T3, T4, T5> : public TinScript::CRegFunctionBase {
 public:
 
     typedef void (*methodsignature)(C* c, T1 p1, T2 p2, T3 p3, T4 p4, T5 p5);
@@ -1180,17 +1182,17 @@ public:
 
     // -- virtual DispatchFunction wrapper
     virtual void DispatchFunction(void* objaddr) {
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
-        CVariableEntry* ve4 = GetContext()->GetParameter(4);
-        CVariableEntry* ve5 = GetContext()->GetParameter(5);
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        TinScript::CVariableEntry* ve4 = GetContext()->GetParameter(4);
+        TinScript::CVariableEntry* ve5 = GetContext()->GetParameter(5);
         Dispatch(objaddr,
-                 ConvertVariableForDispatch<T1>(ve1),
-                 ConvertVariableForDispatch<T2>(ve2),
-                 ConvertVariableForDispatch<T3>(ve3),
-                 ConvertVariableForDispatch<T4>(ve4),
-                 ConvertVariableForDispatch<T5>(ve5));
+                 TinScript::ConvertVariableForDispatch<T1>(ve1),
+                 TinScript::ConvertVariableForDispatch<T2>(ve2),
+                 TinScript::ConvertVariableForDispatch<T3>(ve3),
+                 TinScript::ConvertVariableForDispatch<T4>(ve4),
+                 TinScript::ConvertVariableForDispatch<T5>(ve5));
     }
 
     // -- dispatch method
@@ -1201,14 +1203,14 @@ public:
 
     // -- registration method
     virtual bool Register() {
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
-        success = fc->AddParameter("_p4", Hash("_p4"), GetRegisteredType(GetTypeID<T4>()), 1, GetTypeID<T4>()) && success;
-        success = fc->AddParameter("_p5", Hash("_p5"), GetRegisteredType(GetTypeID<T5>()), 1, GetTypeID<T5>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::TYPE_void, 1, 0) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
+        success = fc->AddParameter("_p4", TinScript::Hash("_p4"), TinScript::GetRegisteredType(TinScript::GetTypeID<T4>()), 1, TinScript::GetTypeID<T4>()) && success;
+        success = fc->AddParameter("_p5", TinScript::Hash("_p5"), TinScript::GetRegisteredType(TinScript::GetTypeID<T5>()), 1, TinScript::GetTypeID<T5>()) && success;
 
         return (success);
     }
@@ -1223,7 +1225,7 @@ private:
 // -------------------
 
 template<typename R, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
-class CRegFunctionP6 : public CRegFunctionBase {
+class CRegFunctionP6 : public TinScript::CRegFunctionBase {
 public:
 
     typedef R (*funcsignature)(T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6);
@@ -1240,40 +1242,40 @@ public:
 
     // -- virtual DispatchFunction wrapper
     virtual void DispatchFunction(void*) {
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
-        CVariableEntry* ve4 = GetContext()->GetParameter(4);
-        CVariableEntry* ve5 = GetContext()->GetParameter(5);
-        CVariableEntry* ve6 = GetContext()->GetParameter(6);
-        Dispatch(ConvertVariableForDispatch<T1>(ve1),
-                 ConvertVariableForDispatch<T2>(ve2),
-                 ConvertVariableForDispatch<T3>(ve3),
-                 ConvertVariableForDispatch<T4>(ve4),
-                 ConvertVariableForDispatch<T5>(ve5),
-                 ConvertVariableForDispatch<T6>(ve6));
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        TinScript::CVariableEntry* ve4 = GetContext()->GetParameter(4);
+        TinScript::CVariableEntry* ve5 = GetContext()->GetParameter(5);
+        TinScript::CVariableEntry* ve6 = GetContext()->GetParameter(6);
+        Dispatch(TinScript::ConvertVariableForDispatch<T1>(ve1),
+                 TinScript::ConvertVariableForDispatch<T2>(ve2),
+                 TinScript::ConvertVariableForDispatch<T3>(ve3),
+                 TinScript::ConvertVariableForDispatch<T4>(ve4),
+                 TinScript::ConvertVariableForDispatch<T5>(ve5),
+                 TinScript::ConvertVariableForDispatch<T6>(ve6));
     }
 
     // -- dispatch method
     R Dispatch(T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6) {
         R r = funcptr(p1, p2, p3, p4, p5, p6);
         assert(GetContext()->GetParameter(0));
-        CVariableEntry* returnval = GetContext()->GetParameter(0);
-        returnval->SetValueAddr(NULL, convert_to_void_ptr<R>::Convert(r));
+        TinScript::CVariableEntry* returnval = GetContext()->GetParameter(0);
+        returnval->SetValueAddr(NULL, TinScript::convert_to_void_ptr<R>::Convert(r));
         return (r);
     }
 
     // -- registration method
     virtual bool Register() {
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>()) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
-        success = fc->AddParameter("_p4", Hash("_p4"), GetRegisteredType(GetTypeID<T4>()), 1, GetTypeID<T4>()) && success;
-        success = fc->AddParameter("_p5", Hash("_p5"), GetRegisteredType(GetTypeID<T5>()), 1, GetTypeID<T5>()) && success;
-        success = fc->AddParameter("_p6", Hash("_p6"), GetRegisteredType(GetTypeID<T6>()), 1, GetTypeID<T6>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::GetRegisteredType(TinScript::GetTypeID<R>()), 1, TinScript::GetTypeID<R>()) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
+        success = fc->AddParameter("_p4", TinScript::Hash("_p4"), TinScript::GetRegisteredType(TinScript::GetTypeID<T4>()), 1, TinScript::GetTypeID<T4>()) && success;
+        success = fc->AddParameter("_p5", TinScript::Hash("_p5"), TinScript::GetRegisteredType(TinScript::GetTypeID<T5>()), 1, TinScript::GetTypeID<T5>()) && success;
+        success = fc->AddParameter("_p6", TinScript::Hash("_p6"), TinScript::GetRegisteredType(TinScript::GetTypeID<T6>()), 1, TinScript::GetTypeID<T6>()) && success;
         return (success);
     }
 
@@ -1282,7 +1284,7 @@ private:
 };
 
 template<typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
-class CRegFunctionP6<void, T1, T2, T3, T4, T5, T6> : public CRegFunctionBase {
+class CRegFunctionP6<void, T1, T2, T3, T4, T5, T6> : public TinScript::CRegFunctionBase {
 public:
 
     typedef void (*funcsignature)(T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6);
@@ -1299,18 +1301,18 @@ public:
 
     // -- virtual DispatchFunction wrapper
     virtual void DispatchFunction(void*) {
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
-        CVariableEntry* ve4 = GetContext()->GetParameter(4);
-        CVariableEntry* ve5 = GetContext()->GetParameter(5);
-        CVariableEntry* ve6 = GetContext()->GetParameter(6);
-        Dispatch(ConvertVariableForDispatch<T1>(ve1),
-                 ConvertVariableForDispatch<T2>(ve2),
-                 ConvertVariableForDispatch<T3>(ve3),
-                 ConvertVariableForDispatch<T4>(ve4),
-                 ConvertVariableForDispatch<T5>(ve5),
-                 ConvertVariableForDispatch<T6>(ve6));
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        TinScript::CVariableEntry* ve4 = GetContext()->GetParameter(4);
+        TinScript::CVariableEntry* ve5 = GetContext()->GetParameter(5);
+        TinScript::CVariableEntry* ve6 = GetContext()->GetParameter(6);
+        Dispatch(TinScript::ConvertVariableForDispatch<T1>(ve1),
+                 TinScript::ConvertVariableForDispatch<T2>(ve2),
+                 TinScript::ConvertVariableForDispatch<T3>(ve3),
+                 TinScript::ConvertVariableForDispatch<T4>(ve4),
+                 TinScript::ConvertVariableForDispatch<T5>(ve5),
+                 TinScript::ConvertVariableForDispatch<T6>(ve6));
     }
 
     // -- dispatch method
@@ -1320,15 +1322,15 @@ public:
 
     // -- registration method
     virtual bool Register() {
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
-        success = fc->AddParameter("_p4", Hash("_p4"), GetRegisteredType(GetTypeID<T4>()), 1, GetTypeID<T4>()) && success;
-        success = fc->AddParameter("_p5", Hash("_p5"), GetRegisteredType(GetTypeID<T5>()), 1, GetTypeID<T5>()) && success;
-        success = fc->AddParameter("_p6", Hash("_p6"), GetRegisteredType(GetTypeID<T6>()), 1, GetTypeID<T6>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::TYPE_void, 1, 0) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
+        success = fc->AddParameter("_p4", TinScript::Hash("_p4"), TinScript::GetRegisteredType(TinScript::GetTypeID<T4>()), 1, TinScript::GetTypeID<T4>()) && success;
+        success = fc->AddParameter("_p5", TinScript::Hash("_p5"), TinScript::GetRegisteredType(TinScript::GetTypeID<T5>()), 1, TinScript::GetTypeID<T5>()) && success;
+        success = fc->AddParameter("_p6", TinScript::Hash("_p6"), TinScript::GetRegisteredType(TinScript::GetTypeID<T6>()), 1, TinScript::GetTypeID<T6>()) && success;
 
         return (success);
     }
@@ -1338,7 +1340,7 @@ private:
 };
 
 template<typename C, typename R, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
-class CRegMethodP6 : public CRegFunctionBase {
+class CRegMethodP6 : public TinScript::CRegFunctionBase {
 public:
 
     typedef R (*methodsignature)(C* c, T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6);
@@ -1355,19 +1357,19 @@ public:
 
     // -- virtual DispatchFunction wrapper
     virtual void DispatchFunction(void* objaddr) {
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
-        CVariableEntry* ve4 = GetContext()->GetParameter(4);
-        CVariableEntry* ve5 = GetContext()->GetParameter(5);
-        CVariableEntry* ve6 = GetContext()->GetParameter(6);
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        TinScript::CVariableEntry* ve4 = GetContext()->GetParameter(4);
+        TinScript::CVariableEntry* ve5 = GetContext()->GetParameter(5);
+        TinScript::CVariableEntry* ve6 = GetContext()->GetParameter(6);
         Dispatch(objaddr,
-                 ConvertVariableForDispatch<T1>(ve1),
-                 ConvertVariableForDispatch<T2>(ve2),
-                 ConvertVariableForDispatch<T3>(ve3),
-                 ConvertVariableForDispatch<T4>(ve4),
-                 ConvertVariableForDispatch<T5>(ve5),
-                 ConvertVariableForDispatch<T6>(ve6));
+                 TinScript::ConvertVariableForDispatch<T1>(ve1),
+                 TinScript::ConvertVariableForDispatch<T2>(ve2),
+                 TinScript::ConvertVariableForDispatch<T3>(ve3),
+                 TinScript::ConvertVariableForDispatch<T4>(ve4),
+                 TinScript::ConvertVariableForDispatch<T5>(ve5),
+                 TinScript::ConvertVariableForDispatch<T6>(ve6));
     }
 
     // -- dispatch method
@@ -1375,22 +1377,22 @@ public:
         C* objptr = (C*)objaddr;
         R r = funcptr(objptr, p1, p2, p3, p4, p5, p6);
         assert(GetContext()->GetParameter(0));
-        CVariableEntry* returnval = GetContext()->GetParameter(0);
-        returnval->SetValueAddr(NULL, convert_to_void_ptr<R>::Convert(r));
+        TinScript::CVariableEntry* returnval = GetContext()->GetParameter(0);
+        returnval->SetValueAddr(NULL, TinScript::convert_to_void_ptr<R>::Convert(r));
         return (r);
     }
 
     // -- registration method
     virtual bool Register() {
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>()) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
-        success = fc->AddParameter("_p4", Hash("_p4"), GetRegisteredType(GetTypeID<T4>()), 1, GetTypeID<T4>()) && success;
-        success = fc->AddParameter("_p5", Hash("_p5"), GetRegisteredType(GetTypeID<T5>()), 1, GetTypeID<T5>()) && success;
-        success = fc->AddParameter("_p6", Hash("_p6"), GetRegisteredType(GetTypeID<T6>()), 1, GetTypeID<T6>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::GetRegisteredType(TinScript::GetTypeID<R>()), 1, TinScript::GetTypeID<R>()) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
+        success = fc->AddParameter("_p4", TinScript::Hash("_p4"), TinScript::GetRegisteredType(TinScript::GetTypeID<T4>()), 1, TinScript::GetTypeID<T4>()) && success;
+        success = fc->AddParameter("_p5", TinScript::Hash("_p5"), TinScript::GetRegisteredType(TinScript::GetTypeID<T5>()), 1, TinScript::GetTypeID<T5>()) && success;
+        success = fc->AddParameter("_p6", TinScript::Hash("_p6"), TinScript::GetRegisteredType(TinScript::GetTypeID<T6>()), 1, TinScript::GetTypeID<T6>()) && success;
 
         return (success);
     }
@@ -1400,7 +1402,7 @@ private:
 };
 
 template<typename C, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
-class CRegMethodP6<C, void, T1, T2, T3, T4, T5, T6> : public CRegFunctionBase {
+class CRegMethodP6<C, void, T1, T2, T3, T4, T5, T6> : public TinScript::CRegFunctionBase {
 public:
 
     typedef void (*methodsignature)(C* c, T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6);
@@ -1417,19 +1419,19 @@ public:
 
     // -- virtual DispatchFunction wrapper
     virtual void DispatchFunction(void* objaddr) {
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
-        CVariableEntry* ve4 = GetContext()->GetParameter(4);
-        CVariableEntry* ve5 = GetContext()->GetParameter(5);
-        CVariableEntry* ve6 = GetContext()->GetParameter(6);
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        TinScript::CVariableEntry* ve4 = GetContext()->GetParameter(4);
+        TinScript::CVariableEntry* ve5 = GetContext()->GetParameter(5);
+        TinScript::CVariableEntry* ve6 = GetContext()->GetParameter(6);
         Dispatch(objaddr,
-                 ConvertVariableForDispatch<T1>(ve1),
-                 ConvertVariableForDispatch<T2>(ve2),
-                 ConvertVariableForDispatch<T3>(ve3),
-                 ConvertVariableForDispatch<T4>(ve4),
-                 ConvertVariableForDispatch<T5>(ve5),
-                 ConvertVariableForDispatch<T6>(ve6));
+                 TinScript::ConvertVariableForDispatch<T1>(ve1),
+                 TinScript::ConvertVariableForDispatch<T2>(ve2),
+                 TinScript::ConvertVariableForDispatch<T3>(ve3),
+                 TinScript::ConvertVariableForDispatch<T4>(ve4),
+                 TinScript::ConvertVariableForDispatch<T5>(ve5),
+                 TinScript::ConvertVariableForDispatch<T6>(ve6));
     }
 
     // -- dispatch method
@@ -1440,15 +1442,15 @@ public:
 
     // -- registration method
     virtual bool Register() {
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
-        success = fc->AddParameter("_p4", Hash("_p4"), GetRegisteredType(GetTypeID<T4>()), 1, GetTypeID<T4>()) && success;
-        success = fc->AddParameter("_p5", Hash("_p5"), GetRegisteredType(GetTypeID<T5>()), 1, GetTypeID<T5>()) && success;
-        success = fc->AddParameter("_p6", Hash("_p6"), GetRegisteredType(GetTypeID<T6>()), 1, GetTypeID<T6>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::TYPE_void, 1, 0) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
+        success = fc->AddParameter("_p4", TinScript::Hash("_p4"), TinScript::GetRegisteredType(TinScript::GetTypeID<T4>()), 1, TinScript::GetTypeID<T4>()) && success;
+        success = fc->AddParameter("_p5", TinScript::Hash("_p5"), TinScript::GetRegisteredType(TinScript::GetTypeID<T5>()), 1, TinScript::GetTypeID<T5>()) && success;
+        success = fc->AddParameter("_p6", TinScript::Hash("_p6"), TinScript::GetRegisteredType(TinScript::GetTypeID<T6>()), 1, TinScript::GetTypeID<T6>()) && success;
 
         return (success);
     }
@@ -1463,7 +1465,7 @@ private:
 // -------------------
 
 template<typename R, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7>
-class CRegFunctionP7 : public CRegFunctionBase {
+class CRegFunctionP7 : public TinScript::CRegFunctionBase {
 public:
 
     typedef R (*funcsignature)(T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6, T7 p7);
@@ -1480,43 +1482,43 @@ public:
 
     // -- virtual DispatchFunction wrapper
     virtual void DispatchFunction(void*) {
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
-        CVariableEntry* ve4 = GetContext()->GetParameter(4);
-        CVariableEntry* ve5 = GetContext()->GetParameter(5);
-        CVariableEntry* ve6 = GetContext()->GetParameter(6);
-        CVariableEntry* ve7 = GetContext()->GetParameter(7);
-        Dispatch(ConvertVariableForDispatch<T1>(ve1),
-                 ConvertVariableForDispatch<T2>(ve2),
-                 ConvertVariableForDispatch<T3>(ve3),
-                 ConvertVariableForDispatch<T4>(ve4),
-                 ConvertVariableForDispatch<T5>(ve5),
-                 ConvertVariableForDispatch<T6>(ve6),
-                 ConvertVariableForDispatch<T7>(ve7));
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        TinScript::CVariableEntry* ve4 = GetContext()->GetParameter(4);
+        TinScript::CVariableEntry* ve5 = GetContext()->GetParameter(5);
+        TinScript::CVariableEntry* ve6 = GetContext()->GetParameter(6);
+        TinScript::CVariableEntry* ve7 = GetContext()->GetParameter(7);
+        Dispatch(TinScript::ConvertVariableForDispatch<T1>(ve1),
+                 TinScript::ConvertVariableForDispatch<T2>(ve2),
+                 TinScript::ConvertVariableForDispatch<T3>(ve3),
+                 TinScript::ConvertVariableForDispatch<T4>(ve4),
+                 TinScript::ConvertVariableForDispatch<T5>(ve5),
+                 TinScript::ConvertVariableForDispatch<T6>(ve6),
+                 TinScript::ConvertVariableForDispatch<T7>(ve7));
     }
 
     // -- dispatch method
     R Dispatch(T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6, T7 p7) {
         R r = funcptr(p1, p2, p3, p4, p5, p6, p7);
         assert(GetContext()->GetParameter(0));
-        CVariableEntry* returnval = GetContext()->GetParameter(0);
-        returnval->SetValueAddr(NULL, convert_to_void_ptr<R>::Convert(r));
+        TinScript::CVariableEntry* returnval = GetContext()->GetParameter(0);
+        returnval->SetValueAddr(NULL, TinScript::convert_to_void_ptr<R>::Convert(r));
         return (r);
     }
 
     // -- registration method
     virtual bool Register() {
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>()) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
-        success = fc->AddParameter("_p4", Hash("_p4"), GetRegisteredType(GetTypeID<T4>()), 1, GetTypeID<T4>()) && success;
-        success = fc->AddParameter("_p5", Hash("_p5"), GetRegisteredType(GetTypeID<T5>()), 1, GetTypeID<T5>()) && success;
-        success = fc->AddParameter("_p6", Hash("_p6"), GetRegisteredType(GetTypeID<T6>()), 1, GetTypeID<T6>()) && success;
-        success = fc->AddParameter("_p7", Hash("_p7"), GetRegisteredType(GetTypeID<T7>()), 1, GetTypeID<T7>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::GetRegisteredType(TinScript::GetTypeID<R>()), 1, TinScript::GetTypeID<R>()) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
+        success = fc->AddParameter("_p4", TinScript::Hash("_p4"), TinScript::GetRegisteredType(TinScript::GetTypeID<T4>()), 1, TinScript::GetTypeID<T4>()) && success;
+        success = fc->AddParameter("_p5", TinScript::Hash("_p5"), TinScript::GetRegisteredType(TinScript::GetTypeID<T5>()), 1, TinScript::GetTypeID<T5>()) && success;
+        success = fc->AddParameter("_p6", TinScript::Hash("_p6"), TinScript::GetRegisteredType(TinScript::GetTypeID<T6>()), 1, TinScript::GetTypeID<T6>()) && success;
+        success = fc->AddParameter("_p7", TinScript::Hash("_p7"), TinScript::GetRegisteredType(TinScript::GetTypeID<T7>()), 1, TinScript::GetTypeID<T7>()) && success;
         return (success);
     }
 
@@ -1525,7 +1527,7 @@ private:
 };
 
 template<typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7>
-class CRegFunctionP7<void, T1, T2, T3, T4, T5, T6, T7> : public CRegFunctionBase {
+class CRegFunctionP7<void, T1, T2, T3, T4, T5, T6, T7> : public TinScript::CRegFunctionBase {
 public:
 
     typedef void (*funcsignature)(T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6, T7 p7);
@@ -1542,20 +1544,20 @@ public:
 
     // -- virtual DispatchFunction wrapper
     virtual void DispatchFunction(void*) {
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
-        CVariableEntry* ve4 = GetContext()->GetParameter(4);
-        CVariableEntry* ve5 = GetContext()->GetParameter(5);
-        CVariableEntry* ve6 = GetContext()->GetParameter(6);
-        CVariableEntry* ve7 = GetContext()->GetParameter(7);
-        Dispatch(ConvertVariableForDispatch<T1>(ve1),
-                 ConvertVariableForDispatch<T2>(ve2),
-                 ConvertVariableForDispatch<T3>(ve3),
-                 ConvertVariableForDispatch<T4>(ve4),
-                 ConvertVariableForDispatch<T5>(ve5),
-                 ConvertVariableForDispatch<T6>(ve6),
-                 ConvertVariableForDispatch<T7>(ve7));
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        TinScript::CVariableEntry* ve4 = GetContext()->GetParameter(4);
+        TinScript::CVariableEntry* ve5 = GetContext()->GetParameter(5);
+        TinScript::CVariableEntry* ve6 = GetContext()->GetParameter(6);
+        TinScript::CVariableEntry* ve7 = GetContext()->GetParameter(7);
+        Dispatch(TinScript::ConvertVariableForDispatch<T1>(ve1),
+                 TinScript::ConvertVariableForDispatch<T2>(ve2),
+                 TinScript::ConvertVariableForDispatch<T3>(ve3),
+                 TinScript::ConvertVariableForDispatch<T4>(ve4),
+                 TinScript::ConvertVariableForDispatch<T5>(ve5),
+                 TinScript::ConvertVariableForDispatch<T6>(ve6),
+                 TinScript::ConvertVariableForDispatch<T7>(ve7));
     }
 
     // -- dispatch method
@@ -1565,16 +1567,16 @@ public:
 
     // -- registration method
     virtual bool Register() {
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
-        success = fc->AddParameter("_p4", Hash("_p4"), GetRegisteredType(GetTypeID<T4>()), 1, GetTypeID<T4>()) && success;
-        success = fc->AddParameter("_p5", Hash("_p5"), GetRegisteredType(GetTypeID<T5>()), 1, GetTypeID<T5>()) && success;
-        success = fc->AddParameter("_p6", Hash("_p6"), GetRegisteredType(GetTypeID<T6>()), 1, GetTypeID<T6>()) && success;
-        success = fc->AddParameter("_p7", Hash("_p7"), GetRegisteredType(GetTypeID<T7>()), 1, GetTypeID<T7>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::TYPE_void, 1, 0) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
+        success = fc->AddParameter("_p4", TinScript::Hash("_p4"), TinScript::GetRegisteredType(TinScript::GetTypeID<T4>()), 1, TinScript::GetTypeID<T4>()) && success;
+        success = fc->AddParameter("_p5", TinScript::Hash("_p5"), TinScript::GetRegisteredType(TinScript::GetTypeID<T5>()), 1, TinScript::GetTypeID<T5>()) && success;
+        success = fc->AddParameter("_p6", TinScript::Hash("_p6"), TinScript::GetRegisteredType(TinScript::GetTypeID<T6>()), 1, TinScript::GetTypeID<T6>()) && success;
+        success = fc->AddParameter("_p7", TinScript::Hash("_p7"), TinScript::GetRegisteredType(TinScript::GetTypeID<T7>()), 1, TinScript::GetTypeID<T7>()) && success;
 
         return (success);
     }
@@ -1584,7 +1586,7 @@ private:
 };
 
 template<typename C, typename R, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7>
-class CRegMethodP7 : public CRegFunctionBase {
+class CRegMethodP7 : public TinScript::CRegFunctionBase {
 public:
 
     typedef R (*methodsignature)(C* c, T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6, T7 p7);
@@ -1601,21 +1603,21 @@ public:
 
     // -- virtual DispatchFunction wrapper
     virtual void DispatchFunction(void* objaddr) {
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
-        CVariableEntry* ve4 = GetContext()->GetParameter(4);
-        CVariableEntry* ve5 = GetContext()->GetParameter(5);
-        CVariableEntry* ve6 = GetContext()->GetParameter(6);
-        CVariableEntry* ve7 = GetContext()->GetParameter(7);
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        TinScript::CVariableEntry* ve4 = GetContext()->GetParameter(4);
+        TinScript::CVariableEntry* ve5 = GetContext()->GetParameter(5);
+        TinScript::CVariableEntry* ve6 = GetContext()->GetParameter(6);
+        TinScript::CVariableEntry* ve7 = GetContext()->GetParameter(7);
         Dispatch(objaddr,
-                 ConvertVariableForDispatch<T1>(ve1),
-                 ConvertVariableForDispatch<T2>(ve2),
-                 ConvertVariableForDispatch<T3>(ve3),
-                 ConvertVariableForDispatch<T4>(ve4),
-                 ConvertVariableForDispatch<T5>(ve5),
-                 ConvertVariableForDispatch<T6>(ve6),
-                 ConvertVariableForDispatch<T7>(ve7));
+                 TinScript::ConvertVariableForDispatch<T1>(ve1),
+                 TinScript::ConvertVariableForDispatch<T2>(ve2),
+                 TinScript::ConvertVariableForDispatch<T3>(ve3),
+                 TinScript::ConvertVariableForDispatch<T4>(ve4),
+                 TinScript::ConvertVariableForDispatch<T5>(ve5),
+                 TinScript::ConvertVariableForDispatch<T6>(ve6),
+                 TinScript::ConvertVariableForDispatch<T7>(ve7));
     }
 
     // -- dispatch method
@@ -1623,23 +1625,23 @@ public:
         C* objptr = (C*)objaddr;
         R r = funcptr(objptr, p1, p2, p3, p4, p5, p6, p7);
         assert(GetContext()->GetParameter(0));
-        CVariableEntry* returnval = GetContext()->GetParameter(0);
-        returnval->SetValueAddr(NULL, convert_to_void_ptr<R>::Convert(r));
+        TinScript::CVariableEntry* returnval = GetContext()->GetParameter(0);
+        returnval->SetValueAddr(NULL, TinScript::convert_to_void_ptr<R>::Convert(r));
         return (r);
     }
 
     // -- registration method
     virtual bool Register() {
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>()) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
-        success = fc->AddParameter("_p4", Hash("_p4"), GetRegisteredType(GetTypeID<T4>()), 1, GetTypeID<T4>()) && success;
-        success = fc->AddParameter("_p5", Hash("_p5"), GetRegisteredType(GetTypeID<T5>()), 1, GetTypeID<T5>()) && success;
-        success = fc->AddParameter("_p6", Hash("_p6"), GetRegisteredType(GetTypeID<T6>()), 1, GetTypeID<T6>()) && success;
-        success = fc->AddParameter("_p7", Hash("_p7"), GetRegisteredType(GetTypeID<T7>()), 1, GetTypeID<T7>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::GetRegisteredType(TinScript::GetTypeID<R>()), 1, TinScript::GetTypeID<R>()) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
+        success = fc->AddParameter("_p4", TinScript::Hash("_p4"), TinScript::GetRegisteredType(TinScript::GetTypeID<T4>()), 1, TinScript::GetTypeID<T4>()) && success;
+        success = fc->AddParameter("_p5", TinScript::Hash("_p5"), TinScript::GetRegisteredType(TinScript::GetTypeID<T5>()), 1, TinScript::GetTypeID<T5>()) && success;
+        success = fc->AddParameter("_p6", TinScript::Hash("_p6"), TinScript::GetRegisteredType(TinScript::GetTypeID<T6>()), 1, TinScript::GetTypeID<T6>()) && success;
+        success = fc->AddParameter("_p7", TinScript::Hash("_p7"), TinScript::GetRegisteredType(TinScript::GetTypeID<T7>()), 1, TinScript::GetTypeID<T7>()) && success;
 
         return (success);
     }
@@ -1649,7 +1651,7 @@ private:
 };
 
 template<typename C, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7>
-class CRegMethodP7<C, void, T1, T2, T3, T4, T5, T6, T7> : public CRegFunctionBase {
+class CRegMethodP7<C, void, T1, T2, T3, T4, T5, T6, T7> : public TinScript::CRegFunctionBase {
 public:
 
     typedef void (*methodsignature)(C* c, T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6, T7 p7);
@@ -1666,21 +1668,21 @@ public:
 
     // -- virtual DispatchFunction wrapper
     virtual void DispatchFunction(void* objaddr) {
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
-        CVariableEntry* ve4 = GetContext()->GetParameter(4);
-        CVariableEntry* ve5 = GetContext()->GetParameter(5);
-        CVariableEntry* ve6 = GetContext()->GetParameter(6);
-        CVariableEntry* ve7 = GetContext()->GetParameter(7);
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        TinScript::CVariableEntry* ve4 = GetContext()->GetParameter(4);
+        TinScript::CVariableEntry* ve5 = GetContext()->GetParameter(5);
+        TinScript::CVariableEntry* ve6 = GetContext()->GetParameter(6);
+        TinScript::CVariableEntry* ve7 = GetContext()->GetParameter(7);
         Dispatch(objaddr,
-                 ConvertVariableForDispatch<T1>(ve1),
-                 ConvertVariableForDispatch<T2>(ve2),
-                 ConvertVariableForDispatch<T3>(ve3),
-                 ConvertVariableForDispatch<T4>(ve4),
-                 ConvertVariableForDispatch<T5>(ve5),
-                 ConvertVariableForDispatch<T6>(ve6),
-                 ConvertVariableForDispatch<T7>(ve7));
+                 TinScript::ConvertVariableForDispatch<T1>(ve1),
+                 TinScript::ConvertVariableForDispatch<T2>(ve2),
+                 TinScript::ConvertVariableForDispatch<T3>(ve3),
+                 TinScript::ConvertVariableForDispatch<T4>(ve4),
+                 TinScript::ConvertVariableForDispatch<T5>(ve5),
+                 TinScript::ConvertVariableForDispatch<T6>(ve6),
+                 TinScript::ConvertVariableForDispatch<T7>(ve7));
     }
 
     // -- dispatch method
@@ -1691,16 +1693,16 @@ public:
 
     // -- registration method
     virtual bool Register() {
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
-        success = fc->AddParameter("_p4", Hash("_p4"), GetRegisteredType(GetTypeID<T4>()), 1, GetTypeID<T4>()) && success;
-        success = fc->AddParameter("_p5", Hash("_p5"), GetRegisteredType(GetTypeID<T5>()), 1, GetTypeID<T5>()) && success;
-        success = fc->AddParameter("_p6", Hash("_p6"), GetRegisteredType(GetTypeID<T6>()), 1, GetTypeID<T6>()) && success;
-        success = fc->AddParameter("_p7", Hash("_p7"), GetRegisteredType(GetTypeID<T7>()), 1, GetTypeID<T7>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::TYPE_void, 1, 0) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
+        success = fc->AddParameter("_p4", TinScript::Hash("_p4"), TinScript::GetRegisteredType(TinScript::GetTypeID<T4>()), 1, TinScript::GetTypeID<T4>()) && success;
+        success = fc->AddParameter("_p5", TinScript::Hash("_p5"), TinScript::GetRegisteredType(TinScript::GetTypeID<T5>()), 1, TinScript::GetTypeID<T5>()) && success;
+        success = fc->AddParameter("_p6", TinScript::Hash("_p6"), TinScript::GetRegisteredType(TinScript::GetTypeID<T6>()), 1, TinScript::GetTypeID<T6>()) && success;
+        success = fc->AddParameter("_p7", TinScript::Hash("_p7"), TinScript::GetRegisteredType(TinScript::GetTypeID<T7>()), 1, TinScript::GetTypeID<T7>()) && success;
 
         return (success);
     }
@@ -1715,7 +1717,7 @@ private:
 // -------------------
 
 template<typename R, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8>
-class CRegFunctionP8 : public CRegFunctionBase {
+class CRegFunctionP8 : public TinScript::CRegFunctionBase {
 public:
 
     typedef R (*funcsignature)(T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6, T7 p7, T8 p8);
@@ -1732,46 +1734,46 @@ public:
 
     // -- virtual DispatchFunction wrapper
     virtual void DispatchFunction(void*) {
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
-        CVariableEntry* ve4 = GetContext()->GetParameter(4);
-        CVariableEntry* ve5 = GetContext()->GetParameter(5);
-        CVariableEntry* ve6 = GetContext()->GetParameter(6);
-        CVariableEntry* ve7 = GetContext()->GetParameter(7);
-        CVariableEntry* ve8 = GetContext()->GetParameter(8);
-        Dispatch(ConvertVariableForDispatch<T1>(ve1),
-                 ConvertVariableForDispatch<T2>(ve2),
-                 ConvertVariableForDispatch<T3>(ve3),
-                 ConvertVariableForDispatch<T4>(ve4),
-                 ConvertVariableForDispatch<T5>(ve5),
-                 ConvertVariableForDispatch<T6>(ve6),
-                 ConvertVariableForDispatch<T7>(ve7),
-                 ConvertVariableForDispatch<T8>(ve8));
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        TinScript::CVariableEntry* ve4 = GetContext()->GetParameter(4);
+        TinScript::CVariableEntry* ve5 = GetContext()->GetParameter(5);
+        TinScript::CVariableEntry* ve6 = GetContext()->GetParameter(6);
+        TinScript::CVariableEntry* ve7 = GetContext()->GetParameter(7);
+        TinScript::CVariableEntry* ve8 = GetContext()->GetParameter(8);
+        Dispatch(TinScript::ConvertVariableForDispatch<T1>(ve1),
+                 TinScript::ConvertVariableForDispatch<T2>(ve2),
+                 TinScript::ConvertVariableForDispatch<T3>(ve3),
+                 TinScript::ConvertVariableForDispatch<T4>(ve4),
+                 TinScript::ConvertVariableForDispatch<T5>(ve5),
+                 TinScript::ConvertVariableForDispatch<T6>(ve6),
+                 TinScript::ConvertVariableForDispatch<T7>(ve7),
+                 TinScript::ConvertVariableForDispatch<T8>(ve8));
     }
 
     // -- dispatch method
     R Dispatch(T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6, T7 p7, T8 p8) {
         R r = funcptr(p1, p2, p3, p4, p5, p6, p7, p8);
         assert(GetContext()->GetParameter(0));
-        CVariableEntry* returnval = GetContext()->GetParameter(0);
-        returnval->SetValueAddr(NULL, convert_to_void_ptr<R>::Convert(r));
+        TinScript::CVariableEntry* returnval = GetContext()->GetParameter(0);
+        returnval->SetValueAddr(NULL, TinScript::convert_to_void_ptr<R>::Convert(r));
         return (r);
     }
 
     // -- registration method
     virtual bool Register() {
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>()) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
-        success = fc->AddParameter("_p4", Hash("_p4"), GetRegisteredType(GetTypeID<T4>()), 1, GetTypeID<T4>()) && success;
-        success = fc->AddParameter("_p5", Hash("_p5"), GetRegisteredType(GetTypeID<T5>()), 1, GetTypeID<T5>()) && success;
-        success = fc->AddParameter("_p6", Hash("_p6"), GetRegisteredType(GetTypeID<T6>()), 1, GetTypeID<T6>()) && success;
-        success = fc->AddParameter("_p7", Hash("_p7"), GetRegisteredType(GetTypeID<T7>()), 1, GetTypeID<T7>()) && success;
-        success = fc->AddParameter("_p8", Hash("_p8"), GetRegisteredType(GetTypeID<T8>()), 1, GetTypeID<T8>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::GetRegisteredType(TinScript::GetTypeID<R>()), 1, TinScript::GetTypeID<R>()) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
+        success = fc->AddParameter("_p4", TinScript::Hash("_p4"), TinScript::GetRegisteredType(TinScript::GetTypeID<T4>()), 1, TinScript::GetTypeID<T4>()) && success;
+        success = fc->AddParameter("_p5", TinScript::Hash("_p5"), TinScript::GetRegisteredType(TinScript::GetTypeID<T5>()), 1, TinScript::GetTypeID<T5>()) && success;
+        success = fc->AddParameter("_p6", TinScript::Hash("_p6"), TinScript::GetRegisteredType(TinScript::GetTypeID<T6>()), 1, TinScript::GetTypeID<T6>()) && success;
+        success = fc->AddParameter("_p7", TinScript::Hash("_p7"), TinScript::GetRegisteredType(TinScript::GetTypeID<T7>()), 1, TinScript::GetTypeID<T7>()) && success;
+        success = fc->AddParameter("_p8", TinScript::Hash("_p8"), TinScript::GetRegisteredType(TinScript::GetTypeID<T8>()), 1, TinScript::GetTypeID<T8>()) && success;
         return (success);
     }
 
@@ -1780,7 +1782,7 @@ private:
 };
 
 template<typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8>
-class CRegFunctionP8<void, T1, T2, T3, T4, T5, T6, T7, T8> : public CRegFunctionBase {
+class CRegFunctionP8<void, T1, T2, T3, T4, T5, T6, T7, T8> : public TinScript::CRegFunctionBase {
 public:
 
     typedef void (*funcsignature)(T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6, T7 p7, T8 p8);
@@ -1797,22 +1799,22 @@ public:
 
     // -- virtual DispatchFunction wrapper
     virtual void DispatchFunction(void*) {
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
-        CVariableEntry* ve4 = GetContext()->GetParameter(4);
-        CVariableEntry* ve5 = GetContext()->GetParameter(5);
-        CVariableEntry* ve6 = GetContext()->GetParameter(6);
-        CVariableEntry* ve7 = GetContext()->GetParameter(7);
-        CVariableEntry* ve8 = GetContext()->GetParameter(8);
-        Dispatch(ConvertVariableForDispatch<T1>(ve1),
-                 ConvertVariableForDispatch<T2>(ve2),
-                 ConvertVariableForDispatch<T3>(ve3),
-                 ConvertVariableForDispatch<T4>(ve4),
-                 ConvertVariableForDispatch<T5>(ve5),
-                 ConvertVariableForDispatch<T6>(ve6),
-                 ConvertVariableForDispatch<T7>(ve7),
-                 ConvertVariableForDispatch<T8>(ve8));
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        TinScript::CVariableEntry* ve4 = GetContext()->GetParameter(4);
+        TinScript::CVariableEntry* ve5 = GetContext()->GetParameter(5);
+        TinScript::CVariableEntry* ve6 = GetContext()->GetParameter(6);
+        TinScript::CVariableEntry* ve7 = GetContext()->GetParameter(7);
+        TinScript::CVariableEntry* ve8 = GetContext()->GetParameter(8);
+        Dispatch(TinScript::ConvertVariableForDispatch<T1>(ve1),
+                 TinScript::ConvertVariableForDispatch<T2>(ve2),
+                 TinScript::ConvertVariableForDispatch<T3>(ve3),
+                 TinScript::ConvertVariableForDispatch<T4>(ve4),
+                 TinScript::ConvertVariableForDispatch<T5>(ve5),
+                 TinScript::ConvertVariableForDispatch<T6>(ve6),
+                 TinScript::ConvertVariableForDispatch<T7>(ve7),
+                 TinScript::ConvertVariableForDispatch<T8>(ve8));
     }
 
     // -- dispatch method
@@ -1822,17 +1824,17 @@ public:
 
     // -- registration method
     virtual bool Register() {
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
-        success = fc->AddParameter("_p4", Hash("_p4"), GetRegisteredType(GetTypeID<T4>()), 1, GetTypeID<T4>()) && success;
-        success = fc->AddParameter("_p5", Hash("_p5"), GetRegisteredType(GetTypeID<T5>()), 1, GetTypeID<T5>()) && success;
-        success = fc->AddParameter("_p6", Hash("_p6"), GetRegisteredType(GetTypeID<T6>()), 1, GetTypeID<T6>()) && success;
-        success = fc->AddParameter("_p7", Hash("_p7"), GetRegisteredType(GetTypeID<T7>()), 1, GetTypeID<T7>()) && success;
-        success = fc->AddParameter("_p8", Hash("_p8"), GetRegisteredType(GetTypeID<T8>()), 1, GetTypeID<T8>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::TYPE_void, 1, 0) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
+        success = fc->AddParameter("_p4", TinScript::Hash("_p4"), TinScript::GetRegisteredType(TinScript::GetTypeID<T4>()), 1, TinScript::GetTypeID<T4>()) && success;
+        success = fc->AddParameter("_p5", TinScript::Hash("_p5"), TinScript::GetRegisteredType(TinScript::GetTypeID<T5>()), 1, TinScript::GetTypeID<T5>()) && success;
+        success = fc->AddParameter("_p6", TinScript::Hash("_p6"), TinScript::GetRegisteredType(TinScript::GetTypeID<T6>()), 1, TinScript::GetTypeID<T6>()) && success;
+        success = fc->AddParameter("_p7", TinScript::Hash("_p7"), TinScript::GetRegisteredType(TinScript::GetTypeID<T7>()), 1, TinScript::GetTypeID<T7>()) && success;
+        success = fc->AddParameter("_p8", TinScript::Hash("_p8"), TinScript::GetRegisteredType(TinScript::GetTypeID<T8>()), 1, TinScript::GetTypeID<T8>()) && success;
 
         return (success);
     }
@@ -1842,7 +1844,7 @@ private:
 };
 
 template<typename C, typename R, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8>
-class CRegMethodP8 : public CRegFunctionBase {
+class CRegMethodP8 : public TinScript::CRegFunctionBase {
 public:
 
     typedef R (*methodsignature)(C* c, T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6, T7 p7, T8 p8);
@@ -1859,23 +1861,23 @@ public:
 
     // -- virtual DispatchFunction wrapper
     virtual void DispatchFunction(void* objaddr) {
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
-        CVariableEntry* ve4 = GetContext()->GetParameter(4);
-        CVariableEntry* ve5 = GetContext()->GetParameter(5);
-        CVariableEntry* ve6 = GetContext()->GetParameter(6);
-        CVariableEntry* ve7 = GetContext()->GetParameter(7);
-        CVariableEntry* ve8 = GetContext()->GetParameter(8);
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        TinScript::CVariableEntry* ve4 = GetContext()->GetParameter(4);
+        TinScript::CVariableEntry* ve5 = GetContext()->GetParameter(5);
+        TinScript::CVariableEntry* ve6 = GetContext()->GetParameter(6);
+        TinScript::CVariableEntry* ve7 = GetContext()->GetParameter(7);
+        TinScript::CVariableEntry* ve8 = GetContext()->GetParameter(8);
         Dispatch(objaddr,
-                 ConvertVariableForDispatch<T1>(ve1),
-                 ConvertVariableForDispatch<T2>(ve2),
-                 ConvertVariableForDispatch<T3>(ve3),
-                 ConvertVariableForDispatch<T4>(ve4),
-                 ConvertVariableForDispatch<T5>(ve5),
-                 ConvertVariableForDispatch<T6>(ve6),
-                 ConvertVariableForDispatch<T7>(ve7),
-                 ConvertVariableForDispatch<T8>(ve8));
+                 TinScript::ConvertVariableForDispatch<T1>(ve1),
+                 TinScript::ConvertVariableForDispatch<T2>(ve2),
+                 TinScript::ConvertVariableForDispatch<T3>(ve3),
+                 TinScript::ConvertVariableForDispatch<T4>(ve4),
+                 TinScript::ConvertVariableForDispatch<T5>(ve5),
+                 TinScript::ConvertVariableForDispatch<T6>(ve6),
+                 TinScript::ConvertVariableForDispatch<T7>(ve7),
+                 TinScript::ConvertVariableForDispatch<T8>(ve8));
     }
 
     // -- dispatch method
@@ -1883,24 +1885,24 @@ public:
         C* objptr = (C*)objaddr;
         R r = funcptr(objptr, p1, p2, p3, p4, p5, p6, p7, p8);
         assert(GetContext()->GetParameter(0));
-        CVariableEntry* returnval = GetContext()->GetParameter(0);
-        returnval->SetValueAddr(NULL, convert_to_void_ptr<R>::Convert(r));
+        TinScript::CVariableEntry* returnval = GetContext()->GetParameter(0);
+        returnval->SetValueAddr(NULL, TinScript::convert_to_void_ptr<R>::Convert(r));
         return (r);
     }
 
     // -- registration method
     virtual bool Register() {
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>()) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
-        success = fc->AddParameter("_p4", Hash("_p4"), GetRegisteredType(GetTypeID<T4>()), 1, GetTypeID<T4>()) && success;
-        success = fc->AddParameter("_p5", Hash("_p5"), GetRegisteredType(GetTypeID<T5>()), 1, GetTypeID<T5>()) && success;
-        success = fc->AddParameter("_p6", Hash("_p6"), GetRegisteredType(GetTypeID<T6>()), 1, GetTypeID<T6>()) && success;
-        success = fc->AddParameter("_p7", Hash("_p7"), GetRegisteredType(GetTypeID<T7>()), 1, GetTypeID<T7>()) && success;
-        success = fc->AddParameter("_p8", Hash("_p8"), GetRegisteredType(GetTypeID<T8>()), 1, GetTypeID<T8>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::GetRegisteredType(TinScript::GetTypeID<R>()), 1, TinScript::GetTypeID<R>()) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
+        success = fc->AddParameter("_p4", TinScript::Hash("_p4"), TinScript::GetRegisteredType(TinScript::GetTypeID<T4>()), 1, TinScript::GetTypeID<T4>()) && success;
+        success = fc->AddParameter("_p5", TinScript::Hash("_p5"), TinScript::GetRegisteredType(TinScript::GetTypeID<T5>()), 1, TinScript::GetTypeID<T5>()) && success;
+        success = fc->AddParameter("_p6", TinScript::Hash("_p6"), TinScript::GetRegisteredType(TinScript::GetTypeID<T6>()), 1, TinScript::GetTypeID<T6>()) && success;
+        success = fc->AddParameter("_p7", TinScript::Hash("_p7"), TinScript::GetRegisteredType(TinScript::GetTypeID<T7>()), 1, TinScript::GetTypeID<T7>()) && success;
+        success = fc->AddParameter("_p8", TinScript::Hash("_p8"), TinScript::GetRegisteredType(TinScript::GetTypeID<T8>()), 1, TinScript::GetTypeID<T8>()) && success;
 
         return (success);
     }
@@ -1910,7 +1912,7 @@ private:
 };
 
 template<typename C, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8>
-class CRegMethodP8<C, void, T1, T2, T3, T4, T5, T6, T7, T8> : public CRegFunctionBase {
+class CRegMethodP8<C, void, T1, T2, T3, T4, T5, T6, T7, T8> : public TinScript::CRegFunctionBase {
 public:
 
     typedef void (*methodsignature)(C* c, T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6, T7 p7, T8 p8);
@@ -1927,23 +1929,23 @@ public:
 
     // -- virtual DispatchFunction wrapper
     virtual void DispatchFunction(void* objaddr) {
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
-        CVariableEntry* ve4 = GetContext()->GetParameter(4);
-        CVariableEntry* ve5 = GetContext()->GetParameter(5);
-        CVariableEntry* ve6 = GetContext()->GetParameter(6);
-        CVariableEntry* ve7 = GetContext()->GetParameter(7);
-        CVariableEntry* ve8 = GetContext()->GetParameter(8);
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        TinScript::CVariableEntry* ve4 = GetContext()->GetParameter(4);
+        TinScript::CVariableEntry* ve5 = GetContext()->GetParameter(5);
+        TinScript::CVariableEntry* ve6 = GetContext()->GetParameter(6);
+        TinScript::CVariableEntry* ve7 = GetContext()->GetParameter(7);
+        TinScript::CVariableEntry* ve8 = GetContext()->GetParameter(8);
         Dispatch(objaddr,
-                 ConvertVariableForDispatch<T1>(ve1),
-                 ConvertVariableForDispatch<T2>(ve2),
-                 ConvertVariableForDispatch<T3>(ve3),
-                 ConvertVariableForDispatch<T4>(ve4),
-                 ConvertVariableForDispatch<T5>(ve5),
-                 ConvertVariableForDispatch<T6>(ve6),
-                 ConvertVariableForDispatch<T7>(ve7),
-                 ConvertVariableForDispatch<T8>(ve8));
+                 TinScript::ConvertVariableForDispatch<T1>(ve1),
+                 TinScript::ConvertVariableForDispatch<T2>(ve2),
+                 TinScript::ConvertVariableForDispatch<T3>(ve3),
+                 TinScript::ConvertVariableForDispatch<T4>(ve4),
+                 TinScript::ConvertVariableForDispatch<T5>(ve5),
+                 TinScript::ConvertVariableForDispatch<T6>(ve6),
+                 TinScript::ConvertVariableForDispatch<T7>(ve7),
+                 TinScript::ConvertVariableForDispatch<T8>(ve8));
     }
 
     // -- dispatch method
@@ -1954,17 +1956,17 @@ public:
 
     // -- registration method
     virtual bool Register() {
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
-        success = fc->AddParameter("_p4", Hash("_p4"), GetRegisteredType(GetTypeID<T4>()), 1, GetTypeID<T4>()) && success;
-        success = fc->AddParameter("_p5", Hash("_p5"), GetRegisteredType(GetTypeID<T5>()), 1, GetTypeID<T5>()) && success;
-        success = fc->AddParameter("_p6", Hash("_p6"), GetRegisteredType(GetTypeID<T6>()), 1, GetTypeID<T6>()) && success;
-        success = fc->AddParameter("_p7", Hash("_p7"), GetRegisteredType(GetTypeID<T7>()), 1, GetTypeID<T7>()) && success;
-        success = fc->AddParameter("_p8", Hash("_p8"), GetRegisteredType(GetTypeID<T8>()), 1, GetTypeID<T8>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::TYPE_void, 1, 0) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
+        success = fc->AddParameter("_p4", TinScript::Hash("_p4"), TinScript::GetRegisteredType(TinScript::GetTypeID<T4>()), 1, TinScript::GetTypeID<T4>()) && success;
+        success = fc->AddParameter("_p5", TinScript::Hash("_p5"), TinScript::GetRegisteredType(TinScript::GetTypeID<T5>()), 1, TinScript::GetTypeID<T5>()) && success;
+        success = fc->AddParameter("_p6", TinScript::Hash("_p6"), TinScript::GetRegisteredType(TinScript::GetTypeID<T6>()), 1, TinScript::GetTypeID<T6>()) && success;
+        success = fc->AddParameter("_p7", TinScript::Hash("_p7"), TinScript::GetRegisteredType(TinScript::GetTypeID<T7>()), 1, TinScript::GetTypeID<T7>()) && success;
+        success = fc->AddParameter("_p8", TinScript::Hash("_p8"), TinScript::GetRegisteredType(TinScript::GetTypeID<T8>()), 1, TinScript::GetTypeID<T8>()) && success;
 
         return (success);
     }
@@ -1979,7 +1981,7 @@ private:
 // -------------------
 
 template<typename R, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9>
-class CRegFunctionP9 : public CRegFunctionBase {
+class CRegFunctionP9 : public TinScript::CRegFunctionBase {
 public:
 
     typedef R (*funcsignature)(T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6, T7 p7, T8 p8, T9 p9);
@@ -1996,49 +1998,49 @@ public:
 
     // -- virtual DispatchFunction wrapper
     virtual void DispatchFunction(void*) {
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
-        CVariableEntry* ve4 = GetContext()->GetParameter(4);
-        CVariableEntry* ve5 = GetContext()->GetParameter(5);
-        CVariableEntry* ve6 = GetContext()->GetParameter(6);
-        CVariableEntry* ve7 = GetContext()->GetParameter(7);
-        CVariableEntry* ve8 = GetContext()->GetParameter(8);
-        CVariableEntry* ve9 = GetContext()->GetParameter(9);
-        Dispatch(ConvertVariableForDispatch<T1>(ve1),
-                 ConvertVariableForDispatch<T2>(ve2),
-                 ConvertVariableForDispatch<T3>(ve3),
-                 ConvertVariableForDispatch<T4>(ve4),
-                 ConvertVariableForDispatch<T5>(ve5),
-                 ConvertVariableForDispatch<T6>(ve6),
-                 ConvertVariableForDispatch<T7>(ve7),
-                 ConvertVariableForDispatch<T8>(ve8),
-                 ConvertVariableForDispatch<T9>(ve9));
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        TinScript::CVariableEntry* ve4 = GetContext()->GetParameter(4);
+        TinScript::CVariableEntry* ve5 = GetContext()->GetParameter(5);
+        TinScript::CVariableEntry* ve6 = GetContext()->GetParameter(6);
+        TinScript::CVariableEntry* ve7 = GetContext()->GetParameter(7);
+        TinScript::CVariableEntry* ve8 = GetContext()->GetParameter(8);
+        TinScript::CVariableEntry* ve9 = GetContext()->GetParameter(9);
+        Dispatch(TinScript::ConvertVariableForDispatch<T1>(ve1),
+                 TinScript::ConvertVariableForDispatch<T2>(ve2),
+                 TinScript::ConvertVariableForDispatch<T3>(ve3),
+                 TinScript::ConvertVariableForDispatch<T4>(ve4),
+                 TinScript::ConvertVariableForDispatch<T5>(ve5),
+                 TinScript::ConvertVariableForDispatch<T6>(ve6),
+                 TinScript::ConvertVariableForDispatch<T7>(ve7),
+                 TinScript::ConvertVariableForDispatch<T8>(ve8),
+                 TinScript::ConvertVariableForDispatch<T9>(ve9));
     }
 
     // -- dispatch method
     R Dispatch(T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6, T7 p7, T8 p8, T9 p9) {
         R r = funcptr(p1, p2, p3, p4, p5, p6, p7, p8, p9);
         assert(GetContext()->GetParameter(0));
-        CVariableEntry* returnval = GetContext()->GetParameter(0);
-        returnval->SetValueAddr(NULL, convert_to_void_ptr<R>::Convert(r));
+        TinScript::CVariableEntry* returnval = GetContext()->GetParameter(0);
+        returnval->SetValueAddr(NULL, TinScript::convert_to_void_ptr<R>::Convert(r));
         return (r);
     }
 
     // -- registration method
     virtual bool Register() {
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>()) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
-        success = fc->AddParameter("_p4", Hash("_p4"), GetRegisteredType(GetTypeID<T4>()), 1, GetTypeID<T4>()) && success;
-        success = fc->AddParameter("_p5", Hash("_p5"), GetRegisteredType(GetTypeID<T5>()), 1, GetTypeID<T5>()) && success;
-        success = fc->AddParameter("_p6", Hash("_p6"), GetRegisteredType(GetTypeID<T6>()), 1, GetTypeID<T6>()) && success;
-        success = fc->AddParameter("_p7", Hash("_p7"), GetRegisteredType(GetTypeID<T7>()), 1, GetTypeID<T7>()) && success;
-        success = fc->AddParameter("_p8", Hash("_p8"), GetRegisteredType(GetTypeID<T8>()), 1, GetTypeID<T8>()) && success;
-        success = fc->AddParameter("_p9", Hash("_p9"), GetRegisteredType(GetTypeID<T9>()), 1, GetTypeID<T9>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::GetRegisteredType(TinScript::GetTypeID<R>()), 1, TinScript::GetTypeID<R>()) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
+        success = fc->AddParameter("_p4", TinScript::Hash("_p4"), TinScript::GetRegisteredType(TinScript::GetTypeID<T4>()), 1, TinScript::GetTypeID<T4>()) && success;
+        success = fc->AddParameter("_p5", TinScript::Hash("_p5"), TinScript::GetRegisteredType(TinScript::GetTypeID<T5>()), 1, TinScript::GetTypeID<T5>()) && success;
+        success = fc->AddParameter("_p6", TinScript::Hash("_p6"), TinScript::GetRegisteredType(TinScript::GetTypeID<T6>()), 1, TinScript::GetTypeID<T6>()) && success;
+        success = fc->AddParameter("_p7", TinScript::Hash("_p7"), TinScript::GetRegisteredType(TinScript::GetTypeID<T7>()), 1, TinScript::GetTypeID<T7>()) && success;
+        success = fc->AddParameter("_p8", TinScript::Hash("_p8"), TinScript::GetRegisteredType(TinScript::GetTypeID<T8>()), 1, TinScript::GetTypeID<T8>()) && success;
+        success = fc->AddParameter("_p9", TinScript::Hash("_p9"), TinScript::GetRegisteredType(TinScript::GetTypeID<T9>()), 1, TinScript::GetTypeID<T9>()) && success;
         return (success);
     }
 
@@ -2047,7 +2049,7 @@ private:
 };
 
 template<typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9>
-class CRegFunctionP9<void, T1, T2, T3, T4, T5, T6, T7, T8, T9> : public CRegFunctionBase {
+class CRegFunctionP9<void, T1, T2, T3, T4, T5, T6, T7, T8, T9> : public TinScript::CRegFunctionBase {
 public:
 
     typedef void (*funcsignature)(T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6, T7 p7, T8 p8, T9 p9);
@@ -2064,24 +2066,24 @@ public:
 
     // -- virtual DispatchFunction wrapper
     virtual void DispatchFunction(void*) {
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
-        CVariableEntry* ve4 = GetContext()->GetParameter(4);
-        CVariableEntry* ve5 = GetContext()->GetParameter(5);
-        CVariableEntry* ve6 = GetContext()->GetParameter(6);
-        CVariableEntry* ve7 = GetContext()->GetParameter(7);
-        CVariableEntry* ve8 = GetContext()->GetParameter(8);
-        CVariableEntry* ve9 = GetContext()->GetParameter(9);
-        Dispatch(ConvertVariableForDispatch<T1>(ve1),
-                 ConvertVariableForDispatch<T2>(ve2),
-                 ConvertVariableForDispatch<T3>(ve3),
-                 ConvertVariableForDispatch<T4>(ve4),
-                 ConvertVariableForDispatch<T5>(ve5),
-                 ConvertVariableForDispatch<T6>(ve6),
-                 ConvertVariableForDispatch<T7>(ve7),
-                 ConvertVariableForDispatch<T8>(ve8),
-                 ConvertVariableForDispatch<T9>(ve9));
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        TinScript::CVariableEntry* ve4 = GetContext()->GetParameter(4);
+        TinScript::CVariableEntry* ve5 = GetContext()->GetParameter(5);
+        TinScript::CVariableEntry* ve6 = GetContext()->GetParameter(6);
+        TinScript::CVariableEntry* ve7 = GetContext()->GetParameter(7);
+        TinScript::CVariableEntry* ve8 = GetContext()->GetParameter(8);
+        TinScript::CVariableEntry* ve9 = GetContext()->GetParameter(9);
+        Dispatch(TinScript::ConvertVariableForDispatch<T1>(ve1),
+                 TinScript::ConvertVariableForDispatch<T2>(ve2),
+                 TinScript::ConvertVariableForDispatch<T3>(ve3),
+                 TinScript::ConvertVariableForDispatch<T4>(ve4),
+                 TinScript::ConvertVariableForDispatch<T5>(ve5),
+                 TinScript::ConvertVariableForDispatch<T6>(ve6),
+                 TinScript::ConvertVariableForDispatch<T7>(ve7),
+                 TinScript::ConvertVariableForDispatch<T8>(ve8),
+                 TinScript::ConvertVariableForDispatch<T9>(ve9));
     }
 
     // -- dispatch method
@@ -2091,18 +2093,18 @@ public:
 
     // -- registration method
     virtual bool Register() {
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
-        success = fc->AddParameter("_p4", Hash("_p4"), GetRegisteredType(GetTypeID<T4>()), 1, GetTypeID<T4>()) && success;
-        success = fc->AddParameter("_p5", Hash("_p5"), GetRegisteredType(GetTypeID<T5>()), 1, GetTypeID<T5>()) && success;
-        success = fc->AddParameter("_p6", Hash("_p6"), GetRegisteredType(GetTypeID<T6>()), 1, GetTypeID<T6>()) && success;
-        success = fc->AddParameter("_p7", Hash("_p7"), GetRegisteredType(GetTypeID<T7>()), 1, GetTypeID<T7>()) && success;
-        success = fc->AddParameter("_p8", Hash("_p8"), GetRegisteredType(GetTypeID<T8>()), 1, GetTypeID<T8>()) && success;
-        success = fc->AddParameter("_p9", Hash("_p9"), GetRegisteredType(GetTypeID<T9>()), 1, GetTypeID<T9>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::TYPE_void, 1, 0) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
+        success = fc->AddParameter("_p4", TinScript::Hash("_p4"), TinScript::GetRegisteredType(TinScript::GetTypeID<T4>()), 1, TinScript::GetTypeID<T4>()) && success;
+        success = fc->AddParameter("_p5", TinScript::Hash("_p5"), TinScript::GetRegisteredType(TinScript::GetTypeID<T5>()), 1, TinScript::GetTypeID<T5>()) && success;
+        success = fc->AddParameter("_p6", TinScript::Hash("_p6"), TinScript::GetRegisteredType(TinScript::GetTypeID<T6>()), 1, TinScript::GetTypeID<T6>()) && success;
+        success = fc->AddParameter("_p7", TinScript::Hash("_p7"), TinScript::GetRegisteredType(TinScript::GetTypeID<T7>()), 1, TinScript::GetTypeID<T7>()) && success;
+        success = fc->AddParameter("_p8", TinScript::Hash("_p8"), TinScript::GetRegisteredType(TinScript::GetTypeID<T8>()), 1, TinScript::GetTypeID<T8>()) && success;
+        success = fc->AddParameter("_p9", TinScript::Hash("_p9"), TinScript::GetRegisteredType(TinScript::GetTypeID<T9>()), 1, TinScript::GetTypeID<T9>()) && success;
 
         return (success);
     }
@@ -2112,7 +2114,7 @@ private:
 };
 
 template<typename C, typename R, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9>
-class CRegMethodP9 : public CRegFunctionBase {
+class CRegMethodP9 : public TinScript::CRegFunctionBase {
 public:
 
     typedef R (*methodsignature)(C* c, T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6, T7 p7, T8 p8, T9 p9);
@@ -2129,25 +2131,25 @@ public:
 
     // -- virtual DispatchFunction wrapper
     virtual void DispatchFunction(void* objaddr) {
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
-        CVariableEntry* ve4 = GetContext()->GetParameter(4);
-        CVariableEntry* ve5 = GetContext()->GetParameter(5);
-        CVariableEntry* ve6 = GetContext()->GetParameter(6);
-        CVariableEntry* ve7 = GetContext()->GetParameter(7);
-        CVariableEntry* ve8 = GetContext()->GetParameter(8);
-        CVariableEntry* ve9 = GetContext()->GetParameter(9);
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        TinScript::CVariableEntry* ve4 = GetContext()->GetParameter(4);
+        TinScript::CVariableEntry* ve5 = GetContext()->GetParameter(5);
+        TinScript::CVariableEntry* ve6 = GetContext()->GetParameter(6);
+        TinScript::CVariableEntry* ve7 = GetContext()->GetParameter(7);
+        TinScript::CVariableEntry* ve8 = GetContext()->GetParameter(8);
+        TinScript::CVariableEntry* ve9 = GetContext()->GetParameter(9);
         Dispatch(objaddr,
-                 ConvertVariableForDispatch<T1>(ve1),
-                 ConvertVariableForDispatch<T2>(ve2),
-                 ConvertVariableForDispatch<T3>(ve3),
-                 ConvertVariableForDispatch<T4>(ve4),
-                 ConvertVariableForDispatch<T5>(ve5),
-                 ConvertVariableForDispatch<T6>(ve6),
-                 ConvertVariableForDispatch<T7>(ve7),
-                 ConvertVariableForDispatch<T8>(ve8),
-                 ConvertVariableForDispatch<T9>(ve9));
+                 TinScript::ConvertVariableForDispatch<T1>(ve1),
+                 TinScript::ConvertVariableForDispatch<T2>(ve2),
+                 TinScript::ConvertVariableForDispatch<T3>(ve3),
+                 TinScript::ConvertVariableForDispatch<T4>(ve4),
+                 TinScript::ConvertVariableForDispatch<T5>(ve5),
+                 TinScript::ConvertVariableForDispatch<T6>(ve6),
+                 TinScript::ConvertVariableForDispatch<T7>(ve7),
+                 TinScript::ConvertVariableForDispatch<T8>(ve8),
+                 TinScript::ConvertVariableForDispatch<T9>(ve9));
     }
 
     // -- dispatch method
@@ -2155,25 +2157,25 @@ public:
         C* objptr = (C*)objaddr;
         R r = funcptr(objptr, p1, p2, p3, p4, p5, p6, p7, p8, p9);
         assert(GetContext()->GetParameter(0));
-        CVariableEntry* returnval = GetContext()->GetParameter(0);
-        returnval->SetValueAddr(NULL, convert_to_void_ptr<R>::Convert(r));
+        TinScript::CVariableEntry* returnval = GetContext()->GetParameter(0);
+        returnval->SetValueAddr(NULL, TinScript::convert_to_void_ptr<R>::Convert(r));
         return (r);
     }
 
     // -- registration method
     virtual bool Register() {
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>()) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
-        success = fc->AddParameter("_p4", Hash("_p4"), GetRegisteredType(GetTypeID<T4>()), 1, GetTypeID<T4>()) && success;
-        success = fc->AddParameter("_p5", Hash("_p5"), GetRegisteredType(GetTypeID<T5>()), 1, GetTypeID<T5>()) && success;
-        success = fc->AddParameter("_p6", Hash("_p6"), GetRegisteredType(GetTypeID<T6>()), 1, GetTypeID<T6>()) && success;
-        success = fc->AddParameter("_p7", Hash("_p7"), GetRegisteredType(GetTypeID<T7>()), 1, GetTypeID<T7>()) && success;
-        success = fc->AddParameter("_p8", Hash("_p8"), GetRegisteredType(GetTypeID<T8>()), 1, GetTypeID<T8>()) && success;
-        success = fc->AddParameter("_p9", Hash("_p9"), GetRegisteredType(GetTypeID<T9>()), 1, GetTypeID<T9>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::GetRegisteredType(TinScript::GetTypeID<R>()), 1, TinScript::GetTypeID<R>()) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
+        success = fc->AddParameter("_p4", TinScript::Hash("_p4"), TinScript::GetRegisteredType(TinScript::GetTypeID<T4>()), 1, TinScript::GetTypeID<T4>()) && success;
+        success = fc->AddParameter("_p5", TinScript::Hash("_p5"), TinScript::GetRegisteredType(TinScript::GetTypeID<T5>()), 1, TinScript::GetTypeID<T5>()) && success;
+        success = fc->AddParameter("_p6", TinScript::Hash("_p6"), TinScript::GetRegisteredType(TinScript::GetTypeID<T6>()), 1, TinScript::GetTypeID<T6>()) && success;
+        success = fc->AddParameter("_p7", TinScript::Hash("_p7"), TinScript::GetRegisteredType(TinScript::GetTypeID<T7>()), 1, TinScript::GetTypeID<T7>()) && success;
+        success = fc->AddParameter("_p8", TinScript::Hash("_p8"), TinScript::GetRegisteredType(TinScript::GetTypeID<T8>()), 1, TinScript::GetTypeID<T8>()) && success;
+        success = fc->AddParameter("_p9", TinScript::Hash("_p9"), TinScript::GetRegisteredType(TinScript::GetTypeID<T9>()), 1, TinScript::GetTypeID<T9>()) && success;
 
         return (success);
     }
@@ -2183,7 +2185,7 @@ private:
 };
 
 template<typename C, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9>
-class CRegMethodP9<C, void, T1, T2, T3, T4, T5, T6, T7, T8, T9> : public CRegFunctionBase {
+class CRegMethodP9<C, void, T1, T2, T3, T4, T5, T6, T7, T8, T9> : public TinScript::CRegFunctionBase {
 public:
 
     typedef void (*methodsignature)(C* c, T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6, T7 p7, T8 p8, T9 p9);
@@ -2200,25 +2202,25 @@ public:
 
     // -- virtual DispatchFunction wrapper
     virtual void DispatchFunction(void* objaddr) {
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
-        CVariableEntry* ve4 = GetContext()->GetParameter(4);
-        CVariableEntry* ve5 = GetContext()->GetParameter(5);
-        CVariableEntry* ve6 = GetContext()->GetParameter(6);
-        CVariableEntry* ve7 = GetContext()->GetParameter(7);
-        CVariableEntry* ve8 = GetContext()->GetParameter(8);
-        CVariableEntry* ve9 = GetContext()->GetParameter(9);
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        TinScript::CVariableEntry* ve4 = GetContext()->GetParameter(4);
+        TinScript::CVariableEntry* ve5 = GetContext()->GetParameter(5);
+        TinScript::CVariableEntry* ve6 = GetContext()->GetParameter(6);
+        TinScript::CVariableEntry* ve7 = GetContext()->GetParameter(7);
+        TinScript::CVariableEntry* ve8 = GetContext()->GetParameter(8);
+        TinScript::CVariableEntry* ve9 = GetContext()->GetParameter(9);
         Dispatch(objaddr,
-                 ConvertVariableForDispatch<T1>(ve1),
-                 ConvertVariableForDispatch<T2>(ve2),
-                 ConvertVariableForDispatch<T3>(ve3),
-                 ConvertVariableForDispatch<T4>(ve4),
-                 ConvertVariableForDispatch<T5>(ve5),
-                 ConvertVariableForDispatch<T6>(ve6),
-                 ConvertVariableForDispatch<T7>(ve7),
-                 ConvertVariableForDispatch<T8>(ve8),
-                 ConvertVariableForDispatch<T9>(ve9));
+                 TinScript::ConvertVariableForDispatch<T1>(ve1),
+                 TinScript::ConvertVariableForDispatch<T2>(ve2),
+                 TinScript::ConvertVariableForDispatch<T3>(ve3),
+                 TinScript::ConvertVariableForDispatch<T4>(ve4),
+                 TinScript::ConvertVariableForDispatch<T5>(ve5),
+                 TinScript::ConvertVariableForDispatch<T6>(ve6),
+                 TinScript::ConvertVariableForDispatch<T7>(ve7),
+                 TinScript::ConvertVariableForDispatch<T8>(ve8),
+                 TinScript::ConvertVariableForDispatch<T9>(ve9));
     }
 
     // -- dispatch method
@@ -2229,18 +2231,18 @@ public:
 
     // -- registration method
     virtual bool Register() {
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
-        success = fc->AddParameter("_p4", Hash("_p4"), GetRegisteredType(GetTypeID<T4>()), 1, GetTypeID<T4>()) && success;
-        success = fc->AddParameter("_p5", Hash("_p5"), GetRegisteredType(GetTypeID<T5>()), 1, GetTypeID<T5>()) && success;
-        success = fc->AddParameter("_p6", Hash("_p6"), GetRegisteredType(GetTypeID<T6>()), 1, GetTypeID<T6>()) && success;
-        success = fc->AddParameter("_p7", Hash("_p7"), GetRegisteredType(GetTypeID<T7>()), 1, GetTypeID<T7>()) && success;
-        success = fc->AddParameter("_p8", Hash("_p8"), GetRegisteredType(GetTypeID<T8>()), 1, GetTypeID<T8>()) && success;
-        success = fc->AddParameter("_p9", Hash("_p9"), GetRegisteredType(GetTypeID<T9>()), 1, GetTypeID<T9>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::TYPE_void, 1, 0) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
+        success = fc->AddParameter("_p4", TinScript::Hash("_p4"), TinScript::GetRegisteredType(TinScript::GetTypeID<T4>()), 1, TinScript::GetTypeID<T4>()) && success;
+        success = fc->AddParameter("_p5", TinScript::Hash("_p5"), TinScript::GetRegisteredType(TinScript::GetTypeID<T5>()), 1, TinScript::GetTypeID<T5>()) && success;
+        success = fc->AddParameter("_p6", TinScript::Hash("_p6"), TinScript::GetRegisteredType(TinScript::GetTypeID<T6>()), 1, TinScript::GetTypeID<T6>()) && success;
+        success = fc->AddParameter("_p7", TinScript::Hash("_p7"), TinScript::GetRegisteredType(TinScript::GetTypeID<T7>()), 1, TinScript::GetTypeID<T7>()) && success;
+        success = fc->AddParameter("_p8", TinScript::Hash("_p8"), TinScript::GetRegisteredType(TinScript::GetTypeID<T8>()), 1, TinScript::GetTypeID<T8>()) && success;
+        success = fc->AddParameter("_p9", TinScript::Hash("_p9"), TinScript::GetRegisteredType(TinScript::GetTypeID<T9>()), 1, TinScript::GetTypeID<T9>()) && success;
 
         return (success);
     }
@@ -2255,7 +2257,7 @@ private:
 // -------------------
 
 template<typename R, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10>
-class CRegFunctionP10 : public CRegFunctionBase {
+class CRegFunctionP10 : public TinScript::CRegFunctionBase {
 public:
 
     typedef R (*funcsignature)(T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6, T7 p7, T8 p8, T9 p9, T10 p10);
@@ -2272,52 +2274,52 @@ public:
 
     // -- virtual DispatchFunction wrapper
     virtual void DispatchFunction(void*) {
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
-        CVariableEntry* ve4 = GetContext()->GetParameter(4);
-        CVariableEntry* ve5 = GetContext()->GetParameter(5);
-        CVariableEntry* ve6 = GetContext()->GetParameter(6);
-        CVariableEntry* ve7 = GetContext()->GetParameter(7);
-        CVariableEntry* ve8 = GetContext()->GetParameter(8);
-        CVariableEntry* ve9 = GetContext()->GetParameter(9);
-        CVariableEntry* ve10 = GetContext()->GetParameter(10);
-        Dispatch(ConvertVariableForDispatch<T1>(ve1),
-                 ConvertVariableForDispatch<T2>(ve2),
-                 ConvertVariableForDispatch<T3>(ve3),
-                 ConvertVariableForDispatch<T4>(ve4),
-                 ConvertVariableForDispatch<T5>(ve5),
-                 ConvertVariableForDispatch<T6>(ve6),
-                 ConvertVariableForDispatch<T7>(ve7),
-                 ConvertVariableForDispatch<T8>(ve8),
-                 ConvertVariableForDispatch<T9>(ve9),
-                 ConvertVariableForDispatch<T10>(ve10));
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        TinScript::CVariableEntry* ve4 = GetContext()->GetParameter(4);
+        TinScript::CVariableEntry* ve5 = GetContext()->GetParameter(5);
+        TinScript::CVariableEntry* ve6 = GetContext()->GetParameter(6);
+        TinScript::CVariableEntry* ve7 = GetContext()->GetParameter(7);
+        TinScript::CVariableEntry* ve8 = GetContext()->GetParameter(8);
+        TinScript::CVariableEntry* ve9 = GetContext()->GetParameter(9);
+        TinScript::CVariableEntry* ve10 = GetContext()->GetParameter(10);
+        Dispatch(TinScript::ConvertVariableForDispatch<T1>(ve1),
+                 TinScript::ConvertVariableForDispatch<T2>(ve2),
+                 TinScript::ConvertVariableForDispatch<T3>(ve3),
+                 TinScript::ConvertVariableForDispatch<T4>(ve4),
+                 TinScript::ConvertVariableForDispatch<T5>(ve5),
+                 TinScript::ConvertVariableForDispatch<T6>(ve6),
+                 TinScript::ConvertVariableForDispatch<T7>(ve7),
+                 TinScript::ConvertVariableForDispatch<T8>(ve8),
+                 TinScript::ConvertVariableForDispatch<T9>(ve9),
+                 TinScript::ConvertVariableForDispatch<T10>(ve10));
     }
 
     // -- dispatch method
     R Dispatch(T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6, T7 p7, T8 p8, T9 p9, T10 p10) {
         R r = funcptr(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10);
         assert(GetContext()->GetParameter(0));
-        CVariableEntry* returnval = GetContext()->GetParameter(0);
-        returnval->SetValueAddr(NULL, convert_to_void_ptr<R>::Convert(r));
+        TinScript::CVariableEntry* returnval = GetContext()->GetParameter(0);
+        returnval->SetValueAddr(NULL, TinScript::convert_to_void_ptr<R>::Convert(r));
         return (r);
     }
 
     // -- registration method
     virtual bool Register() {
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>()) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
-        success = fc->AddParameter("_p4", Hash("_p4"), GetRegisteredType(GetTypeID<T4>()), 1, GetTypeID<T4>()) && success;
-        success = fc->AddParameter("_p5", Hash("_p5"), GetRegisteredType(GetTypeID<T5>()), 1, GetTypeID<T5>()) && success;
-        success = fc->AddParameter("_p6", Hash("_p6"), GetRegisteredType(GetTypeID<T6>()), 1, GetTypeID<T6>()) && success;
-        success = fc->AddParameter("_p7", Hash("_p7"), GetRegisteredType(GetTypeID<T7>()), 1, GetTypeID<T7>()) && success;
-        success = fc->AddParameter("_p8", Hash("_p8"), GetRegisteredType(GetTypeID<T8>()), 1, GetTypeID<T8>()) && success;
-        success = fc->AddParameter("_p9", Hash("_p9"), GetRegisteredType(GetTypeID<T9>()), 1, GetTypeID<T9>()) && success;
-        success = fc->AddParameter("_p10", Hash("_p10"), GetRegisteredType(GetTypeID<T10>()), 1, GetTypeID<T10>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::GetRegisteredType(TinScript::GetTypeID<R>()), 1, TinScript::GetTypeID<R>()) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
+        success = fc->AddParameter("_p4", TinScript::Hash("_p4"), TinScript::GetRegisteredType(TinScript::GetTypeID<T4>()), 1, TinScript::GetTypeID<T4>()) && success;
+        success = fc->AddParameter("_p5", TinScript::Hash("_p5"), TinScript::GetRegisteredType(TinScript::GetTypeID<T5>()), 1, TinScript::GetTypeID<T5>()) && success;
+        success = fc->AddParameter("_p6", TinScript::Hash("_p6"), TinScript::GetRegisteredType(TinScript::GetTypeID<T6>()), 1, TinScript::GetTypeID<T6>()) && success;
+        success = fc->AddParameter("_p7", TinScript::Hash("_p7"), TinScript::GetRegisteredType(TinScript::GetTypeID<T7>()), 1, TinScript::GetTypeID<T7>()) && success;
+        success = fc->AddParameter("_p8", TinScript::Hash("_p8"), TinScript::GetRegisteredType(TinScript::GetTypeID<T8>()), 1, TinScript::GetTypeID<T8>()) && success;
+        success = fc->AddParameter("_p9", TinScript::Hash("_p9"), TinScript::GetRegisteredType(TinScript::GetTypeID<T9>()), 1, TinScript::GetTypeID<T9>()) && success;
+        success = fc->AddParameter("_p10", TinScript::Hash("_p10"), TinScript::GetRegisteredType(TinScript::GetTypeID<T10>()), 1, TinScript::GetTypeID<T10>()) && success;
         return (success);
     }
 
@@ -2326,7 +2328,7 @@ private:
 };
 
 template<typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10>
-class CRegFunctionP10<void, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> : public CRegFunctionBase {
+class CRegFunctionP10<void, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> : public TinScript::CRegFunctionBase {
 public:
 
     typedef void (*funcsignature)(T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6, T7 p7, T8 p8, T9 p9, T10 p10);
@@ -2343,26 +2345,26 @@ public:
 
     // -- virtual DispatchFunction wrapper
     virtual void DispatchFunction(void*) {
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
-        CVariableEntry* ve4 = GetContext()->GetParameter(4);
-        CVariableEntry* ve5 = GetContext()->GetParameter(5);
-        CVariableEntry* ve6 = GetContext()->GetParameter(6);
-        CVariableEntry* ve7 = GetContext()->GetParameter(7);
-        CVariableEntry* ve8 = GetContext()->GetParameter(8);
-        CVariableEntry* ve9 = GetContext()->GetParameter(9);
-        CVariableEntry* ve10 = GetContext()->GetParameter(10);
-        Dispatch(ConvertVariableForDispatch<T1>(ve1),
-                 ConvertVariableForDispatch<T2>(ve2),
-                 ConvertVariableForDispatch<T3>(ve3),
-                 ConvertVariableForDispatch<T4>(ve4),
-                 ConvertVariableForDispatch<T5>(ve5),
-                 ConvertVariableForDispatch<T6>(ve6),
-                 ConvertVariableForDispatch<T7>(ve7),
-                 ConvertVariableForDispatch<T8>(ve8),
-                 ConvertVariableForDispatch<T9>(ve9),
-                 ConvertVariableForDispatch<T10>(ve10));
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        TinScript::CVariableEntry* ve4 = GetContext()->GetParameter(4);
+        TinScript::CVariableEntry* ve5 = GetContext()->GetParameter(5);
+        TinScript::CVariableEntry* ve6 = GetContext()->GetParameter(6);
+        TinScript::CVariableEntry* ve7 = GetContext()->GetParameter(7);
+        TinScript::CVariableEntry* ve8 = GetContext()->GetParameter(8);
+        TinScript::CVariableEntry* ve9 = GetContext()->GetParameter(9);
+        TinScript::CVariableEntry* ve10 = GetContext()->GetParameter(10);
+        Dispatch(TinScript::ConvertVariableForDispatch<T1>(ve1),
+                 TinScript::ConvertVariableForDispatch<T2>(ve2),
+                 TinScript::ConvertVariableForDispatch<T3>(ve3),
+                 TinScript::ConvertVariableForDispatch<T4>(ve4),
+                 TinScript::ConvertVariableForDispatch<T5>(ve5),
+                 TinScript::ConvertVariableForDispatch<T6>(ve6),
+                 TinScript::ConvertVariableForDispatch<T7>(ve7),
+                 TinScript::ConvertVariableForDispatch<T8>(ve8),
+                 TinScript::ConvertVariableForDispatch<T9>(ve9),
+                 TinScript::ConvertVariableForDispatch<T10>(ve10));
     }
 
     // -- dispatch method
@@ -2372,19 +2374,19 @@ public:
 
     // -- registration method
     virtual bool Register() {
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
-        success = fc->AddParameter("_p4", Hash("_p4"), GetRegisteredType(GetTypeID<T4>()), 1, GetTypeID<T4>()) && success;
-        success = fc->AddParameter("_p5", Hash("_p5"), GetRegisteredType(GetTypeID<T5>()), 1, GetTypeID<T5>()) && success;
-        success = fc->AddParameter("_p6", Hash("_p6"), GetRegisteredType(GetTypeID<T6>()), 1, GetTypeID<T6>()) && success;
-        success = fc->AddParameter("_p7", Hash("_p7"), GetRegisteredType(GetTypeID<T7>()), 1, GetTypeID<T7>()) && success;
-        success = fc->AddParameter("_p8", Hash("_p8"), GetRegisteredType(GetTypeID<T8>()), 1, GetTypeID<T8>()) && success;
-        success = fc->AddParameter("_p9", Hash("_p9"), GetRegisteredType(GetTypeID<T9>()), 1, GetTypeID<T9>()) && success;
-        success = fc->AddParameter("_p10", Hash("_p10"), GetRegisteredType(GetTypeID<T10>()), 1, GetTypeID<T10>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::TYPE_void, 1, 0) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
+        success = fc->AddParameter("_p4", TinScript::Hash("_p4"), TinScript::GetRegisteredType(TinScript::GetTypeID<T4>()), 1, TinScript::GetTypeID<T4>()) && success;
+        success = fc->AddParameter("_p5", TinScript::Hash("_p5"), TinScript::GetRegisteredType(TinScript::GetTypeID<T5>()), 1, TinScript::GetTypeID<T5>()) && success;
+        success = fc->AddParameter("_p6", TinScript::Hash("_p6"), TinScript::GetRegisteredType(TinScript::GetTypeID<T6>()), 1, TinScript::GetTypeID<T6>()) && success;
+        success = fc->AddParameter("_p7", TinScript::Hash("_p7"), TinScript::GetRegisteredType(TinScript::GetTypeID<T7>()), 1, TinScript::GetTypeID<T7>()) && success;
+        success = fc->AddParameter("_p8", TinScript::Hash("_p8"), TinScript::GetRegisteredType(TinScript::GetTypeID<T8>()), 1, TinScript::GetTypeID<T8>()) && success;
+        success = fc->AddParameter("_p9", TinScript::Hash("_p9"), TinScript::GetRegisteredType(TinScript::GetTypeID<T9>()), 1, TinScript::GetTypeID<T9>()) && success;
+        success = fc->AddParameter("_p10", TinScript::Hash("_p10"), TinScript::GetRegisteredType(TinScript::GetTypeID<T10>()), 1, TinScript::GetTypeID<T10>()) && success;
 
         return (success);
     }
@@ -2394,7 +2396,7 @@ private:
 };
 
 template<typename C, typename R, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10>
-class CRegMethodP10 : public CRegFunctionBase {
+class CRegMethodP10 : public TinScript::CRegFunctionBase {
 public:
 
     typedef R (*methodsignature)(C* c, T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6, T7 p7, T8 p8, T9 p9, T10 p10);
@@ -2411,27 +2413,27 @@ public:
 
     // -- virtual DispatchFunction wrapper
     virtual void DispatchFunction(void* objaddr) {
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
-        CVariableEntry* ve4 = GetContext()->GetParameter(4);
-        CVariableEntry* ve5 = GetContext()->GetParameter(5);
-        CVariableEntry* ve6 = GetContext()->GetParameter(6);
-        CVariableEntry* ve7 = GetContext()->GetParameter(7);
-        CVariableEntry* ve8 = GetContext()->GetParameter(8);
-        CVariableEntry* ve9 = GetContext()->GetParameter(9);
-        CVariableEntry* ve10 = GetContext()->GetParameter(10);
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        TinScript::CVariableEntry* ve4 = GetContext()->GetParameter(4);
+        TinScript::CVariableEntry* ve5 = GetContext()->GetParameter(5);
+        TinScript::CVariableEntry* ve6 = GetContext()->GetParameter(6);
+        TinScript::CVariableEntry* ve7 = GetContext()->GetParameter(7);
+        TinScript::CVariableEntry* ve8 = GetContext()->GetParameter(8);
+        TinScript::CVariableEntry* ve9 = GetContext()->GetParameter(9);
+        TinScript::CVariableEntry* ve10 = GetContext()->GetParameter(10);
         Dispatch(objaddr,
-                 ConvertVariableForDispatch<T1>(ve1),
-                 ConvertVariableForDispatch<T2>(ve2),
-                 ConvertVariableForDispatch<T3>(ve3),
-                 ConvertVariableForDispatch<T4>(ve4),
-                 ConvertVariableForDispatch<T5>(ve5),
-                 ConvertVariableForDispatch<T6>(ve6),
-                 ConvertVariableForDispatch<T7>(ve7),
-                 ConvertVariableForDispatch<T8>(ve8),
-                 ConvertVariableForDispatch<T9>(ve9),
-                 ConvertVariableForDispatch<T10>(ve10));
+                 TinScript::ConvertVariableForDispatch<T1>(ve1),
+                 TinScript::ConvertVariableForDispatch<T2>(ve2),
+                 TinScript::ConvertVariableForDispatch<T3>(ve3),
+                 TinScript::ConvertVariableForDispatch<T4>(ve4),
+                 TinScript::ConvertVariableForDispatch<T5>(ve5),
+                 TinScript::ConvertVariableForDispatch<T6>(ve6),
+                 TinScript::ConvertVariableForDispatch<T7>(ve7),
+                 TinScript::ConvertVariableForDispatch<T8>(ve8),
+                 TinScript::ConvertVariableForDispatch<T9>(ve9),
+                 TinScript::ConvertVariableForDispatch<T10>(ve10));
     }
 
     // -- dispatch method
@@ -2439,26 +2441,26 @@ public:
         C* objptr = (C*)objaddr;
         R r = funcptr(objptr, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10);
         assert(GetContext()->GetParameter(0));
-        CVariableEntry* returnval = GetContext()->GetParameter(0);
-        returnval->SetValueAddr(NULL, convert_to_void_ptr<R>::Convert(r));
+        TinScript::CVariableEntry* returnval = GetContext()->GetParameter(0);
+        returnval->SetValueAddr(NULL, TinScript::convert_to_void_ptr<R>::Convert(r));
         return (r);
     }
 
     // -- registration method
     virtual bool Register() {
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>()) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
-        success = fc->AddParameter("_p4", Hash("_p4"), GetRegisteredType(GetTypeID<T4>()), 1, GetTypeID<T4>()) && success;
-        success = fc->AddParameter("_p5", Hash("_p5"), GetRegisteredType(GetTypeID<T5>()), 1, GetTypeID<T5>()) && success;
-        success = fc->AddParameter("_p6", Hash("_p6"), GetRegisteredType(GetTypeID<T6>()), 1, GetTypeID<T6>()) && success;
-        success = fc->AddParameter("_p7", Hash("_p7"), GetRegisteredType(GetTypeID<T7>()), 1, GetTypeID<T7>()) && success;
-        success = fc->AddParameter("_p8", Hash("_p8"), GetRegisteredType(GetTypeID<T8>()), 1, GetTypeID<T8>()) && success;
-        success = fc->AddParameter("_p9", Hash("_p9"), GetRegisteredType(GetTypeID<T9>()), 1, GetTypeID<T9>()) && success;
-        success = fc->AddParameter("_p10", Hash("_p10"), GetRegisteredType(GetTypeID<T10>()), 1, GetTypeID<T10>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::GetRegisteredType(TinScript::GetTypeID<R>()), 1, TinScript::GetTypeID<R>()) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
+        success = fc->AddParameter("_p4", TinScript::Hash("_p4"), TinScript::GetRegisteredType(TinScript::GetTypeID<T4>()), 1, TinScript::GetTypeID<T4>()) && success;
+        success = fc->AddParameter("_p5", TinScript::Hash("_p5"), TinScript::GetRegisteredType(TinScript::GetTypeID<T5>()), 1, TinScript::GetTypeID<T5>()) && success;
+        success = fc->AddParameter("_p6", TinScript::Hash("_p6"), TinScript::GetRegisteredType(TinScript::GetTypeID<T6>()), 1, TinScript::GetTypeID<T6>()) && success;
+        success = fc->AddParameter("_p7", TinScript::Hash("_p7"), TinScript::GetRegisteredType(TinScript::GetTypeID<T7>()), 1, TinScript::GetTypeID<T7>()) && success;
+        success = fc->AddParameter("_p8", TinScript::Hash("_p8"), TinScript::GetRegisteredType(TinScript::GetTypeID<T8>()), 1, TinScript::GetTypeID<T8>()) && success;
+        success = fc->AddParameter("_p9", TinScript::Hash("_p9"), TinScript::GetRegisteredType(TinScript::GetTypeID<T9>()), 1, TinScript::GetTypeID<T9>()) && success;
+        success = fc->AddParameter("_p10", TinScript::Hash("_p10"), TinScript::GetRegisteredType(TinScript::GetTypeID<T10>()), 1, TinScript::GetTypeID<T10>()) && success;
 
         return (success);
     }
@@ -2468,7 +2470,7 @@ private:
 };
 
 template<typename C, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10>
-class CRegMethodP10<C, void, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> : public CRegFunctionBase {
+class CRegMethodP10<C, void, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> : public TinScript::CRegFunctionBase {
 public:
 
     typedef void (*methodsignature)(C* c, T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6, T7 p7, T8 p8, T9 p9, T10 p10);
@@ -2485,27 +2487,27 @@ public:
 
     // -- virtual DispatchFunction wrapper
     virtual void DispatchFunction(void* objaddr) {
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
-        CVariableEntry* ve4 = GetContext()->GetParameter(4);
-        CVariableEntry* ve5 = GetContext()->GetParameter(5);
-        CVariableEntry* ve6 = GetContext()->GetParameter(6);
-        CVariableEntry* ve7 = GetContext()->GetParameter(7);
-        CVariableEntry* ve8 = GetContext()->GetParameter(8);
-        CVariableEntry* ve9 = GetContext()->GetParameter(9);
-        CVariableEntry* ve10 = GetContext()->GetParameter(10);
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        TinScript::CVariableEntry* ve4 = GetContext()->GetParameter(4);
+        TinScript::CVariableEntry* ve5 = GetContext()->GetParameter(5);
+        TinScript::CVariableEntry* ve6 = GetContext()->GetParameter(6);
+        TinScript::CVariableEntry* ve7 = GetContext()->GetParameter(7);
+        TinScript::CVariableEntry* ve8 = GetContext()->GetParameter(8);
+        TinScript::CVariableEntry* ve9 = GetContext()->GetParameter(9);
+        TinScript::CVariableEntry* ve10 = GetContext()->GetParameter(10);
         Dispatch(objaddr,
-                 ConvertVariableForDispatch<T1>(ve1),
-                 ConvertVariableForDispatch<T2>(ve2),
-                 ConvertVariableForDispatch<T3>(ve3),
-                 ConvertVariableForDispatch<T4>(ve4),
-                 ConvertVariableForDispatch<T5>(ve5),
-                 ConvertVariableForDispatch<T6>(ve6),
-                 ConvertVariableForDispatch<T7>(ve7),
-                 ConvertVariableForDispatch<T8>(ve8),
-                 ConvertVariableForDispatch<T9>(ve9),
-                 ConvertVariableForDispatch<T10>(ve10));
+                 TinScript::ConvertVariableForDispatch<T1>(ve1),
+                 TinScript::ConvertVariableForDispatch<T2>(ve2),
+                 TinScript::ConvertVariableForDispatch<T3>(ve3),
+                 TinScript::ConvertVariableForDispatch<T4>(ve4),
+                 TinScript::ConvertVariableForDispatch<T5>(ve5),
+                 TinScript::ConvertVariableForDispatch<T6>(ve6),
+                 TinScript::ConvertVariableForDispatch<T7>(ve7),
+                 TinScript::ConvertVariableForDispatch<T8>(ve8),
+                 TinScript::ConvertVariableForDispatch<T9>(ve9),
+                 TinScript::ConvertVariableForDispatch<T10>(ve10));
     }
 
     // -- dispatch method
@@ -2516,19 +2518,19 @@ public:
 
     // -- registration method
     virtual bool Register() {
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
-        success = fc->AddParameter("_p4", Hash("_p4"), GetRegisteredType(GetTypeID<T4>()), 1, GetTypeID<T4>()) && success;
-        success = fc->AddParameter("_p5", Hash("_p5"), GetRegisteredType(GetTypeID<T5>()), 1, GetTypeID<T5>()) && success;
-        success = fc->AddParameter("_p6", Hash("_p6"), GetRegisteredType(GetTypeID<T6>()), 1, GetTypeID<T6>()) && success;
-        success = fc->AddParameter("_p7", Hash("_p7"), GetRegisteredType(GetTypeID<T7>()), 1, GetTypeID<T7>()) && success;
-        success = fc->AddParameter("_p8", Hash("_p8"), GetRegisteredType(GetTypeID<T8>()), 1, GetTypeID<T8>()) && success;
-        success = fc->AddParameter("_p9", Hash("_p9"), GetRegisteredType(GetTypeID<T9>()), 1, GetTypeID<T9>()) && success;
-        success = fc->AddParameter("_p10", Hash("_p10"), GetRegisteredType(GetTypeID<T10>()), 1, GetTypeID<T10>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::TYPE_void, 1, 0) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
+        success = fc->AddParameter("_p4", TinScript::Hash("_p4"), TinScript::GetRegisteredType(TinScript::GetTypeID<T4>()), 1, TinScript::GetTypeID<T4>()) && success;
+        success = fc->AddParameter("_p5", TinScript::Hash("_p5"), TinScript::GetRegisteredType(TinScript::GetTypeID<T5>()), 1, TinScript::GetTypeID<T5>()) && success;
+        success = fc->AddParameter("_p6", TinScript::Hash("_p6"), TinScript::GetRegisteredType(TinScript::GetTypeID<T6>()), 1, TinScript::GetTypeID<T6>()) && success;
+        success = fc->AddParameter("_p7", TinScript::Hash("_p7"), TinScript::GetRegisteredType(TinScript::GetTypeID<T7>()), 1, TinScript::GetTypeID<T7>()) && success;
+        success = fc->AddParameter("_p8", TinScript::Hash("_p8"), TinScript::GetRegisteredType(TinScript::GetTypeID<T8>()), 1, TinScript::GetTypeID<T8>()) && success;
+        success = fc->AddParameter("_p9", TinScript::Hash("_p9"), TinScript::GetRegisteredType(TinScript::GetTypeID<T9>()), 1, TinScript::GetTypeID<T9>()) && success;
+        success = fc->AddParameter("_p10", TinScript::Hash("_p10"), TinScript::GetRegisteredType(TinScript::GetTypeID<T10>()), 1, TinScript::GetTypeID<T10>()) && success;
 
         return (success);
     }
@@ -2543,7 +2545,7 @@ private:
 // -------------------
 
 template<typename R, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10, typename T11>
-class CRegFunctionP11 : public CRegFunctionBase {
+class CRegFunctionP11 : public TinScript::CRegFunctionBase {
 public:
 
     typedef R (*funcsignature)(T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6, T7 p7, T8 p8, T9 p9, T10 p10, T11 p11);
@@ -2560,55 +2562,55 @@ public:
 
     // -- virtual DispatchFunction wrapper
     virtual void DispatchFunction(void*) {
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
-        CVariableEntry* ve4 = GetContext()->GetParameter(4);
-        CVariableEntry* ve5 = GetContext()->GetParameter(5);
-        CVariableEntry* ve6 = GetContext()->GetParameter(6);
-        CVariableEntry* ve7 = GetContext()->GetParameter(7);
-        CVariableEntry* ve8 = GetContext()->GetParameter(8);
-        CVariableEntry* ve9 = GetContext()->GetParameter(9);
-        CVariableEntry* ve10 = GetContext()->GetParameter(10);
-        CVariableEntry* ve11 = GetContext()->GetParameter(11);
-        Dispatch(ConvertVariableForDispatch<T1>(ve1),
-                 ConvertVariableForDispatch<T2>(ve2),
-                 ConvertVariableForDispatch<T3>(ve3),
-                 ConvertVariableForDispatch<T4>(ve4),
-                 ConvertVariableForDispatch<T5>(ve5),
-                 ConvertVariableForDispatch<T6>(ve6),
-                 ConvertVariableForDispatch<T7>(ve7),
-                 ConvertVariableForDispatch<T8>(ve8),
-                 ConvertVariableForDispatch<T9>(ve9),
-                 ConvertVariableForDispatch<T10>(ve10),
-                 ConvertVariableForDispatch<T11>(ve11));
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        TinScript::CVariableEntry* ve4 = GetContext()->GetParameter(4);
+        TinScript::CVariableEntry* ve5 = GetContext()->GetParameter(5);
+        TinScript::CVariableEntry* ve6 = GetContext()->GetParameter(6);
+        TinScript::CVariableEntry* ve7 = GetContext()->GetParameter(7);
+        TinScript::CVariableEntry* ve8 = GetContext()->GetParameter(8);
+        TinScript::CVariableEntry* ve9 = GetContext()->GetParameter(9);
+        TinScript::CVariableEntry* ve10 = GetContext()->GetParameter(10);
+        TinScript::CVariableEntry* ve11 = GetContext()->GetParameter(11);
+        Dispatch(TinScript::ConvertVariableForDispatch<T1>(ve1),
+                 TinScript::ConvertVariableForDispatch<T2>(ve2),
+                 TinScript::ConvertVariableForDispatch<T3>(ve3),
+                 TinScript::ConvertVariableForDispatch<T4>(ve4),
+                 TinScript::ConvertVariableForDispatch<T5>(ve5),
+                 TinScript::ConvertVariableForDispatch<T6>(ve6),
+                 TinScript::ConvertVariableForDispatch<T7>(ve7),
+                 TinScript::ConvertVariableForDispatch<T8>(ve8),
+                 TinScript::ConvertVariableForDispatch<T9>(ve9),
+                 TinScript::ConvertVariableForDispatch<T10>(ve10),
+                 TinScript::ConvertVariableForDispatch<T11>(ve11));
     }
 
     // -- dispatch method
     R Dispatch(T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6, T7 p7, T8 p8, T9 p9, T10 p10, T11 p11) {
         R r = funcptr(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11);
         assert(GetContext()->GetParameter(0));
-        CVariableEntry* returnval = GetContext()->GetParameter(0);
-        returnval->SetValueAddr(NULL, convert_to_void_ptr<R>::Convert(r));
+        TinScript::CVariableEntry* returnval = GetContext()->GetParameter(0);
+        returnval->SetValueAddr(NULL, TinScript::convert_to_void_ptr<R>::Convert(r));
         return (r);
     }
 
     // -- registration method
     virtual bool Register() {
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>()) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
-        success = fc->AddParameter("_p4", Hash("_p4"), GetRegisteredType(GetTypeID<T4>()), 1, GetTypeID<T4>()) && success;
-        success = fc->AddParameter("_p5", Hash("_p5"), GetRegisteredType(GetTypeID<T5>()), 1, GetTypeID<T5>()) && success;
-        success = fc->AddParameter("_p6", Hash("_p6"), GetRegisteredType(GetTypeID<T6>()), 1, GetTypeID<T6>()) && success;
-        success = fc->AddParameter("_p7", Hash("_p7"), GetRegisteredType(GetTypeID<T7>()), 1, GetTypeID<T7>()) && success;
-        success = fc->AddParameter("_p8", Hash("_p8"), GetRegisteredType(GetTypeID<T8>()), 1, GetTypeID<T8>()) && success;
-        success = fc->AddParameter("_p9", Hash("_p9"), GetRegisteredType(GetTypeID<T9>()), 1, GetTypeID<T9>()) && success;
-        success = fc->AddParameter("_p10", Hash("_p10"), GetRegisteredType(GetTypeID<T10>()), 1, GetTypeID<T10>()) && success;
-        success = fc->AddParameter("_p11", Hash("_p11"), GetRegisteredType(GetTypeID<T11>()), 1, GetTypeID<T11>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::GetRegisteredType(TinScript::GetTypeID<R>()), 1, TinScript::GetTypeID<R>()) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
+        success = fc->AddParameter("_p4", TinScript::Hash("_p4"), TinScript::GetRegisteredType(TinScript::GetTypeID<T4>()), 1, TinScript::GetTypeID<T4>()) && success;
+        success = fc->AddParameter("_p5", TinScript::Hash("_p5"), TinScript::GetRegisteredType(TinScript::GetTypeID<T5>()), 1, TinScript::GetTypeID<T5>()) && success;
+        success = fc->AddParameter("_p6", TinScript::Hash("_p6"), TinScript::GetRegisteredType(TinScript::GetTypeID<T6>()), 1, TinScript::GetTypeID<T6>()) && success;
+        success = fc->AddParameter("_p7", TinScript::Hash("_p7"), TinScript::GetRegisteredType(TinScript::GetTypeID<T7>()), 1, TinScript::GetTypeID<T7>()) && success;
+        success = fc->AddParameter("_p8", TinScript::Hash("_p8"), TinScript::GetRegisteredType(TinScript::GetTypeID<T8>()), 1, TinScript::GetTypeID<T8>()) && success;
+        success = fc->AddParameter("_p9", TinScript::Hash("_p9"), TinScript::GetRegisteredType(TinScript::GetTypeID<T9>()), 1, TinScript::GetTypeID<T9>()) && success;
+        success = fc->AddParameter("_p10", TinScript::Hash("_p10"), TinScript::GetRegisteredType(TinScript::GetTypeID<T10>()), 1, TinScript::GetTypeID<T10>()) && success;
+        success = fc->AddParameter("_p11", TinScript::Hash("_p11"), TinScript::GetRegisteredType(TinScript::GetTypeID<T11>()), 1, TinScript::GetTypeID<T11>()) && success;
         return (success);
     }
 
@@ -2617,7 +2619,7 @@ private:
 };
 
 template<typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10, typename T11>
-class CRegFunctionP11<void, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11> : public CRegFunctionBase {
+class CRegFunctionP11<void, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11> : public TinScript::CRegFunctionBase {
 public:
 
     typedef void (*funcsignature)(T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6, T7 p7, T8 p8, T9 p9, T10 p10, T11 p11);
@@ -2634,28 +2636,28 @@ public:
 
     // -- virtual DispatchFunction wrapper
     virtual void DispatchFunction(void*) {
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
-        CVariableEntry* ve4 = GetContext()->GetParameter(4);
-        CVariableEntry* ve5 = GetContext()->GetParameter(5);
-        CVariableEntry* ve6 = GetContext()->GetParameter(6);
-        CVariableEntry* ve7 = GetContext()->GetParameter(7);
-        CVariableEntry* ve8 = GetContext()->GetParameter(8);
-        CVariableEntry* ve9 = GetContext()->GetParameter(9);
-        CVariableEntry* ve10 = GetContext()->GetParameter(10);
-        CVariableEntry* ve11 = GetContext()->GetParameter(11);
-        Dispatch(ConvertVariableForDispatch<T1>(ve1),
-                 ConvertVariableForDispatch<T2>(ve2),
-                 ConvertVariableForDispatch<T3>(ve3),
-                 ConvertVariableForDispatch<T4>(ve4),
-                 ConvertVariableForDispatch<T5>(ve5),
-                 ConvertVariableForDispatch<T6>(ve6),
-                 ConvertVariableForDispatch<T7>(ve7),
-                 ConvertVariableForDispatch<T8>(ve8),
-                 ConvertVariableForDispatch<T9>(ve9),
-                 ConvertVariableForDispatch<T10>(ve10),
-                 ConvertVariableForDispatch<T11>(ve11));
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        TinScript::CVariableEntry* ve4 = GetContext()->GetParameter(4);
+        TinScript::CVariableEntry* ve5 = GetContext()->GetParameter(5);
+        TinScript::CVariableEntry* ve6 = GetContext()->GetParameter(6);
+        TinScript::CVariableEntry* ve7 = GetContext()->GetParameter(7);
+        TinScript::CVariableEntry* ve8 = GetContext()->GetParameter(8);
+        TinScript::CVariableEntry* ve9 = GetContext()->GetParameter(9);
+        TinScript::CVariableEntry* ve10 = GetContext()->GetParameter(10);
+        TinScript::CVariableEntry* ve11 = GetContext()->GetParameter(11);
+        Dispatch(TinScript::ConvertVariableForDispatch<T1>(ve1),
+                 TinScript::ConvertVariableForDispatch<T2>(ve2),
+                 TinScript::ConvertVariableForDispatch<T3>(ve3),
+                 TinScript::ConvertVariableForDispatch<T4>(ve4),
+                 TinScript::ConvertVariableForDispatch<T5>(ve5),
+                 TinScript::ConvertVariableForDispatch<T6>(ve6),
+                 TinScript::ConvertVariableForDispatch<T7>(ve7),
+                 TinScript::ConvertVariableForDispatch<T8>(ve8),
+                 TinScript::ConvertVariableForDispatch<T9>(ve9),
+                 TinScript::ConvertVariableForDispatch<T10>(ve10),
+                 TinScript::ConvertVariableForDispatch<T11>(ve11));
     }
 
     // -- dispatch method
@@ -2665,20 +2667,20 @@ public:
 
     // -- registration method
     virtual bool Register() {
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
-        success = fc->AddParameter("_p4", Hash("_p4"), GetRegisteredType(GetTypeID<T4>()), 1, GetTypeID<T4>()) && success;
-        success = fc->AddParameter("_p5", Hash("_p5"), GetRegisteredType(GetTypeID<T5>()), 1, GetTypeID<T5>()) && success;
-        success = fc->AddParameter("_p6", Hash("_p6"), GetRegisteredType(GetTypeID<T6>()), 1, GetTypeID<T6>()) && success;
-        success = fc->AddParameter("_p7", Hash("_p7"), GetRegisteredType(GetTypeID<T7>()), 1, GetTypeID<T7>()) && success;
-        success = fc->AddParameter("_p8", Hash("_p8"), GetRegisteredType(GetTypeID<T8>()), 1, GetTypeID<T8>()) && success;
-        success = fc->AddParameter("_p9", Hash("_p9"), GetRegisteredType(GetTypeID<T9>()), 1, GetTypeID<T9>()) && success;
-        success = fc->AddParameter("_p10", Hash("_p10"), GetRegisteredType(GetTypeID<T10>()), 1, GetTypeID<T10>()) && success;
-        success = fc->AddParameter("_p11", Hash("_p11"), GetRegisteredType(GetTypeID<T11>()), 1, GetTypeID<T11>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::TYPE_void, 1, 0) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
+        success = fc->AddParameter("_p4", TinScript::Hash("_p4"), TinScript::GetRegisteredType(TinScript::GetTypeID<T4>()), 1, TinScript::GetTypeID<T4>()) && success;
+        success = fc->AddParameter("_p5", TinScript::Hash("_p5"), TinScript::GetRegisteredType(TinScript::GetTypeID<T5>()), 1, TinScript::GetTypeID<T5>()) && success;
+        success = fc->AddParameter("_p6", TinScript::Hash("_p6"), TinScript::GetRegisteredType(TinScript::GetTypeID<T6>()), 1, TinScript::GetTypeID<T6>()) && success;
+        success = fc->AddParameter("_p7", TinScript::Hash("_p7"), TinScript::GetRegisteredType(TinScript::GetTypeID<T7>()), 1, TinScript::GetTypeID<T7>()) && success;
+        success = fc->AddParameter("_p8", TinScript::Hash("_p8"), TinScript::GetRegisteredType(TinScript::GetTypeID<T8>()), 1, TinScript::GetTypeID<T8>()) && success;
+        success = fc->AddParameter("_p9", TinScript::Hash("_p9"), TinScript::GetRegisteredType(TinScript::GetTypeID<T9>()), 1, TinScript::GetTypeID<T9>()) && success;
+        success = fc->AddParameter("_p10", TinScript::Hash("_p10"), TinScript::GetRegisteredType(TinScript::GetTypeID<T10>()), 1, TinScript::GetTypeID<T10>()) && success;
+        success = fc->AddParameter("_p11", TinScript::Hash("_p11"), TinScript::GetRegisteredType(TinScript::GetTypeID<T11>()), 1, TinScript::GetTypeID<T11>()) && success;
 
         return (success);
     }
@@ -2688,7 +2690,7 @@ private:
 };
 
 template<typename C, typename R, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10, typename T11>
-class CRegMethodP11 : public CRegFunctionBase {
+class CRegMethodP11 : public TinScript::CRegFunctionBase {
 public:
 
     typedef R (*methodsignature)(C* c, T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6, T7 p7, T8 p8, T9 p9, T10 p10, T11 p11);
@@ -2705,29 +2707,29 @@ public:
 
     // -- virtual DispatchFunction wrapper
     virtual void DispatchFunction(void* objaddr) {
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
-        CVariableEntry* ve4 = GetContext()->GetParameter(4);
-        CVariableEntry* ve5 = GetContext()->GetParameter(5);
-        CVariableEntry* ve6 = GetContext()->GetParameter(6);
-        CVariableEntry* ve7 = GetContext()->GetParameter(7);
-        CVariableEntry* ve8 = GetContext()->GetParameter(8);
-        CVariableEntry* ve9 = GetContext()->GetParameter(9);
-        CVariableEntry* ve10 = GetContext()->GetParameter(10);
-        CVariableEntry* ve11 = GetContext()->GetParameter(11);
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        TinScript::CVariableEntry* ve4 = GetContext()->GetParameter(4);
+        TinScript::CVariableEntry* ve5 = GetContext()->GetParameter(5);
+        TinScript::CVariableEntry* ve6 = GetContext()->GetParameter(6);
+        TinScript::CVariableEntry* ve7 = GetContext()->GetParameter(7);
+        TinScript::CVariableEntry* ve8 = GetContext()->GetParameter(8);
+        TinScript::CVariableEntry* ve9 = GetContext()->GetParameter(9);
+        TinScript::CVariableEntry* ve10 = GetContext()->GetParameter(10);
+        TinScript::CVariableEntry* ve11 = GetContext()->GetParameter(11);
         Dispatch(objaddr,
-                 ConvertVariableForDispatch<T1>(ve1),
-                 ConvertVariableForDispatch<T2>(ve2),
-                 ConvertVariableForDispatch<T3>(ve3),
-                 ConvertVariableForDispatch<T4>(ve4),
-                 ConvertVariableForDispatch<T5>(ve5),
-                 ConvertVariableForDispatch<T6>(ve6),
-                 ConvertVariableForDispatch<T7>(ve7),
-                 ConvertVariableForDispatch<T8>(ve8),
-                 ConvertVariableForDispatch<T9>(ve9),
-                 ConvertVariableForDispatch<T10>(ve10),
-                 ConvertVariableForDispatch<T11>(ve11));
+                 TinScript::ConvertVariableForDispatch<T1>(ve1),
+                 TinScript::ConvertVariableForDispatch<T2>(ve2),
+                 TinScript::ConvertVariableForDispatch<T3>(ve3),
+                 TinScript::ConvertVariableForDispatch<T4>(ve4),
+                 TinScript::ConvertVariableForDispatch<T5>(ve5),
+                 TinScript::ConvertVariableForDispatch<T6>(ve6),
+                 TinScript::ConvertVariableForDispatch<T7>(ve7),
+                 TinScript::ConvertVariableForDispatch<T8>(ve8),
+                 TinScript::ConvertVariableForDispatch<T9>(ve9),
+                 TinScript::ConvertVariableForDispatch<T10>(ve10),
+                 TinScript::ConvertVariableForDispatch<T11>(ve11));
     }
 
     // -- dispatch method
@@ -2735,27 +2737,27 @@ public:
         C* objptr = (C*)objaddr;
         R r = funcptr(objptr, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11);
         assert(GetContext()->GetParameter(0));
-        CVariableEntry* returnval = GetContext()->GetParameter(0);
-        returnval->SetValueAddr(NULL, convert_to_void_ptr<R>::Convert(r));
+        TinScript::CVariableEntry* returnval = GetContext()->GetParameter(0);
+        returnval->SetValueAddr(NULL, TinScript::convert_to_void_ptr<R>::Convert(r));
         return (r);
     }
 
     // -- registration method
     virtual bool Register() {
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>()) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
-        success = fc->AddParameter("_p4", Hash("_p4"), GetRegisteredType(GetTypeID<T4>()), 1, GetTypeID<T4>()) && success;
-        success = fc->AddParameter("_p5", Hash("_p5"), GetRegisteredType(GetTypeID<T5>()), 1, GetTypeID<T5>()) && success;
-        success = fc->AddParameter("_p6", Hash("_p6"), GetRegisteredType(GetTypeID<T6>()), 1, GetTypeID<T6>()) && success;
-        success = fc->AddParameter("_p7", Hash("_p7"), GetRegisteredType(GetTypeID<T7>()), 1, GetTypeID<T7>()) && success;
-        success = fc->AddParameter("_p8", Hash("_p8"), GetRegisteredType(GetTypeID<T8>()), 1, GetTypeID<T8>()) && success;
-        success = fc->AddParameter("_p9", Hash("_p9"), GetRegisteredType(GetTypeID<T9>()), 1, GetTypeID<T9>()) && success;
-        success = fc->AddParameter("_p10", Hash("_p10"), GetRegisteredType(GetTypeID<T10>()), 1, GetTypeID<T10>()) && success;
-        success = fc->AddParameter("_p11", Hash("_p11"), GetRegisteredType(GetTypeID<T11>()), 1, GetTypeID<T11>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::GetRegisteredType(TinScript::GetTypeID<R>()), 1, TinScript::GetTypeID<R>()) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
+        success = fc->AddParameter("_p4", TinScript::Hash("_p4"), TinScript::GetRegisteredType(TinScript::GetTypeID<T4>()), 1, TinScript::GetTypeID<T4>()) && success;
+        success = fc->AddParameter("_p5", TinScript::Hash("_p5"), TinScript::GetRegisteredType(TinScript::GetTypeID<T5>()), 1, TinScript::GetTypeID<T5>()) && success;
+        success = fc->AddParameter("_p6", TinScript::Hash("_p6"), TinScript::GetRegisteredType(TinScript::GetTypeID<T6>()), 1, TinScript::GetTypeID<T6>()) && success;
+        success = fc->AddParameter("_p7", TinScript::Hash("_p7"), TinScript::GetRegisteredType(TinScript::GetTypeID<T7>()), 1, TinScript::GetTypeID<T7>()) && success;
+        success = fc->AddParameter("_p8", TinScript::Hash("_p8"), TinScript::GetRegisteredType(TinScript::GetTypeID<T8>()), 1, TinScript::GetTypeID<T8>()) && success;
+        success = fc->AddParameter("_p9", TinScript::Hash("_p9"), TinScript::GetRegisteredType(TinScript::GetTypeID<T9>()), 1, TinScript::GetTypeID<T9>()) && success;
+        success = fc->AddParameter("_p10", TinScript::Hash("_p10"), TinScript::GetRegisteredType(TinScript::GetTypeID<T10>()), 1, TinScript::GetTypeID<T10>()) && success;
+        success = fc->AddParameter("_p11", TinScript::Hash("_p11"), TinScript::GetRegisteredType(TinScript::GetTypeID<T11>()), 1, TinScript::GetTypeID<T11>()) && success;
 
         return (success);
     }
@@ -2765,7 +2767,7 @@ private:
 };
 
 template<typename C, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10, typename T11>
-class CRegMethodP11<C, void, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11> : public CRegFunctionBase {
+class CRegMethodP11<C, void, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11> : public TinScript::CRegFunctionBase {
 public:
 
     typedef void (*methodsignature)(C* c, T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6, T7 p7, T8 p8, T9 p9, T10 p10, T11 p11);
@@ -2782,29 +2784,29 @@ public:
 
     // -- virtual DispatchFunction wrapper
     virtual void DispatchFunction(void* objaddr) {
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
-        CVariableEntry* ve4 = GetContext()->GetParameter(4);
-        CVariableEntry* ve5 = GetContext()->GetParameter(5);
-        CVariableEntry* ve6 = GetContext()->GetParameter(6);
-        CVariableEntry* ve7 = GetContext()->GetParameter(7);
-        CVariableEntry* ve8 = GetContext()->GetParameter(8);
-        CVariableEntry* ve9 = GetContext()->GetParameter(9);
-        CVariableEntry* ve10 = GetContext()->GetParameter(10);
-        CVariableEntry* ve11 = GetContext()->GetParameter(11);
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        TinScript::CVariableEntry* ve4 = GetContext()->GetParameter(4);
+        TinScript::CVariableEntry* ve5 = GetContext()->GetParameter(5);
+        TinScript::CVariableEntry* ve6 = GetContext()->GetParameter(6);
+        TinScript::CVariableEntry* ve7 = GetContext()->GetParameter(7);
+        TinScript::CVariableEntry* ve8 = GetContext()->GetParameter(8);
+        TinScript::CVariableEntry* ve9 = GetContext()->GetParameter(9);
+        TinScript::CVariableEntry* ve10 = GetContext()->GetParameter(10);
+        TinScript::CVariableEntry* ve11 = GetContext()->GetParameter(11);
         Dispatch(objaddr,
-                 ConvertVariableForDispatch<T1>(ve1),
-                 ConvertVariableForDispatch<T2>(ve2),
-                 ConvertVariableForDispatch<T3>(ve3),
-                 ConvertVariableForDispatch<T4>(ve4),
-                 ConvertVariableForDispatch<T5>(ve5),
-                 ConvertVariableForDispatch<T6>(ve6),
-                 ConvertVariableForDispatch<T7>(ve7),
-                 ConvertVariableForDispatch<T8>(ve8),
-                 ConvertVariableForDispatch<T9>(ve9),
-                 ConvertVariableForDispatch<T10>(ve10),
-                 ConvertVariableForDispatch<T11>(ve11));
+                 TinScript::ConvertVariableForDispatch<T1>(ve1),
+                 TinScript::ConvertVariableForDispatch<T2>(ve2),
+                 TinScript::ConvertVariableForDispatch<T3>(ve3),
+                 TinScript::ConvertVariableForDispatch<T4>(ve4),
+                 TinScript::ConvertVariableForDispatch<T5>(ve5),
+                 TinScript::ConvertVariableForDispatch<T6>(ve6),
+                 TinScript::ConvertVariableForDispatch<T7>(ve7),
+                 TinScript::ConvertVariableForDispatch<T8>(ve8),
+                 TinScript::ConvertVariableForDispatch<T9>(ve9),
+                 TinScript::ConvertVariableForDispatch<T10>(ve10),
+                 TinScript::ConvertVariableForDispatch<T11>(ve11));
     }
 
     // -- dispatch method
@@ -2815,20 +2817,20 @@ public:
 
     // -- registration method
     virtual bool Register() {
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
-        success = fc->AddParameter("_p4", Hash("_p4"), GetRegisteredType(GetTypeID<T4>()), 1, GetTypeID<T4>()) && success;
-        success = fc->AddParameter("_p5", Hash("_p5"), GetRegisteredType(GetTypeID<T5>()), 1, GetTypeID<T5>()) && success;
-        success = fc->AddParameter("_p6", Hash("_p6"), GetRegisteredType(GetTypeID<T6>()), 1, GetTypeID<T6>()) && success;
-        success = fc->AddParameter("_p7", Hash("_p7"), GetRegisteredType(GetTypeID<T7>()), 1, GetTypeID<T7>()) && success;
-        success = fc->AddParameter("_p8", Hash("_p8"), GetRegisteredType(GetTypeID<T8>()), 1, GetTypeID<T8>()) && success;
-        success = fc->AddParameter("_p9", Hash("_p9"), GetRegisteredType(GetTypeID<T9>()), 1, GetTypeID<T9>()) && success;
-        success = fc->AddParameter("_p10", Hash("_p10"), GetRegisteredType(GetTypeID<T10>()), 1, GetTypeID<T10>()) && success;
-        success = fc->AddParameter("_p11", Hash("_p11"), GetRegisteredType(GetTypeID<T11>()), 1, GetTypeID<T11>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::TYPE_void, 1, 0) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
+        success = fc->AddParameter("_p4", TinScript::Hash("_p4"), TinScript::GetRegisteredType(TinScript::GetTypeID<T4>()), 1, TinScript::GetTypeID<T4>()) && success;
+        success = fc->AddParameter("_p5", TinScript::Hash("_p5"), TinScript::GetRegisteredType(TinScript::GetTypeID<T5>()), 1, TinScript::GetTypeID<T5>()) && success;
+        success = fc->AddParameter("_p6", TinScript::Hash("_p6"), TinScript::GetRegisteredType(TinScript::GetTypeID<T6>()), 1, TinScript::GetTypeID<T6>()) && success;
+        success = fc->AddParameter("_p7", TinScript::Hash("_p7"), TinScript::GetRegisteredType(TinScript::GetTypeID<T7>()), 1, TinScript::GetTypeID<T7>()) && success;
+        success = fc->AddParameter("_p8", TinScript::Hash("_p8"), TinScript::GetRegisteredType(TinScript::GetTypeID<T8>()), 1, TinScript::GetTypeID<T8>()) && success;
+        success = fc->AddParameter("_p9", TinScript::Hash("_p9"), TinScript::GetRegisteredType(TinScript::GetTypeID<T9>()), 1, TinScript::GetTypeID<T9>()) && success;
+        success = fc->AddParameter("_p10", TinScript::Hash("_p10"), TinScript::GetRegisteredType(TinScript::GetTypeID<T10>()), 1, TinScript::GetTypeID<T10>()) && success;
+        success = fc->AddParameter("_p11", TinScript::Hash("_p11"), TinScript::GetRegisteredType(TinScript::GetTypeID<T11>()), 1, TinScript::GetTypeID<T11>()) && success;
 
         return (success);
     }
@@ -2843,7 +2845,7 @@ private:
 // -------------------
 
 template<typename R, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10, typename T11, typename T12>
-class CRegFunctionP12 : public CRegFunctionBase {
+class CRegFunctionP12 : public TinScript::CRegFunctionBase {
 public:
 
     typedef R (*funcsignature)(T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6, T7 p7, T8 p8, T9 p9, T10 p10, T11 p11, T12 p12);
@@ -2860,58 +2862,58 @@ public:
 
     // -- virtual DispatchFunction wrapper
     virtual void DispatchFunction(void*) {
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
-        CVariableEntry* ve4 = GetContext()->GetParameter(4);
-        CVariableEntry* ve5 = GetContext()->GetParameter(5);
-        CVariableEntry* ve6 = GetContext()->GetParameter(6);
-        CVariableEntry* ve7 = GetContext()->GetParameter(7);
-        CVariableEntry* ve8 = GetContext()->GetParameter(8);
-        CVariableEntry* ve9 = GetContext()->GetParameter(9);
-        CVariableEntry* ve10 = GetContext()->GetParameter(10);
-        CVariableEntry* ve11 = GetContext()->GetParameter(11);
-        CVariableEntry* ve12 = GetContext()->GetParameter(12);
-        Dispatch(ConvertVariableForDispatch<T1>(ve1),
-                 ConvertVariableForDispatch<T2>(ve2),
-                 ConvertVariableForDispatch<T3>(ve3),
-                 ConvertVariableForDispatch<T4>(ve4),
-                 ConvertVariableForDispatch<T5>(ve5),
-                 ConvertVariableForDispatch<T6>(ve6),
-                 ConvertVariableForDispatch<T7>(ve7),
-                 ConvertVariableForDispatch<T8>(ve8),
-                 ConvertVariableForDispatch<T9>(ve9),
-                 ConvertVariableForDispatch<T10>(ve10),
-                 ConvertVariableForDispatch<T11>(ve11),
-                 ConvertVariableForDispatch<T12>(ve12));
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        TinScript::CVariableEntry* ve4 = GetContext()->GetParameter(4);
+        TinScript::CVariableEntry* ve5 = GetContext()->GetParameter(5);
+        TinScript::CVariableEntry* ve6 = GetContext()->GetParameter(6);
+        TinScript::CVariableEntry* ve7 = GetContext()->GetParameter(7);
+        TinScript::CVariableEntry* ve8 = GetContext()->GetParameter(8);
+        TinScript::CVariableEntry* ve9 = GetContext()->GetParameter(9);
+        TinScript::CVariableEntry* ve10 = GetContext()->GetParameter(10);
+        TinScript::CVariableEntry* ve11 = GetContext()->GetParameter(11);
+        TinScript::CVariableEntry* ve12 = GetContext()->GetParameter(12);
+        Dispatch(TinScript::ConvertVariableForDispatch<T1>(ve1),
+                 TinScript::ConvertVariableForDispatch<T2>(ve2),
+                 TinScript::ConvertVariableForDispatch<T3>(ve3),
+                 TinScript::ConvertVariableForDispatch<T4>(ve4),
+                 TinScript::ConvertVariableForDispatch<T5>(ve5),
+                 TinScript::ConvertVariableForDispatch<T6>(ve6),
+                 TinScript::ConvertVariableForDispatch<T7>(ve7),
+                 TinScript::ConvertVariableForDispatch<T8>(ve8),
+                 TinScript::ConvertVariableForDispatch<T9>(ve9),
+                 TinScript::ConvertVariableForDispatch<T10>(ve10),
+                 TinScript::ConvertVariableForDispatch<T11>(ve11),
+                 TinScript::ConvertVariableForDispatch<T12>(ve12));
     }
 
     // -- dispatch method
     R Dispatch(T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6, T7 p7, T8 p8, T9 p9, T10 p10, T11 p11, T12 p12) {
         R r = funcptr(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12);
         assert(GetContext()->GetParameter(0));
-        CVariableEntry* returnval = GetContext()->GetParameter(0);
-        returnval->SetValueAddr(NULL, convert_to_void_ptr<R>::Convert(r));
+        TinScript::CVariableEntry* returnval = GetContext()->GetParameter(0);
+        returnval->SetValueAddr(NULL, TinScript::convert_to_void_ptr<R>::Convert(r));
         return (r);
     }
 
     // -- registration method
     virtual bool Register() {
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>()) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
-        success = fc->AddParameter("_p4", Hash("_p4"), GetRegisteredType(GetTypeID<T4>()), 1, GetTypeID<T4>()) && success;
-        success = fc->AddParameter("_p5", Hash("_p5"), GetRegisteredType(GetTypeID<T5>()), 1, GetTypeID<T5>()) && success;
-        success = fc->AddParameter("_p6", Hash("_p6"), GetRegisteredType(GetTypeID<T6>()), 1, GetTypeID<T6>()) && success;
-        success = fc->AddParameter("_p7", Hash("_p7"), GetRegisteredType(GetTypeID<T7>()), 1, GetTypeID<T7>()) && success;
-        success = fc->AddParameter("_p8", Hash("_p8"), GetRegisteredType(GetTypeID<T8>()), 1, GetTypeID<T8>()) && success;
-        success = fc->AddParameter("_p9", Hash("_p9"), GetRegisteredType(GetTypeID<T9>()), 1, GetTypeID<T9>()) && success;
-        success = fc->AddParameter("_p10", Hash("_p10"), GetRegisteredType(GetTypeID<T10>()), 1, GetTypeID<T10>()) && success;
-        success = fc->AddParameter("_p11", Hash("_p11"), GetRegisteredType(GetTypeID<T11>()), 1, GetTypeID<T11>()) && success;
-        success = fc->AddParameter("_p12", Hash("_p12"), GetRegisteredType(GetTypeID<T12>()), 1, GetTypeID<T12>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::GetRegisteredType(TinScript::GetTypeID<R>()), 1, TinScript::GetTypeID<R>()) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
+        success = fc->AddParameter("_p4", TinScript::Hash("_p4"), TinScript::GetRegisteredType(TinScript::GetTypeID<T4>()), 1, TinScript::GetTypeID<T4>()) && success;
+        success = fc->AddParameter("_p5", TinScript::Hash("_p5"), TinScript::GetRegisteredType(TinScript::GetTypeID<T5>()), 1, TinScript::GetTypeID<T5>()) && success;
+        success = fc->AddParameter("_p6", TinScript::Hash("_p6"), TinScript::GetRegisteredType(TinScript::GetTypeID<T6>()), 1, TinScript::GetTypeID<T6>()) && success;
+        success = fc->AddParameter("_p7", TinScript::Hash("_p7"), TinScript::GetRegisteredType(TinScript::GetTypeID<T7>()), 1, TinScript::GetTypeID<T7>()) && success;
+        success = fc->AddParameter("_p8", TinScript::Hash("_p8"), TinScript::GetRegisteredType(TinScript::GetTypeID<T8>()), 1, TinScript::GetTypeID<T8>()) && success;
+        success = fc->AddParameter("_p9", TinScript::Hash("_p9"), TinScript::GetRegisteredType(TinScript::GetTypeID<T9>()), 1, TinScript::GetTypeID<T9>()) && success;
+        success = fc->AddParameter("_p10", TinScript::Hash("_p10"), TinScript::GetRegisteredType(TinScript::GetTypeID<T10>()), 1, TinScript::GetTypeID<T10>()) && success;
+        success = fc->AddParameter("_p11", TinScript::Hash("_p11"), TinScript::GetRegisteredType(TinScript::GetTypeID<T11>()), 1, TinScript::GetTypeID<T11>()) && success;
+        success = fc->AddParameter("_p12", TinScript::Hash("_p12"), TinScript::GetRegisteredType(TinScript::GetTypeID<T12>()), 1, TinScript::GetTypeID<T12>()) && success;
         return (success);
     }
 
@@ -2920,7 +2922,7 @@ private:
 };
 
 template<typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10, typename T11, typename T12>
-class CRegFunctionP12<void, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12> : public CRegFunctionBase {
+class CRegFunctionP12<void, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12> : public TinScript::CRegFunctionBase {
 public:
 
     typedef void (*funcsignature)(T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6, T7 p7, T8 p8, T9 p9, T10 p10, T11 p11, T12 p12);
@@ -2937,30 +2939,30 @@ public:
 
     // -- virtual DispatchFunction wrapper
     virtual void DispatchFunction(void*) {
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
-        CVariableEntry* ve4 = GetContext()->GetParameter(4);
-        CVariableEntry* ve5 = GetContext()->GetParameter(5);
-        CVariableEntry* ve6 = GetContext()->GetParameter(6);
-        CVariableEntry* ve7 = GetContext()->GetParameter(7);
-        CVariableEntry* ve8 = GetContext()->GetParameter(8);
-        CVariableEntry* ve9 = GetContext()->GetParameter(9);
-        CVariableEntry* ve10 = GetContext()->GetParameter(10);
-        CVariableEntry* ve11 = GetContext()->GetParameter(11);
-        CVariableEntry* ve12 = GetContext()->GetParameter(12);
-        Dispatch(ConvertVariableForDispatch<T1>(ve1),
-                 ConvertVariableForDispatch<T2>(ve2),
-                 ConvertVariableForDispatch<T3>(ve3),
-                 ConvertVariableForDispatch<T4>(ve4),
-                 ConvertVariableForDispatch<T5>(ve5),
-                 ConvertVariableForDispatch<T6>(ve6),
-                 ConvertVariableForDispatch<T7>(ve7),
-                 ConvertVariableForDispatch<T8>(ve8),
-                 ConvertVariableForDispatch<T9>(ve9),
-                 ConvertVariableForDispatch<T10>(ve10),
-                 ConvertVariableForDispatch<T11>(ve11),
-                 ConvertVariableForDispatch<T12>(ve12));
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        TinScript::CVariableEntry* ve4 = GetContext()->GetParameter(4);
+        TinScript::CVariableEntry* ve5 = GetContext()->GetParameter(5);
+        TinScript::CVariableEntry* ve6 = GetContext()->GetParameter(6);
+        TinScript::CVariableEntry* ve7 = GetContext()->GetParameter(7);
+        TinScript::CVariableEntry* ve8 = GetContext()->GetParameter(8);
+        TinScript::CVariableEntry* ve9 = GetContext()->GetParameter(9);
+        TinScript::CVariableEntry* ve10 = GetContext()->GetParameter(10);
+        TinScript::CVariableEntry* ve11 = GetContext()->GetParameter(11);
+        TinScript::CVariableEntry* ve12 = GetContext()->GetParameter(12);
+        Dispatch(TinScript::ConvertVariableForDispatch<T1>(ve1),
+                 TinScript::ConvertVariableForDispatch<T2>(ve2),
+                 TinScript::ConvertVariableForDispatch<T3>(ve3),
+                 TinScript::ConvertVariableForDispatch<T4>(ve4),
+                 TinScript::ConvertVariableForDispatch<T5>(ve5),
+                 TinScript::ConvertVariableForDispatch<T6>(ve6),
+                 TinScript::ConvertVariableForDispatch<T7>(ve7),
+                 TinScript::ConvertVariableForDispatch<T8>(ve8),
+                 TinScript::ConvertVariableForDispatch<T9>(ve9),
+                 TinScript::ConvertVariableForDispatch<T10>(ve10),
+                 TinScript::ConvertVariableForDispatch<T11>(ve11),
+                 TinScript::ConvertVariableForDispatch<T12>(ve12));
     }
 
     // -- dispatch method
@@ -2970,21 +2972,21 @@ public:
 
     // -- registration method
     virtual bool Register() {
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
-        success = fc->AddParameter("_p4", Hash("_p4"), GetRegisteredType(GetTypeID<T4>()), 1, GetTypeID<T4>()) && success;
-        success = fc->AddParameter("_p5", Hash("_p5"), GetRegisteredType(GetTypeID<T5>()), 1, GetTypeID<T5>()) && success;
-        success = fc->AddParameter("_p6", Hash("_p6"), GetRegisteredType(GetTypeID<T6>()), 1, GetTypeID<T6>()) && success;
-        success = fc->AddParameter("_p7", Hash("_p7"), GetRegisteredType(GetTypeID<T7>()), 1, GetTypeID<T7>()) && success;
-        success = fc->AddParameter("_p8", Hash("_p8"), GetRegisteredType(GetTypeID<T8>()), 1, GetTypeID<T8>()) && success;
-        success = fc->AddParameter("_p9", Hash("_p9"), GetRegisteredType(GetTypeID<T9>()), 1, GetTypeID<T9>()) && success;
-        success = fc->AddParameter("_p10", Hash("_p10"), GetRegisteredType(GetTypeID<T10>()), 1, GetTypeID<T10>()) && success;
-        success = fc->AddParameter("_p11", Hash("_p11"), GetRegisteredType(GetTypeID<T11>()), 1, GetTypeID<T11>()) && success;
-        success = fc->AddParameter("_p12", Hash("_p12"), GetRegisteredType(GetTypeID<T12>()), 1, GetTypeID<T12>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::TYPE_void, 1, 0) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
+        success = fc->AddParameter("_p4", TinScript::Hash("_p4"), TinScript::GetRegisteredType(TinScript::GetTypeID<T4>()), 1, TinScript::GetTypeID<T4>()) && success;
+        success = fc->AddParameter("_p5", TinScript::Hash("_p5"), TinScript::GetRegisteredType(TinScript::GetTypeID<T5>()), 1, TinScript::GetTypeID<T5>()) && success;
+        success = fc->AddParameter("_p6", TinScript::Hash("_p6"), TinScript::GetRegisteredType(TinScript::GetTypeID<T6>()), 1, TinScript::GetTypeID<T6>()) && success;
+        success = fc->AddParameter("_p7", TinScript::Hash("_p7"), TinScript::GetRegisteredType(TinScript::GetTypeID<T7>()), 1, TinScript::GetTypeID<T7>()) && success;
+        success = fc->AddParameter("_p8", TinScript::Hash("_p8"), TinScript::GetRegisteredType(TinScript::GetTypeID<T8>()), 1, TinScript::GetTypeID<T8>()) && success;
+        success = fc->AddParameter("_p9", TinScript::Hash("_p9"), TinScript::GetRegisteredType(TinScript::GetTypeID<T9>()), 1, TinScript::GetTypeID<T9>()) && success;
+        success = fc->AddParameter("_p10", TinScript::Hash("_p10"), TinScript::GetRegisteredType(TinScript::GetTypeID<T10>()), 1, TinScript::GetTypeID<T10>()) && success;
+        success = fc->AddParameter("_p11", TinScript::Hash("_p11"), TinScript::GetRegisteredType(TinScript::GetTypeID<T11>()), 1, TinScript::GetTypeID<T11>()) && success;
+        success = fc->AddParameter("_p12", TinScript::Hash("_p12"), TinScript::GetRegisteredType(TinScript::GetTypeID<T12>()), 1, TinScript::GetTypeID<T12>()) && success;
 
         return (success);
     }
@@ -2994,7 +2996,7 @@ private:
 };
 
 template<typename C, typename R, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10, typename T11, typename T12>
-class CRegMethodP12 : public CRegFunctionBase {
+class CRegMethodP12 : public TinScript::CRegFunctionBase {
 public:
 
     typedef R (*methodsignature)(C* c, T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6, T7 p7, T8 p8, T9 p9, T10 p10, T11 p11, T12 p12);
@@ -3011,31 +3013,31 @@ public:
 
     // -- virtual DispatchFunction wrapper
     virtual void DispatchFunction(void* objaddr) {
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
-        CVariableEntry* ve4 = GetContext()->GetParameter(4);
-        CVariableEntry* ve5 = GetContext()->GetParameter(5);
-        CVariableEntry* ve6 = GetContext()->GetParameter(6);
-        CVariableEntry* ve7 = GetContext()->GetParameter(7);
-        CVariableEntry* ve8 = GetContext()->GetParameter(8);
-        CVariableEntry* ve9 = GetContext()->GetParameter(9);
-        CVariableEntry* ve10 = GetContext()->GetParameter(10);
-        CVariableEntry* ve11 = GetContext()->GetParameter(11);
-        CVariableEntry* ve12 = GetContext()->GetParameter(12);
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        TinScript::CVariableEntry* ve4 = GetContext()->GetParameter(4);
+        TinScript::CVariableEntry* ve5 = GetContext()->GetParameter(5);
+        TinScript::CVariableEntry* ve6 = GetContext()->GetParameter(6);
+        TinScript::CVariableEntry* ve7 = GetContext()->GetParameter(7);
+        TinScript::CVariableEntry* ve8 = GetContext()->GetParameter(8);
+        TinScript::CVariableEntry* ve9 = GetContext()->GetParameter(9);
+        TinScript::CVariableEntry* ve10 = GetContext()->GetParameter(10);
+        TinScript::CVariableEntry* ve11 = GetContext()->GetParameter(11);
+        TinScript::CVariableEntry* ve12 = GetContext()->GetParameter(12);
         Dispatch(objaddr,
-                 ConvertVariableForDispatch<T1>(ve1),
-                 ConvertVariableForDispatch<T2>(ve2),
-                 ConvertVariableForDispatch<T3>(ve3),
-                 ConvertVariableForDispatch<T4>(ve4),
-                 ConvertVariableForDispatch<T5>(ve5),
-                 ConvertVariableForDispatch<T6>(ve6),
-                 ConvertVariableForDispatch<T7>(ve7),
-                 ConvertVariableForDispatch<T8>(ve8),
-                 ConvertVariableForDispatch<T9>(ve9),
-                 ConvertVariableForDispatch<T10>(ve10),
-                 ConvertVariableForDispatch<T11>(ve11),
-                 ConvertVariableForDispatch<T12>(ve12));
+                 TinScript::ConvertVariableForDispatch<T1>(ve1),
+                 TinScript::ConvertVariableForDispatch<T2>(ve2),
+                 TinScript::ConvertVariableForDispatch<T3>(ve3),
+                 TinScript::ConvertVariableForDispatch<T4>(ve4),
+                 TinScript::ConvertVariableForDispatch<T5>(ve5),
+                 TinScript::ConvertVariableForDispatch<T6>(ve6),
+                 TinScript::ConvertVariableForDispatch<T7>(ve7),
+                 TinScript::ConvertVariableForDispatch<T8>(ve8),
+                 TinScript::ConvertVariableForDispatch<T9>(ve9),
+                 TinScript::ConvertVariableForDispatch<T10>(ve10),
+                 TinScript::ConvertVariableForDispatch<T11>(ve11),
+                 TinScript::ConvertVariableForDispatch<T12>(ve12));
     }
 
     // -- dispatch method
@@ -3043,28 +3045,28 @@ public:
         C* objptr = (C*)objaddr;
         R r = funcptr(objptr, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12);
         assert(GetContext()->GetParameter(0));
-        CVariableEntry* returnval = GetContext()->GetParameter(0);
-        returnval->SetValueAddr(NULL, convert_to_void_ptr<R>::Convert(r));
+        TinScript::CVariableEntry* returnval = GetContext()->GetParameter(0);
+        returnval->SetValueAddr(NULL, TinScript::convert_to_void_ptr<R>::Convert(r));
         return (r);
     }
 
     // -- registration method
     virtual bool Register() {
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>()) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
-        success = fc->AddParameter("_p4", Hash("_p4"), GetRegisteredType(GetTypeID<T4>()), 1, GetTypeID<T4>()) && success;
-        success = fc->AddParameter("_p5", Hash("_p5"), GetRegisteredType(GetTypeID<T5>()), 1, GetTypeID<T5>()) && success;
-        success = fc->AddParameter("_p6", Hash("_p6"), GetRegisteredType(GetTypeID<T6>()), 1, GetTypeID<T6>()) && success;
-        success = fc->AddParameter("_p7", Hash("_p7"), GetRegisteredType(GetTypeID<T7>()), 1, GetTypeID<T7>()) && success;
-        success = fc->AddParameter("_p8", Hash("_p8"), GetRegisteredType(GetTypeID<T8>()), 1, GetTypeID<T8>()) && success;
-        success = fc->AddParameter("_p9", Hash("_p9"), GetRegisteredType(GetTypeID<T9>()), 1, GetTypeID<T9>()) && success;
-        success = fc->AddParameter("_p10", Hash("_p10"), GetRegisteredType(GetTypeID<T10>()), 1, GetTypeID<T10>()) && success;
-        success = fc->AddParameter("_p11", Hash("_p11"), GetRegisteredType(GetTypeID<T11>()), 1, GetTypeID<T11>()) && success;
-        success = fc->AddParameter("_p12", Hash("_p12"), GetRegisteredType(GetTypeID<T12>()), 1, GetTypeID<T12>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::GetRegisteredType(TinScript::GetTypeID<R>()), 1, TinScript::GetTypeID<R>()) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
+        success = fc->AddParameter("_p4", TinScript::Hash("_p4"), TinScript::GetRegisteredType(TinScript::GetTypeID<T4>()), 1, TinScript::GetTypeID<T4>()) && success;
+        success = fc->AddParameter("_p5", TinScript::Hash("_p5"), TinScript::GetRegisteredType(TinScript::GetTypeID<T5>()), 1, TinScript::GetTypeID<T5>()) && success;
+        success = fc->AddParameter("_p6", TinScript::Hash("_p6"), TinScript::GetRegisteredType(TinScript::GetTypeID<T6>()), 1, TinScript::GetTypeID<T6>()) && success;
+        success = fc->AddParameter("_p7", TinScript::Hash("_p7"), TinScript::GetRegisteredType(TinScript::GetTypeID<T7>()), 1, TinScript::GetTypeID<T7>()) && success;
+        success = fc->AddParameter("_p8", TinScript::Hash("_p8"), TinScript::GetRegisteredType(TinScript::GetTypeID<T8>()), 1, TinScript::GetTypeID<T8>()) && success;
+        success = fc->AddParameter("_p9", TinScript::Hash("_p9"), TinScript::GetRegisteredType(TinScript::GetTypeID<T9>()), 1, TinScript::GetTypeID<T9>()) && success;
+        success = fc->AddParameter("_p10", TinScript::Hash("_p10"), TinScript::GetRegisteredType(TinScript::GetTypeID<T10>()), 1, TinScript::GetTypeID<T10>()) && success;
+        success = fc->AddParameter("_p11", TinScript::Hash("_p11"), TinScript::GetRegisteredType(TinScript::GetTypeID<T11>()), 1, TinScript::GetTypeID<T11>()) && success;
+        success = fc->AddParameter("_p12", TinScript::Hash("_p12"), TinScript::GetRegisteredType(TinScript::GetTypeID<T12>()), 1, TinScript::GetTypeID<T12>()) && success;
 
         return (success);
     }
@@ -3074,7 +3076,7 @@ private:
 };
 
 template<typename C, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10, typename T11, typename T12>
-class CRegMethodP12<C, void, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12> : public CRegFunctionBase {
+class CRegMethodP12<C, void, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12> : public TinScript::CRegFunctionBase {
 public:
 
     typedef void (*methodsignature)(C* c, T1 p1, T2 p2, T3 p3, T4 p4, T5 p5, T6 p6, T7 p7, T8 p8, T9 p9, T10 p10, T11 p11, T12 p12);
@@ -3091,31 +3093,31 @@ public:
 
     // -- virtual DispatchFunction wrapper
     virtual void DispatchFunction(void* objaddr) {
-        CVariableEntry* ve1 = GetContext()->GetParameter(1);
-        CVariableEntry* ve2 = GetContext()->GetParameter(2);
-        CVariableEntry* ve3 = GetContext()->GetParameter(3);
-        CVariableEntry* ve4 = GetContext()->GetParameter(4);
-        CVariableEntry* ve5 = GetContext()->GetParameter(5);
-        CVariableEntry* ve6 = GetContext()->GetParameter(6);
-        CVariableEntry* ve7 = GetContext()->GetParameter(7);
-        CVariableEntry* ve8 = GetContext()->GetParameter(8);
-        CVariableEntry* ve9 = GetContext()->GetParameter(9);
-        CVariableEntry* ve10 = GetContext()->GetParameter(10);
-        CVariableEntry* ve11 = GetContext()->GetParameter(11);
-        CVariableEntry* ve12 = GetContext()->GetParameter(12);
+        TinScript::CVariableEntry* ve1 = GetContext()->GetParameter(1);
+        TinScript::CVariableEntry* ve2 = GetContext()->GetParameter(2);
+        TinScript::CVariableEntry* ve3 = GetContext()->GetParameter(3);
+        TinScript::CVariableEntry* ve4 = GetContext()->GetParameter(4);
+        TinScript::CVariableEntry* ve5 = GetContext()->GetParameter(5);
+        TinScript::CVariableEntry* ve6 = GetContext()->GetParameter(6);
+        TinScript::CVariableEntry* ve7 = GetContext()->GetParameter(7);
+        TinScript::CVariableEntry* ve8 = GetContext()->GetParameter(8);
+        TinScript::CVariableEntry* ve9 = GetContext()->GetParameter(9);
+        TinScript::CVariableEntry* ve10 = GetContext()->GetParameter(10);
+        TinScript::CVariableEntry* ve11 = GetContext()->GetParameter(11);
+        TinScript::CVariableEntry* ve12 = GetContext()->GetParameter(12);
         Dispatch(objaddr,
-                 ConvertVariableForDispatch<T1>(ve1),
-                 ConvertVariableForDispatch<T2>(ve2),
-                 ConvertVariableForDispatch<T3>(ve3),
-                 ConvertVariableForDispatch<T4>(ve4),
-                 ConvertVariableForDispatch<T5>(ve5),
-                 ConvertVariableForDispatch<T6>(ve6),
-                 ConvertVariableForDispatch<T7>(ve7),
-                 ConvertVariableForDispatch<T8>(ve8),
-                 ConvertVariableForDispatch<T9>(ve9),
-                 ConvertVariableForDispatch<T10>(ve10),
-                 ConvertVariableForDispatch<T11>(ve11),
-                 ConvertVariableForDispatch<T12>(ve12));
+                 TinScript::ConvertVariableForDispatch<T1>(ve1),
+                 TinScript::ConvertVariableForDispatch<T2>(ve2),
+                 TinScript::ConvertVariableForDispatch<T3>(ve3),
+                 TinScript::ConvertVariableForDispatch<T4>(ve4),
+                 TinScript::ConvertVariableForDispatch<T5>(ve5),
+                 TinScript::ConvertVariableForDispatch<T6>(ve6),
+                 TinScript::ConvertVariableForDispatch<T7>(ve7),
+                 TinScript::ConvertVariableForDispatch<T8>(ve8),
+                 TinScript::ConvertVariableForDispatch<T9>(ve9),
+                 TinScript::ConvertVariableForDispatch<T10>(ve10),
+                 TinScript::ConvertVariableForDispatch<T11>(ve11),
+                 TinScript::ConvertVariableForDispatch<T12>(ve12));
     }
 
     // -- dispatch method
@@ -3126,21 +3128,21 @@ public:
 
     // -- registration method
     virtual bool Register() {
-        CFunctionContext* fc = CreateContext();
+        TinScript::CFunctionContext* fc = CreateContext();
         bool success = true;
-        success = fc->AddParameter("__return", Hash("__return"), TYPE_void, 1, 0) && success;
-        success = fc->AddParameter("_p1", Hash("_p1"), GetRegisteredType(GetTypeID<T1>()), 1, GetTypeID<T1>()) && success;
-        success = fc->AddParameter("_p2", Hash("_p2"), GetRegisteredType(GetTypeID<T2>()), 1, GetTypeID<T2>()) && success;
-        success = fc->AddParameter("_p3", Hash("_p3"), GetRegisteredType(GetTypeID<T3>()), 1, GetTypeID<T3>()) && success;
-        success = fc->AddParameter("_p4", Hash("_p4"), GetRegisteredType(GetTypeID<T4>()), 1, GetTypeID<T4>()) && success;
-        success = fc->AddParameter("_p5", Hash("_p5"), GetRegisteredType(GetTypeID<T5>()), 1, GetTypeID<T5>()) && success;
-        success = fc->AddParameter("_p6", Hash("_p6"), GetRegisteredType(GetTypeID<T6>()), 1, GetTypeID<T6>()) && success;
-        success = fc->AddParameter("_p7", Hash("_p7"), GetRegisteredType(GetTypeID<T7>()), 1, GetTypeID<T7>()) && success;
-        success = fc->AddParameter("_p8", Hash("_p8"), GetRegisteredType(GetTypeID<T8>()), 1, GetTypeID<T8>()) && success;
-        success = fc->AddParameter("_p9", Hash("_p9"), GetRegisteredType(GetTypeID<T9>()), 1, GetTypeID<T9>()) && success;
-        success = fc->AddParameter("_p10", Hash("_p10"), GetRegisteredType(GetTypeID<T10>()), 1, GetTypeID<T10>()) && success;
-        success = fc->AddParameter("_p11", Hash("_p11"), GetRegisteredType(GetTypeID<T11>()), 1, GetTypeID<T11>()) && success;
-        success = fc->AddParameter("_p12", Hash("_p12"), GetRegisteredType(GetTypeID<T12>()), 1, GetTypeID<T12>()) && success;
+        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::TYPE_void, 1, 0) && success;
+        success = fc->AddParameter("_p1", TinScript::Hash("_p1"), TinScript::GetRegisteredType(TinScript::GetTypeID<T1>()), 1, TinScript::GetTypeID<T1>()) && success;
+        success = fc->AddParameter("_p2", TinScript::Hash("_p2"), TinScript::GetRegisteredType(TinScript::GetTypeID<T2>()), 1, TinScript::GetTypeID<T2>()) && success;
+        success = fc->AddParameter("_p3", TinScript::Hash("_p3"), TinScript::GetRegisteredType(TinScript::GetTypeID<T3>()), 1, TinScript::GetTypeID<T3>()) && success;
+        success = fc->AddParameter("_p4", TinScript::Hash("_p4"), TinScript::GetRegisteredType(TinScript::GetTypeID<T4>()), 1, TinScript::GetTypeID<T4>()) && success;
+        success = fc->AddParameter("_p5", TinScript::Hash("_p5"), TinScript::GetRegisteredType(TinScript::GetTypeID<T5>()), 1, TinScript::GetTypeID<T5>()) && success;
+        success = fc->AddParameter("_p6", TinScript::Hash("_p6"), TinScript::GetRegisteredType(TinScript::GetTypeID<T6>()), 1, TinScript::GetTypeID<T6>()) && success;
+        success = fc->AddParameter("_p7", TinScript::Hash("_p7"), TinScript::GetRegisteredType(TinScript::GetTypeID<T7>()), 1, TinScript::GetTypeID<T7>()) && success;
+        success = fc->AddParameter("_p8", TinScript::Hash("_p8"), TinScript::GetRegisteredType(TinScript::GetTypeID<T8>()), 1, TinScript::GetTypeID<T8>()) && success;
+        success = fc->AddParameter("_p9", TinScript::Hash("_p9"), TinScript::GetRegisteredType(TinScript::GetTypeID<T9>()), 1, TinScript::GetTypeID<T9>()) && success;
+        success = fc->AddParameter("_p10", TinScript::Hash("_p10"), TinScript::GetRegisteredType(TinScript::GetTypeID<T10>()), 1, TinScript::GetTypeID<T10>()) && success;
+        success = fc->AddParameter("_p11", TinScript::Hash("_p11"), TinScript::GetRegisteredType(TinScript::GetTypeID<T11>()), 1, TinScript::GetTypeID<T11>()) && success;
+        success = fc->AddParameter("_p12", TinScript::Hash("_p12"), TinScript::GetRegisteredType(TinScript::GetTypeID<T12>()), 1, TinScript::GetTypeID<T12>()) && success;
 
         return (success);
     }

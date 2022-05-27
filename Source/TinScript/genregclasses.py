@@ -86,7 +86,7 @@ def GenerateMacros(maxparamcount, outputfilename):
         regfuncstring = regfuncstring + ") \\\n";
         outputfile.write(regfuncstring);
         
-        regobjstring = "    static TinScript::CRegFunctionP%d" % paramcount + "<R";
+        regobjstring = "    static CRegFunctionP%d" % paramcount + "<R";
         i = 1;
         while (i <= paramcount):
             regobjstring = regobjstring + ", T%d" % i;
@@ -104,7 +104,7 @@ def GenerateMacros(maxparamcount, outputfilename):
         regfuncdefaults = regfuncdefaults + ", help_str) \\\n";
         outputfile.write(regfuncdefaults);
 
-        regfuncargsobj = "    static ::TinScript::CRegisterDefaultArgsP%d _reg_defaults_##scriptname(&_reg_##scriptname, r_name" % paramcount
+        regfuncargsobj = "    static CRegisterDefaultArgsP%d _reg_defaults_##scriptname(&_reg_##scriptname, r_name" % paramcount
         i = 1;
         while (i <= paramcount):
             regfuncargsobj = regfuncargsobj + ", p%d_name, p%d_value" % (i, i);
@@ -140,7 +140,7 @@ def GenerateMacros(maxparamcount, outputfilename):
         outputfile.write(wrapperstring);
         outputfile.write("    }    \\\n");
         
-        regobjstring = "    static TinScript::CRegMethodP%d" % paramcount + "<classname, R";
+        regobjstring = "    static CRegMethodP%d" % paramcount + "<classname, R";
         i = 1;
         while (i <= paramcount):
             regobjstring = regobjstring + ", T%d" % i;
@@ -157,7 +157,7 @@ def GenerateMacros(maxparamcount, outputfilename):
         regmethoddefaults = regmethoddefaults + ", help_str) \\\n";
         outputfile.write(regmethoddefaults);
 
-        regmethodargsobj = "    static ::TinScript::CRegisterDefaultArgsP%d _reg_defaults_##classname##_##scriptname(&_reg_##classname##_##scriptname, r_name" % paramcount
+        regmethodargsobj = "    static CRegisterDefaultArgsP%d _reg_defaults_##classname##_##scriptname(&_reg_##classname##_##scriptname, r_name" % paramcount
         i = 1;
         while (i <= paramcount):
             regmethodargsobj = regmethodargsobj + ", p%d_name, p%d_value" % (i, i);
@@ -188,9 +188,11 @@ def GenerateClasses(maxparamcount, outputfilename):
     outputfile.write("// ------------------------------------------------------------------------------------------------\n");
     outputfile.write("\n\n");
 
-    outputfile.write('#include "TinRegistration.h"\n');
+    outputfile.write('#pragma once\n\n');
+
     outputfile.write('#include "TinVariableEntry.h"\n');
     outputfile.write('#include "TinFunctionEntry.h"\n');
+    outputfile.write('#include "TinRegistration.h"\n');
 
     paramcount = 0;
     while (paramcount <= maxparamcount):
@@ -208,7 +210,7 @@ def GenerateClasses(maxparamcount, outputfilename):
         template_string = template_string + ">\n";
             
         outputfile.write(template_string);
-        outputfile.write("class CRegFunctionP%d : public CRegFunctionBase {\n" % paramcount);
+        outputfile.write("class CRegFunctionP%d : public TinScript::CRegFunctionBase {\n" % paramcount);
         outputfile.write("public:\n");
         outputfile.write("\n");
 
@@ -239,7 +241,7 @@ def GenerateClasses(maxparamcount, outputfilename):
         outputfile.write("    virtual void DispatchFunction(void*) {\n");
         i = 1;
         while (i <= paramcount):
-            outputfile.write("        CVariableEntry* ve%d = GetContext()->GetParameter(%d);\n" % (i, i));
+            outputfile.write("        TinScript::CVariableEntry* ve%d = GetContext()->GetParameter(%d);\n" % (i, i));
             i = i + 1;
             
         dispatch_string = "        Dispatch(";
@@ -250,7 +252,7 @@ def GenerateClasses(maxparamcount, outputfilename):
             while (i <= paramcount):
                 if (i > 1):
                     dispatch_string = dispatch_string + ",\n                 ";
-                dispatch_string = dispatch_string + "ConvertVariableForDispatch<T%d>(ve%d)" % (i, i);
+                dispatch_string = dispatch_string + "TinScript::ConvertVariableForDispatch<T%d>(ve%d)" % (i, i);
                 i = i + 1;
             dispatch_string = dispatch_string + ");\n";
         outputfile.write(dispatch_string);
@@ -278,20 +280,20 @@ def GenerateClasses(maxparamcount, outputfilename):
         functioncall = functioncall + ");\n";
         outputfile.write(functioncall);
         outputfile.write("        assert(GetContext()->GetParameter(0));\n");
-        outputfile.write("        CVariableEntry* returnval = GetContext()->GetParameter(0);\n");
-        outputfile.write("        returnval->SetValueAddr(NULL, convert_to_void_ptr<R>::Convert(r));\n");
+        outputfile.write("        TinScript::CVariableEntry* returnval = GetContext()->GetParameter(0);\n");
+        outputfile.write("        returnval->SetValueAddr(NULL, TinScript::convert_to_void_ptr<R>::Convert(r));\n");
         outputfile.write("        return (r);\n");
         outputfile.write("    }\n");
         outputfile.write("\n");
         
         outputfile.write("    // -- registration method\n");
         outputfile.write("    virtual bool Register() {\n");
-        outputfile.write("        CFunctionContext* fc = CreateContext();\n");
+        outputfile.write("        TinScript::CFunctionContext* fc = CreateContext();\n");
         outputfile.write("        bool success = true;\n");
-        outputfile.write("        success = fc->AddParameter(\"__return\", Hash(\"__return\"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>()) && success;\n");
+        outputfile.write("        success = fc->AddParameter(\"__return\", TinScript::Hash(\"__return\"), TinScript::GetRegisteredType(TinScript::GetTypeID<R>()), 1, TinScript::GetTypeID<R>()) && success;\n");
         i = 1;
         while (i <= paramcount):
-            outputfile.write("        success = fc->AddParameter(\"_p%d\", Hash(\"_p%d\"), GetRegisteredType(GetTypeID<T%d>()), 1, GetTypeID<T%d>()) && success;\n" % (i, i, i, i));
+            outputfile.write("        success = fc->AddParameter(\"_p%d\", TinScript::Hash(\"_p%d\"), TinScript::GetRegisteredType(TinScript::GetTypeID<T%d>()), 1, TinScript::GetTypeID<T%d>()) && success;\n" % (i, i, i, i));
             i = i + 1;
         outputfile.write("        return (success);\n");
         outputfile.write("    }\n");
@@ -319,7 +321,7 @@ def GenerateClasses(maxparamcount, outputfilename):
         while (i <= paramcount):
             classname_string = classname_string + ", T%d" % i;
             i = i + 1;
-        classname_string = classname_string + "> : public CRegFunctionBase {\n";
+        classname_string = classname_string + "> : public TinScript::CRegFunctionBase {\n";
         outputfile.write(classname_string);
         outputfile.write("public:\n");
         outputfile.write("\n");
@@ -351,7 +353,7 @@ def GenerateClasses(maxparamcount, outputfilename):
         outputfile.write("    virtual void DispatchFunction(void*) {\n");
         i = 1;
         while (i <= paramcount):
-            outputfile.write("        CVariableEntry* ve%d = GetContext()->GetParameter(%d);\n" % (i, i));
+            outputfile.write("        TinScript::CVariableEntry* ve%d = GetContext()->GetParameter(%d);\n" % (i, i));
             i = i + 1;
             
         dispatch_string = "        Dispatch(";
@@ -362,7 +364,7 @@ def GenerateClasses(maxparamcount, outputfilename):
             while (i <= paramcount):
                 if (i > 1):
                     dispatch_string = dispatch_string + ",\n                 ";
-                dispatch_string = dispatch_string + "ConvertVariableForDispatch<T%d>(ve%d)" % (i, i);
+                dispatch_string = dispatch_string + "TinScript::ConvertVariableForDispatch<T%d>(ve%d)" % (i, i);
                 i = i + 1;
             dispatch_string = dispatch_string + ");\n";
         outputfile.write(dispatch_string);
@@ -394,12 +396,12 @@ def GenerateClasses(maxparamcount, outputfilename):
         
         outputfile.write("    // -- registration method\n");
         outputfile.write("    virtual bool Register() {\n");
-        outputfile.write("        CFunctionContext* fc = CreateContext();\n");
+        outputfile.write("        TinScript::CFunctionContext* fc = CreateContext();\n");
         outputfile.write("        bool success = true;\n");
-        outputfile.write("        success = fc->AddParameter(\"__return\", Hash(\"__return\"), TYPE_void, 1, 0) && success;\n");
+        outputfile.write("        success = fc->AddParameter(\"__return\", TinScript::Hash(\"__return\"), TinScript::TYPE_void, 1, 0) && success;\n");
         i = 1;
         while (i <= paramcount):
-            outputfile.write("        success = fc->AddParameter(\"_p%d\", Hash(\"_p%d\"), GetRegisteredType(GetTypeID<T%d>()), 1, GetTypeID<T%d>()) && success;\n" % (i, i, i, i));
+            outputfile.write("        success = fc->AddParameter(\"_p%d\", TinScript::Hash(\"_p%d\"), TinScript::GetRegisteredType(TinScript::GetTypeID<T%d>()), 1, TinScript::GetTypeID<T%d>()) && success;\n" % (i, i, i, i));
             i = i + 1;
         outputfile.write("\n");
         outputfile.write("        return (success);\n");
@@ -421,7 +423,7 @@ def GenerateClasses(maxparamcount, outputfilename):
         template_string = template_string + ">\n";
         outputfile.write(template_string);
         
-        outputfile.write("class CRegMethodP%d : public CRegFunctionBase {\n" % paramcount);
+        outputfile.write("class CRegMethodP%d : public TinScript::CRegFunctionBase {\n" % paramcount);
         outputfile.write("public:\n");
         outputfile.write("\n");
 
@@ -450,7 +452,7 @@ def GenerateClasses(maxparamcount, outputfilename):
         outputfile.write("    virtual void DispatchFunction(void* objaddr) {\n");
         i = 1;
         while (i <= paramcount):
-            outputfile.write("        CVariableEntry* ve%d = GetContext()->GetParameter(%d);\n" % (i, i));
+            outputfile.write("        TinScript::CVariableEntry* ve%d = GetContext()->GetParameter(%d);\n" % (i, i));
             i = i + 1;
             
         dispatch_string = "        Dispatch(objaddr";
@@ -460,7 +462,7 @@ def GenerateClasses(maxparamcount, outputfilename):
             i = 1;
             while (i <= paramcount):
                 dispatch_string = dispatch_string + ",\n                 ";
-                dispatch_string = dispatch_string + "ConvertVariableForDispatch<T%d>(ve%d)" % (i, i);
+                dispatch_string = dispatch_string + "TinScript::ConvertVariableForDispatch<T%d>(ve%d)" % (i, i);
                 i = i + 1;
             dispatch_string = dispatch_string + ");\n";
         outputfile.write(dispatch_string);
@@ -485,20 +487,20 @@ def GenerateClasses(maxparamcount, outputfilename):
         functioncall = functioncall + ");\n";
         outputfile.write(functioncall);
         outputfile.write("        assert(GetContext()->GetParameter(0));\n");
-        outputfile.write("        CVariableEntry* returnval = GetContext()->GetParameter(0);\n");
-        outputfile.write("        returnval->SetValueAddr(NULL, convert_to_void_ptr<R>::Convert(r));\n");
+        outputfile.write("        TinScript::CVariableEntry* returnval = GetContext()->GetParameter(0);\n");
+        outputfile.write("        returnval->SetValueAddr(NULL, TinScript::convert_to_void_ptr<R>::Convert(r));\n");
         outputfile.write("        return (r);\n");
         outputfile.write("    }\n");
         outputfile.write("\n");
         
         outputfile.write("    // -- registration method\n");
         outputfile.write("    virtual bool Register() {\n");
-        outputfile.write("        CFunctionContext* fc = CreateContext();\n");
+        outputfile.write("        TinScript::CFunctionContext* fc = CreateContext();\n");
         outputfile.write("        bool success = true;\n");
-        outputfile.write("        success = fc->AddParameter(\"__return\", Hash(\"__return\"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>()) && success;\n");
+        outputfile.write("        success = fc->AddParameter(\"__return\", TinScript::Hash(\"__return\"), TinScript::GetRegisteredType(TinScript::GetTypeID<R>()), 1, TinScript::GetTypeID<R>()) && success;\n");
         i = 1;
         while (i <= paramcount):
-            outputfile.write("        success = fc->AddParameter(\"_p%d\", Hash(\"_p%d\"), GetRegisteredType(GetTypeID<T%d>()), 1, GetTypeID<T%d>()) && success;\n" % (i, i, i, i));
+            outputfile.write("        success = fc->AddParameter(\"_p%d\", TinScript::Hash(\"_p%d\"), TinScript::GetRegisteredType(TinScript::GetTypeID<T%d>()), 1, TinScript::GetTypeID<T%d>()) && success;\n" % (i, i, i, i));
             i = i + 1;
         outputfile.write("\n");
         outputfile.write("        return (success);\n");
@@ -525,7 +527,7 @@ def GenerateClasses(maxparamcount, outputfilename):
         while (i <= paramcount):
             classname_string = classname_string + ", T%d" % i;
             i = i + 1;
-        classname_string = classname_string + "> : public CRegFunctionBase {\n";
+        classname_string = classname_string + "> : public TinScript::CRegFunctionBase {\n";
         outputfile.write(classname_string);
         
         outputfile.write("public:\n");
@@ -556,7 +558,7 @@ def GenerateClasses(maxparamcount, outputfilename):
         outputfile.write("    virtual void DispatchFunction(void* objaddr) {\n");
         i = 1;
         while (i <= paramcount):
-            outputfile.write("        CVariableEntry* ve%d = GetContext()->GetParameter(%d);\n" % (i, i));
+            outputfile.write("        TinScript::CVariableEntry* ve%d = GetContext()->GetParameter(%d);\n" % (i, i));
             i = i + 1;
             
         dispatch_string = "        Dispatch(objaddr";
@@ -566,7 +568,7 @@ def GenerateClasses(maxparamcount, outputfilename):
             i = 1;
             while (i <= paramcount):
                 dispatch_string = dispatch_string + ",\n                 ";
-                dispatch_string = dispatch_string + "ConvertVariableForDispatch<T%d>(ve%d)" % (i, i);
+                dispatch_string = dispatch_string + "TinScript::ConvertVariableForDispatch<T%d>(ve%d)" % (i, i);
                 i = i + 1;
             dispatch_string = dispatch_string + ");\n";
         outputfile.write(dispatch_string);
@@ -595,12 +597,12 @@ def GenerateClasses(maxparamcount, outputfilename):
         
         outputfile.write("    // -- registration method\n");
         outputfile.write("    virtual bool Register() {\n");
-        outputfile.write("        CFunctionContext* fc = CreateContext();\n");
+        outputfile.write("        TinScript::CFunctionContext* fc = CreateContext();\n");
         outputfile.write("        bool success = true;\n");
-        outputfile.write("        success = fc->AddParameter(\"__return\", Hash(\"__return\"), TYPE_void, 1, 0) && success;\n");
+        outputfile.write("        success = fc->AddParameter(\"__return\", TinScript::Hash(\"__return\"), TinScript::TYPE_void, 1, 0) && success;\n");
         i = 1;
         while (i <= paramcount):
-            outputfile.write("        success = fc->AddParameter(\"_p%d\", Hash(\"_p%d\"), GetRegisteredType(GetTypeID<T%d>()), 1, GetTypeID<T%d>()) && success;\n" % (i, i, i, i));
+            outputfile.write("        success = fc->AddParameter(\"_p%d\", TinScript::Hash(\"_p%d\"), TinScript::GetRegisteredType(TinScript::GetTypeID<T%d>()), 1, TinScript::GetTypeID<T%d>()) && success;\n" % (i, i, i, i));
             i = i + 1;
         outputfile.write("\n");
         outputfile.write("        return (success);\n");
@@ -619,6 +621,7 @@ def GenerateClasses(maxparamcount, outputfilename):
 
 # -----------------------------------------------------------------------------
 def GenerateDefaultArgs(maxparamcount, outputfilename):    
+    print("GenerateDefaultArgs - Output: %s" % outputfilename);
     #open the output file
     outputfile = open(outputfilename, 'w');
 
@@ -630,9 +633,11 @@ def GenerateDefaultArgs(maxparamcount, outputfilename):
     outputfile.write("// ------------------------------------------------------------------------------------------------\n");
     outputfile.write("\n\n");
 
-    outputfile.write('#include "TinRegistration.h"\n');
+    outputfile.write('#pragma once\n\n');
+
     outputfile.write('#include "TinVariableEntry.h"\n');
     outputfile.write('#include "TinFunctionEntry.h"\n');
+    outputfile.write('#include "TinRegistration.h"\n');
 
     paramcount = 0;
     while (paramcount <= maxparamcount):
@@ -653,7 +658,7 @@ def GenerateDefaultArgs(maxparamcount, outputfilename):
             template_string = template_string + ">\n";
             outputfile.write(template_string);
 
-        outputfile.write("class CRegisterDefaultArgsP%d : public CRegDefaultArgValues {\n" % paramcount);
+        outputfile.write("class CRegisterDefaultArgsP%d : public TinScript::CRegDefaultArgValues {\n" % paramcount);
         outputfile.write("public:\n");
         outputfile.write("\n");
         outputfile.write("    CRegisterDefaultArgsP%d(::TinScript::CRegFunctionBase* reg_object, const char* _r_name,\n" % paramcount);
@@ -703,24 +708,26 @@ def GenerateVariadicClasses(maxparamcount, outputfilename):
     outputfile.write("// ------------------------------------------------------------------------------------------------\n");
     outputfile.write("\n\n");
 
+    outputfile.write('#pragma once\n\n');
+
     outputfile.write('#define REGISTER_FUNCTION(name, funcptr) \\\n');
-    outputfile.write('    static const int gArgCount_##name = ::TinScript::SignatureArgCount<decltype(funcptr)>::arg_count; \\\n');
-    outputfile.write('    static ::TinScript::CRegisterFunction<gArgCount_##name, decltype(funcptr)> _reg_##name(#name, funcptr);\n');
+    outputfile.write('    static const int gArgCount_##name = SignatureArgCount<decltype(funcptr)>::arg_count; \\\n');
+    outputfile.write('    static CRegisterFunction<gArgCount_##name, decltype(funcptr)> _reg_##name(#name, funcptr);\n');
     outputfile.write("\n");
 
     outputfile.write("#if !PLATFORM_VS_2019\n");
     outputfile.write('    #define REGISTER_METHOD(classname, name, methodptr) \\\n');
-    outputfile.write('        static const int gArgCount_##classname##_##name = ::TinScript::SignatureArgCount<decltype(std::declval<classname>().methodptr)>::arg_count; \\\n');
-    outputfile.write('        static ::TinScript::CRegisterMethod<gArgCount_##classname##_##name, classname, decltype(std::declval<classname>().methodptr)> _reg_##classname##_##name(#name, &classname::methodptr);\n');
+    outputfile.write('        static const int gArgCount_##classname##_##name = SignatureArgCount<decltype(std::declval<classname>().methodptr)>::arg_count; \\\n');
+    outputfile.write('        static CRegisterMethod<gArgCount_##classname##_##name, classname, decltype(std::declval<classname>().methodptr)> _reg_##classname##_##name(#name, &classname::methodptr);\n');
     outputfile.write("#else\n");
     outputfile.write('    #define REGISTER_METHOD(classname, name, methodptr) \\\n');
-    outputfile.write('        static const int gArgCount_##classname##_##name = ::TinScript::MethodArgCount<decltype(&classname::methodptr)>::arg_count; \\\n');
-    outputfile.write('        static ::TinScript::CRegisterMethod<gArgCount_##classname##_##name, classname, decltype(&classname::methodptr)> _reg_##classname##_##name(#name, &classname::methodptr);\n');
+    outputfile.write('        static const int gArgCount_##classname##_##name = MethodArgCount<decltype(&classname::methodptr)>::arg_count; \\\n');
+    outputfile.write('        static CRegisterMethod<gArgCount_##classname##_##name, classname, decltype(&classname::methodptr)> _reg_##classname##_##name(#name, &classname::methodptr);\n');
     outputfile.write("#endif\n");
 
     outputfile.write('#define REGISTER_CLASS_FUNCTION(classname, name, methodptr) \\\n');
-    outputfile.write('    static const int gArgCount_##classname##_##name = ::TinScript::SignatureArgCount<decltype(std::declval<classname>().methodptr)>::arg_count; \\\n');
-    outputfile.write('    static ::TinScript::CRegisterFunction<gArgCount_##classname##_##name, decltype(std::declval<classname>().methodptr)> _reg_##classname##_##name(#name, &classname::methodptr); \\\n');
+    outputfile.write('    static const int gArgCount_##classname##_##name = SignatureArgCount<decltype(std::declval<classname>().methodptr)>::arg_count; \\\n');
+    outputfile.write('    static CRegisterFunction<gArgCount_##classname##_##name, decltype(std::declval<classname>().methodptr)> _reg_##classname##_##name(#name, &classname::methodptr); \\\n');
     outputfile.write("\n");
 
     outputfile.write('template<typename S>\n');
@@ -759,7 +766,7 @@ def GenerateVariadicClasses(maxparamcount, outputfilename):
 
         outputfile.write("// -- class CRegisterFunction<%d, R(Args...)> ----------------------------------------\n\n" % paramcount);
         outputfile.write("template<typename R, typename... Args>\n");
-        outputfile.write("class CRegisterFunction<%d, R(Args...)> : public CRegFunctionBase\n{\n" % paramcount);
+        outputfile.write("class CRegisterFunction<%d, R(Args...)> : public TinScript::CRegFunctionBase\n{\n" % paramcount);
         outputfile.write("public:\n");
         outputfile.write("\n");
 
@@ -781,21 +788,21 @@ def GenerateVariadicClasses(maxparamcount, outputfilename):
 
         i = 1;
         while (i <= paramcount):
-            outputfile.write("        using T%d = std::tuple_element<%d, argument_types>::type;\n" % (i, i - 1));
+            outputfile.write("        using T%d = typename std::tuple_element<%d, argument_types>::type;\n" % (i, i - 1));
             i = i + 1;
         if (paramcount > 0):
             outputfile.write("\n");
 
         i = 1;
         while (i <= paramcount):
-            outputfile.write("        CVariableEntry* ve%d = GetContext()->GetParameter(%d);\n" % (i, i));
+            outputfile.write("        TinScript::CVariableEntry* ve%d = GetContext()->GetParameter(%d);\n" % (i, i));
             i = i + 1;
         if (paramcount > 0):
             outputfile.write("\n");
 
         i = 1;
         while (i <= paramcount):
-            outputfile.write("        T%d p%d = ConvertVariableForDispatch<T%d>(ve%d);\n" % (i, i, i, i));
+            outputfile.write("        T%d p%d = TinScript::ConvertVariableForDispatch<T%d>(ve%d);\n" % (i, i, i, i));
             i = i + 1;
         if (paramcount > 0):
             outputfile.write("\n");
@@ -828,7 +835,7 @@ def GenerateVariadicClasses(maxparamcount, outputfilename):
 
         i = 1;
         while (i <= paramcount):
-            outputfile.write("        using T%d = std::tuple_element<%d, argument_types>::type;\n" % (i, i - 1));
+            outputfile.write("        using T%d = typename std::tuple_element<%d, argument_types>::type;\n" % (i, i - 1));
             i = i + 1;
         if (paramcount > 0):
             outputfile.write("\n");
@@ -852,8 +859,8 @@ def GenerateVariadicClasses(maxparamcount, outputfilename):
         outputfile.write("\n");
 
         outputfile.write("        assert(GetContext()->GetParameter(0));\n");
-        outputfile.write("        CVariableEntry* returnval = GetContext()->GetParameter(0);\n");
-        outputfile.write("        returnval->SetValueAddr(NULL, convert_to_void_ptr<R>::Convert(r));\n");
+        outputfile.write("        TinScript::CVariableEntry* returnval = GetContext()->GetParameter(0);\n");
+        outputfile.write("        returnval->SetValueAddr(NULL, TinScript::convert_to_void_ptr<R>::Convert(r));\n");
         outputfile.write("        return (r);\n");
         outputfile.write("    }\n");
         outputfile.write("\n");
@@ -863,17 +870,17 @@ def GenerateVariadicClasses(maxparamcount, outputfilename):
 
         i = 1;
         while (i <= paramcount):
-            outputfile.write("        using T%d = std::tuple_element<%d, argument_types>::type;\n" % (i, i - 1));
+            outputfile.write("        using T%d = typename std::tuple_element<%d, argument_types>::type;\n" % (i, i - 1));
             i = i + 1;
         if (paramcount > 0):
             outputfile.write("\n");
 
-        outputfile.write("        CFunctionContext* fc = CreateContext();\n");
+        outputfile.write("        TinScript::CFunctionContext* fc = CreateContext();\n");
         outputfile.write("        bool success = true;\n");
-        outputfile.write("        success = fc->AddParameter(\"__return\", Hash(\"__return\"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>()) && success;\n");
+        outputfile.write("        success = fc->AddParameter(\"__return\", TinScript::Hash(\"__return\"), TinScript::GetRegisteredType(TinScript::GetTypeID<R>()), 1, TinScript::GetTypeID<R>()) && success;\n");
         i = 1;
         while (i <= paramcount):
-            outputfile.write("        success = fc->AddParameter(\"_p%d\", Hash(\"_p%d\"), GetRegisteredType(GetTypeID<T%d>()), 1, GetTypeID<T%d>()) && success;\n" % (i, i, i, i));
+            outputfile.write("        success = fc->AddParameter(\"_p%d\", TinScript::Hash(\"_p%d\"), TinScript::GetRegisteredType(TinScript::GetTypeID<T%d>()), 1, TinScript::GetTypeID<T%d>()) && success;\n" % (i, i, i, i));
             i = i + 1;
         outputfile.write("\n");
         outputfile.write("        return (success);\n");
@@ -888,7 +895,7 @@ def GenerateVariadicClasses(maxparamcount, outputfilename):
 
         outputfile.write("// -- class CRegisterFunction<%d, void(Args...)> ----------------------------------------\n\n" % paramcount);
         outputfile.write("template<typename... Args>\n");
-        outputfile.write("class CRegisterFunction<%d, void(Args...)> : public CRegFunctionBase\n{\n" % paramcount);
+        outputfile.write("class CRegisterFunction<%d, void(Args...)> : public TinScript::CRegFunctionBase\n{\n" % paramcount);
         outputfile.write("public:\n");
         outputfile.write("\n");
 
@@ -907,21 +914,21 @@ def GenerateVariadicClasses(maxparamcount, outputfilename):
 
         i = 1;
         while (i <= paramcount):
-            outputfile.write("        using T%d = std::tuple_element<%d, argument_types>::type;\n" % (i, i - 1));
+            outputfile.write("        using T%d = typename std::tuple_element<%d, argument_types>::type;\n" % (i, i - 1));
             i = i + 1;
         if (paramcount > 0):
             outputfile.write("\n");
 
         i = 1;
         while (i <= paramcount):
-            outputfile.write("        CVariableEntry* ve%d = GetContext()->GetParameter(%d);\n" % (i, i));
+            outputfile.write("        TinScript::CVariableEntry* ve%d = GetContext()->GetParameter(%d);\n" % (i, i));
             i = i + 1;
         if (paramcount > 0):
             outputfile.write("\n");
 
         i = 1;
         while (i <= paramcount):
-            outputfile.write("        T%d p%d = ConvertVariableForDispatch<T%d>(ve%d);\n" % (i, i, i, i));
+            outputfile.write("        T%d p%d = TinScript::ConvertVariableForDispatch<T%d>(ve%d);\n" % (i, i, i, i));
             i = i + 1;
         if (paramcount > 0):
             outputfile.write("\n");
@@ -954,7 +961,7 @@ def GenerateVariadicClasses(maxparamcount, outputfilename):
 
         i = 1;
         while (i <= paramcount):
-            outputfile.write("        using T%d = std::tuple_element<%d, argument_types>::type;\n" % (i, i - 1));
+            outputfile.write("        using T%d = typename std::tuple_element<%d, argument_types>::type;\n" % (i, i - 1));
             i = i + 1;
         if (paramcount > 0):
             outputfile.write("\n");
@@ -985,17 +992,17 @@ def GenerateVariadicClasses(maxparamcount, outputfilename):
 
         i = 1;
         while (i <= paramcount):
-            outputfile.write("        using T%d = std::tuple_element<%d, argument_types>::type;\n" % (i, i - 1));
+            outputfile.write("        using T%d = typename std::tuple_element<%d, argument_types>::type;\n" % (i, i - 1));
             i = i + 1;
         if (paramcount > 0):
             outputfile.write("\n");
 
-        outputfile.write("        CFunctionContext* fc = CreateContext();\n");
+        outputfile.write("        TinScript::CFunctionContext* fc = CreateContext();\n");
         outputfile.write("        bool success = true;\n");
-        outputfile.write("        success = fc->AddParameter(\"__return\", Hash(\"__return\"), TYPE_void, 1, 0) && success;\n");
+        outputfile.write("        success = fc->AddParameter(\"__return\", TinScript::Hash(\"__return\"), TinScript::TYPE_void, 1, 0) && success;\n");
         i = 1;
         while (i <= paramcount):
-            outputfile.write("        success = fc->AddParameter(\"_p%d\", Hash(\"_p%d\"), GetRegisteredType(GetTypeID<T%d>()), 1, GetTypeID<T%d>()) && success;\n" % (i, i, i, i));
+            outputfile.write("        success = fc->AddParameter(\"_p%d\", TinScript::Hash(\"_p%d\"), TinScript::GetRegisteredType(TinScript::GetTypeID<T%d>()), 1, TinScript::GetTypeID<T%d>()) && success;\n" % (i, i, i, i));
             i = i + 1;
         if (paramcount > 0):
             outputfile.write("\n");
@@ -1015,9 +1022,9 @@ def GenerateVariadicClasses(maxparamcount, outputfilename):
         outputfile.write("// -- class CRegisterMethod<%d, R(Args...)> ----------------------------------------\n\n" % paramcount);
         outputfile.write('template<typename C, typename R, typename... Args>\n');
         outputfile.write('#if !PLATFORM_VS_2019\n');
-        outputfile.write('class CRegisterMethod<%d, C, R(Args...)> : public CRegFunctionBase\n{\n' % paramcount);
+        outputfile.write('class CRegisterMethod<%d, C, R(Args...)> : public TinScript::CRegFunctionBase\n{\n' % paramcount);
         outputfile.write('#else\n');
-        outputfile.write('class CRegisterMethod<%d, C, R(C::*)(Args...)> : public CRegFunctionBase\n{\n' % paramcount);
+        outputfile.write('class CRegisterMethod<%d, C, R(C::*)(Args...)> : public TinScript::CRegFunctionBase\n{\n' % paramcount);
         outputfile.write('#endif\n');
         outputfile.write('public:\n');
         outputfile.write('\n');
@@ -1037,21 +1044,21 @@ def GenerateVariadicClasses(maxparamcount, outputfilename):
 
         i = 1;
         while (i <= paramcount):
-            outputfile.write("        using T%d = std::tuple_element<%d, argument_types>::type;\n" % (i, i - 1));
+            outputfile.write("        using T%d = typename std::tuple_element<%d, argument_types>::type;\n" % (i, i - 1));
             i = i + 1;
         if (paramcount > 0):
             outputfile.write("\n");
 
         i = 1;
         while (i <= paramcount):
-            outputfile.write("        CVariableEntry* ve%d = GetContext()->GetParameter(%d);\n" % (i, i));
+            outputfile.write("        TinScript::CVariableEntry* ve%d = GetContext()->GetParameter(%d);\n" % (i, i));
             i = i + 1;
         if (paramcount > 0):
             outputfile.write("\n");
 
         i = 1;
         while (i <= paramcount):
-            outputfile.write("        T%d p%d = ConvertVariableForDispatch<T%d>(ve%d);\n" % (i, i, i, i));
+            outputfile.write("        T%d p%d = TinScript::ConvertVariableForDispatch<T%d>(ve%d);\n" % (i, i, i, i));
             i = i + 1;
 
         dispatch_string = "        Dispatch(objaddr";
@@ -1077,7 +1084,7 @@ def GenerateVariadicClasses(maxparamcount, outputfilename):
 
         i = 1;
         while (i <= paramcount):
-            outputfile.write("        using T%d = std::tuple_element<%d, argument_types>::type;\n" % (i, i - 1));
+            outputfile.write("        using T%d = typename std::tuple_element<%d, argument_types>::type;\n" % (i, i - 1));
             i = i + 1;
         if (paramcount > 0):
             outputfile.write("\n");
@@ -1104,7 +1111,7 @@ def GenerateVariadicClasses(maxparamcount, outputfilename):
 
         outputfile.write('        assert(GetContext()->GetParameter(0));\n');
         outputfile.write('        TinScript::CVariableEntry* returnval = this->GetContext()->GetParameter(0);\n');
-        outputfile.write('        returnval->SetValueAddr(NULL, convert_to_void_ptr<R>::Convert(r));\n');
+        outputfile.write('        returnval->SetValueAddr(NULL, TinScript::convert_to_void_ptr<R>::Convert(r));\n');
         outputfile.write('        return (r);\n');
         outputfile.write('    }\n');
         outputfile.write('\n');
@@ -1115,18 +1122,18 @@ def GenerateVariadicClasses(maxparamcount, outputfilename):
 
         i = 1;
         while (i <= paramcount):
-            outputfile.write("        using T%d = std::tuple_element<%d, argument_types>::type;\n" % (i, i - 1));
+            outputfile.write("        using T%d = typename std::tuple_element<%d, argument_types>::type;\n" % (i, i - 1));
             i = i + 1;
         if (paramcount > 0):
             outputfile.write("\n");
 
-        outputfile.write("        CFunctionContext* fc = CreateContext();\n");
+        outputfile.write("        TinScript::CFunctionContext* fc = CreateContext();\n");
         outputfile.write("        bool success = true;\n");
-        outputfile.write('        success = fc->AddParameter("__return", Hash("__return"), GetRegisteredType(GetTypeID<R>()), 1, GetTypeID<R>()) && success;\n');
+        outputfile.write('        success = fc->AddParameter("__return", TinScript::Hash("__return"), TinScript::GetRegisteredType(TinScript::GetTypeID<R>()), 1, TinScript::GetTypeID<R>()) && success;\n');
 
         i = 1;
         while (i <= paramcount):
-            outputfile.write('        success = fc->AddParameter("_p%d", Hash("_p%d"), GetRegisteredType(GetTypeID<T%d>()), 1, GetTypeID<T%d>()) && success;\n' % (i, i, i, i));
+            outputfile.write('        success = fc->AddParameter("_p%d", TinScript::Hash("_p%d"), TinScript::GetRegisteredType(TinScript::GetTypeID<T%d>()), 1, TinScript::GetTypeID<T%d>()) && success;\n' % (i, i, i, i));
             i = i + 1;
         if (paramcount > 0):
             outputfile.write("\n");
@@ -1144,9 +1151,9 @@ def GenerateVariadicClasses(maxparamcount, outputfilename):
         outputfile.write("// -- class CRegisterMethod<%d, void(Args...)> ----------------------------------------\n\n" % paramcount);
         outputfile.write('template<typename C, typename... Args>\n');
         outputfile.write('#if !PLATFORM_VS_2019\n');
-        outputfile.write('class CRegisterMethod<%d, C, void(Args...)> : public CRegFunctionBase\n{\n' % paramcount);
+        outputfile.write('class CRegisterMethod<%d, C, void(Args...)> : public TinScript::CRegFunctionBase\n{\n' % paramcount);
         outputfile.write('#else\n');
-        outputfile.write('class CRegisterMethod<%d, C, void(C::*)(Args...)> : public CRegFunctionBase\n{\n' % paramcount);
+        outputfile.write('class CRegisterMethod<%d, C, void(C::*)(Args...)> : public TinScript::CRegFunctionBase\n{\n' % paramcount);
         outputfile.write('#endif\n');
         outputfile.write('public:\n');
         outputfile.write('\n');
@@ -1166,21 +1173,21 @@ def GenerateVariadicClasses(maxparamcount, outputfilename):
 
         i = 1;
         while (i <= paramcount):
-            outputfile.write("        using T%d = std::tuple_element<%d, argument_types>::type;\n" % (i, i - 1));
+            outputfile.write("        using T%d = typename std::tuple_element<%d, argument_types>::type;\n" % (i, i - 1));
             i = i + 1;
         if (paramcount > 0):
             outputfile.write("\n");
 
         i = 1;
         while (i <= paramcount):
-            outputfile.write("        CVariableEntry* ve%d = GetContext()->GetParameter(%d);\n" % (i, i));
+            outputfile.write("        TinScript::CVariableEntry* ve%d = GetContext()->GetParameter(%d);\n" % (i, i));
             i = i + 1;
         if (paramcount > 0):
             outputfile.write("\n");
 
         i = 1;
         while (i <= paramcount):
-            outputfile.write("        T%d p%d = ConvertVariableForDispatch<T%d>(ve%d);\n" % (i, i, i, i));
+            outputfile.write("        T%d p%d = TinScript::ConvertVariableForDispatch<T%d>(ve%d);\n" % (i, i, i, i));
             i = i + 1;
         if (paramcount > 0):
             outputfile.write("\n");
@@ -1207,7 +1214,7 @@ def GenerateVariadicClasses(maxparamcount, outputfilename):
 
         i = 1;
         while (i <= paramcount):
-            outputfile.write("        using T%d = std::tuple_element<%d, argument_types>::type;\n" % (i, i - 1));
+            outputfile.write("        using T%d = typename std::tuple_element<%d, argument_types>::type;\n" % (i, i - 1));
             i = i + 1;
         if (paramcount > 0):
             outputfile.write("\n");
@@ -1240,19 +1247,19 @@ def GenerateVariadicClasses(maxparamcount, outputfilename):
 
         i = 1;
         while (i <= paramcount):
-            outputfile.write("        using T%d = std::tuple_element<%d, argument_types>::type;\n" % (i, i - 1));
+            outputfile.write("        using T%d = typename std::tuple_element<%d, argument_types>::type;\n" % (i, i - 1));
             i = i + 1;
         if (paramcount > 0):
             outputfile.write("\n");
 
         outputfile.write('\n');
-        outputfile.write("        CFunctionContext* fc = CreateContext();\n");
+        outputfile.write("        TinScript::CFunctionContext* fc = CreateContext();\n");
         outputfile.write("        bool success = true;\n");
-        outputfile.write("        success = fc->AddParameter(\"__return\", Hash(\"__return\"), TYPE_void, 1, 0) && success;\n");
+        outputfile.write("        success = fc->AddParameter(\"__return\", TinScript::Hash(\"__return\"), TinScript::TYPE_void, 1, 0) && success;\n");
 
         i = 1;
         while (i <= paramcount):
-            outputfile.write('        success = fc->AddParameter("_p%d", Hash("_p%d"), GetRegisteredType(GetTypeID<T%d>()), 1, GetTypeID<T%d>()) && success;\n' % (i, i, i, i));
+            outputfile.write('        success = fc->AddParameter("_p%d", TinScript::Hash("_p%d"), TinScript::GetRegisteredType(TinScript::GetTypeID<T%d>()), 1, TinScript::GetTypeID<T%d>()) && success;\n' % (i, i, i, i));
             i = i + 1;
         if (paramcount > 0):
             outputfile.write("\n");
@@ -1290,6 +1297,7 @@ def GenerateExecs(maxparamcount, outputfilename):
     outputfile.write("#define __REGISTRATIONEXECS_H\n\n");
 
     outputfile.write('#include "TinVariableEntry.h"\n');
+    outputfile.write('#include "TinFunctionEntry.h"\n');
     outputfile.write('#include "TinExecute.h"\n\n');
 
     outputfile.write("namespace TinScript\n");
@@ -1312,7 +1320,7 @@ def GenerateExecs(maxparamcount, outputfilename):
     outputfile.write("        return false;\n");
     outputfile.write("    }\n\n");
 
-    outputfile.write("    CFunctionEntry* fe = oe->GetFunctionEntry(0, method_hash);\n");
+    outputfile.write("    TinScript::CFunctionEntry* fe = oe->GetFunctionEntry(0, method_hash);\n");
     outputfile.write("    out_param_count = fe && fe->GetContext() ? fe->GetContext()->GetParameterCount() : 0;\n");
     outputfile.write("    return (fe != nullptr);\n");
     outputfile.write("}\n\n");
@@ -1334,7 +1342,7 @@ def GenerateExecs(maxparamcount, outputfilename):
     outputfile.write("        return false;\n");
     outputfile.write("    }\n\n");
 
-    outputfile.write("    CFunctionEntry* fe = oe->GetFunctionEntry(0, method_hash);\n");
+    outputfile.write("    TinScript::CFunctionEntry* fe = oe->GetFunctionEntry(0, method_hash);\n");
     outputfile.write("    out_param_count = fe && fe->GetContext() ? fe->GetContext()->GetParameterCount() : 0;\n");
     outputfile.write("    return (fe != nullptr);\n");
     outputfile.write("}\n\n");
@@ -1342,6 +1350,90 @@ def GenerateExecs(maxparamcount, outputfilename):
     paramcount = 0;
     while (paramcount <= maxparamcount):
         outputfile.write("\n\n// -- Parameter count: %d\n" % paramcount);
+
+        # -- the actual implementation
+        template_string = "template<typename R";
+        i = 1;
+        while (i <= paramcount):
+            template_string = template_string + ", typename T%d" % i;
+            i = i + 1;
+        template_string = template_string + ">\n";
+        outputfile.write(template_string);
+
+        function_string = "inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash, uint32 func_hash"
+        i = 1;
+        while (i <= paramcount):
+            function_string = function_string + ", T%d p%d" % (i, i);
+            i = i + 1;
+        function_string = function_string + ")\n";
+        outputfile.write(function_string);
+        outputfile.write("{\n");
+
+        outputfile.write("    CScriptContext* script_context = TinScript::GetContext();\n");
+        outputfile.write("    if (!script_context->GetGlobalNamespace())\n");
+        outputfile.write("        return false;\n\n");
+
+        outputfile.write("    // -- get the object, if one was required\n");
+        outputfile.write("    CObjectEntry* oe = object_id > 0 ? script_context->FindObjectEntry(object_id) : NULL;\n");
+        outputfile.write("    if (!oe && object_id > 0)\n");
+        outputfile.write("    {\n");
+        outputfile.write('        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - object %d not found\\n", object_id);\n');
+        outputfile.write("        return false;\n");
+        outputfile.write("    }\n\n");
+
+        outputfile.write("    TinScript::CFunctionEntry* fe = oe ? oe->GetFunctionEntry(ns_hash, func_hash)\n");
+        outputfile.write("                            : script_context->GetGlobalNamespace()->GetFuncTable()->FindItem(func_hash);\n");
+        outputfile.write("    TinScript::CVariableEntry* return_ve = fe ? fe->GetContext()->GetParameter(0) : NULL;\n");
+        outputfile.write("    if (!fe || !return_ve)\n");
+        outputfile.write("    {\n");
+        outputfile.write('        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() not found\\n", UnHash(func_hash));\n');
+        outputfile.write("        return false;\n");
+        outputfile.write("    }\n\n");
+
+        outputfile.write("    // -- see if we can recognize an appropriate type\n");
+        outputfile.write("    eVarType returntype = TinScript::GetRegisteredType(TinScript::GetTypeID<R>());\n");
+        outputfile.write("    if (returntype == TYPE_NULL)\n");
+        outputfile.write("    {\n");
+        outputfile.write('        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - invalid return type (use an int32 if void)\\n");\n');
+        outputfile.write("        return false;\n");
+        outputfile.write("    }\n\n");
+        i = 1;
+        while (i <= paramcount):
+            outputfile.write("    TinScript::CVariableEntry* ve_p%d = fe->GetContext()->GetParameter(%d);\n" % (i, i));
+            outputfile.write("    if (ve_p%d == nullptr)\n" % i);
+            outputfile.write("    {\n");
+            outputfile.write('        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());\n');
+            outputfile.write("        return (false);\n");
+            outputfile.write("    }\n\n");
+            outputfile.write("    void* p%d_convert_addr = NULL;\n" % i);
+            outputfile.write("    if (TinScript::GetRegisteredType(TinScript::GetTypeID<T%d>()) == TYPE_string)\n" % i);
+            outputfile.write("    {\n");
+            outputfile.write("        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32\n");
+            outputfile.write("        void** p%d_ptr_ptr = (void**)(&p%d);\n" % (i, i));
+            outputfile.write("        void* p%d_ptr = (void*)(*p%d_ptr_ptr);\n" % (i, i));
+            outputfile.write("        p%d_convert_addr = TypeConvert(script_context, TYPE_string, p%d_ptr, ve_p%d->GetType());\n" % (i, i, i));
+            outputfile.write("    }\n");
+            outputfile.write("    else\n");
+            outputfile.write("        p%d_convert_addr = TypeConvert(script_context, TinScript::GetRegisteredType(TinScript::GetTypeID<T%d>()), (void*)&p%d, ve_p%d->GetType());\n" % (i, i, i, i));
+            outputfile.write("    if (!p%d_convert_addr)\n" % i);
+            outputfile.write("    {\n");
+            outputfile.write('        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %%s() unable to convert parameter %d\\n", UnHash(func_hash));\n' % i);
+            outputfile.write("        return false;\n");
+            outputfile.write("    }\n\n");
+            outputfile.write("    ve_p%d->SetValueAddr(NULL, p%d_convert_addr);\n\n" % (i, i));
+            i = i + 1;
+
+        outputfile.write("    // -- execute the function\n");
+        outputfile.write("    if (!ExecuteScheduledFunction(GetContext(), object_id, ns_hash, func_hash, fe->GetContext()))\n");
+        outputfile.write("    {\n");
+        outputfile.write('        TinPrint(script_context, "Error - unable to exec function %s()\\n", UnHash(func_hash));\n');
+        outputfile.write("        return false;\n");
+        outputfile.write("    }\n\n");
+
+        outputfile.write("    // -- return true if we're able to convert to the return type requested\n");
+        outputfile.write("    return (ReturnExecfResult(script_context, return_value));\n");
+        outputfile.write("}\n\n");
+
 
         # -- function wrapper, given the unhashed function name
         template_string = "template<typename R";
@@ -1364,7 +1456,7 @@ def GenerateExecs(maxparamcount, outputfilename):
         outputfile.write("    if (!script_context->GetGlobalNamespace() || !func_name || !func_name[0])\n");
         outputfile.write("        return false;\n\n");
 
-        call_string = "    return (ExecFunctionImpl<R>(return_value, 0, 0, Hash(func_name)"
+        call_string = "    return (ExecFunctionImpl<R>(return_value, 0, 0, TinScript::Hash(func_name)"
         i = 1;
         while (i <= paramcount):
             call_string = call_string + ", p%d" % i;
@@ -1428,7 +1520,7 @@ def GenerateExecs(maxparamcount, outputfilename):
         outputfile.write('        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - object not registered: 0x%x\\n", kPointerToUInt32(obj_addr));\n');
         outputfile.write("        return false;\n");
         outputfile.write("    }\n\n");
-        call_string = "    return (ExecFunctionImpl<R>(return_value, object_id, 0, Hash(method_name)"
+        call_string = "    return (ExecFunctionImpl<R>(return_value, object_id, 0, TinScript::Hash(method_name)"
         i = 1;
         while (i <= paramcount):
             call_string = call_string + ", p%d" % i;
@@ -1518,7 +1610,7 @@ def GenerateExecs(maxparamcount, outputfilename):
         outputfile.write("    CScriptContext* script_context = TinScript::GetContext();\n");
         outputfile.write("    if (!script_context->GetGlobalNamespace() || !method_name || !method_name[0])\n");
         outputfile.write("        return false;\n\n");
-        call_string = "    return (ExecFunctionImpl<R>(return_value, object_id, 0, Hash(method_name)"
+        call_string = "    return (ExecFunctionImpl<R>(return_value, object_id, 0, TinScript::Hash(method_name)"
         i = 1;
         while (i <= paramcount):
             call_string = call_string + ", p%d" % i;
@@ -1526,90 +1618,6 @@ def GenerateExecs(maxparamcount, outputfilename):
         call_string = call_string + "));\n";
         outputfile.write(call_string);
         outputfile.write("}\n\n");
-
-        # -- the actual implmenentation
-        template_string = "template<typename R";
-        i = 1;
-        while (i <= paramcount):
-            template_string = template_string + ", typename T%d" % i;
-            i = i + 1;
-        template_string = template_string + ">\n";
-        outputfile.write(template_string);
-
-        function_string = "inline bool8 ExecFunctionImpl(R& return_value, uint32 object_id, uint32 ns_hash, uint32 func_hash"
-        i = 1;
-        while (i <= paramcount):
-            function_string = function_string + ", T%d p%d" % (i, i);
-            i = i + 1;
-        function_string = function_string + ")\n";
-        outputfile.write(function_string);
-        outputfile.write("{\n");
-
-        outputfile.write("    CScriptContext* script_context = TinScript::GetContext();\n");
-        outputfile.write("    if (!script_context->GetGlobalNamespace())\n");
-        outputfile.write("        return false;\n\n");
-
-        outputfile.write("    // -- get the object, if one was required\n");
-        outputfile.write("    CObjectEntry* oe = object_id > 0 ? script_context->FindObjectEntry(object_id) : NULL;\n");
-        outputfile.write("    if (!oe && object_id > 0)\n");
-        outputfile.write("    {\n");
-        outputfile.write('        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - object %d not found\\n", object_id);\n');
-        outputfile.write("        return false;\n");
-        outputfile.write("    }\n\n");
-
-        outputfile.write("    CFunctionEntry* fe = oe ? oe->GetFunctionEntry(ns_hash, func_hash)\n");
-        outputfile.write("                            : script_context->GetGlobalNamespace()->GetFuncTable()->FindItem(func_hash);\n");
-        outputfile.write("    CVariableEntry* return_ve = fe ? fe->GetContext()->GetParameter(0) : NULL;\n");
-        outputfile.write("    if (!fe || !return_ve)\n");
-        outputfile.write("    {\n");
-        outputfile.write('        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() not found\\n", UnHash(func_hash));\n');
-        outputfile.write("        return false;\n");
-        outputfile.write("    }\n\n");
-
-        outputfile.write("    // -- see if we can recognize an appropriate type\n");
-        outputfile.write("    eVarType returntype = GetRegisteredType(GetTypeID<R>());\n");
-        outputfile.write("    if (returntype == TYPE_NULL)\n");
-        outputfile.write("    {\n");
-        outputfile.write('        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - invalid return type (use an int32 if void)\\n");\n');
-        outputfile.write("        return false;\n");
-        outputfile.write("    }\n\n");
-
-        i = 1;
-        while (i <= paramcount):
-            outputfile.write("    CVariableEntry* ve_p%d = fe->GetContext()->GetParameter(%d);\n" % (i, i));
-            outputfile.write("    if (ve_p%d == nullptr)\n" % i);
-            outputfile.write("    {\n");
-            outputfile.write('        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %s() expects no more than %d parameters\\n", UnHash(func_hash), fe->GetContext()->GetParameterCount());\n');
-            outputfile.write("        return (false);\n");
-            outputfile.write("    }\n\n");
-            outputfile.write("    void* p%d_convert_addr = NULL;\n" % i);
-            outputfile.write("    if (GetRegisteredType(GetTypeID<T%d>()) == TYPE_string)\n" % i);
-            outputfile.write("    {\n");
-            outputfile.write("        // -- if the type is string, then pX is a const char*, however, templated code must compile for pX being, say, an int32\n");
-            outputfile.write("        void** p%d_ptr_ptr = (void**)(&p%d);\n" % (i, i));
-            outputfile.write("        void* p%d_ptr = (void*)(*p%d_ptr_ptr);\n" % (i, i));
-            outputfile.write("        p%d_convert_addr = TypeConvert(script_context, TYPE_string, p%d_ptr, ve_p%d->GetType());\n" % (i, i, i));
-            outputfile.write("    }\n");
-            outputfile.write("    else\n");
-            outputfile.write("        p%d_convert_addr = TypeConvert(script_context, GetRegisteredType(GetTypeID<T%d>()), (void*)&p%d, ve_p%d->GetType());\n" % (i, i, i, i));
-            outputfile.write("    if (!p%d_convert_addr)\n" % i);
-            outputfile.write("    {\n");
-            outputfile.write('        ScriptAssert_(script_context, 0, "<internal>", -1, "Error - function %%s() unable to convert parameter %d\\n", UnHash(func_hash));\n' % i);
-            outputfile.write("        return false;\n");
-            outputfile.write("    }\n\n");
-            outputfile.write("    ve_p%d->SetValueAddr(NULL, p%d_convert_addr);\n\n" % (i, i));
-            i = i + 1;
-
-        outputfile.write("    // -- execute the function\n");
-        outputfile.write("    if (!ExecuteScheduledFunction(GetContext(), object_id, ns_hash, func_hash, fe->GetContext()))\n");
-        outputfile.write("    {\n");
-        outputfile.write('        TinPrint(script_context, "Error - unable to exec function %s()\\n", UnHash(func_hash));\n');
-        outputfile.write("        return false;\n");
-        outputfile.write("    }\n\n");
-
-        outputfile.write("    // -- return true if we're able to convert to the return type requested\n");
-        outputfile.write("    return (ReturnExecfResult(script_context, return_value));\n");
-        outputfile.write("}\n");
 
         # -----------------------------------------------------------------------------------------
         # next class definition
@@ -1631,7 +1639,6 @@ def main():
     defaultargsfilename = "registrationdefaultargs.h"
     macrosfilename = "registrationmacros.h";
     execsfilename = "registrationexecs.h";
-
     variadicfilename = "variadicclasses.h";
 
     maxparamcount = 8;

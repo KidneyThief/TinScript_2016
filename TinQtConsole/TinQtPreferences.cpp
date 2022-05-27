@@ -31,9 +31,9 @@
 
 #include <QFile>
 
-#include "TinScript.h"
-#include "TinHash.h"
-#include "TinRegistration.h"
+#include <TinScript.h>
+#include <TinHash.h>
+#include <TinRegBinding.h>
 
 // -- statics  / forward declarations ---------------------------------------------------------------------------------
 
@@ -123,7 +123,7 @@ bool TinPreferences::SavePreferences()
         const char* value = "";
         if (mPreferencesMap->GetValue(it, value))
         {
-            char command[TinScript::kMaxTokenLength];
+            char command[kMaxTokenLength];
             snprintf(command, sizeof(command), "SetTinQtPreference(`%s`, `%s`);\n", it, value);
 
             // -- write the command out to the file
@@ -162,7 +162,7 @@ bool TinPreferences::SaveBreakpoints()
         }
 
         // -- create the command to restore the breakpoint
-        char command[TinScript::kMaxTokenLength];
+        char command[kMaxTokenLength];
         snprintf(command, sizeof(command),
                   "SetTinQtBreakpoint(`%s`, %d, %s, `%s`, %s, `%s`, %s, %s);\n",
                   TinScript::UnHash(breakpoint->mCodeblockHash), breakpoint->mLineNumber,

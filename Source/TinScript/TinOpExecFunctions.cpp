@@ -23,6 +23,9 @@
 // TinOpExecFunctions.cpp : Implementation of the virtual machine operations.
 // ====================================================================================================================
 
+// -- class include
+#include "TinOpExecFunctions.h"
+
 // -- lib includes
 #include <assert.h>
 #include <string.h>
@@ -36,9 +39,10 @@
 #include "TinNamespace.h"
 #include "TinScheduler.h"
 #include "TinExecute.h"
+#include "TinExecStack.h"
 #include "TinHashtable.h"
 #include "TinObjectGroup.h"
-#include "TinOpExecFunctions.h"
+#include "TinRegBinding.h"
 
 // == namespace TinScript =============================================================================================
 

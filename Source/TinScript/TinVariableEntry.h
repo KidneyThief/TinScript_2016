@@ -28,6 +28,7 @@
 #include "integration.h"
 #include "TinTypes.h"
 #include "TinScript.h"
+#include "TinExecStack.h"
 
 // == namespace TinScript =============================================================================================
 
@@ -185,127 +186,23 @@ public:
                                  CFunctionCallStack* funccallstack = NULL, int32 array_index = 0);
     void SetStringArrayLiteralValue(void* objaddr, void* value, int32 array_index = 0);
 
-    void ClearBreakOnWrite()
-    {
-        // -- see if we need to remove an existing break
-        if (mBreakOnWrite != nullptr)
-        {
-            if (mWatchRequestID > 0)
-            {
-                TinScript::GetContext()->DebuggerVarWatchRemove(mWatchRequestID);
-            }
-
-            TinFree(mBreakOnWrite);
-            mBreakOnWrite = nullptr;
-            mWatchRequestID = 0;
-            mDebuggerSession = 0;
-        }
-    }
-
+    void ClearBreakOnWrite();
 	void SetBreakOnWrite(int32 varWatchRequestID, int32 debugger_session, bool8 break_on_write, const char* condition,
-                         const char* trace, bool8 trace_on_cond)
-	{
-        // -- see if we need to remove an existing break
-        if (mBreakOnWrite != NULL && !break_on_write && (!trace || !trace[0]))
-        {
-            ClearBreakOnWrite();
-        }
+                         const char* trace, bool8 trace_on_cond);
 
-        else if (!mBreakOnWrite)
-        {
-            mBreakOnWrite = TinAlloc(ALLOC_Debugger, CDebuggerWatchExpression, -1, true, break_on_write, condition,
-                                     trace, trace_on_cond);
-        }
-        else
-        {
-            mBreakOnWrite->SetAttributes(break_on_write, condition, trace, trace_on_cond);
-        }
+    void NotifyWrite(CScriptContext* script_context, CExecStack* execstack, CFunctionCallStack* funccallstack);
 
-		mWatchRequestID = varWatchRequestID;
-		mDebuggerSession = debugger_session;
-	}
-
-    CVariableEntry* Clone() const;
-
-    void NotifyWrite(CScriptContext* script_context, CExecStack* execstack, CFunctionCallStack* funccallstack)
-    {
-	    if (mBreakOnWrite)
-	    {
-		    int32 cur_debugger_session = 0;
-		    bool is_debugger_connected = script_context->IsDebuggerConnected(cur_debugger_session);
-		    if (!is_debugger_connected || mDebuggerSession < cur_debugger_session)
-                return;
-
-            // -- evaluate any condition we might have (by default, the condition is true)
-            bool condition_result = true;
-
-            // -- we can only evaluate conditions and trace points, if the variable is modified while
-            // -- we have access to the stack
-            if (execstack && funccallstack)
-            {
-                // -- note:  if we do have an expression, that can't be evaluated, assume true
-                if (script_context->HasWatchExpression(*mBreakOnWrite) &&
-                    script_context->InitWatchExpression(*mBreakOnWrite, false, *funccallstack) &&
-                    script_context->EvalWatchExpression(*mBreakOnWrite, false, *funccallstack, *execstack))
-                {
-                    // -- if we're unable to retrieve the result, then found_break
-                    eVarType return_type = TYPE_void;
-                    void* return_value = NULL;
-                    if (script_context->GetFunctionReturnValue(return_value, return_type))
-                    {
-                        // -- if this is false, then we *do not* break
-                        void* bool_result = TypeConvert(script_context, return_type, return_value, TYPE_bool);
-                        if (!(*(bool8*)bool_result))
-                        {
-                            condition_result = false;
-                        }
-                    }
-                }
-
-                // -- regardless of whether we break, we execute the trace expression, but only at the start of the line
-                if (script_context->HasTraceExpression(*mBreakOnWrite))
-                {
-                    if (!mBreakOnWrite->mTraceOnCondition || condition_result)
-                    {
-                        if (script_context->InitWatchExpression(*mBreakOnWrite, true, *funccallstack))
-                        {
-                            // -- the trace expression has no result
-                            script_context->EvalWatchExpression(*mBreakOnWrite, true, *funccallstack, *execstack);
-                        }
-                    }
-                }
-            }
-
-            // -- we want to break only if the break is enabled, and the condition is true
-            if (mBreakOnWrite->mIsEnabled && condition_result)
-            {
-			    script_context->SetForceBreak(mWatchRequestID);
-            }
-	    }
-    }
-
-    void SetFunctionEntry(CFunctionEntry* _funcentry)
-    {
-        mFuncEntry = _funcentry;
-    }
-
-    CFunctionEntry* GetFunctionEntry() const
-    {
-        return (mFuncEntry);
-    }
+    void SetFunctionEntry(CFunctionEntry* _funcentry);
+    CFunctionEntry* GetFunctionEntry() const;
 
     // -- if true, and this is the parameter of a registered function,
     // -- then instead of passing a uint32 to code, we'll
     // -- look up the object, verify it exists, verify it's namespace type matches
     // -- and convert to a pointer directly
-    void SetDispatchConvertFromObject(uint32 convert_to_type_id)
-    {
-        mDispatchConvertFromObject = convert_to_type_id;
-    }
-    uint32 GetDispatchConvertFromObject()
-    {
-        return (mDispatchConvertFromObject);
-    }
+    void SetDispatchConvertFromObject(uint32 convert_to_type_id);
+    uint32 GetDispatchConvertFromObject();
+
+    CVariableEntry* Clone() const;
 
 private:
 
@@ -333,6 +230,100 @@ private:
 	int32 mWatchRequestID = -1;
 	int32 mDebuggerSession = -1;
 };
+
+// ====================================================================================================================
+// GetGlobalVar():  Provides access from code, to a registered or scripted global variable
+// Must be used if the global is declared in script (not registered from code)
+// Must be used, of the global is of type const char* (or in string, in script)
+// ====================================================================================================================
+template <typename T>
+inline bool8 GetGlobalVar(CScriptContext* script_context, const char* varname, T& value)
+{
+    // -- sanity check
+    if (!script_context->GetGlobalNamespace() || !varname ||!varname[0])
+        return (false);
+
+    CVariableEntry*
+        ve = script_context->GetGlobalNamespace()->GetVarTable()->FindItem(Hash(varname));
+    if (!ve)
+        return (false);
+
+    // -- see if we can recognize an appropriate type
+    eVarType returntype = GetRegisteredType(GetTypeID<T>());
+    if (returntype == TYPE_NULL)
+        return (false);
+
+    // -- because the return type is *not* a const char* (which is specialized below)
+    // -- we want to call GetValue(), not GetValueAddr() - which allows us to properly
+    // -- convert from a string (ste) to any other type
+    void* convertvalue = TypeConvert(script_context, ve->GetType(), ve->GetAddr(NULL), returntype);
+    if (!convertvalue)
+        return (false);
+
+    // -- set the return value
+    value = *reinterpret_cast<T*>((uint32*)(convertvalue));
+
+    return (true);
+}
+
+// ====================================================================================================================
+// GetGlobalVar():  const char* specialization - since we want a const char*, we need to use GetValueAddr()
+// which returns an actual string, not the ste hash value
+// ====================================================================================================================
+template <>
+inline bool8 GetGlobalVar<const char*>(CScriptContext* script_context, const char* varname, const char*& value)
+{
+    // -- sanity check
+    if (!script_context->GetGlobalNamespace() || !varname ||!varname[0])
+        return (false);
+
+    CVariableEntry*
+        ve = script_context->GetGlobalNamespace()->GetVarTable()->FindItem(Hash(varname));
+    if (!ve)
+        return (false);
+
+    // -- note we're using GetValueAddr() - which returns a const char*, not an STE, for TYPE_string
+    void* convertvalue = TypeConvert(script_context, ve->GetType(), ve->GetValueAddr(NULL), TYPE_string);
+    if (!convertvalue)
+        return (false);
+
+    // -- set the return value
+    value = (const char*)(convertvalue);
+
+    return (true);
+}
+
+// ====================================================================================================================
+// SetGlobalVar():  Provides access for code to modify the value of a registered or scripted global variable
+// Must be used if the global is declared in script (not registered from code)
+// Must be used, of the global is of type const char* (or in string, in script)
+// ====================================================================================================================
+template <typename T>
+bool8 SetGlobalVar(CScriptContext* script_context, const char* varname, T value)
+{
+    // -- sanity check
+    if (!script_context->GetGlobalNamespace() || !varname ||!varname[0])
+        return (false);
+
+    CVariableEntry*
+        ve = script_context->GetGlobalNamespace()->GetVarTable()->FindItem(Hash(varname));
+    if (!ve)
+        return (false);
+
+    // -- see if we can recognize an appropriate type
+    eVarType input_type = GetRegisteredType(GetTypeID<T>());
+    if (input_type == TYPE_NULL)
+        return (false);
+
+    void* convertvalue = TypeConvert(script_context, ve->GetType(), convert_to_void_ptr<T>::Convert(value), input_type);
+    if (!convertvalue)
+        return (false);
+
+    // -- set the value - note, we're using SetValueAddr(), not SetValue(), which uses a const char*,
+    // -- not an STE, for TYPE_string
+    ve->SetValueAddr(NULL, convertvalue);
+    return (true);
+}
 
 // ====================================================================================================================
 // ConvertVariableForDispatch():  Converts a variable to the actual argument type, to pass to a registerd function.
@@ -388,6 +379,38 @@ T ConvertVariableForDispatch(CVariableEntry* ve)
     // -- return the value
     return (return_value);
 }
+
+// ====================================================================================================================
+// GetPODStackVarAddr():  Templated helper for getting address of a value (by type) for a variable entry
+// ====================================================================================================================
+template<typename T>
+T* GetPODStackVarAddr(CVariableEntry* ve_src, int32 stack_depth)
+{
+    // -- sanity check
+    if (ve_src == nullptr || ve_src->GetFunctionEntry() == nullptr)
+        return nullptr;
+
+    // -- this is a stack variable, if it's owned by a function
+    // -- by definition, we're executing a function call for this method, so we want the
+    // calling function's stack offset, which will likely be at 1 (stack_depth) below us on the stack
+    int32 stack_var_offset = 0;
+    CExecStack* execstack = nullptr;
+    CFunctionCallStack* funccallstack = CFunctionCallStack::GetExecutionStackAtDepth(stack_depth, execstack,
+                                                                                        stack_var_offset);
+    T* value = funccallstack != nullptr
+               ? (T*)execstack->GetStackVarAddr(stack_var_offset, ve_src->GetStackOffset())
+               : nullptr;
+
+    // -- if we were not able to retrieve the value by now, we failed
+    if (value == nullptr)
+    {
+        TinPrint(TinScript::GetContext(), "Error - unable to get vector3f stack var addr for %s\n",
+                                            UnHash(ve_src->GetHash()));
+    }
+
+    return (value);
+}
+
 
 } // TinScript
 

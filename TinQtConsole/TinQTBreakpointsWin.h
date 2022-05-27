@@ -57,10 +57,10 @@ class CBreakpointEntry : public QListWidgetItem {
         void UpdateLabel(int32 watch_request_id, uint32 var_object_id, uint32 var_name_hash);
 
         // -- conditional members
-        char mCondition[TinScript::kMaxNameLength];
+        char mCondition[kMaxNameLength];
         bool8 mConditionEnabled;
 
-        char mTracePoint[TinScript::kMaxNameLength];
+        char mTracePoint[kMaxNameLength];
         bool8 mTraceEnabled;
         bool8 mTraceOnCondition;
 };

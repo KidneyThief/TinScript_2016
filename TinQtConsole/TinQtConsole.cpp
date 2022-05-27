@@ -49,9 +49,9 @@
 #include "qmetaobject.h"
 #include "qevent.h"
 
-#include "TinScript.h"
-#include "TinRegistration.h"
-#include "socket.h"
+#include <TinScript.h>
+#include <TinRegBinding.h>
+#include <socket.h>
 
 #include "TinQTConsole.h"
 #include "TinQTSourceWin.h"
@@ -1563,7 +1563,7 @@ void CConsoleInput::RequestTabComplete()
         QByteArray input_ba = text().toUtf8();
         const char* input_text = input_ba.data();
 
-        TinScript::SafeStrcpy(mTabCompletionBuf, sizeof(mTabCompletionBuf), input_text, TinScript::kMaxTokenLength);
+        TinScript::SafeStrcpy(mTabCompletionBuf, sizeof(mTabCompletionBuf), input_text, kMaxTokenLength);
     }
 
     // -- if we have a non-empty string...
@@ -1615,7 +1615,7 @@ bool8 CConsoleInput::LocalTabComplete(const char* partial_input, int32 tab_compl
         int32 tab_complete_length = (int32)strlen(tab_result);
 
         // -- build the function prototype string
-        char prototype_string[TinScript::kMaxTokenLength];
+        char prototype_string[kMaxTokenLength];
         if (slash_offset == 1)
             prototype_string[0] = '/';
         char* prototype_ptr = &prototype_string[slash_offset];
@@ -1629,13 +1629,13 @@ bool8 CConsoleInput::LocalTabComplete(const char* partial_input, int32 tab_compl
         {
             // -- if we have parameters (more than 1, since the first parameter is always the return value)
             if(fe->GetContext()->GetParameterCount() > 1)
-                snprintf(&prototype_ptr[tab_string_offset], TinScript::kMaxTokenLength - tab_string_offset - slash_offset, "%s(", tab_result);
+                snprintf(&prototype_ptr[tab_string_offset], kMaxTokenLength - tab_string_offset - slash_offset, "%s(", tab_result);
             else
-                snprintf(&prototype_ptr[tab_string_offset], TinScript::kMaxTokenLength - tab_string_offset - slash_offset, "%s()", tab_result);
+                snprintf(&prototype_ptr[tab_string_offset], kMaxTokenLength - tab_string_offset - slash_offset, "%s()", tab_result);
         }
         else
         {
-            snprintf(&prototype_ptr[tab_string_offset], TinScript::kMaxTokenLength - tab_string_offset, "%s", tab_result);
+            snprintf(&prototype_ptr[tab_string_offset], kMaxTokenLength - tab_string_offset, "%s", tab_result);
         }
 
         mTabCompletionIndex = tab_complete_index;
@@ -1773,7 +1773,7 @@ void CConsoleInput::OnReturnPressed()
     {
         mHistoryFull = mHistoryFull || mHistoryLastIndex == kMaxHistory - 1;
         mHistoryLastIndex = (mHistoryLastIndex + 1) % kMaxHistory;
-        snprintf(mHistory[mHistoryLastIndex].text, TinScript::kMaxTokenLength, "%s", input_text);
+        snprintf(mHistory[mHistoryLastIndex].text, kMaxTokenLength, "%s", input_text);
     }
     mHistoryIndex = -1;
 
@@ -1816,7 +1816,7 @@ void CConsoleInput::OnButtonExecPressed()
 
     if (filename && filename[0])
     {
-        char cmd_buf[TinScript::kMaxNameLength];
+        char cmd_buf[kMaxNameLength];
         snprintf(cmd_buf, sizeof(cmd_buf), "Exec('%s');", filename);
         ConsolePrint(0, "%s%s\n", kConsoleSendPrefix, cmd_buf);
         SocketManager::SendCommand(cmd_buf);

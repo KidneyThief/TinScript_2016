@@ -27,11 +27,10 @@
 #include "TinVariableEntry.h"
 
 // -- lib includes
-#include "stdio.h"
+#include <stdio.h>
 
-#include "TinScript.h"
-#include "TinCompile.h"
-#include "TinRegistration.h"
+#include "TinStringTable.h"
+#include "TinExecute.h"
 #include "TinHashtable.h"
 #include "TinOpExecFunctions.h"
 
@@ -719,7 +718,7 @@ bool CVariableEntry::SetReferenceAddr(void* ref_addr, uint32* string_hash_array)
 // SetStringArrayLiteralValue():  Sets the value of a TYPE_string variable, called externally.
 // The value of the void* is the actual const char* instead of a hash.
 // ====================================================================================================================
- void CVariableEntry::SetStringArrayLiteralValue(void* objaddr, void* value, int32 array_index)
+void CVariableEntry::SetStringArrayLiteralValue(void* objaddr, void* value, int32 array_index)
 {
     // -- ensure we have type string, etc...
     if (!value || mType != TYPE_string)
@@ -758,8 +757,151 @@ bool CVariableEntry::SetReferenceAddr(void* ref_addr, uint32* string_hash_array)
         ((const char**)(valueaddr))[array_index] = string_value;
     } 
 }
+
+// ====================================================================================================================
+// ClearBreakOnWrite():  clear the flag so we dont' break into the debugger on this ve ::SetValue()
+// ====================================================================================================================
+void CVariableEntry::ClearBreakOnWrite()
+{
+    // -- see if we need to remove an existing break
+    if (mBreakOnWrite != nullptr)
+    {
+        if (mWatchRequestID > 0)
+        {
+            TinScript::GetContext()->DebuggerVarWatchRemove(mWatchRequestID);
+        }
+
+        TinFree(mBreakOnWrite);
+        mBreakOnWrite = nullptr;
+        mWatchRequestID = 0;
+        mDebuggerSession = 0;
+    }
+}
+
+// ====================================================================================================================
+// SetBreakOnWrite(): set the flag so ::SetValue() on this ve breaks into the debugger
+// ====================================================================================================================
+void CVariableEntry::SetBreakOnWrite(int32 varWatchRequestID, int32 debugger_session, bool8 break_on_write,
+                                     const char* condition, const char* trace, bool8 trace_on_cond)
+{
+    // -- see if we need to remove an existing break
+    if (mBreakOnWrite != NULL && !break_on_write && (!trace || !trace[0]))
+    {
+        ClearBreakOnWrite();
+    }
+
+    else if (!mBreakOnWrite)
+    {
+        mBreakOnWrite = TinAlloc(ALLOC_Debugger, CDebuggerWatchExpression, -1, true, break_on_write, condition,
+                                    trace, trace_on_cond);
+    }
+    else
+    {
+        mBreakOnWrite->SetAttributes(break_on_write, condition, trace, trace_on_cond);
+    }
+
+	mWatchRequestID = varWatchRequestID;
+	mDebuggerSession = debugger_session;
+}
+
+// ====================================================================================================================
+// NotifyWrite():  If this ve has been written to, notify the debugger (if there's a data breakpoint set)
+// ====================================================================================================================
+void CVariableEntry::NotifyWrite(CScriptContext* script_context, CExecStack* execstack,
+                                 CFunctionCallStack* funccallstack)
+{
+	if (mBreakOnWrite)
+	{
+		int32 cur_debugger_session = 0;
+		bool is_debugger_connected = script_context->IsDebuggerConnected(cur_debugger_session);
+		if (!is_debugger_connected || mDebuggerSession < cur_debugger_session)
+            return;
+
+        // -- evaluate any condition we might have (by default, the condition is true)
+        bool condition_result = true;
+
+        // -- we can only evaluate conditions and trace points, if the variable is modified while
+        // -- we have access to the stack
+        if (execstack && funccallstack)
+        {
+            // -- note:  if we do have an expression, that can't be evaluated, assume true
+            if (script_context->HasWatchExpression(*mBreakOnWrite) &&
+                script_context->InitWatchExpression(*mBreakOnWrite, false, *funccallstack) &&
+                script_context->EvalWatchExpression(*mBreakOnWrite, false, *funccallstack, *execstack))
+            {
+                // -- if we're unable to retrieve the result, then found_break
+                eVarType return_type = TYPE_void;
+                void* return_value = NULL;
+                if (script_context->GetFunctionReturnValue(return_value, return_type))
+                {
+                    // -- if this is false, then we *do not* break
+                    void* bool_result = TypeConvert(script_context, return_type, return_value, TYPE_bool);
+                    if (!(*(bool8*)bool_result))
+                    {
+                        condition_result = false;
+                    }
+                }
+            }
+
+            // -- regardless of whether we break, we execute the trace expression, but only at the start of the line
+            if (script_context->HasTraceExpression(*mBreakOnWrite))
+            {
+                if (!mBreakOnWrite->mTraceOnCondition || condition_result)
+                {
+                    if (script_context->InitWatchExpression(*mBreakOnWrite, true, *funccallstack))
+                    {
+                        // -- the trace expression has no result
+                        script_context->EvalWatchExpression(*mBreakOnWrite, true, *funccallstack, *execstack);
+                    }
+                }
+            }
+        }
+
+        // -- we want to break only if the break is enabled, and the condition is true
+        if (mBreakOnWrite->mIsEnabled && condition_result)
+        {
+			script_context->SetForceBreak(mWatchRequestID);
+        }
+	}
+}
+
+// ====================================================================================================================
+// SetFunctionEntry():  Local variables belong to a function
+// ====================================================================================================================
+void CVariableEntry::SetFunctionEntry(CFunctionEntry* _funcentry)
+{
+    mFuncEntry = _funcentry;
+}
+
+// ====================================================================================================================
+// GetFunctionEntry():  Get the FE to which this variable belongs (is a local var of)
+// ====================================================================================================================
+CFunctionEntry* CVariableEntry::GetFunctionEntry() const
+{
+    return (mFuncEntry);
+}
+
+// ====================================================================================================================
+// SetDispatchConvertFromObject():
+// -- if true, and this is the parameter of a registered function,
+// -- then instead of passing a uint32 to code, we'll
+// -- look up the object, verify it exists, verify it's namespace type matches
+// -- and convert to a pointer directly
+// ====================================================================================================================
+void CVariableEntry::SetDispatchConvertFromObject(uint32 convert_to_type_id)
+{
+    mDispatchConvertFromObject = convert_to_type_id;
+}
+
+// ====================================================================================================================
+// GetDispatchConvertFromObject():  returns the type id, for parameters that are of a specific class
+// ====================================================================================================================
+uint32 CVariableEntry::GetDispatchConvertFromObject()
+{
+    return (mDispatchConvertFromObject);
+}
  
- // ====================================================================================================================
+// ====================================================================================================================
 // Clone():  used for, e.g., copying an entire hashtable
 // ====================================================================================================================
  CVariableEntry* CVariableEntry::Clone() const
@@ -779,7 +921,7 @@ bool CVariableEntry::SetReferenceAddr(void* ref_addr, uint32* string_hash_array)
                                         ve_name, ve_hash, GetType(), 1, false, 0, true);
 
      // -- perform the assignment
-     copy_ve->SetValueAddr(false, GetValueAddr(nullptr));
+     copy_ve->SetValueAddr(nullptr, GetValueAddr(nullptr));
 
      // -- return the dup
      return copy_ve;

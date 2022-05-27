@@ -23,18 +23,19 @@
 // TinCompile.cpp
 // ====================================================================================================================
 
+// -- class include
+#include "TinCompile.h"
+
 // -- lib includes
-#include "assert.h"
-#include "string.h"
-#include "stdio.h"
+#include <assert.h>
+#include <string.h>
+#include <stdio.h>
 
 // -- includes
 #include "integration.h"
-#include "TinScript.h"
 #include "TinParse.h"
-#include "TinCompile.h"
-#include "TinExecute.h"
-#include "TinNamespace.h"
+#include "TinDefines.h"
+#include "TinRegBinding.h"
 
 // == namespace TinScript =============================================================================================
 
@@ -1402,6 +1403,14 @@ int32 CBinaryOpNode::Eval(uint32*& instrptr, eVarType pushresult, bool8 countonl
     }
 
 	return size;
+}
+
+// ====================================================================================================================
+// IsAssignOpNode(): assignments request the right (value) branch to resolve to the type required by the left branch
+// ====================================================================================================================
+bool8 CBinaryOpNode::IsAssignOpNode() const
+{
+    return (assign_op != eAssignOpType::ASSOP_NULL);
 }
 
 // ====================================================================================================================
@@ -4077,6 +4086,47 @@ CCodeBlock::~CCodeBlock()
 }
 
 // ====================================================================================================================
+// AllocateInstructionBlock():  use the allocation macros, so you can specify heap, etc... for the byte code memory
+// ====================================================================================================================
+void CCodeBlock::AllocateInstructionBlock(int32 _size, int32 _linecount)
+{
+    mInstrBlock = NULL;
+    mInstrCount = _size;
+    if (_size > 0)
+        mInstrBlock = TinAllocArray(ALLOC_CodeBlock, uint32, _size);
+    if (_linecount > 0)
+        mLineNumbers = TinAllocArray(ALLOC_CodeBlock, uint32, _linecount);
+}
+
+// ====================================================================================================================
+// AddLineNumber():  notify the code block which source text line number is associated with the current PC
+// ====================================================================================================================
+void CCodeBlock::AddLineNumber(int32 linenumber, uint32* instrptr)
+{
+    // -- sanity check
+    if (linenumber < 0)
+        return;
+
+    // -- if this instruction is for the same line number, we only track the first
+    if (linenumber == mLineNumberCurrent)
+        return;
+
+    mLineNumberCurrent = linenumber;
+
+    // -- if we have a line numbers array, then we've already allocated our instruction block,
+    // and we're about to populate the array with actual instruction offsets
+    if (mLineNumbers)
+    {
+        uint32 offset = CalcOffset(instrptr);
+        mLineNumbers[mLineNumberIndex++] = (offset << 16) + (linenumber & (0xffff));
+    }
+    else
+    {
+        ++mLineNumberCount;
+    }
+}
+
+// ====================================================================================================================
 // CalcInstrCount():  Calculate the entire size of code block, including the instructions and the var table.
 // ====================================================================================================================
 int32 CCodeBlock::CalcInstrCount(const CCompileTreeNode& root)
@@ -4154,6 +4204,42 @@ bool8 CCodeBlock::CompileTreeToSourceC(const CCompileTreeNode& root, char*& out_
 
     // -- success
 	return true;
+}
+
+// ====================================================================================================================
+// AddFunction():  Add this function entry to the list of implementations within this code block
+// ====================================================================================================================
+void CCodeBlock::AddFunction(CFunctionEntry* _func)
+{
+    if (!mFunctionList->FindItem(_func->GetHash()))
+        mFunctionList->AddItem(*_func, _func->GetHash());
+
+    // $$$TZA Overload
+    //printf("### DEBUG: 0x%x\n", _func->GetContext()->CalcHash());
+}
+
+// ====================================================================================================================
+// RemoveFunction():  Remove this function entry from the list of implementations within this code block
+// ====================================================================================================================
+void CCodeBlock::RemoveFunction(CFunctionEntry* _func)
+{
+    mFunctionList->RemoveItem(_func->GetHash());
+}
+
+// ====================================================================================================================
+// HasFunction():  See if this funtion implementation is contained within this code block
+// ====================================================================================================================
+bool CCodeBlock:: HasFunction(uint32 func_hash)
+{
+    return mFunctionList != nullptr && mFunctionList->FindItem(func_hash) != nullptr;
+}
+
+// ====================================================================================================================
+// IsInUse():  A codeblock is not in use if it no longer contains any function implementations or breakpoints
+// ====================================================================================================================
+bool CCodeBlock::IsInUse()
+{
+    return (mIsParsing || !mFunctionList->IsEmpty() || !mBreakpoints->IsEmpty());
 }
 
 // ====================================================================================================================
@@ -4266,6 +4352,67 @@ int32 CCodeBlock::RemoveBreakpoint(int32 line_number)
 void CCodeBlock::RemoveAllBreakpoints()
 {
     mBreakpoints->DestroyAll();
+}
+
+// ====================================================================================================================
+// DestroyCodeBlock(): static method to destroy an unused codeblock
+// ====================================================================================================================
+void CCodeBlock::DestroyCodeBlock(CCodeBlock* codeblock)
+{
+    if (!codeblock)
+        return;
+    if (codeblock->IsInUse())
+    {
+        ScriptAssert_(codeblock->GetScriptContext(), 0, "<internal>", -1,
+                        "Error - Attempting to destroy active codeblock: %s\n",
+                        codeblock->GetFileName());
+        return;
+    }
+    codeblock->GetScriptContext()->GetCodeBlockList()->RemoveItem(codeblock, codeblock->mFileNameHash);
+    TinFree(codeblock);
+}
+
+// ====================================================================================================================
+// DestroyUnusedCodeBlocks(): static method to iterate through all codeblocks, destroying the unused
+// ====================================================================================================================
+void CCodeBlock::DestroyUnusedCodeBlocks(CHashTable<CCodeBlock>* code_block_list)
+{
+    CCodeBlock* codeblock = code_block_list->First();
+	int32 dummy_session = 0;
+    while (codeblock)
+    {
+        if (!codeblock->IsInUse())
+        {
+            code_block_list->RemoveItem(codeblock, codeblock->mFileNameHash);
+            TinFree(codeblock);
+        }
+#if NOTIFY_SCRIPTS_MODIFIED
+		// -- any time the debugger is *not* connected, clear the check ft, so we resend on a new attachment
+		else if (!codeblock->GetScriptContext()->IsDebuggerConnected(dummy_session))
+		{
+			codeblock->SetCheckSourceFileTime({});
+		}
+
+		// -- otherwise, see if the source for the codeblock has been modified
+		else
+		{
+            bool found_source_ft = false;
+            std::filesystem::file_time_type source_modified_ft;
+            bool need_to_compile = CheckSourceNeedToCompile(codeblock->GetFileName(), found_source_ft, source_modified_ft);
+
+			// -- if we need to compile, see if we need to send the notification (again...)
+			if (need_to_compile && found_source_ft)
+			{
+				if (source_modified_ft != codeblock->GetCheckSourceFileTime())
+				{
+					codeblock->SetCheckSourceFileTime(source_modified_ft);
+                    codeblock->GetScriptContext()->NotifySourceStatus(codeblock->GetFileName(), true, false);
+				}
+			}
+		}
+#endif
+        codeblock = code_block_list->Next();
+    }
 }
 
 // ====================================================================================================================

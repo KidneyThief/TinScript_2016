@@ -19,17 +19,17 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ------------------------------------------------------------------------------------------------
 
+// -- class include
+#include "mathutil.h"
+
 // -- system includes
 #include <cstdlib>
 #include <functional>
 
-// -- includes
-#include "mathutil.h"
-
 // -- includes required by any system wanting access to TinScript
 #include "integration.h"
 #include "TinScript.h"
-#include "TinRegistration.h"
+#include "TinRegBinding.h"
 
 // -- use the DECLARE_FILE/REGISTER_FILE macros to prevent deadstripping
 DECLARE_FILE(mathutil_cpp);

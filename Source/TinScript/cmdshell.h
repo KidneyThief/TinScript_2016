@@ -75,13 +75,13 @@ private:
     bool8 mHistoryFull;
     int32 mHistoryIndex;
     int32 mHistoryLastIndex;
-    char mHistory[kMaxHistory][TinScript::kMaxTokenLength];
+    char mHistory[kMaxHistory][kMaxTokenLength];
 
     bool8 mCurrentLineIsPrompt;
     bool8 mRefreshPrompt;
 
     // -- input buffer
-    char mConsoleInputBuf[TinScript::kMaxTokenLength];
+    char mConsoleInputBuf[kMaxTokenLength];
 
     // -- cursor members
     HANDLE m_screenHandle;
@@ -91,10 +91,10 @@ private:
 
     // -- tab completion members
     int32 mTabCompletionIndex;
-    char mTabCompletionBuf[TinScript::kMaxTokenLength];
+    char mTabCompletionBuf[kMaxTokenLength];
 
     // -- command entry buffer
-    char mCommandBuf[TinScript::kMaxTokenLength];
+    char mCommandBuf[kMaxTokenLength];
 };
 
 // ====================================================================================================================

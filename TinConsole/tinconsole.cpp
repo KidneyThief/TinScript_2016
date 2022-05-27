@@ -33,7 +33,7 @@
 #include "conio.h"
 
 #include "TinScript.h"
-#include "TinRegistration.h"
+#include "TinRegBinding.h"
 
 // -- external includes
 #include "cmdshell.h"

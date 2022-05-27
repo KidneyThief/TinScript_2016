@@ -23,6 +23,9 @@
 // TinScheduler.cpp
 // ====================================================================================================================
 
+// -- class include
+#include "TinScheduler.h"
+
 // -- includes
 #include "stdio.h"
 
@@ -32,7 +35,6 @@
 #include "TinRegistration.h"
 #include "TinInterface.h"
 #include "TinExecute.h"
-#include "TinScheduler.h"
 
 // == namespace TinScript =============================================================================================
 

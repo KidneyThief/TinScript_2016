@@ -49,11 +49,11 @@ CBrowserEntry::CBrowserEntry(uint32 parent_id, uint32 object_id, bool8 owned, co
     mObjectID = object_id;
     mParentID = parent_id;
     mOwned = owned;
-    TinScript::SafeStrcpy(mName, sizeof(mName), object_name, TinScript::kMaxNameLength);
-    TinScript::SafeStrcpy(mDerivation, sizeof(mDerivation), derivation, TinScript::kMaxNameLength);
+    TinScript::SafeStrcpy(mName, sizeof(mName), object_name, kMaxNameLength);
+    TinScript::SafeStrcpy(mDerivation, sizeof(mDerivation), derivation, kMaxNameLength);
 
     // -- create and store the formatted name string
-    snprintf(mFormattedName, TinScript::kMaxNameLength, "[%d] %s", object_id, mName);
+    snprintf(mFormattedName, kMaxNameLength, "[%d] %s", object_id, mName);
 
     //-- store the origin info
     mCreatedStackSize = created_stack_size;
@@ -74,7 +74,7 @@ CBrowserEntry::CBrowserEntry(uint32 parent_id, uint32 object_id, bool8 owned, co
         // note:  linenumber + 1
         const char* full_path = CConsoleWindow::GetInstance()->UnhashOrRequest(created_file_array[0]);
         const char* file_name_ptr = CConsoleWindow::GetInstance()->GetDebugSourceWin()->GetFileName(full_path);
-        snprintf(mFormattedOrigin, TinScript::kMaxNameLength, "%s @ %d", file_name_ptr, created_line_array[0] + 1);
+        snprintf(mFormattedOrigin, kMaxNameLength, "%s @ %d", file_name_ptr, created_line_array[0] + 1);
     }
 
     // -- set the QT elements

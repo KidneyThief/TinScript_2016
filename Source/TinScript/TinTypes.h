@@ -23,8 +23,7 @@
 // TinTypes.h
 // ====================================================================================================================
 
-#ifndef __TINTYPES_H
-#define __TINTYPES_H
+#pragma once
 
 // -- includes
 #include "integration.h"
@@ -34,11 +33,6 @@
 
 namespace TinScript
 {
-
-// --------------------------------------------------------------------------------------------------------------------
-// -- constants
-const int32 kMaxNameLength = 256;
-const int32 kMaxTokenLength = 2048;
 
 // -- current largest var type is a hashtable entry, 16 bytes
 const int32 kMaxTypeSize = 16;
@@ -316,7 +310,7 @@ struct convert_to_void_ptr<const T*>
 
 // ====================================================================================================================
 // -- typedefs for integrating the registered types
-enum eVarType;
+enum eVarType : int16_t;
 typedef bool8 (*TypeToString)(TinScript::CScriptContext* script_context, void* value, char* buf, int32 bufsize);
 typedef bool8(*StringToType)(TinScript::CScriptContext* script_context, void* addr, char* value);
 
@@ -347,12 +341,12 @@ class CVariableEntry;
 // -- we also need to register methods for POD types (e.g.  vector3f:normalized())
 // funcptr must be a global, where the first param of the type for which this method is being registered
 // reassign is used when the return type of the method should be re-assigned back to the POD variable
-#define REGISTER_TYPE_METHOD(type_name, method_name, funcptr)                                                             \
+#define REGISTER_TYPE_METHOD(type_name, method_name, funcptr)                                                                       \
     {                                                                                                                               \
-        static const int gArgCount_##type_name = ::TinScript::SignatureArgCount<decltype(funcptr)>::arg_count;                      \
-        static ::TinScript::CRegisterFunction<gArgCount_##type_name, decltype(funcptr)> _reg_##method_name(#method_name, funcptr);  \
-        static uint32 type_name_hash = TinScript::Hash(#type_name);                                                                 \
-        _reg_##method_name.SetTypeAsClassName(TinScript::UnHash(type_name_hash));                                                   \
+        static const int gArgCount_##type_name = SignatureArgCount<decltype(funcptr)>::arg_count;                                   \
+        static CRegisterFunction<gArgCount_##type_name, decltype(funcptr)> _reg_##method_name(#method_name, funcptr);               \
+        static uint32 type_name_hash = ::TinScript::Hash(#type_name);                                                               \
+        _reg_##method_name.SetTypeAsClassName(::TinScript::UnHash(type_name_hash));                                                 \
         CNamespace* type_ns = TinScript::GetContext()->FindOrCreateNamespace(#type_name);                                           \
         _reg_##method_name.Register();                                                                                              \
     }
@@ -395,7 +389,7 @@ bool TypeVariableArray_Resize(CVariableEntry* ve_src, int32 new_size);
 
 // ====================================================================================================================
 // -- operation and conversion type functions
-enum eOpCode;
+enum eOpCode : int16;
 typedef bool8 (*TypeOpOverride)(CScriptContext* script_context, eOpCode op, eVarType& result_type, void* result_addr,
                                 eVarType v0_type, void* val0, eVarType val1_type, void* val1);
 
@@ -470,7 +464,7 @@ typedef void* (*TypeConvertFunction)(CScriptContext* script_context, eVarType fr
 // -- 4x words actually, 16x bytes, the size of a HashVar
 #define MAX_TYPE_SIZE 4
 
-enum eVarType : int16
+enum eVarType : int16_t
 {
 	#define VarTypeEntry(a, b, c, d, e, f) TYPE_##a,
 	VarTypeTuple
@@ -489,34 +483,6 @@ void ShutdownTypes();
 // -- manual registration of POD tables for members and methods
 void RegisterPODTypeTable(eVarType var_type, tPODTypeTable* pod_table);
 void RegisterPODMethodTable(eVarType var_type, CHashTable<CFunctionEntry>* pod_methods);
-
-template<typename T>
-T* GetPODStackVarAddr(CVariableEntry* ve_src, int32 stack_depth)
-{
-    // -- sanity check
-    if (ve_src == nullptr || ve_src->GetFunctionEntry() == nullptr)
-        return nullptr;
-
-    // -- this is a stack variable, if it's owned by a function
-    // -- by definition, we're executing a function call for this method, so we want the
-    // calling function's stack offset, which will likely be at 1 (stack_depth) below us on the stack
-    int32 stack_var_offset = 0;
-    CExecStack* execstack = nullptr;
-    CFunctionCallStack* funccallstack = CFunctionCallStack::GetExecutionStackAtDepth(stack_depth, execstack,
-                                                                                        stack_var_offset);
-    T* value = funccallstack != nullptr
-               ? (T*)execstack->GetStackVarAddr(stack_var_offset, ve_src->GetStackOffset())
-               : nullptr;
-
-    // -- if we were not able to retrieve the value by now, we failed
-    if (value == nullptr)
-    {
-        TinPrint(TinScript::GetContext(), "Error - unable to get vector3f stack var addr for %s\n",
-                                            UnHash(ve_src->GetHash()));
-    }
-
-    return (value);
-}
 
 // TYPE registration API
 // -- manual registration of an operation override for a registered types
@@ -573,8 +539,6 @@ extern TypeToString gRegisteredTypeToString[TYPE_COUNT];
 extern StringToType gRegisteredStringToType[TYPE_COUNT];
 
 } // TinScript
-
-#endif // __TINTYPES_H
 
 // ====================================================================================================================
 // EOF

@@ -473,7 +473,7 @@ void CDebugFunctionAssistWin::UpdateFilter(const char* filter, bool8 force_refre
     bool filter_by_hierarchy = TinPreferences::GetInstance()->GetValue("FA_FilterHierarchy", true);
 
     // -- copy the new search filter
-    TinScript::SafeStrcpy(mFilterString, sizeof(mFilterString), filter, TinScript::kMaxNameLength);
+    TinScript::SafeStrcpy(mFilterString, sizeof(mFilterString), filter, kMaxNameLength);
 
     // -- if we have a new object id, we need to re-issue the function assist request
     if (new_object_search)
@@ -486,8 +486,8 @@ void CDebugFunctionAssistWin::UpdateFilter(const char* filter, bool8 force_refre
         if (period_str)
         {
             // -- if the string is a valid number
-            char object_string[TinScript::kMaxNameLength];
-            TinScript::SafeStrcpy(object_string, sizeof(object_string), mFilterString, TinScript::kMaxNameLength);
+            char object_string[kMaxNameLength];
+            TinScript::SafeStrcpy(object_string, sizeof(object_string), mFilterString, kMaxNameLength);
             period_str = strchr(object_string, '.');
             *period_str = '\0';
 
@@ -520,7 +520,7 @@ void CDebugFunctionAssistWin::UpdateFilter(const char* filter, bool8 force_refre
         {
             const char* object_identifier =
                 CConsoleWindow::GetInstance()->GetDebugObjectBrowserWin()->GetObjectIdentifier(object_id);
-            char buf[TinScript::kMaxNameLength];
+            char buf[kMaxNameLength];
             if (!object_identifier || !object_identifier[0])
                 snprintf(buf, sizeof(buf), "Object: [%d]", object_id);
             else
@@ -567,7 +567,7 @@ void CDebugFunctionAssistWin::UpdateFilter(const char* filter, bool8 force_refre
                             new_entry->mNamespaceHash = 0;
                             new_entry->mFunctionHash = 0;
                             TinScript::SafeStrcpy(new_entry->mSearchName, sizeof(new_entry->mSearchName), object_name,
-                                                  TinScript::kMaxNameLength);
+                                                  kMaxNameLength);
                             new_entry->mParameterCount = 0;
 
                             // -- add the object to the object map
@@ -786,7 +786,7 @@ void CDebugFunctionAssistWin::NotifyAssistEntryDoubleClicked(TinScript::CDebugge
     if (list_entry->mEntryType == TinScript::eFunctionEntryType::Object)
     {
         // -- on double-click, set the filter to be the "<object_name>."
-        char new_filter[TinScript::kMaxNameLength];
+        char new_filter[kMaxNameLength];
         snprintf(new_filter, sizeof(new_filter), "%d.", list_entry->mObjectID);
         mFunctionInput->setText(new_filter);
         UpdateFilter(new_filter);
@@ -922,8 +922,8 @@ void CDebugFunctionAssistWin::OnButtonCopyToConsolePressed()
         return;
 
     // -- create the command string, and send it to the console input
-    char buf[TinScript::kMaxTokenLength];
-    int length_remaining = TinScript::kMaxTokenLength;
+    char buf[kMaxTokenLength];
+    int length_remaining = kMaxTokenLength;
     if(mSearchObjectID > 0)
         snprintf(buf, sizeof(buf), "%d.%s(", mSearchObjectID, assist_entry->mSearchName);
     else
@@ -1487,7 +1487,7 @@ CFunctionParameterEntry::CFunctionParameterEntry(TinScript::eVarType var_type, b
     mIsOriginEntry = false;
 
     const char* type_name = TinScript::GetRegisteredTypeName(var_type);
-    char type_buf[TinScript::kMaxNameLength];
+    char type_buf[kMaxNameLength];
     snprintf(type_buf, sizeof(type_buf), "%s%s", type_name, is_array ? "[]" : "");
     setText(0, type_buf);
     setText(1, _name);

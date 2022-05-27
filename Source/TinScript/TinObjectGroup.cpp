@@ -23,12 +23,14 @@
 // TinObjectGroup.cpp
 // ====================================================================================================================
 
+// -- class include
+#include "TinObjectGroup.h"
+
 // -- includes
 #include "assert.h"
 
 #include "TinScript.h"
-#include "TinRegistration.h"
-#include "TinObjectGroup.h"
+#include "TinRegBinding.h"
 
 // == namespace TinScript =============================================================================================
 

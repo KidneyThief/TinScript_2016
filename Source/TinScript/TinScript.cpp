@@ -23,6 +23,9 @@
 // TinScript.cpp
 // ====================================================================================================================
 
+// -- class include
+#include "TinScript.h"
+
 #include "integration.h"
 
 // -- includes
@@ -41,13 +44,13 @@
 #include "TinParse.h"
 #include "TinCompile.h"
 #include "TinExecute.h"
+#include "TinExecStack.h"
 #include "TinNamespace.h"
 #include "TinScheduler.h"
 #include "TinObjectGroup.h"
 #include "TinStringTable.h"
-#include "TinRegistration.h"
 #include "TinOpExecFunctions.h"
-#include "TinScript.h"
+#include "TinRegBinding.h"
 
 // == namespace TinScript =============================================================================================
 
@@ -5433,9 +5436,9 @@ void DebuggerRequestTabComplete(int32 request_id, const char* partial_input, int
     if (script_context->TabComplete(partial_input, tab_complete_index, tab_string_offset, tab_result, fe, ve))
     {
         // -- build the function prototype string
-        char prototype_string[TinScript::kMaxTokenLength];
+        char prototype_string[kMaxTokenLength];
 
-        // -- see if we are to preserve the preceeding part of the tab completion buf
+        // -- see if we are to preserve the preceding part of the tab completion buf
         if (tab_string_offset > 0)
             strncpy_s(prototype_string, partial_input, tab_string_offset);
 
@@ -5444,12 +5447,12 @@ void DebuggerRequestTabComplete(int32 request_id, const char* partial_input, int
         {
             // -- if we have parameters (more than 1, since the first parameter is always the return value)
             if (fe->GetContext()->GetParameterCount() > 1)
-                snprintf(&prototype_string[tab_string_offset], TinScript::kMaxTokenLength - tab_string_offset, "%s(", tab_result);
+                snprintf(&prototype_string[tab_string_offset], kMaxTokenLength - tab_string_offset, "%s(", tab_result);
             else
-                snprintf(&prototype_string[tab_string_offset], TinScript::kMaxTokenLength - tab_string_offset, "%s()", tab_result);
+                snprintf(&prototype_string[tab_string_offset], kMaxTokenLength - tab_string_offset, "%s()", tab_result);
         }
         else
-            snprintf(&prototype_string[tab_string_offset], TinScript::kMaxTokenLength - tab_string_offset, "%s", tab_result);
+            snprintf(&prototype_string[tab_string_offset], kMaxTokenLength - tab_string_offset, "%s", tab_result);
 
         // -- send the tab completed string back to the debugger
         SocketManager::SendCommandf("DebuggerNotifyTabComplete(%d, `%s`, %d);", request_id, prototype_string, tab_complete_index);

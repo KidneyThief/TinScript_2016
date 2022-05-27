@@ -313,11 +313,11 @@ public:
 
     void SetObjectIdentifier(const char* object_identifier)
     {
-        char title_buf[TinScript::kMaxNameLength];
+        char title_buf[kMaxNameLength];
         snprintf(title_buf, sizeof(title_buf), "Object Inspect: ");
-        TinScript::SafeStrcpy(&title_buf[strlen(title_buf)], TinScript::kMaxNameLength - strlen(title_buf),
+        TinScript::SafeStrcpy(&title_buf[strlen(title_buf)], kMaxNameLength - strlen(title_buf),
                               object_identifier,
-                              TinScript::kMaxNameLength - strlen(title_buf));
+                              kMaxNameLength - strlen(title_buf));
         setWindowTitle(title_buf);
     }
 
@@ -424,31 +424,31 @@ void CommandHistoryList::OnDoubleClicked(QListWidgetItem* item)
 void MainWindow::menuCreateVariableWatch()
 {
     int32 use_watch_id = 0;
-    char watch_expr[TinScript::kMaxNameLength];
-    char watch_value[TinScript::kMaxNameLength];
+    char watch_expr[kMaxNameLength];
+    char watch_value[kMaxNameLength];
     watch_expr[0] = '\0';
     watch_value[0] = '\0';
     if (CConsoleWindow::GetInstance()->GetDebugWatchesWin()->hasFocus())
     {
         // -- attempt to get the selected watch expression and value
         CConsoleWindow::GetInstance()->GetDebugWatchesWin()->
-            GetSelectedWatchExpression(use_watch_id, watch_expr, TinScript::kMaxNameLength,
-                                       watch_value, TinScript::kMaxNameLength);
+            GetSelectedWatchExpression(use_watch_id, watch_expr, kMaxNameLength,
+                                       watch_value, kMaxNameLength);
     }
     else if (CConsoleWindow::GetInstance()->GetDebugAutosWin()->hasFocus())
     {
         // -- attempt to get the selected watch expression and value
         CConsoleWindow::GetInstance()->GetDebugAutosWin()->
-            GetSelectedWatchExpression(use_watch_id, watch_expr, TinScript::kMaxNameLength,
-                                       watch_value,TinScript::kMaxNameLength);
+            GetSelectedWatchExpression(use_watch_id, watch_expr, kMaxNameLength,
+                                       watch_value, kMaxNameLength);
     }
 
     // -- if we didn't find anything, use the function assist selected object as the initial value
     if (watch_expr[0] == '\0')
     {
         CConsoleWindow::GetInstance()->GetDebugFunctionAssistWin()->
-            GetSelectedWatchExpression(use_watch_id, watch_expr, TinScript::kMaxNameLength,
-                                       watch_value, TinScript::kMaxNameLength);
+            GetSelectedWatchExpression(use_watch_id, watch_expr, kMaxNameLength,
+                                       watch_value, kMaxNameLength);
     }
 
     CConsoleWindow::GetInstance()->GetMainWindow()->CreateVariableWatch(use_watch_id, watch_expr, watch_value);
@@ -511,7 +511,7 @@ void MainWindow::menuCreateObjectInspector()
         const char* object_identifier =
             CConsoleWindow::GetInstance()->GetDebugObjectBrowserWin()->GetObjectIdentifier(object_id);
 
-        char object_buf[TinScript::kMaxNameLength];
+        char object_buf[kMaxNameLength];
         snprintf(object_buf, sizeof(object_buf), "Object: %s", object_identifier);
 
         CDebugObjectInspectWin* object_inspect_win =
@@ -699,7 +699,7 @@ void MainWindow::AddScriptCompileAction(const char* fullPath, bool has_error)
     mScriptCompileActionList.push_back(scriptOpenAction);
     connect(action, SIGNAL(triggered()), actionWidget, SLOT(menuCompileScriptAction()));
 
-    char msg_buf[TinScript::kMaxTokenLength];
+    char msg_buf[kMaxTokenLength];
     snprintf(msg_buf, sizeof(msg_buf), "Source %s: %s", has_error ? "error" : "modified", fullPath);
     CConsoleWindow::GetInstance()->SetStatusMessage(msg_buf, Qt::red);
 }

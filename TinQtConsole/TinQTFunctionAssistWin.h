@@ -130,7 +130,7 @@ class CDebugFunctionAssistWin : public QWidget
         // -- for filtering, we need to keep track of several items, that will change the context of the search
         uint32 mSearchObjectID;
         uint32 mSearchNamespaceHash;
-        char mFilterString[TinScript::kMaxNameLength];
+        char mFilterString[kMaxNameLength];
         QList<TinScript::CDebuggerFunctionAssistEntry*> mFunctionEntryList; // includes objects and namespaces
 };
 
@@ -156,7 +156,7 @@ class CFunctionAssistInput : public QLineEdit
         bool8 mHistoryFull;
         int32 mHistoryIndex;
         int32 mHistoryLastIndex;
-        typedef struct { char text[TinScript::kMaxTokenLength]; } tHistoryEntry;
+        typedef struct { char text[kMaxTokenLength]; } tHistoryEntry;
         tHistoryEntry mHistory[kMaxHistory];
 
         // -- cache the pointer, since the input will be talking to the owner often

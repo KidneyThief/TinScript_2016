@@ -23,13 +23,15 @@
 // TinHashtable.cpp
 // ====================================================================================================================
 
-// -- includes --------------------------------------------------------------------------------------------------------
+// -- class include
 #include "TinHashtable.h"
 
-#include "TinHash.h"
-#include "TinRegistration.h"
-
+// lib includes
 #include <list>
+
+// -- includes --------------------------------------------------------------------------------------------------------
+#include "TinHash.h"
+#include "TinRegBinding.h"
 
 // -- use the DECLARE_FILE/REGISTER_FILE macros to prevent deadstripping
 DECLARE_FILE(tinhashtable_cpp);
@@ -370,7 +372,7 @@ bool CHashtable::CopyHashtableEntry(uint32 key_hash, const CVariableEntry* sourc
     else
     {
         // -- perform the assignment
-        hte->SetValueAddr(false, source->GetValueAddr(nullptr));
+        hte->SetValueAddr(nullptr, source->GetValueAddr(nullptr));
     }
 
     // -- success

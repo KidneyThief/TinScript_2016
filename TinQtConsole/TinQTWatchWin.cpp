@@ -524,7 +524,7 @@ void CDebugWatchWin::AddVariableWatch(const char* variableWatch, bool breakOnWri
     new_watch.mType = TinScript::TYPE_void;
 
 	// -- var name holds the expression
-	TinScript::SafeStrcpy(new_watch.mVarName, sizeof(new_watch.mVarName), variableWatch, TinScript::kMaxNameLength);
+	TinScript::SafeStrcpy(new_watch.mVarName, sizeof(new_watch.mVarName), variableWatch, kMaxNameLength);
 
 	// -- we also *hope* the target can fill in a value for us as well
     new_watch.mValue[0] = '\0';
@@ -601,8 +601,8 @@ void CDebugWatchWin::CreateSelectedWatch()
     if (cur_item && cur_item->mDebuggerEntry.mType != TinScript::TYPE_void)
     {
         // -- create the string to use as a watch
-        char watch_string[TinScript::kMaxNameLength];
-        char cur_value[TinScript::kMaxNameLength];
+        char watch_string[kMaxNameLength];
+        char cur_value[kMaxNameLength];
 
         // -- see if we have a variable or a member
         if (cur_item->mDebuggerEntry.mObjectID > 0)

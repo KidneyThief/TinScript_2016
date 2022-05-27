@@ -73,7 +73,7 @@ class SafeLineEdit : public QLineEdit
         void SetStringValue(const char* value)
         {
             const char* new_value = value ? value : "";
-            TinScript::SafeStrcpy(mStringValue, sizeof(mStringValue), new_value, TinScript::kMaxNameLength);
+            TinScript::SafeStrcpy(mStringValue, sizeof(mStringValue), new_value, kMaxNameLength);
             setText(new_value);
         }
 
@@ -89,11 +89,11 @@ class SafeLineEdit : public QLineEdit
             QLineEdit::keyPressEvent(e);
 
             // -- store the current value of the string
-            TinScript::SafeStrcpy(mStringValue, sizeof(mStringValue), text().toUtf8(), TinScript::kMaxNameLength);
+            TinScript::SafeStrcpy(mStringValue, sizeof(mStringValue), text().toUtf8(), kMaxNameLength);
         }
 
     private:
-        char mStringValue[TinScript::kMaxNameLength];
+        char mStringValue[kMaxNameLength];
 };
 
 // ====================================================================================================================
@@ -240,7 +240,7 @@ public:
     {
         if (!fullPath)
             fullPath = "";
-        TinScript::SafeStrcpy(mFullPath, sizeof(mFullPath), fullPath, TinScript::kMaxNameLength);
+        TinScript::SafeStrcpy(mFullPath, sizeof(mFullPath), fullPath, kMaxNameLength);
         mFileHash = TinScript::Hash(mFullPath);
         mActionWidget = action_widget;
     }
@@ -260,7 +260,7 @@ public:
     uint32 GetFileHash() const { return mFileHash; }
 
 private:
-    char mFullPath[TinScript::kMaxNameLength];
+    char mFullPath[kMaxNameLength];
     uint32 mFileHash;
     bool mCompileError = false;
     CScriptOpenWidget* mActionWidget;

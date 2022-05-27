@@ -126,7 +126,7 @@ void CBreakpointEntry::UpdateLabel(uint32 codeblock_hash, int32 line_number)
 
     // -- fill in the condition and trace labels
     bool condition_enabled = mConditionEnabled && mCondition[0];
-    char condition_buf[TinScript::kMaxNameLength];
+    char condition_buf[kMaxNameLength];
     if (condition_enabled)
         snprintf(condition_buf, sizeof(condition_buf), "cond: [ %s ]", condition_enabled ? mCondition : "");
     else
@@ -134,7 +134,7 @@ void CBreakpointEntry::UpdateLabel(uint32 codeblock_hash, int32 line_number)
 
     bool trace_enabled = mTraceEnabled && mTracePoint[0];
     bool trace_on_condition = condition_enabled && trace_enabled && mTraceOnCondition;
-    char tracepoint_buf[TinScript::kMaxNameLength];
+    char tracepoint_buf[kMaxNameLength];
     if (trace_on_condition)
         snprintf(tracepoint_buf, sizeof(tracepoint_buf), "c-trace: [ %s ]", mTracePoint);
     else if (trace_enabled)
@@ -156,7 +156,7 @@ void CBreakpointEntry::UpdateLabel(int32 watch_request_id, uint32 var_object_id,
 {
     // -- fill in the condition and trace labels
     bool condition_enabled = mConditionEnabled && mCondition[0];
-    char condition_buf[TinScript::kMaxNameLength];
+    char condition_buf[kMaxNameLength];
     if (condition_enabled)
         snprintf(condition_buf, sizeof(condition_buf), "cond: [ %s ]", condition_enabled ? mCondition : "");
     else
@@ -164,7 +164,7 @@ void CBreakpointEntry::UpdateLabel(int32 watch_request_id, uint32 var_object_id,
 
     bool trace_enabled = mTraceEnabled && mTracePoint[0];
     bool trace_on_condition = condition_enabled && trace_enabled && mTraceOnCondition;
-    char tracepoint_buf[TinScript::kMaxNameLength];
+    char tracepoint_buf[kMaxNameLength];
     if (trace_on_condition)
         snprintf(tracepoint_buf, sizeof(tracepoint_buf), "c-trace: [ %s ]", mTracePoint);
     else if (trace_enabled)
@@ -173,7 +173,7 @@ void CBreakpointEntry::UpdateLabel(int32 watch_request_id, uint32 var_object_id,
         tracepoint_buf[0] = '\0';
 
     // -- set the text in the QWidget
-    char label_buf[TinScript::kMaxNameLength];
+    char label_buf[kMaxNameLength];
     if (mWatchVarObjectID > 0)
         snprintf(label_buf, sizeof(label_buf), "_watch:  %d.%s    %s    %s", mWatchVarObjectID,
                   CConsoleWindow::GetInstance()->UnhashOrRequest(mWatchVarNameHash),
@@ -450,7 +450,7 @@ void CDebugBreakpointsWin::SetBreakCondition(const char* expression, bool8 cond_
     CBreakpointEntry* cur_entry = static_cast<CBreakpointEntry*>(currentItem());
     if (cur_entry)
     {
-        TinScript::SafeStrcpy(cur_entry->mCondition, sizeof(cur_entry->mCondition), expression, TinScript::kMaxNameLength);
+        TinScript::SafeStrcpy(cur_entry->mCondition, sizeof(cur_entry->mCondition), expression, kMaxNameLength);
         cur_entry->mConditionEnabled = cond_enabled;
 
         // -- update the label
@@ -530,7 +530,7 @@ void CDebugBreakpointsWin::SetTraceExpression(const char* expression, bool8 trac
     CBreakpointEntry* cur_entry = static_cast<CBreakpointEntry*>(currentItem());
     if (cur_entry)
     {
-        TinScript::SafeStrcpy(cur_entry->mTracePoint, sizeof(cur_entry->mCondition), expression, TinScript::kMaxNameLength);
+        TinScript::SafeStrcpy(cur_entry->mTracePoint, sizeof(cur_entry->mCondition), expression, kMaxNameLength);
         cur_entry->mTraceEnabled = trace_enabled;
         cur_entry->mTraceOnCondition = trace_on_condition;
 

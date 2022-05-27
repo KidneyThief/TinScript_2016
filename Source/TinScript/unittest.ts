@@ -577,10 +577,10 @@ void UnitTest_V3fArrayResizeGlobal()
     gUnitTestScriptResult = StringCat(UT_ArrayResize_vector3f:count(), " ", UT_ArrayResize_vector3f[2]);
 }
 
-string[] UT_ArrayResize_string;
+string[5] UT_ArrayResize_string;
 void UnitTest_StringArrayResizeGlobal()
 {
-    UT_ArrayResize_string:resize(5);
+    //UT_ArrayResize_string:resize(5);
     UT_ArrayResize_string[2] = "cat";
     UT_ArrayResize_string[3] = "dog";
     UT_ArrayResize_string[4] = "mouse";

@@ -23,12 +23,14 @@
 // TinStringTable.h
 // ====================================================================================================================
 
-#ifndef __TINSTRINGTABLE_H
-#define __TINSTRINGTABLE_H
+#pragma once
+
+// -- lib includes
+#include <string.h>
 
 // -- includes
 #include "integration.h"
-#include "string.h"
+#include "TinHash.h"
 
 // == namespace TinScript =============================================================================================
 
@@ -118,8 +120,6 @@ class CStringTable
 };
 
 } // TinScript
-
-#endif // __TINSTRINGTABLE_H
 
 // ====================================================================================================================
 // EOF

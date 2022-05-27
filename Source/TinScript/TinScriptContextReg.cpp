@@ -27,11 +27,10 @@
 #include <string.h>
 
 // -- includes
-#include "TinRegistration.h"
+#include "TinScript.h"
 #include "TinScheduler.h"
 #include "TinObjectGroup.h"
-#include "TinScript.h"
-
+#include "TinRegBinding.h"
 
 // == namespace TinScript =============================================================================================
 

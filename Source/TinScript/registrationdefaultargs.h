@@ -24,15 +24,17 @@
 // ------------------------------------------------------------------------------------------------
 
 
-#include "TinRegistration.h"
+#pragma once
+
 #include "TinVariableEntry.h"
 #include "TinFunctionEntry.h"
+#include "TinRegistration.h"
 
 // -------------------
 // Parameter count: 0
 // -------------------
 
-class CRegisterDefaultArgsP0 : public CRegDefaultArgValues {
+class CRegisterDefaultArgsP0 : public TinScript::CRegDefaultArgValues {
 public:
 
     CRegisterDefaultArgsP0(::TinScript::CRegFunctionBase* reg_object, const char* _r_name,
@@ -58,7 +60,7 @@ private:
 // -------------------
 
 template<typename T1>
-class CRegisterDefaultArgsP1 : public CRegDefaultArgValues {
+class CRegisterDefaultArgsP1 : public TinScript::CRegDefaultArgValues {
 public:
 
     CRegisterDefaultArgsP1(::TinScript::CRegFunctionBase* reg_object, const char* _r_name,
@@ -89,7 +91,7 @@ private:
 // -------------------
 
 template<typename T1, typename T2>
-class CRegisterDefaultArgsP2 : public CRegDefaultArgValues {
+class CRegisterDefaultArgsP2 : public TinScript::CRegDefaultArgValues {
 public:
 
     CRegisterDefaultArgsP2(::TinScript::CRegFunctionBase* reg_object, const char* _r_name,
@@ -125,7 +127,7 @@ private:
 // -------------------
 
 template<typename T1, typename T2, typename T3>
-class CRegisterDefaultArgsP3 : public CRegDefaultArgValues {
+class CRegisterDefaultArgsP3 : public TinScript::CRegDefaultArgValues {
 public:
 
     CRegisterDefaultArgsP3(::TinScript::CRegFunctionBase* reg_object, const char* _r_name,
@@ -166,7 +168,7 @@ private:
 // -------------------
 
 template<typename T1, typename T2, typename T3, typename T4>
-class CRegisterDefaultArgsP4 : public CRegDefaultArgValues {
+class CRegisterDefaultArgsP4 : public TinScript::CRegDefaultArgValues {
 public:
 
     CRegisterDefaultArgsP4(::TinScript::CRegFunctionBase* reg_object, const char* _r_name,
@@ -212,7 +214,7 @@ private:
 // -------------------
 
 template<typename T1, typename T2, typename T3, typename T4, typename T5>
-class CRegisterDefaultArgsP5 : public CRegDefaultArgValues {
+class CRegisterDefaultArgsP5 : public TinScript::CRegDefaultArgValues {
 public:
 
     CRegisterDefaultArgsP5(::TinScript::CRegFunctionBase* reg_object, const char* _r_name,
@@ -263,7 +265,7 @@ private:
 // -------------------
 
 template<typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
-class CRegisterDefaultArgsP6 : public CRegDefaultArgValues {
+class CRegisterDefaultArgsP6 : public TinScript::CRegDefaultArgValues {
 public:
 
     CRegisterDefaultArgsP6(::TinScript::CRegFunctionBase* reg_object, const char* _r_name,
@@ -319,7 +321,7 @@ private:
 // -------------------
 
 template<typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7>
-class CRegisterDefaultArgsP7 : public CRegDefaultArgValues {
+class CRegisterDefaultArgsP7 : public TinScript::CRegDefaultArgValues {
 public:
 
     CRegisterDefaultArgsP7(::TinScript::CRegFunctionBase* reg_object, const char* _r_name,
@@ -380,7 +382,7 @@ private:
 // -------------------
 
 template<typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8>
-class CRegisterDefaultArgsP8 : public CRegDefaultArgValues {
+class CRegisterDefaultArgsP8 : public TinScript::CRegDefaultArgValues {
 public:
 
     CRegisterDefaultArgsP8(::TinScript::CRegFunctionBase* reg_object, const char* _r_name,
@@ -446,7 +448,7 @@ private:
 // -------------------
 
 template<typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9>
-class CRegisterDefaultArgsP9 : public CRegDefaultArgValues {
+class CRegisterDefaultArgsP9 : public TinScript::CRegDefaultArgValues {
 public:
 
     CRegisterDefaultArgsP9(::TinScript::CRegFunctionBase* reg_object, const char* _r_name,
@@ -517,7 +519,7 @@ private:
 // -------------------
 
 template<typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10>
-class CRegisterDefaultArgsP10 : public CRegDefaultArgValues {
+class CRegisterDefaultArgsP10 : public TinScript::CRegDefaultArgValues {
 public:
 
     CRegisterDefaultArgsP10(::TinScript::CRegFunctionBase* reg_object, const char* _r_name,
@@ -593,7 +595,7 @@ private:
 // -------------------
 
 template<typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10, typename T11>
-class CRegisterDefaultArgsP11 : public CRegDefaultArgValues {
+class CRegisterDefaultArgsP11 : public TinScript::CRegDefaultArgValues {
 public:
 
     CRegisterDefaultArgsP11(::TinScript::CRegFunctionBase* reg_object, const char* _r_name,
@@ -674,7 +676,7 @@ private:
 // -------------------
 
 template<typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10, typename T11, typename T12>
-class CRegisterDefaultArgsP12 : public CRegDefaultArgValues {
+class CRegisterDefaultArgsP12 : public TinScript::CRegDefaultArgValues {
 public:
 
     CRegisterDefaultArgsP12(::TinScript::CRegFunctionBase* reg_object, const char* _r_name,

@@ -23,6 +23,9 @@
 // TinTypes.cpp : Registered types for use with TinScript.
 // ====================================================================================================================
 
+// -- class include
+#include "TinTypes.h"
+
 // -- lib includes
 #include "stdio.h"
 #include "string.h"
@@ -32,9 +35,9 @@
 
 #include "TinHash.h"
 #include "TinCompile.h"
-#include "TinTypes.h"
 #include "TinScript.h"
 #include "TinStringTable.h"
+#include "TinRegBinding.h"
 
 // == namespace TinScript =============================================================================================
 

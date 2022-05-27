@@ -23,13 +23,15 @@
 // TinStringTable.cpp
 // ====================================================================================================================
 
+// -- class include
+#include "TinStringTable.h"
+
 // -- includes
 #include "string.h"
 
 // -- TinScript includes
 #include "TinScript.h"
-#include "TinRegistration.h"
-#include "TinStringTable.h"
+#include "TinRegBinding.h"
 
 // == namespace TinScript =============================================================================================
 

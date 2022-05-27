@@ -23,19 +23,19 @@
 // TinCompile.h
 // ====================================================================================================================
 
-#ifndef __TINCOMPILE_H
-#define __TINCOMPILE_H
+#pragma once
 
 // -- includes
 #include <assert.h>
 #include <filesystem>
 
 #include "integration.h"
+#include "TinDefines.h"
 #include "TinTypes.h"
-#include "TinParse.h"
-#include "TinRegistration.h"
-#include "TinExecute.h"
-#include "TinScript.h"
+//#include "TinParse.h"
+//#include "TinRegistration.h"
+//#include "TinExecute.h"
+//#include "TinScript.h"
 
 // == namespace TinScript =============================================================================================
 namespace TinScript
@@ -49,179 +49,13 @@ class CFunctionEntry;
 class CExecStack;
 class CFunctionCallStack;
 class CWhileLoopNode;
+class CCodeBlock;
+class CDebuggerWatchExpression;
 
-// --------------------------------------------------------------------------------------------------------------------
-// compile tree node types
-#define CompileNodeTypesTuple \
-	CompileNodeTypeEntry(NOP)					\
-	CompileNodeTypeEntry(Comment)				\
-	CompileNodeTypeEntry(BinaryNOP)			    \
-	CompileNodeTypeEntry(DebugNOP)			    \
-	CompileNodeTypeEntry(Ensure)  	            \
-	CompileNodeTypeEntry(EnsureInterface)  	    \
-	CompileNodeTypeEntry(IncludeScript)         \
-	CompileNodeTypeEntry(Type)  	            \
-	CompileNodeTypeEntry(Value)					\
-	CompileNodeTypeEntry(Self)       			\
-	CompileNodeTypeEntry(ObjMember) 			\
-	CompileNodeTypeEntry(PODMember) 			\
-	CompileNodeTypeEntry(PODMethod) 			\
-	CompileNodeTypeEntry(Assignment)			\
-	CompileNodeTypeEntry(BinaryOp)				\
-	CompileNodeTypeEntry(UnaryOp)				\
-	CompileNodeTypeEntry(SwitchStmt)    		\
-	CompileNodeTypeEntry(CaseStmt)    		    \
-	CompileNodeTypeEntry(IfStmt)				\
-	CompileNodeTypeEntry(CondBranch)			\
-	CompileNodeTypeEntry(WhileLoop)				\
-	CompileNodeTypeEntry(ForLoop)				\
-	CompileNodeTypeEntry(ForeachLoop)			\
-	CompileNodeTypeEntry(ForeachIterNext)		\
-	CompileNodeTypeEntry(LoopJump)        		\
-	CompileNodeTypeEntry(FuncDecl)				\
-	CompileNodeTypeEntry(FuncCall)				\
-	CompileNodeTypeEntry(FuncReturn)			\
-	CompileNodeTypeEntry(ObjMethod) 			\
-    CompileNodeTypeEntry(Sched) 				\
-    CompileNodeTypeEntry(SchedParam)    		\
-    CompileNodeTypeEntry(SchedFunc)     		\
-	CompileNodeTypeEntry(ArrayHash) 			\
-	CompileNodeTypeEntry(ArrayVar)			    \
-	CompileNodeTypeEntry(ArrayVarDecl)			\
-	CompileNodeTypeEntry(ArrayDecl)			    \
-	CompileNodeTypeEntry(MathUnaryFunc)			\
-	CompileNodeTypeEntry(MathBinaryFunc)		\
-	CompileNodeTypeEntry(HashtableCopy)	    	\
-	CompileNodeTypeEntry(SelfVarDecl)			\
-	CompileNodeTypeEntry(ObjMemberDecl)			\
-	CompileNodeTypeEntry(Schedule)			    \
-	CompileNodeTypeEntry(CreateObject)  	    \
-	CompileNodeTypeEntry(DestroyObject)  	    \
-
-// enum to mark the nodes for debug output
-enum ECompileNodeType
-{
-	#define CompileNodeTypeEntry(a) e##a,
-	CompileNodeTypesTuple
-	#undef CompileNodeTypeEntry
-
-	eNodeTypeCount
-};
+typedef CHashTable<CVariableEntry> tVarTable;
+typedef CHashTable<CFunctionEntry> tFuncTable;
 
 const char* GetNodeTypeString(ECompileNodeType nodetype);
-
-// --------------------------------------------------------------------------------------------------------------------
-// -- used when we're parsing, to determine the context of the function call
-enum class EFunctionCallType
-{
-	None,
-	Global,
-	ObjMethod,
-	PODMethod,
-	Super,
-	Count
-};
-
-// --------------------------------------------------------------------------------------------------------------------
-// operation types
-
-#define OperationTuple \
-	OperationEntry(NULL)				\
-	OperationEntry(NOP)					\
-	OperationEntry(DebugMsg)			\
-	OperationEntry(Include)				\
-	OperationEntry(Ensure)				\
-	OperationEntry(EnsureInterface)		\
-	OperationEntry(Type)				\
-	OperationEntry(VarDecl)				\
-	OperationEntry(ParamDecl)			\
-	OperationEntry(Assign)				\
-	OperationEntry(PushAssignValue)     \
-	OperationEntry(PushParam)			\
-	OperationEntry(Push)				\
-	OperationEntry(PushCopy)			\
-	OperationEntry(PushLocalVar)		\
-	OperationEntry(PushLocalValue)		\
-	OperationEntry(PushGlobalVar)		\
-	OperationEntry(PushGlobalValue)		\
-	OperationEntry(PushArrayVar)     	\
-	OperationEntry(PushArrayValue)     	\
-	OperationEntry(PushMember)			\
-	OperationEntry(PushMemberVal)		\
-	OperationEntry(PushPODMember)       \
-	OperationEntry(PushPODMemberVal)    \
-	OperationEntry(PushSelf)    		\
-	OperationEntry(Pop)					\
-	OperationEntry(ForeachIterInit)		\
-	OperationEntry(ForeachIterNext)		\
-	OperationEntry(Add)					\
-	OperationEntry(Sub)					\
-	OperationEntry(Mult)				\
-	OperationEntry(Div)					\
-	OperationEntry(Mod)					\
-	OperationEntry(AssignAdd)			\
-	OperationEntry(AssignSub)			\
-	OperationEntry(AssignMult)			\
-	OperationEntry(AssignDiv)			\
-	OperationEntry(AssignMod)			\
-	OperationEntry(AssignLeftShift)		\
-	OperationEntry(AssignRightShift)	\
-	OperationEntry(AssignBitAnd)        \
-	OperationEntry(AssignBitOr)         \
-	OperationEntry(AssignBitXor)        \
-	OperationEntry(BooleanAnd)      	\
-	OperationEntry(BooleanOr)         	\
-	OperationEntry(CompareEqual)		\
-	OperationEntry(CompareNotEqual)		\
-	OperationEntry(CompareLess)			\
-	OperationEntry(CompareLessEqual)	\
-	OperationEntry(CompareGreater)		\
-	OperationEntry(CompareGreaterEqual)	\
-	OperationEntry(BitLeftShift)        \
-	OperationEntry(BitRightShift)       \
-	OperationEntry(BitAnd)	            \
-	OperationEntry(BitOr)	            \
-	OperationEntry(BitXor)	            \
-	OperationEntry(UnaryPreInc)	        \
-	OperationEntry(UnaryPreDec)	        \
-	OperationEntry(UnaryPostInc)        \
-	OperationEntry(UnaryPostDec)        \
-	OperationEntry(UnaryBitInvert)	    \
-	OperationEntry(UnaryNot)	        \
-	OperationEntry(UnaryNeg)	        \
-	OperationEntry(UnaryPos)	        \
-	OperationEntry(Branch)				\
-	OperationEntry(BranchCond)			\
-	OperationEntry(FuncDecl)    		\
-	OperationEntry(FuncDeclEnd)    		\
-	OperationEntry(FuncCallArgs)		\
-	OperationEntry(FuncCall)			\
-	OperationEntry(FuncReturn)			\
-	OperationEntry(MethodCallArgs)		\
-	OperationEntry(PODCallArgs)			\
-	OperationEntry(PODCallComplete)		\
-	OperationEntry(ArrayHash)			\
-	OperationEntry(ArrayVarDecl)		\
-	OperationEntry(ArrayDecl)		    \
-	OperationEntry(MathUnaryFunc)		\
-	OperationEntry(MathBinaryFunc)		\
-	OperationEntry(HashtableCopy)		\
-	OperationEntry(SelfVarDecl)		    \
-	OperationEntry(ObjMemberDecl)       \
-	OperationEntry(ScheduleBegin)       \
-	OperationEntry(ScheduleParam)       \
-	OperationEntry(ScheduleEnd)         \
-	OperationEntry(CreateObject)		\
-	OperationEntry(DestroyObject)		\
-	OperationEntry(EOF)					\
-
-enum eOpCode {
-	#define OperationEntry(a) OP_##a,
-	OperationTuple
-	#undef OperationEntry
-	OP_COUNT
-};
-
 const char* GetOperationString(eOpCode op);
 
 // ====================================================================================================================
@@ -403,7 +237,7 @@ class CBinaryOpNode : public CCompileTreeNode
 
         virtual bool8 CompileToC(int32 indent, char*& out_buffer, int32& max_size, bool root_node) const;
 
-        virtual bool8 IsAssignOpNode() const { return (assign_op != eAssignOpType::ASSOP_NULL); }
+		virtual bool8 IsAssignOpNode() const;
         eOpCode GetOpCode() const { return binaryopcode; }
         int32 GetBinaryOpPrecedence() const { return binaryopprecedence; }
         void OverrideBinaryOpPrecedence(int32 new_precedence) { binaryopprecedence = new_precedence; }
@@ -1107,44 +941,13 @@ class CCodeBlock
 
         CScriptContext* GetScriptContext() { return (mContextOwner); }
 
-        void AllocateInstructionBlock(int32 _size, int32 _linecount)
-        {
-			mInstrBlock = NULL;
-			mInstrCount = _size;
-            if (_size > 0)
-                mInstrBlock = TinAllocArray(ALLOC_CodeBlock, uint32, _size);
-            if(_linecount > 0)
-                mLineNumbers = TinAllocArray(ALLOC_CodeBlock, uint32, _linecount);
-        }
+        void AllocateInstructionBlock(int32 _size, int32 _linecount);
 
         const char* GetFileName() const { return (mFileName); }
 
         uint32 GetFilenameHash() const { return (mFileNameHash); }
 
-        void AddLineNumber(int32 linenumber, uint32* instrptr)
-        {
-            // -- sanity check
-            if (linenumber < 0)
-                return;
-
-            // -- if this instruction is for the same line number, we only track the first
-            if (linenumber == mLineNumberCurrent)
-                return;
-
-            mLineNumberCurrent = linenumber;
-
-            // -- if we have a line numbers array, then we've already allocated our instruction block,
-            // and we're about to populate the array with actual instruction offsets
-            if (mLineNumbers)
-            {
-                uint32 offset = CalcOffset(instrptr);
-                mLineNumbers[mLineNumberIndex++] = (offset << 16) + (linenumber & (0xffff));
-            }
-            else
-            {
-                ++mLineNumberCount;
-            }
-        }
+        void AddLineNumber(int32 linenumber, uint32* instrptr);
 
 		const uint32 GetInstructionCount() const { return (mInstrCount); }
 		const uint32* GetInstructionPtr() const { return (mInstrBlock); }
@@ -1194,29 +997,10 @@ class CCodeBlock
         //-- CompileToC members
         bool CompileTreeToSourceC(const CCompileTreeNode& root, char*& out_buffer, int32& max_size);
 
-        void AddFunction(CFunctionEntry* _func)
-        {
-            if (!mFunctionList->FindItem(_func->GetHash()))
-                mFunctionList->AddItem(*_func, _func->GetHash());
-
-            // $$$TZA Overload
-            //printf("### DEBUG: 0x%x\n", _func->GetContext()->CalcHash());
-        }
-
-        void RemoveFunction(CFunctionEntry* _func)
-        {
-            mFunctionList->RemoveItem(_func->GetHash());
-        }
-
-		bool HasFunction(uint32 func_hash)
-		{
-			return mFunctionList != nullptr && mFunctionList->FindItem(func_hash) != nullptr;
-		}
-
-        int32 IsInUse()
-        {
-            return (mIsParsing || !mFunctionList->IsEmpty() || !mBreakpoints->IsEmpty());
-        }
+		void AddFunction(CFunctionEntry* _func);
+		void RemoveFunction(CFunctionEntry* _func);
+		bool HasFunction(uint32 func_hash);
+		bool IsInUse();
 
         void SetFinishedParsing() { mIsParsing = false; }
 
@@ -1237,60 +1021,8 @@ class CCodeBlock
         int32 RemoveBreakpoint(int32 line_number);
         void RemoveAllBreakpoints();
 
-        static void DestroyCodeBlock(CCodeBlock* codeblock)
-        {
-            if (!codeblock)
-                return;
-            if (codeblock->IsInUse())
-            {
-                ScriptAssert_(codeblock->GetScriptContext(), 0, "<internal>", -1,
-                              "Error - Attempting to destroy active codeblock: %s\n",
-                              codeblock->GetFileName());
-                return;
-            }
-            codeblock->GetScriptContext()->GetCodeBlockList()->RemoveItem(codeblock, codeblock->mFileNameHash);
-            TinFree(codeblock);
-        }
-
-        static void DestroyUnusedCodeBlocks(CHashTable<CCodeBlock>* code_block_list)
-        {
-            CCodeBlock* codeblock = code_block_list->First();
-			int32 dummy_session = 0;
-            while (codeblock)
-            {
-                if (!codeblock->IsInUse())
-                {
-                    code_block_list->RemoveItem(codeblock, codeblock->mFileNameHash);
-                    TinFree(codeblock);
-                }
-#if NOTIFY_SCRIPTS_MODIFIED
-				// -- any time the debugger is *not* connected, clear the check ft, so we resend on a new attachment
-				else if (!codeblock->GetScriptContext()->IsDebuggerConnected(dummy_session))
-				{
-					codeblock->SetCheckSourceFileTime({});
-				}
-
-				// -- otherwise, see if the source for the codeblock has been modified
-				else
-				{
-                    bool found_source_ft = false;
-                    std::filesystem::file_time_type source_modified_ft;
-                    bool need_to_compile = CheckSourceNeedToCompile(codeblock->GetFileName(), found_source_ft, source_modified_ft);
-
-					// -- if we need to compile, see if we need to send the notification (again...)
-					if (need_to_compile && found_source_ft)
-					{
-						if (source_modified_ft != codeblock->GetCheckSourceFileTime())
-						{
-							codeblock->SetCheckSourceFileTime(source_modified_ft);
-                            codeblock->GetScriptContext()->NotifySourceStatus(codeblock->GetFileName(), true, false);
-						}
-					}
-				}
-#endif
-                codeblock = code_block_list->Next();
-            }
-        }
+		static void DestroyCodeBlock(CCodeBlock* codeblock);
+		static void DestroyUnusedCodeBlocks(CHashTable<CCodeBlock>* code_block_list);
 
 	private:
         CScriptContext* mContextOwner;
@@ -1325,8 +1057,6 @@ void SetDebugForceCompile(bool torf);
 bool GetDebugForceCompile(std::time_t& force_compile_time);
 
 }  // TinScript
-
-#endif // __TINCOMPILE_H
 
 // ====================================================================================================================
 // EOF

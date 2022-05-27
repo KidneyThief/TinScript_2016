@@ -47,7 +47,8 @@
 #include "TinHashtable.h"
 #include "TinScript.h"
 #include "TinRegistration.h"
-#include "registrationexecs.h"
+
+#include "TinRegBinding.h"
 
 #if PLATFORM_UE4 && TS_PLATFORM_WINDOWS
     #undef WIN32_LEAN_AND_MEAN
@@ -169,6 +170,8 @@ REGISTER_SCRIPT_CLASS_BEGIN(CBase, VOID)
 REGISTER_SCRIPT_CLASS_END()
 
 REGISTER_METHOD(CBase, GetFloatValue, GetFloatValue);
+
+
 REGISTER_METHOD(CBase, GetIntValue, GetIntValue);
 REGISTER_METHOD(CBase, GetBoolValue, GetBoolValue);
 
@@ -212,14 +215,14 @@ class CUnitTest
                   UnitTestFunc code_test = NULL, const char* code_result = NULL, bool execute_code_last = false)
         {
             // -- copy the unit test parameters
-            TinScript::SafeStrcpy(mName, sizeof(mName), name, TinScript::kMaxTokenLength);
-            TinScript::SafeStrcpy(mDescription, sizeof(mDescription), description, TinScript::kMaxTokenLength);
-            TinScript::SafeStrcpy(mScriptCommand, sizeof(mScriptCommand), script_command, TinScript::kMaxTokenLength);
-            TinScript::SafeStrcpy(mScriptResult, sizeof(mScriptResult), script_result, TinScript::kMaxTokenLength);
+            TinScript::SafeStrcpy(mName, sizeof(mName), name, kMaxTokenLength);
+            TinScript::SafeStrcpy(mDescription, sizeof(mDescription), description, kMaxTokenLength);
+            TinScript::SafeStrcpy(mScriptCommand, sizeof(mScriptCommand), script_command, kMaxTokenLength);
+            TinScript::SafeStrcpy(mScriptResult, sizeof(mScriptResult), script_result, kMaxTokenLength);
 
             mExecuteCodeLast = execute_code_last;
             mCodeTest = code_test;
-            TinScript::SafeStrcpy(mCodeResult, sizeof(mCodeResult), code_result, TinScript::kMaxTokenLength);
+            TinScript::SafeStrcpy(mCodeResult, sizeof(mCodeResult), code_result, kMaxTokenLength);
         }
 
         // -- members
@@ -611,10 +614,14 @@ uint32 PerformUnitTests(bool8 results_only, const char* partial_name)
         ++test_number;
 
         // -- Print the name and description
-        results_only ? 0 : MTPrint("\n[%d] Unit test: %s\nDesc: %s\nScript result: %s\nCode result: %s\n", test_number,
-                                   current_test->mName, current_test->mDescription,
-                                   current_test->mScriptResult[0] ? current_test->mScriptResult : "\"\"",
-                                   current_test->mCodeResult[0] ? current_test->mCodeResult : "\"\"");
+        const char* empty_string = "\"\"";
+        const char* script_result_string = (current_test->mScriptResult[0] != '\0' ? &current_test->mScriptResult[0] : empty_string);
+        const char* code_result_string = (current_test->mCodeResult[0] != '\0' ? &current_test->mCodeResult[0] : empty_string);
+        if (!results_only)
+        {
+            MTPrint("\n[%d] Unit test: %s\nDesc: %s\nScript result: %s\nCode result: %s\n", test_number,
+                    current_test->mName, current_test->mDescription, script_result_string, code_result_string);
+        }
 
         // -- call the code test (if it exists, and is not explicitly after the script command)
         if (current_test->mCodeTest && !current_test->mExecuteCodeLast)
@@ -653,7 +660,10 @@ uint32 PerformUnitTests(bool8 results_only, const char* partial_name)
         }
         else
         {
-            results_only ? 0 : MTPrint("*** Passed\n");
+            if (!results_only)
+            {
+                MTPrint("*** Passed\n");
+            }
         }
 
         // -- next test
@@ -996,9 +1006,12 @@ void BeginUnitTests(const char* specific_test = "", bool8 results_only = false)
         return;
 
     // -- Execute the unit test script
-    results_only ? 0 : MTPrint("\n*** TinScript Unit Tests ***\n");
+    if (!results_only)
+    {
+        MTPrint("\n*** TinScript Unit Tests ***\n");
+        MTPrint("\nExecuting unittest.ts\n");
+    }
 
-    results_only ? 0 : MTPrint("\nExecuting unittest.ts\n");
 	if (!script_context->ExecScript(kUnitTestScriptName, true, false))
     {
 		MTPrint("Error - unable to parse file: %s\n", kUnitTestScriptName);
@@ -1291,7 +1304,7 @@ class Signature<1, R(Args...)>
         Signature() { printf("Arg Count: 1\n"); PrintArgs(); }
         void PrintArgs()
         {
-            using arg1 = std::tuple_element<0, argument_types>::type;
+            using arg1 = typename std::tuple_element<0, argument_types>::type;
             PrintType<arg1>(1);
         }
 };
@@ -1306,8 +1319,8 @@ class Signature<2, R(Args...)>
         Signature() { printf("Arg Count: 2\n"); PrintArgs(); }
         void PrintArgs()
         {
-            using arg1 = std::tuple_element<0, argument_types>::type;
-            using arg2 = std::tuple_element<1, argument_types>::type;
+            using arg1 = typename std::tuple_element<0, argument_types>::type;
+            using arg2 = typename std::tuple_element<1, argument_types>::type;
             PrintType<arg1>(1);
             PrintType<arg2>(2);
         }
@@ -1323,9 +1336,9 @@ class Signature<3, R(Args...)>
         Signature() { printf("Arg Count: 3\n"); PrintArgs(); }
         void PrintArgs()
         {
-            using arg1 = std::tuple_element<0, argument_types>::type;
-            using arg2 = std::tuple_element<1, argument_types>::type;
-            using arg3 = std::tuple_element<2, argument_types>::type;
+            using arg1 = typename std::tuple_element<0, argument_types>::type;
+            using arg2 = typename std::tuple_element<1, argument_types>::type;
+            using arg3 = typename std::tuple_element<2, argument_types>::type;
             PrintType<arg1>(1);
             PrintType<arg2>(2);
             PrintType<arg3>(3);
@@ -1334,7 +1347,7 @@ class Signature<3, R(Args...)>
 
 #define PRINT_SIGNATURE(Func) \
 {   \
-    const int n = TinScript::SignatureArgCount<decltype(Func)>::arg_count; \
+    const int n = SignatureArgCount<decltype(Func)>::arg_count; \
     Signature<n, decltype(Func)>(); \
 }
 

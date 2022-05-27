@@ -104,7 +104,7 @@ class CDebugToolButton : public CDebugToolEntry
 
     protected:
         QPushButton* mButton;
-        char mCommand[TinScript::kMaxTokenLength];
+        char mCommand[kMaxTokenLength];
 };
 
 // ====================================================================================================================
@@ -126,7 +126,7 @@ class CDebugToolSlider : public CDebugToolEntry
 
     protected:
         QSlider* mSlider;
-        char mCommand[TinScript::kMaxTokenLength];
+        char mCommand[kMaxTokenLength];
 };
 
 // ====================================================================================================================
@@ -148,7 +148,7 @@ class CDebugToolTextEdit : public CDebugToolEntry
 
     protected:
         SafeLineEdit* mLineEdit;
-        char mCommand[TinScript::kMaxTokenLength];
+        char mCommand[kMaxTokenLength];
 };
 
 // ====================================================================================================================
@@ -170,7 +170,7 @@ class CDebugToolCheckBox : public CDebugToolEntry
 
     protected:
         QCheckBox* mCheckBox;
-        char mCommand[TinScript::kMaxTokenLength];
+        char mCommand[kMaxTokenLength];
 };
 
 // ====================================================================================================================
@@ -232,7 +232,7 @@ class CDebugToolsWin : public QWidget
         static QMap<uint32, CDebugToolEntry*> gDebugToolEntryNamedMap;
 
     private:
-        char mWindowName[TinScript::kMaxNameLength];
+        char mWindowName[kMaxNameLength];
         QList<CDebugToolEntry*> mEntryList;
         QGridLayout* mLayout;
         QScrollArea* mScrollArea;

@@ -38,6 +38,7 @@ namespace TinScript
 // --------------------------------------------------------------------------------------------------------------------
 // -- forward declarations
 class CObjectSet;
+class CObjectEntry;
 
 // ====================================================================================================================
 // class CMasterMembershipList: This class is a "reverse lookup", where the has is the objectID, it returns

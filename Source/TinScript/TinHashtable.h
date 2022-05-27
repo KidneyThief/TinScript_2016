@@ -196,7 +196,7 @@ class CHashtable
             }
 
             // -- perform the assignment
-            hte->SetValueAddr(false, value_addr);
+            hte->SetValueAddr(nullptr, value_addr);
 
             // -- success
             return true;

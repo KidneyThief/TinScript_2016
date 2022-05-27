@@ -37,6 +37,7 @@
 #include "TinScript.h"
 #include "TinStringTable.h"
 #include "TinOpExecFunctions.h"
+#include "TinRegBinding.h"
 
 #if PLATFORM_UE4
 	#include "math/Vector.h"

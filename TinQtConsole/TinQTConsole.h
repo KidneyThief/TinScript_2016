@@ -320,7 +320,7 @@ class CConsoleInput : public QLineEdit
 
         void NotifySourceStatus(const char* script_full_path, bool has_error);
 
-        typedef struct { char text[TinScript::kMaxTokenLength]; } tHistoryEntry;
+        typedef struct { char text[kMaxTokenLength]; } tHistoryEntry;
         void GetHistory(QStringList& history) const;
 
         void TryConnect(bool is_auto_connect);
@@ -363,7 +363,7 @@ class CConsoleInput : public QLineEdit
         // -- tab completion members
         int32 mTabCompleteRequestID;
         int32 mTabCompletionIndex;
-        char mTabCompletionBuf[TinScript::kMaxTokenLength];
+        char mTabCompletionBuf[kMaxTokenLength];
 };
 
 // ====================================================================================================================

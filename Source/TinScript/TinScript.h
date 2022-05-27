@@ -41,27 +41,6 @@
 #include "TinScheduler.h"
 
 // --------------------------------------------------------------------------------------------------------------------
-// -- compile flags
-// -- note:  if you change these (like, modifying compile symbols), you may want to bump the kCompilerVersion
-// -- If any operation changes it's instruction format, bump the compiler version
-
-// -- the following three have no side effects, but slow down execution
-#define DEBUG_CODEBLOCK 1
-#define DEBUG_TRACE 1
-#define TIN_DEBUGGER 1
-
-// -- this affects the compiled versions, whether the code block contains line number offsets
-#define DEBUG_COMPILE_SYMBOLS 1
-
-// -- mostly untested - affects the Hash function, and which version of Strncmp_ to use...
-// -- theoretically the all tokens/identifiers (e.g. namespaces, function names, ...) are
-// -- executed through their hash values...
-#define CASE_SENSITIVE 1
-
-// -- 05/12 reworked the "stack top reserve", asserting if we ever pop into local var space
-const int32 kCompilerVersion = 18;
-
-// --------------------------------------------------------------------------------------------------------------------
 // -- only case_sensitive has been extensively tested, however theoretically TinScript should function as a
 // -- insensitive language by affecting just a few functions, such as Hash().
 #if CASE_SENSITIVE
@@ -83,112 +62,6 @@ inline const char* __GetClassName()
         class_name = &space_ptr[1];
     return class_name;
 }
-
-// ====================================================================================================================
-// -- Registration macros
-
-#define REGISTER_SCRIPT_CLASS_NO_CONSTRUCT_BEGIN(classname, parentname)                                             \
-    static classname* __##classname##_Create() {                                                                    \
-        assert(0 && #classname " cannot be constructed from script");                                               \
-        return nullptr;                                                                                              \
-    }                                                                                                               \
-    static void __##classname##_Destroy(void* addr) {                                                               \
-        if (addr) {                                                                                                 \
-            assert(0 && #classname " cannot be destructed from script");                                            \
-	    }                                                                                                           \
-    }                                                                                                               \
-    void __##classname##_Register(::TinScript::CScriptContext* script_context,                                      \
-                                  ::TinScript::CNamespace* classnamespace);                                         \
-    ::TinScript::CNamespaceReg reg_##classname(#classname, #parentname, ::TinScript::GetTypeID<classname*>(),       \
-                                               (void*)__##classname##_Create, (void*)__##classname##_Destroy,       \
-                                               (void*)__##classname##_Register);                                    \
-    REGISTER_DEFAULT_METHODS(classname);                                                                            \
-    void __##classname##_Register(::TinScript::CScriptContext* script_context,                                      \
-                                  ::TinScript::CNamespace* classnamespace)                                          \
-    {                                                                                                               \
-        Unused_(script_context);                                                                                    \
-        Unused_(classnamespace);
-
-#define REGISTER_SCRIPT_CLASS_BEGIN(classname, parentname)                                                          \
-    static classname* __##classname##_Create() {                                                                    \
-        classname* newobj = TinAlloc(ALLOC_CreateObj, classname);                                                   \
-        return newobj;                                                                                              \
-    }                                                                                                               \
-    static void __##classname##_Destroy(void* addr) {                                                               \
-        if (addr) {                                                                                                 \
-            classname* obj = static_cast<classname*>(addr);                                                         \
-            TinFree(obj);                                                                                           \
-	    }                                                                                                           \
-    }                                                                                                               \
-    void __##classname##_Register(::TinScript::CScriptContext* script_context,                                      \
-                                  ::TinScript::CNamespace* classnamespace);                                         \
-    ::TinScript::CNamespaceReg reg_##classname(#classname, #parentname, ::TinScript::GetTypeID<classname*>(),       \
-                                               (void*)__##classname##_Create, (void*)__##classname##_Destroy,       \
-                                               (void*)__##classname##_Register);                                    \
-    REGISTER_DEFAULT_METHODS(classname);                                                                            \
-    void __##classname##_Register(::TinScript::CScriptContext* script_context,                                      \
-                                  ::TinScript::CNamespace* classnamespace)                                          \
-    {                                                                                                               \
-        Unused_(script_context);                                                                                    \
-        Unused_(classnamespace);
-
-#define REGISTER_SCRIPT_CLASS_END() \
-    }
-
-#define REGISTER_MEMBER(classname, scriptname, membername)                                              \
-    {                                                                                                   \
-        classname* classptr = reinterpret_cast<classname*>(0);                                          \
-        uint32 varhash = ::TinScript::Hash(#scriptname);                                                \
-        ::TinScript::CVariableEntry* ve =                                                               \
-            TinAlloc(ALLOC_VarEntry, ::TinScript::CVariableEntry, script_context, #scriptname, varhash, \
-            ::TinScript::GetRegisteredType(::TinScript::GetTypeID(classptr->membername)),               \
-            ::TinScript::IsArray(classptr->membername) ?                                                \
-            (sizeof(classptr->membername) / ::TinScript::GetTypeSize(classptr->membername)) : 1, true,  \
-            Offsetof_(classname, membername));                                                          \
-        classnamespace->GetVarTable()->AddItem(*ve, varhash);                                           \
-    }
-
-#define REGISTER_GLOBAL_VAR(scriptname, var)                                                        \
-    ::TinScript::CRegisterGlobal _reg_gv_##scriptname(#scriptname,                                  \
-        ::TinScript::GetRegisteredType(::TinScript::GetTypeID(var)), (void*)&var,                   \
-        ::TinScript::IsArray(var) ? (sizeof(var) / ::TinScript::GetTypeSize(var)) : 1)
-
-#define DECLARE_FILE(filename) \
-    bool8 g_##filename##_registered = false;
-
-#define REGISTER_FILE(filename) \
-    extern bool8 g_##filename##_registered; \
-    g_##filename##_registered = true;
-
-// -- internal macros to register an enum
-#define MAKE_ENUM(table, var, value) var = value,
-#define MAKE_STRING(table, var, value) #var,
-#define REG_ENUM_GLOBAL(table, var, value)	static int32 table##_##var = value; \
-	    REGISTER_GLOBAL_VAR(table##_##var, table##_##var);
-
-// -- individual macros to register just the enum table, the string table, or to register int32 globals with TinScript
-#define CREATE_ENUM_CLASS(enum_name, enum_list)		\
-	enum class enum_name {							\
-		enum_list(enum_name, MAKE_ENUM)				\
-	};
-
-#define CREATE_ENUM_STRINGS(enum_name, enum_list)	\
-	const char* enum_name##Strings[] = {			\
-		enum_list(enum_name, MAKE_STRING)			\
-	};												\
-
-#define REGISTER_ENUM_CLASS(enum_name, enum_list)	\
-	enum_list(enum_name, REG_ENUM_GLOBAL)			\
-
-// -- a single macro to register the entire macro
-#define REGISTER_SCRIPT_ENUM(enum_name, enum_list)	\
-	enum class enum_name {							\
-		enum_list(enum_name, MAKE_ENUM)				\
-	};												\
-	const char* enum_name##Strings[] = {			\
-		enum_list(enum_name, MAKE_STRING)			\
-	};												\
-	enum_list(enum_name, REG_ENUM_GLOBAL)
 
 // ====================================================================================================================
 // -- debugger constants
@@ -219,7 +92,6 @@ class CFunctionEntry;
 class CNamespace;
 class CCodeBlock;
 class CStringTable;
-class CScheduler;
 class CScriptContext;
 class CObjectEntry;
 class CMasterMembershipList;
