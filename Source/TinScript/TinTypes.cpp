@@ -1205,24 +1205,8 @@ bool TypeVariableArray_Copy(CVariableEntry* ve_src, CVariableEntry* ve_dst)
          return (false);
     }
 
-    // -- check for the "special" string case first, so if this fails, we return having done
-    // nothing to the either variable
-    if (ve_src->GetType() == TYPE_string)
-    {
-        void* src_str_addr = ve_src->GetStringHashArray();
-        void* dst_str_addr = ve_dst->GetStringHashArray();
-        if (src_str_addr == nullptr || dst_str_addr == nullptr)
-        {
-            TinPrint(TinScript::GetContext(), "Error - array:copy() failed from copying string array %s to %s\n",
-                                              (ve_src ? UnHash(ve_src->GetHash()) : "<unknown>"),
-                                              (ve_dst ? UnHash(ve_dst->GetHash()) : "<unknown>"));
-            return (false);
-        }
-        memcpy(dst_addr, src_addr, sizeof(const char*) * count);
-    }
-
-
     // -- copy the memory
+    // -- note:  for Type_string, GetAddr() returns the GetStringHashArray() addr
     memcpy(dst_addr, src_addr, gRegisteredTypeSize[ve_src->GetType()] * count);
 
     // -- return success
@@ -1260,11 +1244,12 @@ bool TypeVariableArray_Resize(CVariableEntry* ve_src, int32 new_size)
     // -- resize is already an expensive operation and shouldn't be used if possible...
     // for now, we'll block copy, rather than hooking into the ve, and deleting the original storage after a copy
     int32 orig_size = ve_src->GetArraySize();
+    int32 byte_count = gRegisteredTypeSize[ve_src->GetType()] * orig_size;
     char* orig_value = nullptr;
     if (orig_size >= 1)
     {
-        orig_value = TinAllocArray(ALLOC_VarStorage, char, sizeof(uint32) * orig_size * MAX_TYPE_SIZE);
-        memcpy(orig_value, ve_src->GetAddr(nullptr), sizeof(uint32) * orig_size * MAX_TYPE_SIZE);
+        orig_value = TinAllocArray(ALLOC_VarStorage, char, byte_count);
+        memcpy(orig_value, ve_src->GetAddr(nullptr), byte_count);
     }
 
     // -- try to free the memory for our array
@@ -1278,13 +1263,12 @@ bool TypeVariableArray_Resize(CVariableEntry* ve_src, int32 new_size)
     // -- copy the contents back to our array (the original count obviously)
     if (orig_size >= 1)
     {
-        memcpy(ve_src->GetAddr(nullptr), orig_value, sizeof(uint32) * orig_size * MAX_TYPE_SIZE);
+        memcpy(ve_src->GetAddr(nullptr), orig_value, byte_count);
     }
 
     // -- return success
     return (true);
 }
-
 
 // ====================================================================================================================
 // ObjectConfig():  Called from InitializeTypes() to register object operations and conversions

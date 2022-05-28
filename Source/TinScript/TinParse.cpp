@@ -571,10 +571,8 @@ const char* GetToken(const char*& inbuf, int32& length, eTokenType& type, const 
 
 	// -- check for NULL ptr, or eof ptr
 	const char* tokenptr = inbuf;
-	if (!tokenptr)
-		return (NULL);
-	else if (tokenptr == '\0')
-		return (tokenptr);
+	if (!tokenptr || *tokenptr == '\0')
+		return (nullptr);
 
 	// -- see if we have the expected token
 	if (expectedtoken && expectedtoken[0] != '\0')
