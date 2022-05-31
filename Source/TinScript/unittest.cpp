@@ -803,13 +803,13 @@ bool8 CreateUnitTests()
         success = success && AddUnitTest("post_inc_int", "var_int++;", "int var_int = 5; var_int++; gUnitTestScriptResult = StringCat(var_int);", "6");
         success = success && AddUnitTest("post_inc_float", "var_float++;", "float var_float = -5.25f; var_float++; gUnitTestScriptResult = StringCat(var_float);", "-4.2500");
         success = success && AddUnitTest("post_inc_assign", "var_int = a++;", "int a = 3; int var_int = a++; gUnitTestScriptResult = StringCat(var_int, ' ', a);", "3 4");
-        success = success && AddUnitTest("post_inc_array", "foo[3]++;", "int[5] foo; foo[3] = 7; foo[3]++; gUnitTestScriptResult = StringCat(foo[3]);", "8");
-        success = success && AddUnitTest("post_inc_index", "foo[bar++];", "int[5] foo; int bar = 2; foo[bar++] = 9; gUnitTestScriptResult = StringCat(bar, ' ', foo[2]);", "3 9");
-        success = success && AddUnitTest("post_inc_array_index", "foo[bar++]++;", "int[5] foo; int bar = 4; foo[bar] = 7; foo[bar++]++; gUnitTestScriptResult = StringCat(bar, ' ', foo[4]);", "5 8");
+        success = success && AddUnitTest("post_inc_array", "ut_foo[3]++;", "int[5] ut_foo; ut_foo[3] = 7; ut_foo[3]++; gUnitTestScriptResult = StringCat(ut_foo[3]);", "8");
+        success = success && AddUnitTest("post_inc_index", "ut_foo[ut_bar++];", "int[5] ut_foo; int ut_bar = 2; ut_foo[ut_bar++] = 9; gUnitTestScriptResult = StringCat(ut_bar, ' ', ut_foo[2]);", "3 9");
+        success = success && AddUnitTest("post_inc_array_index", "ut_foo[ut_bar++]++;", "int[5] ut_foo; int ut_bar = 4; ut_foo[ut_bar] = 7; ut_foo[ut_bar++]++; gUnitTestScriptResult = StringCat(ut_bar, ' ', ut_foo[4]);", "5 8");
         success = success && AddUnitTest("post_inc_v3f", "pos:y++;", "vector3f pos = '1 2 3'; pos:y++; gUnitTestScriptResult = StringCat(pos:y);", "3.0000");
         success = success && AddUnitTest("post_inc_member", "obj.mem++;", "object obj = create CChild('testChild1'); obj.intvalue++; gUnitTestScriptResult = StringCat(obj.intvalue);", "12");
-        success = success && AddUnitTest("post_inc_member_array", "obj.intArray[bar++];", "int bar = 3; object obj = create CChild('testChild2'); obj.intArray[bar++] = 7; gUnitTestScriptResult = StringCat(bar, ' ', obj.intArray[3]);", "4 7");
-        success = success && AddUnitTest("post_inc_member_array2", "obj.mem++;", "int bar = 3; object obj = create CChild('testChild3'); obj.intArray[3] = 17; obj.intArray[bar++]++; gUnitTestScriptResult = StringCat(bar, ' ', obj.intArray[3]);", "4 18");
+        success = success && AddUnitTest("post_inc_member_array", "obj.intArray[ut_bar++];", "int ut_bar = 3; object obj = create CChild('testChild2'); obj.intArray[ut_bar++] = 7; gUnitTestScriptResult = StringCat(ut_bar, ' ', obj.intArray[3]);", "4 7");
+        success = success && AddUnitTest("post_inc_member_array2", "obj.mem++;", "int ut_bar = 3; object obj = create CChild('testChild3'); obj.intArray[3] = 17; obj.intArray[ut_bar++]++; gUnitTestScriptResult = StringCat(ut_bar, ' ', obj.intArray[3]);", "4 18");
 
         // -- bool unit tests -----------------------------------------------------------------------------------------
         // -- bool boolean unit tests
@@ -934,9 +934,14 @@ bool8 CreateUnitTests()
         success = success && AddUnitTest("str_array_copy_m2l", "Str Array Copy Member to Local", "UnitTest_StrArrayCopyM2L();", "6 beaver turkey swan");
         success = success && AddUnitTest("str_array_copy_p2m", "Str Array Copy Param to Member", "UnitTest_StrArrayCopyP2M();", "9 beaver turkey swan");
 
+        // -- array resize (only applies to global and member arrays... stack/param variables live on the stack, and cannot be resized)
         success = success && AddUnitTest("int_array_resize_global", "Int Array Resize global", "UnitTest_IntArrayResizeGlobal();", "9 28 37 46");
         success = success && AddUnitTest("v3f_array_resize_global", "V3f Array Resize global", "UnitTest_V3fArrayResizeGlobal();", "9 3.0000 4.0000 5.0000");
         success = success && AddUnitTest("string_array_resize_global", "String Array Resize global", "UnitTest_StringArrayResizeGlobal();", "9 cat dog mouse");
+
+        success = success && AddUnitTest("int_array_resize_member", "Int Array Resize member", "UnitTest_IntArrayResizeMember();", "9 28 37 46");
+        success = success && AddUnitTest("v3f_array_resize_member", "V3f Array Resize member", "UnitTest_V3fArrayResizeMember();", "9 3.0000 4.0000 5.0000");
+        success = success && AddUnitTest("string_array_resize_member", "String Array Resize member", "UnitTest_StringArrayResizeMember();", "9 cat dog mouse");
 
         // -- exec stack verification with unused variables, with and without post-inc
         success = success && AddUnitTest("unused_pod_member", "Unused POD member", "UnitTest_UnusedPodMember();", "3.0000");
@@ -952,6 +957,23 @@ bool8 CreateUnitTests()
         success = success && AddUnitTest("foreach_array", "Foreach Array", "UnitTest_Foreach_Array();", "3 cat mouse dog");
         success = success && AddUnitTest("foreach_ht", "Foreach Hashtable", "UnitTest_Foreach_HT();", "3 cat mouse dog");
         success = success && AddUnitTest("foreach_objectset", "Foreach ObjectSet", "UnitTest_Foreach_ObjectSet();", "3 cat mouse dog");
+
+        // -- contains
+        success = success && AddUnitTest("contains_intarray_global", "Global IntArray Contains", "UnitTest_IntArray_Contains_Global();", "19 true 20 false");
+        success = success && AddUnitTest("contains_strarray_global", "Global StringArray Contains", "UnitTest_StringArray_Contains_Global();", "cat true donkey false");
+        success = success && AddUnitTest("contains_v3farray_global", "Global V3fArray Contains", "UnitTest_V3fArray_Contains_Global();", "(1 2 3) false (3.1 4.2 5.3) true");
+
+        success = success && AddUnitTest("contains_intarray_local", "Local IntArray Contains", "UnitTest_IntArray_Contains_Local();", "19 true 20 false");
+        success = success && AddUnitTest("contains_strarray_local", "Local StringArray Contains", "UnitTest_StringArray_Contains_Local();", "cat true donkey false");
+        success = success && AddUnitTest("contains_v3farray_local", "Local V3fArray Contains", "UnitTest_V3fArray_Contains_Local();", "(1 2 3) false (3.1 4.2 5.3) true");
+
+        success = success && AddUnitTest("contains_intarray_object", "Object IntArray Contains", "UnitTest_IntArray_Contains_Object();", "19 true 20 false");
+        success = success && AddUnitTest("contains_strarray_object", "Object StringArray Contains", "UnitTest_StringArray_Contains_Object();", "cat true donkey false");
+        success = success && AddUnitTest("contains_v3farray_object", "Object V3fArray Contains", "UnitTest_V3fArray_Contains_Object();", "(1 2 3) false (3.1 4.2 5.3) true");
+
+        success = success && AddUnitTest("contains_intarray_ht", "HT IntArray Contains", "UnitTest_IntArray_Contains_HT();", "19 true 20 false");
+        success = success && AddUnitTest("contains_strarray_ht", "HT StringArray Contains", "UnitTest_StringArray_Contains_HT();", "cat true donkey false");
+        success = success && AddUnitTest("contains_v3farray_ht", "HT V3fArray Contains", "UnitTest_V3fArray_Contains_HT();", "(1 2 3) false (3.1 4.2 5.3) true");
 
         // -- hashtable copy/wrap
         success = success && AddUnitTest("ht_ht_return", "HT as return value", "UnitTest_HT_ReturnHTVal();", "cat");

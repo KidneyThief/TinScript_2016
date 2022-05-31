@@ -310,20 +310,20 @@ bool TypeVector3f_Contains(CVariableEntry* ve, CVector3f v3f_val)
 CVector3f TypeVector3f_Set(CVariableEntry* ve_src, float _x, float _y, float _z)
 {
     // -- sanity check
-    if (ve_src == nullptr || ve_src->GetType() != TYPE_vector3f || ve_src->IsArray())
+    if (ve_src == nullptr || ve_src->GetType() != TYPE_vector3f)
         return CVector3f::zero;
 
     // -- resolve the storage for the variable
     CVector3f* value = nullptr;
 
-    // -- if this is a stack variable, if it's owned by a function
-    // -- by definition, we're executing a function call for this method, so we want the
-    // calling function's stack offset, which will be 1 below us on the stack
-    if (ve_src->GetFunctionEntry() != nullptr)
+    //-- the ref addr already calculates the array and/or stack offsets
+    if (ve_src->GetRefAddr() != nullptr)
     {
-        value = GetPODStackVarAddr<CVector3f>(ve_src, 1);
+        value = (CVector3f*)ve_src->GetRefAddr();
     }
-    //-- if this isn't a stack variable, get the value addr directly
+
+    // -- if the ref address (which has already been calculated for array offsets, etc...)
+    // hasn't been provided, use the actual VE address
     else
     {
         value = (CVector3f*)ve_src->GetAddr(nullptr);
@@ -341,20 +341,20 @@ CVector3f TypeVector3f_Set(CVariableEntry* ve_src, float _x, float _y, float _z)
 CVector3f TypeVector3f_Normalized(CVariableEntry* ve_src)
 {
     // -- sanity check
-    if (ve_src == nullptr || ve_src->GetType() != TYPE_vector3f || ve_src->IsArray())
+    if (ve_src == nullptr || ve_src->GetType() != TYPE_vector3f)
         return CVector3f::zero;
 
     // -- resolve the storage for the variable
     CVector3f* value = nullptr;
 
-    // -- if this is a stack variable, if it's owned by a function
-    // -- by definition, we're executing a function call for this method, so we want the
-    // calling function's stack offset, which will be 1 below us on the stack
-    if (ve_src->GetFunctionEntry() != nullptr)
+    //-- the ref addr already calculates the array and/or stack offsets
+    if (ve_src->GetRefAddr() != nullptr)
     {
-        value = GetPODStackVarAddr<CVector3f>(ve_src, 1);
+        value = (CVector3f*)ve_src->GetRefAddr();
     }
-    //-- if this isn't a stack variable, get the value addr directly
+
+    // -- if the ref address (which has already been calculated for array offsets, etc...)
+    // hasn't been provided, use the actual VE address
     else
     {
         value = (CVector3f*)ve_src->GetAddr(nullptr);
@@ -372,20 +372,20 @@ CVector3f TypeVector3f_Normalized(CVariableEntry* ve_src)
 float TypeVector3f_Normalize(CVariableEntry* ve_src)
 {
     // -- sanity check
-    if (ve_src == nullptr || ve_src->GetType() != TYPE_vector3f || ve_src->IsArray())
+    if (ve_src == nullptr || ve_src->GetType() != TYPE_vector3f)
         return (0.0f);
 
     // -- resolve the storage for the variable
     CVector3f* value = nullptr;
 
-    // -- if this is a stack variable, if it's owned by a function
-    // -- by definition, we're executing a function call for this method, so we want the
-    // calling function's stack offset, which will be 1 below us on the stack
-    if (ve_src->GetFunctionEntry() != nullptr)
+    //-- the ref addr already calculates the array and/or stack offsets
+    if (ve_src->GetRefAddr() != nullptr)
     {
-        value = GetPODStackVarAddr<CVector3f>(ve_src, 1);
+        value = (CVector3f*)ve_src->GetRefAddr();
     }
-    //-- if this isn't a stack variable, get the value addr directly
+
+    // -- if the ref address (which has already been calculated for array offsets, etc...)
+    // hasn't been provided, use the actual VE address
     else
     {
         value = (CVector3f*)ve_src->GetAddr(nullptr);
@@ -403,20 +403,20 @@ float TypeVector3f_Normalize(CVariableEntry* ve_src)
 float TypeVector3f_Length(CVariableEntry* ve_src)
 {
     // -- sanity check
-    if (ve_src == nullptr || ve_src->GetType() != TYPE_vector3f || ve_src->IsArray())
+    if (ve_src == nullptr || ve_src->GetType() != TYPE_vector3f)
         return 0.0f;
 
     // -- resolve the storage for the variable
     CVector3f* value = nullptr;
 
-    // -- if this is a stack variable, if it's owned by a function
-    // -- by definition, we're executing a function call for this method, so we want the
-    // calling function's stack offset, which will be 1 below us on the stack
-    if (ve_src->GetFunctionEntry() != nullptr)
+    //-- the ref addr already calculates the array and/or stack offsets
+    if (ve_src->GetRefAddr() != nullptr)
     {
-        value = GetPODStackVarAddr<CVector3f>(ve_src, 1);
+        value = (CVector3f*)ve_src->GetRefAddr();
     }
-    //-- if this isn't a stack variable, get the value addr directly
+
+    // -- if the ref address (which has already been calculated for array offsets, etc...)
+    // hasn't been provided, use the actual VE address
     else
     {
         value = (CVector3f*)ve_src->GetAddr(nullptr);
@@ -432,20 +432,20 @@ float TypeVector3f_Length(CVariableEntry* ve_src)
 float TypeVector3f_Dot(CVariableEntry* ve_src, CVector3f v)
 {
     // -- sanity check
-    if (ve_src == nullptr || ve_src->GetType() != TYPE_vector3f || ve_src->IsArray())
+    if (ve_src == nullptr || ve_src->GetType() != TYPE_vector3f)
         return (0.0f);
 
     // -- resolve the storage for the variable
     CVector3f* value = nullptr;
 
-    // -- if this is a stack variable, if it's owned by a function
-    // -- by definition, we're executing a function call for this method, so we want the
-    // calling function's stack offset, which will be 1 below us on the stack
-    if (ve_src->GetFunctionEntry() != nullptr)
+    //-- the ref addr already calculates the array and/or stack offsets
+    if (ve_src->GetRefAddr() != nullptr)
     {
-        value = GetPODStackVarAddr<CVector3f>(ve_src, 1);
+        value = (CVector3f*)ve_src->GetRefAddr();
     }
-    //-- if this isn't a stack variable, get the value addr directly
+
+    // -- if the ref address (which has already been calculated for array offsets, etc...)
+    // hasn't been provided, use the actual VE address
     else
     {
         value = (CVector3f*)ve_src->GetAddr(nullptr);
@@ -462,20 +462,20 @@ float TypeVector3f_Dot(CVariableEntry* ve_src, CVector3f v)
 CVector3f TypeVector3f_Cross(CVariableEntry* ve_src, CVector3f v)
 {
     // -- sanity check
-    if (ve_src == nullptr || ve_src->GetType() != TYPE_vector3f || ve_src->IsArray())
+    if (ve_src == nullptr || ve_src->GetType() != TYPE_vector3f)
         return 0.0f;
 
     // -- resolve the storage for the variable
     CVector3f* value = nullptr;
 
-    // -- if this is a stack variable, if it's owned by a function
-    // -- by definition, we're executing a function call for this method, so we want the
-    // calling function's stack offset, which will be 1 below us on the stack
-    if (ve_src->GetFunctionEntry() != nullptr)
+    //-- the ref addr already calculates the array and/or stack offsets
+    if (ve_src->GetRefAddr() != nullptr)
     {
-        value = GetPODStackVarAddr<CVector3f>(ve_src, 1);
+        value = (CVector3f*)ve_src->GetRefAddr();
     }
-    //-- if this isn't a stack variable, get the value addr directly
+
+    // -- if the ref address (which has already been calculated for array offsets, etc...)
+    // hasn't been provided, use the actual VE address
     else
     {
         value = (CVector3f*)ve_src->GetAddr(nullptr);

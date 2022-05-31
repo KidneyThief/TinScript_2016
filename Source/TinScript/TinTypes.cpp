@@ -529,7 +529,7 @@ bool8 SafeStrcpy(char* dest, size_t dest_size, const char* src, size_t length)
 	if (! dest || dest_size == 0 || ! src)
 		return false;
 
-    // -- a lenth of 0 means copy the complete string (up to dest_size)
+    // -- a length of 0 means copy the complete string (up to dest_size)
     if (length == 0)
         length = dest_size;
 
@@ -1219,9 +1219,16 @@ bool TypeVariableArray_Copy(CVariableEntry* ve_src, CVariableEntry* ve_dst)
 bool TypeVariableArray_Resize(CVariableEntry* ve_src, int32 new_size)
 {
     // -- make sure we've got a script array
-    if (ve_src == nullptr || !ve_src->IsArray() || !ve_src->IsScriptVar() || ve_src->IsParameter() || ve_src->IsReference())
+    if (ve_src == nullptr || !ve_src->IsArray() || !ve_src->IsScriptVar() ||  ve_src->IsReference())
     {
-        TinPrint(TinScript::GetContext(), "Error - array:resize() var: %s, :resize() only supports script non-param array vars\n",
+        TinPrint(TinScript::GetContext(), "Error - array:resize() var: %s, :resize() only supports script array vars\n",
+                                           (ve_src ? UnHash(ve_src->GetHash()) : "<unknown>"));
+        return (false);
+    }
+
+    if (ve_src->IsParameter() || ve_src->GetFunctionEntry() != nullptr)
+    {
+        TinPrint(TinScript::GetContext(), "Error - array:resize() var: %s, :resize() cannot resize local (e.g. stack) variables\n",
                                            (ve_src ? UnHash(ve_src->GetHash()) : "<unknown>"));
         return (false);
     }
@@ -1528,24 +1535,27 @@ bool8 BoolConfig(eVarType var_type, bool8 onInit)
 // --------------------------------------------------------------------------------------------------------------------
 // -- hashtable POD methods (not actually a POD) are more complicated, in that they don't have a "value"
 
-void TypeHashtable_Clear(tVarTable* ht_vartable)
+void TypeHashtable_Clear(CVariableEntry* ht_ve)
 {
+    tVarTable* ht_vartable = ht_ve != nullptr ? (tVarTable*)ht_ve->GetAddr(nullptr) : nullptr;
     if (ht_vartable != nullptr)
     {
         ht_vartable->DestroyAll();
     }
 }
 
-int32 TypeHashtable_Count(tVarTable* ht_vartable)
+int32 TypeHashtable_Count(CVariableEntry* ht_ve)
 {
+    tVarTable* ht_vartable = ht_ve != nullptr ? (tVarTable*)ht_ve->GetAddr(nullptr) : nullptr;
     int32 count = ht_vartable != nullptr ? ht_vartable->Used() : 0;
     return count;
 }
 
-bool TypeHashtable_HasKey(tVarTable* ht_vartable, const char* key0, const char* key1, const char* key2,
+bool TypeHashtable_HasKey(CVariableEntry* ht_ve, const char* key0, const char* key1, const char* key2,
                           const char* key3, const char* key4, const char* key5, const char* key6, const char* key7)
 {
     // -- the hashtable key is an appended string, pushed in reverse order (since we use a stack)
+    tVarTable* ht_vartable = ht_ve != nullptr ? (tVarTable*)ht_ve->GetAddr(nullptr) : nullptr;
     const char* key_table[8] =
     {
         key7 ? key7 : "",
@@ -1585,8 +1595,9 @@ bool TypeHashtable_HasKey(tVarTable* ht_vartable, const char* key0, const char* 
 }
 
 // -- $$$TZA fixme - need a way to compare values of different types, without converting to a string
-bool TypeHashtable_Contains(tVarTable* ht_vartable, const char* value)
+bool TypeHashtable_Contains(CVariableEntry* ht_ve, const char* value)
 {
+    tVarTable* ht_vartable = ht_ve != nullptr ? (tVarTable*)ht_ve->GetAddr(nullptr) : nullptr;
     if (ht_vartable != nullptr)
     {
         uint32 in_value_hash = TinScript::Hash(value, -1, false);
@@ -1614,9 +1625,10 @@ bool TypeHashtable_Contains(tVarTable* ht_vartable, const char* value)
     return (false);
 }
 
-bool TypeHashtable_Keys(tVarTable* ht_vartable, CVariableEntry* ve_keys_array)
+bool TypeHashtable_Keys(CVariableEntry* ht_ve, CVariableEntry* ve_keys_array)
 {
     // -- the source and dest must be an arrays of the same type
+    tVarTable* ht_vartable = ht_ve != nullptr ? (tVarTable*)ht_ve->GetAddr(nullptr) : nullptr;
     if (ht_vartable == nullptr || ve_keys_array == nullptr || !ve_keys_array->IsArray() ||
         !ve_keys_array->IsScriptVar() || ve_keys_array->GetType() != TYPE_string)
     {

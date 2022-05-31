@@ -141,8 +141,11 @@ public:
     // -- be written to - instead, the SetValue() method for variables is used.
     // -- for strings, this returns the address of the hash value found in the string dictionary
     void* GetAddr(void* objaddr) const;
-
     void* GetArrayVarAddr(void* objaddr, int32 array_index) const;
+
+    // -- reference addresses are unique - they're used for POD methods, and they
+    // have already calculated the array offset (if needed)...
+    void* GetRefAddr() const { return (mRefAddr); }
 
     // -- we have a separate addr for Hashtable type vars, as we may need to copy one ht to another
     // e.g. when a hashtable is a param to a schedule()
@@ -179,7 +182,7 @@ public:
     void SetValue(void* objaddr, void* value, CExecStack* execstack = NULL, CFunctionCallStack* funccallstack = NULL,
                   int32 array_index = 0);
     void SetValueAddr(void* objaddr, void* value, int32 array_index = 0);
-    bool SetReferenceAddr(void* ref_addr, uint32* string_hash_array = nullptr);
+    bool SetReferenceAddr(CVariableEntry* ref_ve, void* ref_addr = nullptr);
 
     // -- the equivalent of SetValue and SetValueAddr, but for variable (arrays) of Type_string
     void SetStringArrayHashValue(void* objaddr, void* value, CExecStack* execstack = NULL,
@@ -222,6 +225,7 @@ private:
     bool mIsReference = false;
     mutable uint32 mStringValueHash = 0;
     mutable uint32* mStringHashArray = nullptr; // used only for registered string *arrays*
+    void* mRefAddr = nullptr;
     uint32 mDispatchConvertFromObject = 0;
     CFunctionEntry* mFuncEntry = nullptr;
 

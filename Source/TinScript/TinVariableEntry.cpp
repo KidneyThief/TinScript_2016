@@ -636,10 +636,10 @@ void CVariableEntry::SetValueAddr(void* objaddr, void* value, int32 array_index)
 // ====================================================================================================================
 // SetReferenceAddr():  Used only on parameters, so type methods can still modify their own values
 // ====================================================================================================================
-bool CVariableEntry::SetReferenceAddr(void* ref_addr, uint32* string_hash_array)
+bool CVariableEntry::SetReferenceAddr(CVariableEntry* ref_ve, void* ref_addr)
 {
     // -- we have to have a value, and this can only be performed on parameters!
-    if (ref_addr == nullptr || !mIsParameter)
+    if (ref_ve == nullptr || !mIsParameter)
     {
         TinPrint(GetScriptContext(), "Error - failed SetReferenceAddr(): %s\n",
                                      UnHash(GetHash()));
@@ -649,12 +649,18 @@ bool CVariableEntry::SetReferenceAddr(void* ref_addr, uint32* string_hash_array)
     // -- try to free the existing memory
     TryFreeAddrMem();
 
-    // -- mark this as a reference, and set the addr
+    // -- mark this as a reference, and set the addr  (this VE is a wrapper a VE to be passed to a POD method)
+    // note:  the mAddr of this is the address of the original ve!
+    // -- this is so, e.g., in variadicclasses.h T1 p1 = ConvertVariableForDispatch<T1>(ve1);
+    // ve1 is our reference VE, and it's mAddr is converted to a T1, which is a CVariableEntry*
     mIsReference = true;
-    mAddr = ref_addr;
+    mAddr = ref_ve;
+    mRefAddr = nullptr;
 
-    // -- set the string hash array as well
-    mStringHashArray = string_hash_array;
+    // -- as per the above, this VE's mAddr is converted back to a VE* when passed to POD methods
+    // but to support arrays, the ref_ve's address used may need to be an array entry, or an object
+    // member, etc...  so the ref_ve->mRefAddr needs to be set within the ref_ve 
+    ref_ve->mRefAddr = ref_addr;
 
     return (true);
 }

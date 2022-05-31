@@ -569,9 +569,7 @@ vector3f[] UT_ArrayResize_vector3f;
 void UnitTest_V3fArrayResizeGlobal()
 {
     UT_ArrayResize_vector3f:resize(5);
-    // $$$TZA fix me...  :set() doesn't work on array indices
-    //UT_ArrayResize_vector3f[2]:set(3, 4, 5);
-    UT_ArrayResize_vector3f[2] = "3 4 5";
+    UT_ArrayResize_vector3f[2]:set(3, 4, 5);
     UT_ArrayResize_vector3f:resize(9);
 
     gUnitTestScriptResult = StringCat(UT_ArrayResize_vector3f:count(), " ", UT_ArrayResize_vector3f[2]);
@@ -589,6 +587,43 @@ void UnitTest_StringArrayResizeGlobal()
     gUnitTestScriptResult = StringCat(UT_ArrayResize_string:count(), " ", UT_ArrayResize_string[2], " ", UT_ArrayResize_string[3], " ", UT_ArrayResize_string[4]);
 }
 
+void UnitTest_IntArrayResizeMember()
+{
+    object foo = create_local CScriptObject("temp local");
+    int[] foo.member_int;
+    foo.member_int:resize(5);
+    foo.member_int[2] = 28;
+    foo.member_int[3] = 37;
+    foo.member_int[4] = 46;
+    foo.member_int:resize(9);
+
+    gUnitTestScriptResult = StringCat(foo.member_int:count(), " ", foo.member_int[2], " ", foo.member_int[3], " ", foo.member_int[4]);
+}
+
+void UnitTest_V3fArrayResizeMember()
+{
+    object foo = create_local CScriptObject("temp local");
+    vector3f[] foo.member_vector3f;
+    foo.member_vector3f:resize(5);
+    foo.member_vector3f[2]:set(3, 4, 5);
+    foo.member_vector3f:resize(9);
+
+    gUnitTestScriptResult = StringCat(foo.member_vector3f:count(), " ", foo.member_vector3f[2]);
+}
+
+void UnitTest_StringArrayResizeMember()
+{
+    object foo = create_local CScriptObject("temp local");
+    vector3f[] foo.member_vector3f;
+    string[] foo.member_string;
+    foo.member_string:resize(5);
+    foo.member_string[2] = "cat";
+    foo.member_string[3] = "dog";
+    foo.member_string[4] = "mouse";
+    foo.member_string:resize(9);
+
+    gUnitTestScriptResult = StringCat(foo.member_string:count(), " ", foo.member_string[2], " ", foo.member_string[3], " ", foo.member_string[4]);
+}
 
 // -- string versions of all of the above
 
@@ -828,6 +863,109 @@ void UnitTest_Foreach_ObjectSet()
     {
         gUnitTestScriptResult = StringCat(gUnitTestScriptResult, " ", iter.GetObjectName());
     }
+}
+
+// -- array contains tests
+
+vector3f[5] UT_ArrayContains_vector3f;
+UT_ArrayContains_vector3f[2]:set(3.1, 4.2, 5.3);
+
+void UnitTest_IntArray_Contains_Global()
+{
+    gUnitTestScriptResult = StringCat("19", " ", g_UT_IntArray_0:contains("19"), " 20 ", g_UT_IntArray_0:contains("20"));
+}
+
+void UnitTest_StringArray_Contains_Global()
+{
+    gUnitTestScriptResult = StringCat("cat", " ", g_UT_StrArray_0:contains("cat"), " donkey ", g_UT_StrArray_0:contains("donkey"));
+}
+
+void UnitTest_V3fArray_Contains_Global()
+{
+    gUnitTestScriptResult = StringCat("(1 2 3)", " ", UT_ArrayContains_vector3f:contains("1 2 3"), " (3.1 4.2 5.3) ", UT_ArrayContains_vector3f:contains("3.1 4.2 5.3"));
+}
+
+void UnitTest_IntArray_Contains_Local()
+{
+    int[5] local_ints;
+    local_ints[2] = 19;
+    gUnitTestScriptResult = StringCat("19", " ", local_ints:contains("19"), " 20 ", local_ints:contains("20"));
+}
+
+void UnitTest_V3fArray_Contains_Local()
+{
+    vector3f[5] local_vector3f;
+    local_vector3f[2]:set(3.1, 4.2, 5.3);
+    gUnitTestScriptResult = StringCat("(1 2 3)", " ", local_vector3f:contains("1 2 3"), " (3.1 4.2 5.3) ", local_vector3f:contains("3.1 4.2 5.3"));
+}
+
+void UnitTest_StringArray_Contains_Local()
+{
+    string[3] str_array;
+    str_array[0] = "cat";
+    str_array[1] = "mouse";
+    str_array[2] = "dog";
+    gUnitTestScriptResult = StringCat("cat", " ", str_array:contains("cat"), " donkey ", str_array:contains("donkey"));
+}
+
+void UnitTest_IntArray_Contains_Object()
+{
+    object foo = create_local CScriptObject("ut temp foo");
+    int[5] foo.local_ints;
+    foo.local_ints[2] = 19;
+    gUnitTestScriptResult = StringCat("19", " ", foo.local_ints:contains("19"), " 20 ", foo.local_ints:contains("20"));
+}
+
+void UnitTest_V3fArray_Contains_Object()
+{
+    object foo = create_local CScriptObject("ut temp foo");
+    vector3f[5] foo.local_vector3f;
+    foo.local_vector3f[2]:set(3.1, 4.2, 5.3);
+    gUnitTestScriptResult = StringCat("(1 2 3)", " ", foo.local_vector3f:contains("1 2 3"), " (3.1 4.2 5.3) ", foo.local_vector3f:contains("3.1 4.2 5.3"));
+}
+
+void UnitTest_StringArray_Contains_Object()
+{
+    object foo = create_local CScriptObject("ut temp foo");
+    string[3] foo.str_array;
+    foo.str_array[0] = "cat";
+    foo.str_array[1] = "mouse";
+    foo.str_array[2] = "dog";
+    gUnitTestScriptResult = StringCat("cat", " ", foo.str_array:contains("cat"), " donkey ", foo.str_array:contains("donkey"));
+}
+
+void UnitTest_IntArray_Contains_HT()
+{
+    hashtable foo;
+    int foo["cat"] = 19;
+    gUnitTestScriptResult = StringCat("19", " ", foo:contains("19"), " 20 ", foo:contains("20"));
+}
+
+void UnitTest_V3fArray_Contains_HT()
+{
+    hashtable foo;
+    // $$$TZA fixme
+    //vector3f foo["cat"]:set(3.1, 4.2, 5.3);
+    vector3f foo["cat"] = "3.1, 4.2, 5.3";
+
+    // $$$TZA fixme - auto-initialization doesn't support POD method calls at all
+    //vector3f temp_v3f:set(3.1, 4.2, 5.3);
+    vector3f temp_v3f;
+    temp_v3f:set(3.1, 4.2, 5.3);
+
+    // $$$TZA fixme
+    // contains() get called with a string - but there's no reason internally to convert that value to a CVector3f,
+    // so the strings don't match...  foo:contains("3.1 4.2 5.3") should eventually be viable
+    vector3f temp2_v3f;
+    temp2_v3f:set(1, 2, 3);
+    gUnitTestScriptResult = StringCat("(1 2 3)", " ", foo:contains(temp2_v3f), " (3.1 4.2 5.3) ", foo:contains(temp_v3f));
+}
+
+void UnitTest_StringArray_Contains_HT()
+{
+    hashtable foo;
+    string foo["donkey"] = "cat";
+    gUnitTestScriptResult = StringCat("cat", " ", foo:contains("cat"), " donkey ", foo:contains("donkey"));
 }
 
 // -- this section is to test passing hashtables containing values to C++ --------------------------

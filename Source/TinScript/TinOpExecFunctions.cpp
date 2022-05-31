@@ -828,7 +828,7 @@ bool8 PerformAssignOp(CScriptContext* script_context, CExecStack& execstack, CFu
         {
             if (stack_entry_0.ve != nullptr)
             {
-                stack_entry_0.ve->SetReferenceAddr(stack_entry_1.ve, stack_entry_1.ve->GetStringHashArray());
+                stack_entry_0.ve->SetReferenceAddr(stack_entry_1.ve, stack_entry_1.ve->GetAddr(nullptr));
             }
             return (true);
         }
@@ -2805,16 +2805,9 @@ bool8 OpExecPODCallArgs(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, CEx
     }
     else
     {
-        // -- the param needs to be a reference to the POD
-        // hashtable "values" are their internal tVarTable (which is the stack_entry_pod.valaddr)
-        // all other types are "array" types
-        if (stack_entry_pod.valtype == TYPE_hashtable)
+        if (stack_entry_pod.ve != nullptr)
         {
-            param_1_ve->SetReferenceAddr(stack_entry_pod.valaddr);
-        }
-        else if (stack_entry_pod.ve != nullptr)
-        {
-            param_1_ve->SetReferenceAddr(stack_entry_pod.ve, stack_entry_pod.ve->GetStringHashArray());
+            param_1_ve->SetReferenceAddr(stack_entry_pod.ve, stack_entry_pod.valaddr);
         }
         else
         {
