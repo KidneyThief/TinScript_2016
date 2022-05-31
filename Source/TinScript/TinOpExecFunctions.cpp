@@ -3686,10 +3686,10 @@ bool8 OpExecScheduleBegin(CCodeBlock* cb, eOpCode op, const uint32*& instrptr, C
     // -- the function hash will have been pushed most recently
     eVarType contenttype;
     void* contentptr = execstack.Pop(contenttype);
-    if (contenttype != TYPE_int)
+    if (contenttype != TYPE_string && contenttype != TYPE_int)
     {
         ScriptAssert_(cb->GetScriptContext(), 0, cb->GetFileName(), cb->CalcLineNumber(instrptr),
-                      "Error - ExecStack should contain TYPE_int\n");
+                      "Error - ExecStack should contain TYPE_string or TYPE_int (function name or hash)\n");
         return false;
     }
     uint32 funchash = *(uint32*)(contentptr);

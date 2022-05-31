@@ -3834,8 +3834,8 @@ int32 CSchedFuncNode::Eval(uint32*& instrptr, eVarType pushresult, bool countonl
         return (-1);
     }
 
-    // -- evaluate the leftchild, which will push the function hash
-    int32 tree_size = leftchild->Eval(instrptr, TYPE_int, countonly);
+    // -- evaluate the leftchild, which will push the function name
+    int32 tree_size = leftchild->Eval(instrptr, TYPE__resolve, countonly);
     if (tree_size < 0)
         return (-1);
     size += tree_size;
