@@ -944,15 +944,8 @@ void UnitTest_IntArray_Contains_HT()
 void UnitTest_V3fArray_Contains_HT()
 {
     hashtable foo;
-    // $$$TZA fixme
-    //vector3f foo["cat"]:set(3.1, 4.2, 5.3);
-    vector3f foo["cat"] = "3.1, 4.2, 5.3";
-
-    // $$$TZA fixme - auto-initialization doesn't support POD method calls at all
-    //vector3f temp_v3f:set(3.1, 4.2, 5.3);
-    vector3f temp_v3f;
-    temp_v3f:set(3.1, 4.2, 5.3);
-
+    vector3f foo["cat"]:set(3.1, 4.2, 5.3);
+    vector3f temp_v3f:set(3.1, 4.2, 5.3);
     gUnitTestScriptResult = StringCat("(1 2 3)", " ", foo:contains("1 2 3"), " (3.1 4.2 5.3) ", foo:contains("3.1 4.2 5.3"));
 }
 

@@ -1629,6 +1629,24 @@ bool8 TryParseVarDeclaration(CCodeBlock* codeblock, tReadToken& filebuf, CCompil
 		    filebuf = finaltoken;
 	    }
 
+        // -- see if the next token is a colon, in which case we're calling a POD method (e.g.  :set()) on the new variable
+        else if (finaltoken.type == TOKEN_COLON)
+        {
+            // -- note:  we can't call a POD member (the var is already declared)
+            CCompileTreeNode* pod_method_root = NULL;
+            tReadToken pod_method_token(finaltoken);
+            if (!TryParseFuncCall(codeblock, pod_method_token, pod_method_root, EFunctionCallType::PODMethod))
+            {
+                ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
+                    finaltoken.linenumber, "Error - expecting a valid :method() call.\n");
+                return (false);
+            }
+
+            // -- we're going to update the input buf ptr to just after having read the type
+            // -- and allow the var decl identifier to now be part of a POD method call expression
+            filebuf = nexttoken;
+        }
+
 	    // -- else if the next token is an operator, we're going to
 	    else if (finaltoken.type == TOKEN_ASSOP)
         {
@@ -1667,6 +1685,25 @@ bool8 TryParseVarDeclaration(CCodeBlock* codeblock, tReadToken& filebuf, CCompil
         is_var_decl = true;
 	}
 
+    // -- see if the next token is a colon, in which case we're calling a POD method (e.g.  :set()) on the new variable
+    else if (finaltoken.type == TOKEN_COLON)
+    {
+        // -- note:  we can't call a POD member (the var is already declared)
+        CCompileTreeNode* pod_method_root = NULL;
+        tReadToken pod_method_token(finaltoken);
+        if (!TryParseFuncCall(codeblock, pod_method_token, pod_method_root, EFunctionCallType::PODMethod))
+        {
+            ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
+                          finaltoken.linenumber, "Error - expecting a valid :method() call.\n");
+			return (false);
+        }
+
+        // -- we're going to update the input buf ptr to just after having read the type
+        // -- and allow the var decl identifier to now be part of a POD method call expression
+        filebuf = nexttoken;
+        is_var_decl = true;
+    }
+
 	// -- else if the next token is an operator, we're going to
 	else if (finaltoken.type == TOKEN_ASSOP)
     {
@@ -1679,8 +1716,8 @@ bool8 TryParseVarDeclaration(CCodeBlock* codeblock, tReadToken& filebuf, CCompil
         }
 
 		// -- we're going to update the input buf ptr to just after having read the type
-		// -- and allow the assignment to be ready as an assignment
-		filebuf = nexttoken;
+        // -- and allow the var decl identifier to now be part of an assignment expression
+        filebuf = nexttoken;
         is_var_decl = true;
 	}
 
@@ -1796,26 +1833,6 @@ bool8 TryParseVarDeclaration(CCodeBlock* codeblock, tReadToken& filebuf, CCompil
             AddVariable(codeblock->GetScriptContext(), codeblock->smCurrentGlobalVarTable, curfunction,
                         TokenPrint(idtoken), Hash(TokenPrint(idtoken)), registeredtype, array_size);
         }
-/*
-        else
-        {
-            // -- this is only available in immediate execution code
-            int32 stacktopdummy = 0;
-            CObjectEntry* dummy = NULL;
-            CFunctionEntry* curfunction = codeblock->smFuncDefinitionStack->GetTop(dummy, stacktopdummy);
-            uint32 funchash = curfunction ? curfunction->GetHash() : 0;
-            if (funchash != 0)
-            {
-                ScriptAssert_(codeblock->GetScriptContext(), 0, codeblock->GetFileName(),
-                              finaltoken.linenumber, "Error - dynamically declaring an object member outside a function.\n");
-			    return (false);
-            }
-
-            uint32 object_id = Atoi(object_id_token.tokenptr, object_id_token.length);
-            CScriptContext* script_context = TinScript::GetContext();
-            script_context->AddDynamicVariable(object_id,  Hash(TokenPrint(idtoken)), registeredtype, array_size);
-        }
-*/
     }
 
     // -- return the result
