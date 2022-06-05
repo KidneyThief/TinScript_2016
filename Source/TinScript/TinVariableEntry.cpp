@@ -816,6 +816,9 @@ void CVariableEntry::SetBreakOnWrite(int32 varWatchRequestID, int32 debugger_ses
 void CVariableEntry::NotifyWrite(CScriptContext* script_context, CExecStack* execstack,
                                  CFunctionCallStack* funccallstack)
 {
+    // -- any write to a variable means it's been set
+    mHasBeenSet = true;
+
 	if (mBreakOnWrite)
 	{
 		int32 cur_debugger_session = 0;

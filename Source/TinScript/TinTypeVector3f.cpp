@@ -334,6 +334,13 @@ CVector3f TypeVector3f_Set(CVariableEntry* ve_src, float _x, float _y, float _z)
 
     // -- modify the given variable, initializing to the new value
     value->Set(_x, _y, _z);
+
+    // -- this POD modifies the variable - notify the debugger
+    int32 stack_var_offset = 0;
+    CExecStack* execstack = nullptr;
+    CFunctionCallStack* funccallstack = CFunctionCallStack::GetExecutionStackAtDepth(0, execstack, stack_var_offset);
+    ve_src->NotifyWrite(TinScript::GetContext(), execstack, funccallstack);
+
     return *value;
 }
 
@@ -362,6 +369,12 @@ CVector3f TypeVector3f_Normalized(CVariableEntry* ve_src)
 
     if (value == nullptr)
         return (CVector3f::zero);
+
+    // -- this POD modifies the variable - notify the debugger
+    int32 stack_var_offset = 0;
+    CExecStack* execstack = nullptr;
+    CFunctionCallStack* funccallstack = CFunctionCallStack::GetExecutionStackAtDepth(0, execstack, stack_var_offset);
+    ve_src->NotifyWrite(TinScript::GetContext(), execstack, funccallstack);
 
     // -- returns the normalized vector, without modifying the original
     CVector3f result = CVector3f::Normalized(*value);
@@ -550,6 +563,7 @@ bool8 Vector3fConfig(eVarType var_type, bool8 onInit)
             REGISTER_TYPE_METHOD(TYPE_vector3f, dot, TypeVector3f_Dot);
             REGISTER_TYPE_METHOD(TYPE_vector3f, cross, TypeVector3f_Cross);
 
+            REGISTER_TYPE_METHOD(TYPE_vector3f, initialized, TypeVariable_IsSet);
             REGISTER_TYPE_METHOD(TYPE_vector3f, count, TypeVariable_Count);
             REGISTER_TYPE_METHOD(TYPE_vector3f, contains, TypeVector3f_Contains);
             REGISTER_TYPE_METHOD(TYPE_vector3f, copy, TypeVariableArray_Copy);

@@ -177,6 +177,11 @@ public:
         return (mIsDynamic);
     }
 
+    bool IsSet() const
+    {
+        return (mHasBeenSet);
+    }
+
     bool8 IsStackVariable(const CFunctionCallStack& funccallstack, bool allow_indexed_var = false) const;
 
     void SetValue(void* objaddr, void* value, CExecStack* execstack = NULL, CFunctionCallStack* funccallstack = NULL,
@@ -223,6 +228,7 @@ private:
     bool8 mIsDynamic = false;
     bool8 mScriptVar = false;
     bool mIsReference = false;
+    bool mHasBeenSet = false;
     mutable uint32 mStringValueHash = 0;
     mutable uint32* mStringHashArray = nullptr; // used only for registered string *arrays*
     void* mRefAddr = nullptr;
@@ -414,7 +420,6 @@ T* GetPODStackVarAddr(CVariableEntry* ve_src, int32 stack_depth)
 
     return (value);
 }
-
 
 } // TinScript
 

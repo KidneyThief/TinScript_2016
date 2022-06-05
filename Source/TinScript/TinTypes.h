@@ -383,6 +383,7 @@ bool8 FVectorToString(TinScript::CScriptContext* script_context, void* value, ch
 bool8 StringToFVector(TinScript::CScriptContext* script_context, void* addr, char* value);
 
 // -- Generic array methods
+bool TypeVariable_IsSet(CVariableEntry* ve);
 int32 TypeVariable_Count(CVariableEntry* ve);
 bool TypeVariableArray_Copy(CVariableEntry* ve_src, CVariableEntry* ve_dst);
 bool TypeVariableArray_Resize(CVariableEntry* ve_src, int32 new_size);

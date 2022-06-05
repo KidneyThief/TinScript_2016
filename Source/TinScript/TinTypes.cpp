@@ -1144,6 +1144,18 @@ bool8 BooleanBinaryOp(CScriptContext* script_context, eOpCode op, eVarType& resu
 
 // -- POD method(s) for all first-class types ---------------------------------------------------------------------------
 
+bool TypeVariable_IsSet(CVariableEntry* ve)
+{
+    if (ve == nullptr)
+    {
+        TinPrint(TinScript::GetContext(), "Error - TypeVariable_IsSet(): invalid variable");
+        return 0;
+    }
+
+    // -- return if the variable has ever been assigned
+    return ve->IsSet();
+}
+
 int32 TypeVariable_Count(CVariableEntry* ve)
 {
     if (ve == nullptr)
@@ -1313,6 +1325,7 @@ bool8 ObjectConfig(eVarType var_type, bool8 onInit)
         RegisterTypeOpOverride(OP_BooleanOr, TYPE_object, BooleanBinaryOp);
 
         // -- register the POD methods
+        REGISTER_TYPE_METHOD(TYPE_object, initialized, TypeVariable_IsSet);
         REGISTER_TYPE_METHOD(TYPE_object, count, TypeVariable_Count);
         REGISTER_TYPE_METHOD(TYPE_object, contains, TypeObject_Contains);
         REGISTER_TYPE_METHOD(TYPE_object, copy, TypeVariableArray_Copy);
@@ -1361,6 +1374,7 @@ bool8 StringConfig(eVarType var_type, bool8 onInit)
         RegisterTypeOpOverride(OP_CompareNotEqual, TYPE_string, StringBinaryOp);
 
         // -- register the POD methods
+        REGISTER_TYPE_METHOD(TYPE_string, initialized, TypeVariable_IsSet);
         REGISTER_TYPE_METHOD(TYPE_string, count, TypeVariable_Count);
         REGISTER_TYPE_METHOD(TYPE_string, contains, TypeString_Contains);
         REGISTER_TYPE_METHOD(TYPE_string, copy, TypeVariableArray_Copy);
@@ -1416,6 +1430,7 @@ bool8 FloatConfig(eVarType var_type, bool8 onInit)
         RegisterTypeConvert(TYPE_float, TYPE_bool, FloatConvert);
 
         // -- register the POD methods
+        REGISTER_TYPE_METHOD(TYPE_float, initialized, TypeVariable_IsSet);
         REGISTER_TYPE_METHOD(TYPE_float, count, TypeVariable_Count);
         REGISTER_TYPE_METHOD(TYPE_float, contains, TypeFloat_Contains);
         REGISTER_TYPE_METHOD(TYPE_float, copy, TypeVariableArray_Copy);
@@ -1479,6 +1494,7 @@ bool8 IntegerConfig(eVarType var_type, bool8 onInit)
         RegisterTypeConvert(TYPE_int, TYPE_object, IntegerConvert);
 
         // -- register the POD methods
+        REGISTER_TYPE_METHOD(TYPE_int, initialized, TypeVariable_IsSet);
         REGISTER_TYPE_METHOD(TYPE_int, count, TypeVariable_Count);
         REGISTER_TYPE_METHOD(TYPE_int, contains, TypeInt_Contains);
         REGISTER_TYPE_METHOD(TYPE_int, copy, TypeVariableArray_Copy);
@@ -1522,6 +1538,7 @@ bool8 BoolConfig(eVarType var_type, bool8 onInit)
         RegisterTypeConvert(TYPE_bool, TYPE_object, BoolConvert);
 
         // -- register the POD methods
+        REGISTER_TYPE_METHOD(TYPE_bool, initialized, TypeVariable_IsSet);
         REGISTER_TYPE_METHOD(TYPE_bool, count, TypeVariable_Count);
         REGISTER_TYPE_METHOD(TYPE_bool, contains, TypeBool_Contains);
         REGISTER_TYPE_METHOD(TYPE_bool, copy, TypeVariableArray_Copy);
