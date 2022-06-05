@@ -953,12 +953,7 @@ void UnitTest_V3fArray_Contains_HT()
     vector3f temp_v3f;
     temp_v3f:set(3.1, 4.2, 5.3);
 
-    // $$$TZA fixme
-    // contains() get called with a string - but there's no reason internally to convert that value to a CVector3f,
-    // so the strings don't match...  foo:contains("3.1 4.2 5.3") should eventually be viable
-    vector3f temp2_v3f;
-    temp2_v3f:set(1, 2, 3);
-    gUnitTestScriptResult = StringCat("(1 2 3)", " ", foo:contains(temp2_v3f), " (3.1 4.2 5.3) ", foo:contains(temp_v3f));
+    gUnitTestScriptResult = StringCat("(1 2 3)", " ", foo:contains("1 2 3"), " (3.1 4.2 5.3) ", foo:contains("3.1 4.2 5.3"));
 }
 
 void UnitTest_StringArray_Contains_HT()

@@ -1600,17 +1600,35 @@ bool TypeHashtable_Contains(CVariableEntry* ht_ve, const char* value)
     tVarTable* ht_vartable = ht_ve != nullptr ? (tVarTable*)ht_ve->GetAddr(nullptr) : nullptr;
     if (ht_vartable != nullptr)
     {
-        uint32 in_value_hash = TinScript::Hash(value, -1, false);
+        uint32 in_value_hash = Hash(value, -1, false);
+
+        // -- see if we've got a matching string, converting the hashtable entries
         CVariableEntry* ht_ve = ht_vartable->First();
         while (ht_ve != nullptr)
         {
+            // -- this is horrible - if we're looking to see if, e.g., a float is contains, and we give the string "3.14",
+            // our comparison won't match, since converting the contained float to a string is "3.1400", (not identical)
+            //  -- since our comparison is non-templated, we're stuck with an enum type, and a void*
+            // -- the only way to make this work, is to convert the value to the ht type, and then back to a string
+            // note:  conversions take the address of a hash value, when converting strings
+            void* convert_val_to_ht_type = TypeConvert(TinScript::GetContext(), TYPE_string, (void*)&in_value_hash, ht_ve->GetType());
+            if (convert_val_to_ht_type == nullptr)
+            {
+                continue;
+            }
+
+            // -- convert the ht version of "value" back to a string (which will turn "3.14" to "3.1400")...
+            void* compare_val = TypeConvert(TinScript::GetContext(), ht_ve->GetType(), convert_val_to_ht_type, TYPE_string);
+
             // -- see if we can convert the hashtable value to a string
             void* converted_val = TypeConvert(TinScript::GetContext(), ht_ve->GetType(), ht_ve->GetAddr(nullptr),
-                                              TYPE_string);
-            if (converted_val != nullptr)
+                                               TYPE_string);
+            if (converted_val != nullptr && compare_val != nullptr)
             {
+                // -- get the hash for each of the converted strings
+                uint32 compare_hash = *(uint32*)compare_val;
                 uint32 val_hash = *(uint32*)converted_val;
-                if (val_hash == in_value_hash)
+                if (compare_hash == val_hash)
                 {
                     // -- found
                     return true;
