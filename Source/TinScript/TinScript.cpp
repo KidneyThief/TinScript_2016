@@ -4703,7 +4703,7 @@ bool CScriptContext::TabComplete(const char* partial_input, int32& ref_tab_compl
 
     // -- ensure we have a non-empty partial string
     if (partial_function_ptr[0] == '\0')
-        return (nullptr);
+        return (false);
 
     // -- populate the list of function and member names, etc...
     const int32 max_count = 256;
