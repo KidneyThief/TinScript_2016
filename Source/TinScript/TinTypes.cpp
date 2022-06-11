@@ -302,6 +302,24 @@ bool8 StringToFloat(TinScript::CScriptContext* script_context, void* addr, char*
 }
 
 // ====================================================================================================================
+// GetPODMemberTable():  return the registered table of members, for a given type
+// ====================================================================================================================
+tPODTypeTable* GetPODMemberTable(eVarType type_id)
+{
+    return (gRegisteredPODTypeTable[type_id]);
+}
+
+// ====================================================================================================================
+// GetPODMethodTable():  return the function table registered for a given type
+// ====================================================================================================================
+CHashTable<CFunctionEntry>* GetPODMethodTable(eVarType type_id)
+{
+    uint32 ns_hash = GetRegisteredTypeHash(type_id);
+    CNamespace* type_ns = TinScript::GetContext()->FindNamespace(ns_hash);
+    return (type_ns != nullptr ? type_ns->GetFuncTable() : nullptr);
+}
+
+// ====================================================================================================================
 // GetRegisteredPODMember():  Given a type, returns the address of the POD member of that type
 // ====================================================================================================================
 bool8 GetRegisteredPODMember(eVarType type_id, void* var_addr, uint32 member_hash, eVarType& out_member_type,

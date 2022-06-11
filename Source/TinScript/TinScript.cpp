@@ -4455,9 +4455,9 @@ int32 ParseIdentifierStack(const char* input_str, char identifierStack[kMaxNameL
         // -- feels like a hack, but check for the specific keywords 'create' or 'create_local'
         if (identifier_count == 1)
         {
-            // -- note:  inputPtr will be pointing at the last character in the string, so the lenghts are off by 1
+            // -- note:  inputPtr will be pointing at the last character in the string, so the lengths are off by 1
             int32 create_length = (int32)strlen("create") - 1;
-            int32 createlocal_length = (int32)strlen("createlocal") - 1;
+            int32 createlocal_length = (int32)strlen("create_local") - 1;
             if (kPointerDiffUInt32(input_ptr, input_buf) >= (uint32)create_length &&
                 !strncmp(input_ptr - create_length, "create", create_length + 1))
             {
@@ -4472,23 +4472,23 @@ int32 ParseIdentifierStack(const char* input_str, char identifierStack[kMaxNameL
             }
         }
 
-        // -- if we found anything other than an object dereference, we're done
-        if (*input_ptr != '.')
+        // -- if we found anything other than an object dereference, or a POD member/method, we're done
+        if (*input_ptr != '.' && *input_ptr != ':')
             break;
 
-        // -- if we did find a decimal, then we must have a preceeding identifier,
+        // -- if we did find a decimal, then we must have a preceding identifier,
         // -- or we've got a non-tab-completable expression
         if (input_ptr == input_buf)
             return (0);
 
-        // -- back up before the decimal
+        // -- back up before the period/colon
         --input_ptr;
 
         // -- back up past white space again
         while (input_ptr > input_buf && *input_ptr <= 0x20)
             --input_ptr;
 
-        // -- if we didn't find an identifier char, we're still missing a preceeding identifier
+        // -- if we didn't find an identifier char, we're still missing a preceding identifier
         if (!IsIdentifierChar(*input_ptr, true))
             return (0);
 
@@ -4721,58 +4721,101 @@ bool CScriptContext::TabComplete(const char* partial_input, int32& ref_tab_compl
                                                 max_count);
     }
 
-    // -- see if this is a global function or an method
+    // -- see if this is a global function or an method, or a variable 
     CObjectEntry* oe = nullptr;
     uint32 object_id = 0;
+    CVariableEntry* ve_pod = nullptr;
+    bool use_pod_var = out_name_offset > 1 && partial_input[out_name_offset - 1] == ':';
 
     // -- if we haven't handled the completion (e.g. through the keyword create completion)
     if (!tabcomplete_handled)
     {
         // -- if there were multiple identifiers, then we need to find the last object entry in the chain
+        // note:  the identifier stack is essentially backwards:   foo.v:se(t...), the stack is [se..., v, foo]
+        // loop from the first identifier (e.g. stack top) to the 2nd last - which must be an object or a POD variable
         for (int stack_index = identifier_count - 1; stack_index >= 1; --stack_index)
         {
             // -- cache the prev_oe
             CObjectEntry* prev_oe = oe;
             oe = nullptr;
 
-            // -- if this is the first identifier in the chain, it must be either an object ID, or a global variable
+            // -- the very first identifier is allowed to be an object id
             if (stack_index == identifier_count - 1)
             {
+                // -- see if this is an object
                 object_id = (uint32)atoi(identifier_stack[stack_index]);
                 if (object_id > 0)
+                {
                     oe = TinScript::GetContext()->FindObjectEntry(object_id);
+                }
+
+                // else it must be a global variable
                 else
                 {
-                    // -- find the variable
+                    // -- find the global
                     CVariableEntry* ve_0 = GetGlobalNamespace()->GetVarTable()->FindItem(Hash(identifier_stack[stack_index]));
-                    if (ve_0 == nullptr || ve_0->GetType() != eVarType::TYPE_object)
+
+                    // -- we had better have found a global var
+                    if (ve_0 == nullptr)
                         return (false);
 
-                    // -- get the variable value, and search for an object with that ID
-                    object_id = *(uint32*)(ve_0->GetValueAddr(nullptr));
-                    oe = TinScript::GetContext()->FindObjectEntry(object_id);
+
+                    // -- now, either the variable is of type object, *or*, the chain is only 2 identifiers deep, and we're
+                    // tab completing a POD variable 
+                    if (ve_0->GetType() == eVarType::TYPE_object)
+                    {
+                        // -- get the variable value, and search for an object with that ID
+                        object_id = *(uint32*)(ve_0->GetValueAddr(nullptr));
+                        oe = TinScript::GetContext()->FindObjectEntry(object_id);
+                    }
+
+                    // -- otherwise, our stack is only 2, and we're trying to tab complete a POD
+                    else if (identifier_count == 2 && use_pod_var)
+                    {
+                        ve_pod = ve_0;
+                    }
                 }
             }
 
             // -- otherwise, it's an object member of the previous object
+            // NOTE:  this is true as long as POD members are never of type Object (which the probably never will be)
             else
             {
                 CVariableEntry* oe_member = prev_oe->GetVariableEntry(Hash(identifier_stack[stack_index]));
-                if (oe_member == nullptr || oe_member->GetType() != TYPE_object)
+                if (oe_member == nullptr)
                     return (false);
 
-                // -- find the variable for which this member refers
-                object_id = *(uint32*)(oe_member->GetValueAddr(prev_oe->GetAddr()));
-                oe = TinScript::GetContext()->FindObjectEntry(object_id);
+                if (oe_member->GetType() == TYPE_object)
+                {
+                    // -- find the variable for which this member refers
+                    object_id = *(uint32*)(oe_member->GetValueAddr(prev_oe->GetAddr()));
+                    oe = TinScript::GetContext()->FindObjectEntry(object_id);
+                }
+                else if (stack_index == 1 && use_pod_var)
+                {
+                    ve_pod = oe_member;
+                }
             }
 
-            // -- if oe is still null, we're done
-            if (oe == nullptr)
+            // -- if we didn't find either our object, or POD variable, we're done
+            if (oe == nullptr && ve_pod == nullptr)
                 return (false);
         }
 
+        // -- if we have a POD variable, tab complete on its members/methods
+        if (ve_pod != nullptr)
+        {
+            // -- for now, we'll only tab complete on POD methods, since the only members that exist are x, y, z for vector3f
+            function_table = GetPODMethodTable(ve_pod->GetType());
+            if (function_table != nullptr)
+            {
+                list_is_full = TabCompleteFunctionTable(partial_function_ptr, partial_length, *function_table,
+                                                        tab_complete_list, entry_count, max_count);
+            }
+        }
+
         // -- if we don't have an object, populate with keywords, global functions, and global var names
-        if (oe == nullptr)
+        else if (oe == nullptr)
         {
             int32 keyword_count = 0;
             const char** keyword_list = GetReservedKeywords(keyword_count);
@@ -4787,12 +4830,12 @@ bool CScriptContext::TabComplete(const char* partial_input, int32& ref_tab_compl
 
             // -- also tab complete with global variables
             list_is_full = TabCompleteVarTable(partial_function_ptr, partial_length, *(GetGlobalNamespace()->GetVarTable()),
-                tab_complete_list, entry_count, max_count);
+                                               tab_complete_list, entry_count, max_count);
 
             // -- populate the list with matching function names
             function_table = GetGlobalNamespace()->GetFuncTable();
             list_is_full = TabCompleteFunctionTable(partial_function_ptr, partial_length, *function_table,
-                tab_complete_list, entry_count, max_count);
+                                                    tab_complete_list, entry_count, max_count);
         }
 
         // -- else we have an object - populate with dynamic var names, and through the hierarchy

@@ -483,7 +483,6 @@ void ShutdownTypes();
 // -- POD Member/Method API
 // -- manual registration of POD tables for members and methods
 void RegisterPODTypeTable(eVarType var_type, tPODTypeTable* pod_table);
-void RegisterPODMethodTable(eVarType var_type, CHashTable<CFunctionEntry>* pod_methods);
 
 // TYPE registration API
 // -- manual registration of an operation override for a registered types
@@ -518,7 +517,10 @@ eVarType GetRegisteredType(uint32 id);
 
 bool8 GetRegisteredPODMember(eVarType type_id, void* var_addr, uint32 member_hash, eVarType& out_member_type,
                              void*& out_member_addr);
-CFunctionEntry* GetRegisteredPODMethod(eVarType type_id, uint32 method_hash);
+
+// -- tab complete requires access to the tables themselves
+tPODTypeTable* GetPODMemberTable(eVarType type_id);
+CHashTable<CFunctionEntry>* GetPODMethodTable(eVarType type_id);
 
 TypeOpOverride GetTypeOpOverride(eOpCode op, eVarType var_type);
 
